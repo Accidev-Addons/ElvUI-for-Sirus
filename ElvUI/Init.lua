@@ -47,29 +47,29 @@ _G.ElvUI = Engine
 
 E.oUF = _G.ElvUF
 assert(E.oUF, 'ElvUI was unable to locate oUF.')
-
-E.ActionBars = E:NewModule('ActionBars', 'AceHook-3.0', 'AceEvent-3.0')
-E.AFK = E:NewModule('AFK', 'AceEvent-3.0', 'AceTimer-3.0')
-E.Auras = E:NewModule('Auras', 'AceHook-3.0', 'AceEvent-3.0')
-E.Bags = E:NewModule('Bags', 'AceHook-3.0', 'AceEvent-3.0', 'AceTimer-3.0')
-E.Blizzard = E:NewModule('Blizzard', 'AceEvent-3.0', 'AceHook-3.0')
-E.Chat = E:NewModule('Chat', 'AceTimer-3.0', 'AceHook-3.0', 'AceEvent-3.0')
-E.DataBars = E:NewModule('DataBars', 'AceEvent-3.0')
-E.DataTexts = E:NewModule('DataTexts', 'AceTimer-3.0', 'AceHook-3.0', 'AceEvent-3.0')
-E.DebugTools = E:NewModule('DebugTools', 'AceEvent-3.0', 'AceHook-3.0')
-E.Distributor = E:NewModule('Distributor', 'AceEvent-3.0', 'AceTimer-3.0', 'AceComm-3.0', 'AceSerializer-3.0')
-E.Layout = E:NewModule('Layout', 'AceEvent-3.0')
+E.ActionBars = E:NewModule('ActionBars','AceHook-3.0','AceEvent-3.0')
+E.AFK = E:NewModule('AFK','AceEvent-3.0','AceTimer-3.0')
+E.Auras = E:NewModule('Auras','AceHook-3.0','AceEvent-3.0')
+E.Bags = E:NewModule('Bags','AceHook-3.0','AceEvent-3.0','AceTimer-3.0')
+E.Blizzard = E:NewModule('Blizzard','AceEvent-3.0','AceHook-3.0')
+E.Chat = E:NewModule('Chat','AceTimer-3.0','AceHook-3.0','AceEvent-3.0')
+E.DataBars = E:NewModule('DataBars','AceEvent-3.0')
+E.DataTexts = E:NewModule('DataTexts','AceTimer-3.0','AceHook-3.0','AceEvent-3.0')
+E.DebugTools = E:NewModule('DebugTools','AceEvent-3.0','AceHook-3.0')
+E.Distributor = E:NewModule('Distributor','AceEvent-3.0','AceTimer-3.0','AceComm-3.0','AceSerializer-3.0')
+E.Layout = E:NewModule('Layout','AceEvent-3.0')
 E.Minimap = E:NewModule('Minimap','AceHook-3.0','AceEvent-3.0','AceTimer-3.0')
 E.Misc = E:NewModule('Misc','AceEvent-3.0','AceTimer-3.0','AceHook-3.0')
-E.ModuleCopy = E:NewModule('ModuleCopy', 'AceEvent-3.0', 'AceTimer-3.0', 'AceComm-3.0', 'AceSerializer-3.0')
-E.NamePlates = E:NewModule('NamePlates', 'AceHook-3.0', 'AceEvent-3.0', 'AceTimer-3.0')
+E.ModuleCopy = E:NewModule('ModuleCopy','AceEvent-3.0','AceTimer-3.0','AceComm-3.0','AceSerializer-3.0')
+E.NamePlates = E:NewModule('NamePlates','AceHook-3.0','AceEvent-3.0','AceTimer-3.0')
 E.PluginInstaller = E:NewModule('PluginInstaller')
-E.RaidUtility = E:NewModule('RaidUtility', 'AceEvent-3.0')
+E.PrivateAuras = E:NewModule('PrivateAuras')
+E.RaidUtility = E:NewModule('RaidUtility','AceEvent-3.0')
 E.Skins = E:NewModule('Skins','AceTimer-3.0','AceHook-3.0','AceEvent-3.0')
 E.Tooltip = E:NewModule('Tooltip','AceTimer-3.0','AceHook-3.0','AceEvent-3.0')
 E.TotemTracker = E:NewModule('TotemTracker','AceEvent-3.0')
-E.UnitFrames = E:NewModule('UnitFrames', 'AceTimer-3.0', 'AceEvent-3.0', 'AceHook-3.0')
-E.WorldMap = E:NewModule('WorldMap', 'AceHook-3.0', 'AceEvent-3.0', 'AceTimer-3.0')
+E.UnitFrames = E:NewModule('UnitFrames','AceTimer-3.0','AceEvent-3.0','AceHook-3.0')
+E.WorldMap = E:NewModule('WorldMap','AceHook-3.0','AceEvent-3.0','AceTimer-3.0')
 
 E.InfoColor = '|cff1784d1' -- blue
 E.InfoColor2 = '|cff9b9b9b' -- silver
@@ -164,6 +164,7 @@ do
 		'ElvUI_CustomTweaks',
 		'ElvUI_MinimapButtons',
 		'ElvUI_DataTextColors',
+		'ElvUI_DataTextBars',
 		'ElvUI_ChannelAlerts',
 		'ElvUI_BagControl'
 	}
@@ -243,6 +244,7 @@ do
 			end
 		end
 
+		E.Minimap.db = E.db.general.minimap
 		E.TotemTracker.db = E.db.general.totems
 		E.Skins.db = E.private.skins
 	end
