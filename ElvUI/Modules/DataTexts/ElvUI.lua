@@ -9,12 +9,13 @@ local displayString, db = ''
 local configText = 'ElvUI'
 
 local function OnEvent(self)
-	self.text:SetFormattedText(displayString, db.Label ~= "" and db.Label or configText)
+	self.text:SetFormattedText(displayString, db.Label ~= '' and db.Label or configText)
 end
 
 local function OnEnter()
 	DT.tooltip:ClearLines()
 	DT.tooltip:AddDoubleLine(L["Left Click:"], L["Toggle Configuration"], 1, 1, 1)
+	DT.tooltip:AddDoubleLine(L["Right Click:"], L["Toggle Mover Mode"], 1, 1, 1)
 	DT.tooltip:AddDoubleLine(L["Hold Shift + Right Click:"], L["Reload UI"], 1, 1, 1)
 
 	if E.Libs.EP.registeredPrefix then
@@ -37,8 +38,12 @@ local function OnClick(_, button)
 
 	if button == 'LeftButton' then
 		E:ToggleOptionsUI()
-	elseif button == 'RightButton' and IsShiftKeyDown() then
-		ReloadUI()
+	elseif button == 'RightButton' then
+		if IsShiftKeyDown() then
+			ReloadUI()
+		else
+			E:ToggleMoveMode()
+		end
 	end
 end
 
