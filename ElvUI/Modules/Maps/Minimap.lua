@@ -29,13 +29,10 @@ local UIParent = UIParent
 local EasyMenu = EasyMenu
 
 local MainMenuMicroButton_SetNormal = MainMenuMicroButton_SetNormal
-local UIDropDownMenu_Refresh = UIDropDownMenu_Refresh
 
 local WorldMapFrame = _G.WorldMapFrame
 local MinimapCluster = _G.MinimapCluster
 local Minimap = _G.Minimap
-
--- GLOBALS: GetMinimapShape
 
 local IconParents = {}
 
@@ -167,7 +164,7 @@ end
 
 function M:MinimapTracking_UpdateTracking()
 	if _G.UIDROPDOWNMENU_OPEN_MENU == M.TrackingDropdown then
-		UIDropDownMenu_Refresh(M.TrackingDropdown)
+		_G.UIDropDownMenu_Refresh(M.TrackingDropdown)
 	end
 end
 
@@ -188,7 +185,7 @@ function M:Minimap_OnLeave()
 end
 
 function M:Minimap_EnterLeave(minimap, show)
-	if E.db.general.minimap.locationText == 'MOUSEOVER' and E.db.general.minimap.clusterDisable then
+	if M.db.locationText == 'MOUSEOVER' and M.db.clusterDisable then
 		minimap.location:SetShown(show)
 	end
 end
@@ -267,7 +264,7 @@ do
 		if E.db.general.minimap.resetZoom.enable and not isResetting then
 			isResetting = true
 
-			E:Delay(E.db.general.minimap.resetZoom.time, ResetZoom)
+			E:Delay(M.db.resetZoom.time, ResetZoom)
 		end
 	end
 
@@ -276,7 +273,7 @@ end
 
 function M:GetIconSettings(button)
 	local defaults = P.general.minimap.icons[button]
-	local profile = E.db.general.minimap.icons[button]
+	local profile = M.db.icons[button]
 
 	return profile.scale or defaults.scale, profile.position or defaults.position, profile.xOffset or defaults.xOffset, profile.yOffset or defaults.yOffset
 end
@@ -427,8 +424,8 @@ end
 function M:UpdateSettings()
 	if not M.Initialized then return end
 
-	local noCluster = E.db.general.minimap.clusterDisable
-	E.MinimapSize = E.db.general.minimap.size or Minimap:GetWidth()
+	local noCluster = M.db.clusterDisable
+	E.MinimapSize = M.db.size or Minimap:GetWidth()
 
 	-- handle the icons placed around the minimap (also the cluster)
 	M:UpdateIcons()
@@ -437,9 +434,9 @@ function M:UpdateSettings()
 	panel:SetShown(E.db.datatexts.panels.MinimapPanel.enable)
 
 	local mmOffset = E.PixelMode and 1 or 3
-	local mmScale = E.db.general.minimap.scale
+	local mmScale = M.db.scale
 	Minimap:ClearAllPoints()
-	Minimap:Point('TOPRIGHT', holder, -mmOffset/mmScale, -mmOffset/mmScale)
+	Minimap:Point('TOPRIGHT', holder, -mmOffset / mmScale, -mmOffset / mmScale)
 	Minimap:Size(E.MinimapSize)
 
 	local mWidth, mHeight = Minimap:GetSize()
@@ -448,14 +445,14 @@ function M:UpdateSettings()
 	local HEIGHT, WIDTH = (mHeight * mmScale) + (panelSize - joinPanel), mWidth * mmScale
 	holder:SetSize(WIDTH + bWidth, HEIGHT + bHeight)
 
-	local locationFont, locaitonSize, locationOutline = LSM:Fetch('font', E.db.general.minimap.locationFont), E.db.general.minimap.locationFontSize, E.db.general.minimap.locationFontOutline
+	local locationFont, locaitonSize, locationOutline = LSM:Fetch('font', M.db.locationFont), M.db.locationFontSize, M.db.locationFontOutline
 	if Minimap.location then
 		Minimap.location:Width(E.MinimapSize)
 		Minimap.location:FontTemplate(locationFont, locaitonSize, locationOutline)
-		Minimap.location:SetShown(E.db.general.minimap.locationText == 'SHOW' and noCluster)
+		Minimap.location:SetShown(M.db.locationText == 'SHOW' and noCluster)
 	end
 
-	_G.MiniMapMailIcon:SetTexture(E.Media.MailIcons[E.db.general.minimap.icons.mail.texture] or E.Media.MailIcons.Mail3)
+	_G.MiniMapMailIcon:SetTexture(E.Media.MailIcons[M.db.icons.mail.texture] or E.Media.MailIcons.Mail3)
 	_G.MiniMapMailIcon:Size(22)
 
 	MinimapCluster:SetScale(mmScale)
@@ -464,7 +461,7 @@ function M:UpdateSettings()
 	local height, width = 20 * mmScale, (mcWidth - 30) * mmScale
 	M.ClusterHolder:SetSize(width, height)
 	M.ClusterBackdrop:SetSize(width, height)
-	M.ClusterBackdrop:SetShown(E.db.general.minimap.clusterBackdrop and not noCluster)
+	M.ClusterBackdrop:SetShown(M.db.clusterBackdrop and not noCluster)
 
 	_G.MinimapZoneText:FontTemplate(locationFont, locaitonSize, locationOutline)
 
@@ -529,7 +526,7 @@ function M:QueueStatusOnUpdate(elapsed)
 end
 
 function M:SetFullQueueStatus(title, queuedTime, averageWait)
-	local db = E.db.general.minimap.icons.queueStatus
+	local db = M.db.icons.queueStatus
 	if not db or not db.enable then return end
 
 	local display = M.QueueStatusDisplay
@@ -561,21 +558,6 @@ function M:ClearQueueStatus()
 	display:SetScript('OnUpdate', nil)
 end
 
-function M:Minimap_PostDrag()
-	_G.MinimapBackdrop:ClearAllPoints()
-	_G.MinimapBackdrop:SetAllPoints(Minimap)
-end
-
-function M:GetMinimapShape()
-	return 'SQUARE'
-end
-
-function M:SetGetMinimapShape()
-	GetMinimapShape = M.GetMinimapShape
-
-	Minimap:Size(E.db.general.minimap.size)
-end
-
 function M:ClusterSize(width, height)
 	local holder = M.ClusterHolder
 	if holder and (width ~= holder.savedWidth or height ~= holder.savedHeight) then
@@ -584,7 +566,7 @@ function M:ClusterSize(width, height)
 end
 
 function M:ClusterPoint(_, anchor)
-	local noCluster = E.db.general.minimap.clusterDisable
+	local noCluster = M.db.clusterDisable
 	local frame = (noCluster and UIParent) or M.ClusterHolder
 
 	if anchor ~= frame then
@@ -593,34 +575,72 @@ function M:ClusterPoint(_, anchor)
 	end
 end
 
-function M:Initialize()
-	if E.private.general.minimap.enable then
+function M:ContainerScale(scale)
+	if scale ~= 1 then
+		self:SetScale(1)
+	end
+end
+
+function M:Minimap_PostDrag()
+	_G.MinimapBackdrop:ClearAllPoints()
+	_G.MinimapBackdrop:SetAllPoints(Minimap)
+end
+
+function M:SetMinimapMask(square)
+	if square then
 		Minimap:SetMaskTexture([[interface\chatframe\chatframebackground]])
 	else
 		Minimap:SetMaskTexture([[textures\minimapmask]])
+	end
+end
+
+function M:SetMinimapRotate()
+	E:SetCVar('rotateMinimap', M.db.rotate and 1 or 0)
+end
+
+function M:GetMinimapShape()
+	return (M.db.circle and 'ROUND') or 'SQUARE'
+end
+
+function M:SetGetMinimapShape()
+	GetMinimapShape = M.GetMinimapShape
+
+	if M.db.size then
+		Minimap:Size(M.db.size)
+	end
+end
+
+function M:Initialize()
+	if not E.private.general.minimap.enable then
+		M:SetMinimapMask(false)
 
 		return
+	else
+		local container = MinimapCluster.MinimapContainer
+		if container then
+			container:SetScale(1) -- Setting that could get set in Blizzard Edit Mode
+
+			hooksecurefunc(container, 'SetScale', M.ContainerScale)
+		end
 	end
+
+	M.Initialized = true
 
 	for _, menu in ipairs(menuList) do
 		menu.notCheckable = true
-
-		if menu.cropIcon then
-			local left = 0.02 * menu.cropIcon
-			local right = 1 - left
-			menu.tCoordLeft, menu.tCoordRight, menu.tCoordTop, menu.tCoordBottom = left, right, left, right
-			menu.cropIcon = nil
-		end
 
 		if menu.microOffset then
 			local left, right, top, bottom = AB:GetMicroCoords(menu.microOffset, true)
 			menu.tCoordLeft, menu.tCoordRight, menu.tCoordTop, menu.tCoordBottom = left, right, top, bottom
 			menu.icon = menu.microOffset == 'PVPMicroButton' and ((E.myfaction == 'Horde' and E.Media.Textures.PVPHorde) or E.Media.Textures.PVPAlliance) or E.Media.Textures.MicroBar
 			menu.microOffset = nil
+		elseif menu.cropIcon then
+			local left = 0.02 * menu.cropIcon
+			local right = 1 - left
+			menu.tCoordLeft, menu.tCoordRight, menu.tCoordTop, menu.tCoordBottom = left, right, left, right
+			menu.cropIcon = nil
 		end
 	end
-
-	M.Initialized = true
 
 	menuFrame:SetTemplate('Transparent')
 

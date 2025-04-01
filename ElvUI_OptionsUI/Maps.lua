@@ -4,6 +4,7 @@ local WM = E:GetModule('WorldMap')
 local MM = E:GetModule('Minimap')
 local ACH = E.Libs.ACH
 
+local _G = _G
 local pairs = pairs
 
 local buttonPositions = {
@@ -34,8 +35,8 @@ Maps.args.worldMap.args.generalGroup.args.smallerWorldMapScale = ACH:Range(L["Sm
 
 Maps.args.worldMap.args.generalGroup.args.spacer1 = ACH:Spacer(3)
 Maps.args.worldMap.args.generalGroup.args.fadeMapWhenMoving = ACH:Toggle(L["MAP_FADE_TEXT"], nil, 4)
-Maps.args.worldMap.args.generalGroup.args.mapAlphaWhenMoving = ACH:Range(L["Map Opacity When Moving"], nil, 5, { min = 0, max = 1, step = .01, isPercent = true }, nil, nil, function(_, value) E.global.general.mapAlphaWhenMoving = value; E.WorldMap.UpdateMapFade(WorldMapFrame, E.global.general.mapAlphaWhenMoving, 1.0, E.global.general.fadeMapDuration, E.noop); end) -- we use E.noop to force the update of the minValue here
-Maps.args.worldMap.args.generalGroup.args.fadeMapDuration = ACH:Range(L["Fade Duration"], nil, 6, { min = 0, max = 1, step = .01, isPercent = true }, nil, nil, function(_, value) E.global.general.fadeMapDuration = value; E.WorldMap.UpdateMapFade(WorldMapFrame, E.global.general.mapAlphaWhenMoving, 1.0, E.global.general.fadeMapDuration, E.noop); end) -- we use E.noop to force the update of the minValue here
+Maps.args.worldMap.args.generalGroup.args.mapAlphaWhenMoving = ACH:Range(L["Map Opacity When Moving"], nil, 5, { min = 0, max = 1, step = .01, isPercent = true }, nil, nil, function(_, value) E.global.general.mapAlphaWhenMoving = value; E.WorldMap.UpdateMapFade(_G.WorldMapFrame, E.global.general.mapAlphaWhenMoving, 1.0, E.global.general.fadeMapDuration, E.noop); end) -- we use E.noop to force the update of the minValue here
+Maps.args.worldMap.args.generalGroup.args.fadeMapDuration = ACH:Range(L["Fade Duration"], nil, 6, { min = 0, max = 1, step = .01, isPercent = true }, nil, nil, function(_, value) E.global.general.fadeMapDuration = value; E.WorldMap.UpdateMapFade(_G.WorldMapFrame, E.global.general.mapAlphaWhenMoving, 1.0, E.global.general.fadeMapDuration, E.noop); end) -- we use E.noop to force the update of the minValue here
 
 Maps.args.worldMap.args.coordinatesGroup = ACH:Group(L["World Map Coordinates"], nil, 3, nil, function(info) return E.global.general.WorldMapCoordinates[info[#info]] end, function(info, value) E.global.general.WorldMapCoordinates[info[#info]] = value; WM:PositionCoords() end, function() return not E.private.general.worldMap end)
 Maps.args.worldMap.args.coordinatesGroup.inline = true
@@ -46,16 +47,21 @@ Maps.args.worldMap.args.coordinatesGroup.args.yOffset = ACH:Range(L["Y-Offset"],
 
 Maps.args.minimap = ACH:Group(L["Minimap"], nil, 2, 'tab', function(info) return E.db.general.minimap[info[#info]] end, function(info, value) E.db.general.minimap[info[#info]] = value; MM:UpdateSettings() end)
 Maps.args.minimap.args.enable = ACH:Toggle(L["Enable"], L["Enable/Disable the minimap. |cffFF3333Warning: This will prevent you from seeing the minimap datatexts.|r"], 1, nil, nil, nil, function(info) return E.private.general.minimap[info[#info]] end, function(info, value) E.private.general.minimap[info[#info]] = value; E.ShowPopup = true end)
-Maps.args.minimap.args.clusterDisable = ACH:Toggle(L["Disable Cluster"], nil, 2, nil, nil, nil, function(info) return E.db.general.minimap[info[#info]] end, function(info, value) E.db.general.minimap[info[#info]] = value; MM:UpdateSettings(); E.ShowPopup = true end, nil)
-Maps.args.minimap.args.clusterBackdrop = ACH:Toggle(L["Cluster Backdrop"], nil, 3, nil, nil, nil, function(info) return E.db.general.minimap[info[#info]] end, function(info, value) E.db.general.minimap[info[#info]] = value; MM:UpdateSettings() end, function() return E.db.general.minimap.clusterDisable end)
-Maps.args.minimap.args.spacer1 = ACH:Spacer(5)
 Maps.args.minimap.args.size = ACH:Range(L["Size"], L["Adjust the size of the minimap."], 6, { min = 24, max = 500, step = 1 }, nil, nil, nil, function() return not E.private.general.minimap.enable end)
 Maps.args.minimap.args.scale = ACH:Range(L["Scale"], L["Adjust the scale of the minimap and also the pins. Eg: Quests, Resource nodes, Group members"], 7, { min = .5, max = 2, step = .01, isPercent = true }, nil, nil, nil, function() return not E.private.general.minimap.enable end)
 
 Maps.args.minimap.args.zoomResetGroup = ACH:Group(L["Reset Zoom"], nil, 10, nil, function(info) return E.db.general.minimap.resetZoom[info[#info]] end, function(info, value) E.db.general.minimap.resetZoom[info[#info]] = value; MM:UpdateSettings() end, function() return not E.private.general.minimap.enable end)
-Maps.args.minimap.args.zoomResetGroup.args.enable = ACH:Toggle(L["Reset Zoom"], nil, 1)
+Maps.args.minimap.args.zoomResetGroup.args.enable = ACH:Toggle(L["Enable"], nil, 1)
 Maps.args.minimap.args.zoomResetGroup.args.time = ACH:Range(L["Seconds"], nil, 2, { min = 1, max = 15, step = 1 })
 Maps.args.minimap.args.zoomResetGroup.inline = true
+
+Maps.args.minimap.args.cluster = ACH:Group(L["Cluster"], nil, 40)
+Maps.args.minimap.args.cluster.args.clusterDisable = ACH:Toggle(L["Disable Cluster"], nil, 1, nil, nil, nil, function(info) return E.db.general.minimap[info[#info]] end, function(info, value) E.db.general.minimap[info[#info]] = value; MM:UpdateSettings(); E.ShowPopup = true end)
+Maps.args.minimap.args.cluster.args.clusterBackdrop = ACH:Toggle(L["Cluster Backdrop"], nil, 2, nil, nil, nil, function(info) return E.db.general.minimap[info[#info]] end, function(info, value) E.db.general.minimap[info[#info]] = value; MM:UpdateSettings() end, function() return E.db.general.minimap.clusterDisable end)
+Maps.args.minimap.args.cluster.args.rotate = ACH:Toggle(L["Rotate"], nil, 3, nil, nil, nil, function(info) return E.db.general.minimap[info[#info]] end, function(info, value) E.db.general.minimap[info[#info]] = value; MM:SetMinimapRotate() MM:UpdateSettings() end)
+Maps.args.minimap.args.cluster.args.rotate.customWidth = 125
+Maps.args.minimap.args.cluster.args.circle = ACH:Toggle(L["Circle"], nil, 4, nil, nil, nil, function(info) return E.db.general.minimap[info[#info]] end, function(info, value) E.db.general.minimap[info[#info]] = value; MM:SetMinimapMask(not value) MM:UpdateSettings() end)
+Maps.args.minimap.args.cluster.args.circle.customWidth = 125
 
 Maps.args.minimap.args.locationTextGroup = ACH:Group(L["Location Text"], nil, 15, nil, function(info) return E.db.general.minimap[info[#info]] end, function(info, value) E.db.general.minimap[info[#info]] = value; MM:UpdateSettings() end, function() return not E.private.general.minimap.enable end)
 Maps.args.minimap.args.locationTextGroup.args.locationText = ACH:Select(L["Location Text"], L["Change settings for the display of the location text that is on the minimap."], 1, { MOUSEOVER = L["Minimap Mouseover"], SHOW = L["Always Display"], HIDE = L["Hide"] }, nil, nil, nil, nil, nil, function() return not E.db.general.minimap.clusterDisable end)
