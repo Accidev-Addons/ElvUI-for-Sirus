@@ -641,6 +641,17 @@ function M:SetMinimapRotate()
 	E:SetCVar('rotateMinimap', M.db.rotate and 1 or 0)
 end
 
+function M:PLAYER_ENTERING_WORLD()
+	local LFGIconBorder = _G.MiniMapLFGFrameBorder or _G.MiniMapLFGFrame
+	if LFGIconBorder then
+		LFGIconBorder:Hide()
+	end
+
+	M:SetMinimapRotate()
+
+	M:Update_ZoneText()
+end
+
 function M:GetMinimapShape()
 	return (M.db.circle and 'ROUND') or 'SQUARE'
 end
@@ -725,7 +736,7 @@ function M:Initialize()
 	Minimap.location:Hide()
 	M:SetMinimapMask(not M.db.circle)
 
-	M:RegisterEvent('PLAYER_ENTERING_WORLD', 'Update_ZoneText')
+	M:RegisterEvent('PLAYER_ENTERING_WORLD')
 	M:RegisterEvent('ZONE_CHANGED_NEW_AREA', 'Update_ZoneText')
 	M:RegisterEvent('ZONE_CHANGED_INDOORS', 'Update_ZoneText')
 	M:RegisterEvent('ZONE_CHANGED', 'Update_ZoneText')
@@ -763,10 +774,6 @@ function M:Initialize()
 
 	for _, frame in next, killFrames do
 		frame:Kill()
-	end
-
-	if _G.MiniMapLFGFrame then
-		_G.MiniMapLFGFrameBorder:Hide()
 	end
 
 	M:RegisterEvent('ADDON_LOADED')
