@@ -452,8 +452,51 @@ function M:UpdateSettings()
 		Minimap.location:SetShown(M.db.locationText == 'SHOW' and noCluster)
 	end
 
-	_G.MiniMapMailIcon:SetTexture(E.Media.MailIcons[M.db.icons.mail.texture] or E.Media.MailIcons.Mail3)
-	_G.MiniMapMailIcon:Size(22)
+	local classicBorder = _G.MinimapBorder
+	local compassBorder = _G.MinimapCompassTexture
+	if classicBorder then
+		classicBorder:ClearAllPoints()
+		classicBorder:SetPoint('TOPRIGHT', Minimap, 0, 0)
+		classicBorder:SetTexCoord(0.165, 0.945, 0.125, 0.90)
+
+		if compassBorder then
+			compassBorder:SetAlpha(0)
+		end
+	end
+
+	local compass = classicBorder or compassBorder
+	if M.db.circle then
+		Minimap.backdrop:Hide()
+
+		if compass then
+			-- compass:SetScale(classicBorder and 1.35 or 1.09)
+			compass:Show()
+
+			if not classicBorder then
+				compass:Size(M.db.size, M.db.size * 1.05)
+			else
+				compass:Size(M.db.size)
+			end
+		end
+	else
+		Minimap.backdrop:Show()
+
+		if compass then
+			-- compass:SetScale(1)
+			compass:Hide()
+
+			if not classicBorder then
+				compass:Size(215, 226)
+			else
+				compass:Size(192, 192)
+			end
+		end
+	end
+
+	if _G.MiniMapMailIcon then
+		_G.MiniMapMailIcon:SetTexture(E.Media.MailIcons[M.db.icons.mail.texture] or E.Media.MailIcons.Mail3)
+		_G.MiniMapMailIcon:Size(20)
+	end
 
 	MinimapCluster:SetScale(mmScale)
 
@@ -615,13 +658,6 @@ function M:Initialize()
 		M:SetMinimapMask(false)
 
 		return
-	else
-		local container = MinimapCluster.MinimapContainer
-		if container then
-			container:SetScale(1) -- Setting that could get set in Blizzard Edit Mode
-
-			hooksecurefunc(container, 'SetScale', M.ContainerScale)
-		end
 	end
 
 	M.Initialized = true
@@ -687,6 +723,7 @@ function M:Initialize()
 	Minimap.location:SetJustifyH('CENTER')
 	Minimap.location:SetJustifyV('MIDDLE')
 	Minimap.location:Hide()
+	M:SetMinimapMask(not M.db.circle)
 
 	M:RegisterEvent('PLAYER_ENTERING_WORLD', 'Update_ZoneText')
 	M:RegisterEvent('ZONE_CHANGED_NEW_AREA', 'Update_ZoneText')
