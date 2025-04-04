@@ -202,7 +202,7 @@ function M:Minimap_OnMouseDown(btn)
 		if not E:AlertCombat() then
 			EasyMenu(menuList, menuFrame, 'cursor', position:match('LEFT') and 0 or -160, 0, 'MENU')
 		end
-	elseif btn == 'RightButton' and M.TrackingDropdown then
+	elseif btn == 'RightButton' then
 		_G.ToggleDropDownMenu(1, nil, M.TrackingDropdown, 'cursor')
 	else
 		_G.Minimap_OnClick(self)
@@ -316,7 +316,6 @@ function M:UpdateIcons()
 	local difficulty = _G.MiniMapInstanceDifficulty
 	local battlefieldFrame = _G.MiniMapBattlefieldFrame
 	local lfgFrame = _G.MiniMapLFGFrame
-	-- local queueStatus =
 
 	if not next(IconParents) then
 		if gameTime then M:SaveIconParent(gameTime) end
@@ -402,22 +401,6 @@ function M:UpdateIcons()
 				M:SetScale(lfgFrame, scale)
 			end
 		end
-
-		-- if queueStatus then
-		-- 	if hidden then
-		-- 		queueStatus:SetParent(E.HiddenFrame)
-		-- 	else
-		-- 		local scale, position, xOffset, yOffset = M:GetIconSettings('queueStatus')
-		-- 		queueStatus:ClearAllPoints()
-		-- 		queueStatus:Point(position, Minimap, xOffset, yOffset)
-		-- 		M:SetIconParent(queueStatus)
-		-- 		M:SetScale(queueStatus, scale)
-		-- 	end
-
-		-- 	if _G.BattlegroundShine then _G.BattlegroundShine:Hide() end
-		-- 	if _G.MiniMapBattlefieldBorder then _G.MiniMapBattlefieldBorder:Hide() end
-		-- 	if _G.MiniMapBattlefieldIcon then _G.MiniMapBattlefieldIcon:SetTexCoord(unpack(E.TexCoords)) end
-		-- end
 	end
 end
 
@@ -469,7 +452,6 @@ function M:UpdateSettings()
 		Minimap.backdrop:Hide()
 
 		if compass then
-			-- compass:SetScale(classicBorder and 1.35 or 1.09)
 			compass:Show()
 
 			if not classicBorder then
@@ -482,7 +464,6 @@ function M:UpdateSettings()
 		Minimap.backdrop:Show()
 
 		if compass then
-			-- compass:SetScale(1)
 			compass:Hide()
 
 			if not classicBorder then
@@ -535,70 +516,9 @@ function M:UpdateSettings()
 	end
 end
 
-function M:QueueStatusTimeFormat(seconds)
-	local hours = floor(mod(seconds, 86400) / 3600)
-	if hours > 0 then return M.QueueStatusDisplay.text:SetFormattedText('%dh', hours) end
-
-	local mins = floor(mod(seconds, 3600) / 60)
-	if mins > 0 then return M.QueueStatusDisplay.text:SetFormattedText('%dm', mins) end
-
-	local secs = mod(seconds, 60)
-	if secs > 0 then return M.QueueStatusDisplay.text:SetFormattedText('%ds', secs) end
-end
-
-function M:QueueStatusSetTime(seconds)
-	local timeInQueue = GetTime() - seconds
-	M:QueueStatusTimeFormat(timeInQueue)
-
-	local wait = M.QueueStatusDisplay.averageWait
-	local waitTime = wait and wait > 0 and (timeInQueue / wait)
-	if not waitTime or waitTime >= 1 then
-		M.QueueStatusDisplay.text:SetTextColor(1, 1, 1)
-	else
-		M.QueueStatusDisplay.text:SetTextColor(E:ColorGradient(waitTime, 1,.1,.1, 1,1,.1, .1,1,.1))
-	end
-end
-
-function M:QueueStatusOnUpdate(elapsed)
-	-- Replicate QueueStatusEntry_OnUpdate throttle
-	self.updateThrottle = self.updateThrottle - elapsed
-	if self.updateThrottle <= 0 then
-		M:QueueStatusSetTime(self.queuedTime)
-		self.updateThrottle = 0.1
-	end
-end
-
-function M:SetFullQueueStatus(title, queuedTime, averageWait)
-	local db = M.db.icons.queueStatus
-	if not db or not db.enable then return end
-
-	local display = M.QueueStatusDisplay
-	if not display.title or display.title == title then
-		if queuedTime then
-			display.title = title
-			display.updateThrottle = 0
-			display.queuedTime = queuedTime
-			display.averageWait = averageWait
-			display:SetScript('OnUpdate', M.QueueStatusOnUpdate)
-		else
-			M:ClearQueueStatus()
-		end
-	end
-end
-
-function M:SetMinimalQueueStatus(title)
-	if M.QueueStatusDisplay.title == title then
-		M:ClearQueueStatus()
-	end
-end
-
-function M:ClearQueueStatus()
-	local display = M.QueueStatusDisplay
-	display.text:SetText('')
-	display.title = nil
-	display.queuedTime = nil
-	display.averageWait = nil
-	display:SetScript('OnUpdate', nil)
+function M:Minimap_PostDrag()
+	_G.MinimapBackdrop:ClearAllPoints()
+	_G.MinimapBackdrop:SetAllPoints(Minimap)
 end
 
 function M:ClusterSize(width, height)
@@ -622,11 +542,6 @@ function M:ContainerScale(scale)
 	if scale ~= 1 then
 		self:SetScale(1)
 	end
-end
-
-function M:Minimap_PostDrag()
-	_G.MinimapBackdrop:ClearAllPoints()
-	_G.MinimapBackdrop:SetAllPoints(Minimap)
 end
 
 function M:SetMinimapMask(square)
