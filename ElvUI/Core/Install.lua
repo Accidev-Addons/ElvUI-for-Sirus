@@ -150,6 +150,7 @@ function E:SetupCVars(noDisplayMsg)
 	E:SetCVar("threatWarning", 3)
 	E:SetCVar("alwaysShowActionBars", 1)
 	E:SetCVar("lockActionBars", 1)
+	E:SetCVar("rotateMinimap", 0)
 	E:SetCVar("spamFilter", 0)
 	E:SetCVar("showItemLevel", 1)
 
