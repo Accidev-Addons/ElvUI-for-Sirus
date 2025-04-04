@@ -14,6 +14,28 @@ local CreateFrame = CreateFrame
 local backdropr, backdropg, backdropb, backdropa = 0, 0, 0, 1
 local borderr, borderg, borderb, bordera = 0, 0, 0, 1
 
+local StripTexturesBlizzFrames = {
+	'Inset',
+	'inset',
+	'InsetFrame',
+	'LeftInset',
+	'RightInset',
+	'BG',
+	'border',
+	'Border',
+	'BorderFrame',
+	'bottomInset',
+	'BottomInset',
+	'bgLeft',
+	'bgRight',
+	'FilligreeOverlay',
+	'PortraitOverlay',
+	'ArtOverlayFrame',
+	'Portrait',
+	'portrait',
+	'ScrollFrameBorder',
+}
+
 -- 8.2 restricted frame check
 function E:SetPointsRestricted(frame)
 	if frame and not pcall(frame.GetPoint, frame) then
@@ -83,6 +105,20 @@ local function GetTemplate(template, isUnitFrameElement)
 	end
 end
 
+local function GetChild(frame, child, index, debug)
+	local name = frame and child and (frame.GetName and frame:GetName())
+	if not name then return nil end
+	if not index then index = '' end
+
+	-- try keyed first
+	local main = _G[name]
+	local sub = main and main[child..index]
+	if sub then return sub end
+
+	-- if its not keyed try named
+	return _G[name..child..index]
+end
+
 local function Size(frame, width, height, ...)
 	local w = E:Scale(width)
 	frame:SetSize(w, (height and E:Scale(height)) or w, ...)
@@ -105,6 +141,55 @@ local function Point(obj, arg1, arg2, arg3, arg4, arg5, ...)
 	if type(arg5)=='number' then arg5 = E:Scale(arg5) end
 
 	obj:SetPoint(arg1, arg2, arg3, arg4, arg5, ...)
+end
+
+local function GrabPoint(obj, pointValue)
+	if type(pointValue) == 'string' then
+		local pointIndex = tonumber(pointValue) -- but why?
+		if not pointIndex then
+			for i = 1, obj:GetNumPoints() do
+				local point, relativeTo, relativePoint, xOfs, yOfs = obj:GetPoint(i)
+				if not point then
+					break
+				elseif point == pointValue then
+					return point, relativeTo, relativePoint, xOfs, yOfs
+				end
+			end
+		end
+
+		pointValue = pointIndex -- convert it, if possible
+	end
+
+	return obj:GetPoint(pointValue)
+end
+
+local function NudgePoint(obj, xAxis, yAxis, noScale, pointValue, clearPoints)
+	if not xAxis then xAxis = 0 end
+	if not yAxis then yAxis = 0 end
+
+	local x = (noScale and xAxis) or E:Scale(xAxis)
+	local y = (noScale and yAxis) or E:Scale(yAxis)
+
+	local point, relativeTo, relativePoint, xOfs, yOfs = GrabPoint(obj, pointValue)
+
+	if clearPoints or E:SetPointsRestricted(obj) then
+		obj:ClearAllPoints()
+	end
+
+	obj:SetPoint(point, relativeTo, relativePoint, xOfs + x, yOfs + y)
+end
+
+local function PointXY(obj, xOffset, yOffset, noScale, pointValue, clearPoints)
+	local x = xOffset and ((noScale and xOffset) or E:Scale(xOffset))
+	local y = yOffset and ((noScale and yOffset) or E:Scale(yOffset))
+
+	local point, relativeTo, relativePoint, xOfs, yOfs = GrabPoint(obj, pointValue)
+
+	if clearPoints or E:SetPointsRestricted(obj) then
+		obj:ClearAllPoints()
+	end
+
+	obj:SetPoint(point, relativeTo, relativePoint, x or xOfs, y or yOfs)
 end
 
 local function SetOutside(obj, anchor, xOffset, yOffset, anchor2, noScale)
@@ -168,7 +253,9 @@ local function SetTemplate(frame, template, glossTex, ignoreUpdates, forcePixelM
 	frame.isNamePlateElement = isNamePlateElement
 
 	if not frame.SetBackdrop then
-		frame:HookScript('OnSizeChanged', frame.OnBackdropSizeChanged)
+		if frame.OnSizeChanged then
+			frame:HookScript('OnSizeChanged', frame.OnBackdropSizeChanged)
+		end
 	end
 
 	if template == 'NoBackdrop' then
@@ -286,28 +373,6 @@ local function CreateShadow(frame, size, pass)
 		frame.shadow = shadow
 	end
 end
-
-local StripTexturesBlizzFrames = {
-	'Inset',
-	'inset',
-	'InsetFrame',
-	'LeftInset',
-	'RightInset',
-	'BG',
-	'border',
-	'Border',
-	'BorderFrame',
-	'bottomInset',
-	'BottomInset',
-	'bgLeft',
-	'bgRight',
-	'FilligreeOverlay',
-	'PortraitOverlay',
-	'ArtOverlayFrame',
-	'Portrait',
-	'portrait',
-	'ScrollFrameBorder',
-}
 
 local function Kill(object)
 	if object.UnregisterAllEvents then
@@ -453,37 +518,42 @@ do
 	end
 end
 
-local function GetNamedChild(frame, childName, index)
-	local name = frame and frame.GetName and frame:GetName()
-	if not name or not childName then return nil end
-	return _G[name..childName..(index or '')]
-end
+local API = {
+	Kill = Kill,
+	Size = Size,
+	Point = Point,
+	Width = Width,
+	Height = Height,
+	PointXY = PointXY,
+	GrabPoint = GrabPoint,
+	NudgePoint = NudgePoint,
+	SetEnabled = SetEnabled,
+	SetOutside = SetOutside,
+	SetInside = SetInside,
+	SetShown = SetShown,
+	SetTemplate = SetTemplate,
+	CreateBackdrop = CreateBackdrop,
+	CreateShadow = CreateShadow,
+	FontTemplate = FontTemplate,
+	StripTextures = StripTextures,
+	StripTexts = StripTexts,
+	StyleButton = StyleButton,
+	CreateCloseButton = CreateCloseButton,
+	GetChild = GetChild,
+}
 
 local function addapi(object)
 	local mk = getmetatable(object).__index
+	for method, func in next, API do
+		if not object[method] then
+			mk[method] = func
+		end
+	end
 
-	if not object.Size then mk.Size = Size end
-	if not object.Point then mk.Point = Point end
-	if not object.SetOutside then mk.SetOutside = SetOutside end
-	if not object.SetInside then mk.SetInside = SetInside end
-	if not object.SetShown then mk.SetShown = SetShown end
-	if not object.SetEnabled then mk.SetEnabled = SetEnabled end
-	if not object.SetTemplate then mk.SetTemplate = SetTemplate end
-	if not object.CreateBackdrop then mk.CreateBackdrop = CreateBackdrop end
-	if not object.CreateShadow then mk.CreateShadow = CreateShadow end
-	if not object.Kill then mk.Kill = Kill end
-	if not object.Width then mk.Width = Width end
-	if not object.Height then mk.Height = Height end
-	if not object.FontTemplate then mk.FontTemplate = FontTemplate end
-	if not object.StripTextures then mk.StripTextures = StripTextures end
-	if not object.StripTexts then mk.StripTexts = StripTexts end
-	if not object.StyleButton then mk.StyleButton = StyleButton end
-	if not object.CreateCloseButton then mk.CreateCloseButton = CreateCloseButton end
-	if not object.GetNamedChild then mk.GetNamedChild = GetNamedChild end
-
-	if not object.DisabledPixelSnap and (mk.SetSnapToPixelGrid or mk.SetStatusBarTexture or mk.SetVertexColor or mk.CreateTexture or mk.SetTexCoord or mk.SetTexture) then
+	if not object.DisabledPixelSnap and (mk.SetSnapToPixelGrid or mk.SetStatusBarTexture or mk.SetColorTexture or mk.SetVertexColor or mk.CreateTexture or mk.SetTexCoord or mk.SetTexture) then
 		if mk.SetSnapToPixelGrid then hooksecurefunc(mk, 'SetSnapToPixelGrid', WatchPixelSnap) end
 		if mk.SetStatusBarTexture then hooksecurefunc(mk, 'SetStatusBarTexture', DisablePixelSnap) end
+		if mk.SetColorTexture then hooksecurefunc(mk, 'SetColorTexture', DisablePixelSnap) end
 		if mk.SetVertexColor then hooksecurefunc(mk, 'SetVertexColor', DisablePixelSnap) end
 		if mk.CreateTexture then hooksecurefunc(mk, 'CreateTexture', DisablePixelSnap) end
 		if mk.SetTexCoord then hooksecurefunc(mk, 'SetTexCoord', DisablePixelSnap) end
@@ -493,7 +563,7 @@ local function addapi(object)
 	end
 end
 
-local handled = {Frame = true}
+local handled = { Frame = true }
 local object = CreateFrame('Frame')
 addapi(object)
 addapi(object:CreateTexture())
