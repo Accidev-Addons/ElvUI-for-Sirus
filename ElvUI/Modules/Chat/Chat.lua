@@ -298,26 +298,29 @@ function CH:GetSmileyReplacementText(msg)
 	return outstr
 end
 
+function CH:OpenChatMenu(frame, chatMenu, buttonMenu)
+	if chatMenu then
+		chatMenu:ClearAllPoints()
+
+		local point = E:GetScreenQuadrant(frame)
+		if strfind(point, 'LEFT') then
+			chatMenu:SetPoint('BOTTOMLEFT', frame, 'TOPRIGHT')
+		else
+			chatMenu:SetPoint('BOTTOMRIGHT', frame, 'TOPLEFT')
+		end
+
+		ToggleFrame(chatMenu)
+	elseif buttonMenu then
+		buttonMenu:ClearAllPoints()
+		buttonMenu:SetPoint('TOPLEFT', _G.ChatFrame1.copyButton, 'TOPRIGHT')
+		buttonMenu:OpenMenu()
+	end
+end
+
 function CH:CopyButtonOnMouseUp(btn)
 	local chat = self:GetParent()
 	if btn == 'RightButton' and chat:GetID() == 1 then
-		local menu = _G.ChatMenu
-		if menu then
-			menu:ClearAllPoints()
-
-			local point = E:GetScreenQuadrant(self)
-			if strfind(point, 'LEFT') then
-				menu:SetPoint('BOTTOMLEFT', self, 'TOPRIGHT')
-			else
-				menu:SetPoint('BOTTOMRIGHT', self, 'TOPLEFT')
-			end
-
-			ToggleFrame(menu)
-		else
-			_G.ChatFrameMenuButton:ClearAllPoints()
-			_G.ChatFrameMenuButton:SetPoint('TOPLEFT', _G.ChatFrame1.copyButton, 'TOPRIGHT')
-			_G.ChatFrameMenuButton:OpenMenu()
-		end
+		CH:OpenChatMenu(self, _G.ChatMenu, _G.ChatFrameMenuButton)
 	else
 		CH:CopyChat(chat)
 	end
@@ -494,21 +497,31 @@ function CH:UpdateEditboxFont(chatFrame)
 	end
 
 	local id = chatFrame:GetID()
-	local font = LSM:Fetch('font', CH.db.font)
+	local font, outline = LSM:Fetch('font', CH.db.font), CH.db.fontOutline
 	local _, fontSize = _G.FCF_GetChatWindowInfo(id)
 
 	local editbox = _G.ChatEdit_ChooseBoxForSend(chatFrame)
-	editbox:FontTemplate(font, fontSize, 'SHADOW')
-	editbox.header:FontTemplate(font, fontSize, 'SHADOW')
+	editbox:FontTemplate(font, fontSize, outline)
+
+	if editbox.header then
+		editbox.header:FontTemplate(font, fontSize, outline)
+	end
 
 	if editbox.characterCount then
-		editbox.characterCount:FontTemplate(font, fontSize, 'SHADOW')
+		editbox.characterCount:FontTemplate(font, fontSize, outline)
 	end
 
 	-- the header and text will not update the placement without focus
 	if editbox and editbox:IsShown() then
 		editbox:SetFocus()
 	end
+end
+
+function CH:PositionButtonFrame(chat)
+	if not chat.buttonFrame then return end
+
+	chat.buttonFrame:ClearAllPoints()
+	chat.buttonFrame:SetPoint('TOP', chat, 'BOTTOM', 0, -90000)
 end
 
 function CH:StyleChat(frame)
@@ -590,17 +603,47 @@ function CH:StyleChat(frame)
 		tab.conversationIcon:Point('RIGHT', tab.Text, 'LEFT', -1, 0)
 	end
 
+	-- wtf is this lol
 	local a, b, c = select(6, editbox:GetRegions())
 	a:Kill()
 	b:Kill()
 	c:Kill()
 
-	_G[name..'EditBoxLeft']:Kill()
-	_G[name..'EditBoxMid']:Kill()
-	_G[name..'EditBoxRight']:Kill()
-	_G[name..'EditBoxFocusLeft']:Kill()
-	_G[name..'EditBoxFocusMid']:Kill()
-	_G[name..'EditBoxFocusRight']:Kill()
+	-- stuff to hide
+	_G.ChatFrameMenuButton:Kill()
+	_G.FriendsMicroButton:Kill()
+
+	CH:PositionButtonFrame(frame)
+
+	local scrollBar = frame.ScrollBar
+	if scrollBar then scrollBar:Kill() end
+
+	local scrollToBottom = frame.ScrollToBottomButton
+	if scrollToBottom then scrollToBottom:Kill() end
+
+	local thumbTexture = _G[name..'ThumbTexture']
+	if thumbTexture then thumbTexture:Kill() end
+
+	local minimize = _G[name..'MinimizeButton']
+	if minimize then minimize:Kill() end
+
+	local editLeft = _G[name..'EditBoxLeft']
+	if editLeft then editLeft:Kill() end
+
+	local editMid = _G[name..'EditBoxMid']
+	if editMid then editMid:Kill() end
+
+	local editRight = _G[name..'EditBoxRight']
+	if editRight then editRight:Kill() end
+
+	local editFocusLeft = _G[name..'EditBoxFocusLeft']
+	if editFocusLeft then editFocusLeft:Kill() end
+
+	local editFocusMid = _G[name..'EditBoxFocusMid']
+	if editFocusMid then editFocusMid:Kill() end
+
+	local editFocusRight = _G[name..'EditBoxFocusRight']
+	if editFocusRight then editFocusRight:Kill() end
 
 	editbox:SetAltArrowKeyMode(CH.db.useAltKey)
 	editbox:SetAllPoints(_G.LeftChatDataPanel)
@@ -2778,9 +2821,6 @@ function CH:Initialize()
 	if not ElvCharacterDB.ChatEditHistory then ElvCharacterDB.ChatEditHistory = {} end
 	if not ElvCharacterDB.ChatHistoryLog or not CH.db.chatHistory then ElvCharacterDB.ChatHistoryLog = {} end
 
-	_G.ChatFrameMenuButton:Kill()
-	_G.FriendsMicroButton:Kill()
-
 	CH:SetupChat()
 	CH:DefaultSmileys()
 	CH:UpdateChatKeywords()
@@ -2798,6 +2838,7 @@ function CH:Initialize()
 	CH:SecureHook('FCFDock_SelectWindow')
 	CH:SecureHook('FCFDock_ScrollToSelectedTab')
 	CH:SecureHook('FCF_SetWindowAlpha')
+	CH:SecureHook('FCF_SetButtonSide', 'PositionButtonFrame')
 	CH:SecureHook('FCF_Close', 'PostChatClose')
 	CH:SecureHook('FCF_DockFrame', 'SnappingChanged')
 	CH:SecureHook('FCF_ResetChatWindows', 'ClearSnapping')
