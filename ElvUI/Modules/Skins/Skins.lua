@@ -132,11 +132,6 @@ function S:HandleButtonHighlight(frame, r, g, b)
 	frame.highlightGradient:SetVertexColor(r, g, b, 0.3)
 end
 
-function S:HandlePointXY(frame, x, y)
-	local a, b, c, d, e = frame:GetPoint()
-	frame:SetPoint(a, b, c, x or d, y or e)
-end
-
 function S:HandleFrame(frame, setBackdrop, template, x1, y1, x2, y2)
 	assert(frame, "doesn't exist!")
 
@@ -298,10 +293,10 @@ do -- DropDownMenu library support
 end
 
 do -- WIM replaces Blizzard globals we need to rehook
-	local hooked = {}
+	S.DropDownMenu_Hooks = {}
 
-	local function SkinMenu(name)
-		local backdrop = _G[name]
+	function S:DropDownMenu_SkinMenu(prefix, name)
+		local backdrop = prefix and _G[name]
 		if not backdrop then return end
 
 		if not backdrop.template then
@@ -309,100 +304,106 @@ do -- WIM replaces Blizzard globals we need to rehook
 		end
 	end
 
+	function S:DropDownMenu_CreateFrames(prefix, level, index)
+		local listFrame = prefix and level and _G[prefix..level]
+		if not listFrame then return end
+
+		local listName = listFrame:GetName()
+		if not listName then return end
+
+		local expandArrow = _G[listName..'Button'..index..'ExpandArrow']
+		if expandArrow then
+			expandArrow:SetNormalTexture(E.Media.Textures.ArrowUp)
+			expandArrow:Size(12)
+
+			local normTex = expandArrow:GetNormalTexture()
+			if normTex then
+				normTex:SetVertexColor(unpack(E.media.rgbvaluecolor))
+				normTex:SetRotation(S.ArrowRotation.right)
+			end
+		end
+
+		S:DropDownMenu_SkinMenu(prefix, listName..'Backdrop')
+		S:DropDownMenu_SkinMenu(prefix, listName..'MenuBackdrop')
+	end
+
+	function S:DropDownMenu_Toggle(prefix, level, textX, textY)
+		if not prefix then return end
+
+		if not level then level = 1 end
+		local r, g, b = unpack(E.media.rgbvaluecolor)
+
+		for i = 1, _G.UIDROPDOWNMENU_MAXBUTTONS do
+			local indexName = level..'Button'..i
+
+			local name = prefix..indexName
+			local button = _G[name]
+			if not button then -- fallback to blizzards
+				name = 'DropDownList'..indexName
+				button = _G[name]
+			end
+
+			if not button then return end -- bail out
+
+			local highlight = _G[name..'Highlight']
+			if highlight then
+				highlight:SetTexture(E.Media.Textures.Highlight)
+				highlight:SetBlendMode('BLEND')
+				highlight:SetDrawLayer('BACKGROUND')
+				highlight:SetVertexColor(r, g, b)
+			end
+
+			if not button.backdrop then
+				button:CreateBackdrop()
+			end
+
+			local check = _G[name..'Check']
+			if not button.notCheckable then
+				local text = _G[name..'NormalText']
+				if text then
+					text:PointXY(textX or 18, textY)
+				end
+
+				local uncheck = _G[name..'UnCheck']
+				if uncheck then
+					uncheck:SetTexture()
+				end
+
+				if check then
+					if S.db.checkBoxSkin then
+						check:SetTexture(E.media.normTex)
+						check:SetVertexColor(r, g, b, 1)
+						check:Size(10)
+						check:SetDesaturated(false)
+						button.backdrop:SetOutside(check)
+					else
+						check:SetTexture([[Interface\Buttons\UI-CheckBox-Check]])
+						check:SetVertexColor(r, g, b, 1)
+						check:Size(20)
+						check:SetDesaturated(true)
+						button.backdrop:SetInside(check, 4, 4)
+					end
+
+					check:SetTexCoord(0, 1, 0, 1)
+				end
+
+				button.backdrop:Show()
+			else
+				if check then
+					check:Size(16)
+				end
+
+				button.backdrop:Hide()
+			end
+		end
+	end
+
 	function S:SkinDropDownMenu(prefix, textX, textY)
-		if hooked[prefix] then return end
+		if S.DropDownMenu_Hooks[prefix] then return end
+		S.DropDownMenu_Hooks[prefix] = true
 
-		hooksecurefunc('UIDropDownMenu_CreateFrames', function(level, index)
-			local listFrame = _G[prefix..level]
-			local listFrameName = listFrame:GetName()
-			local expandArrow = _G[listFrameName..'Button'..index..'ExpandArrow']
-			if expandArrow then
-				expandArrow:SetNormalTexture(E.Media.Textures.ArrowUp)
-				expandArrow:Size(12)
-
-				local normTex = expandArrow:GetNormalTexture()
-				if normTex then
-					normTex:SetVertexColor(unpack(E.media.rgbvaluecolor))
-					normTex:SetRotation(S.ArrowRotation.right)
-				end
-			end
-
-			SkinMenu(listFrameName..'Backdrop')
-			SkinMenu(listFrameName..'MenuBackdrop')
-		end)
-
-		hooksecurefunc('UIDropDownMenu_SetIconImage', function(icon, texture)
-			if texture:find('Divider') then
-				local r, g, b = unpack(E.media.rgbvaluecolor)
-				icon:SetTexture(r, g, b, 0.45)
-				icon:Height(1)
-			end
-		end)
-
-		hooksecurefunc('ToggleDropDownMenu', function(level)
-			if not level then level = 1 end
-			local r, g, b = unpack(E.media.rgbvaluecolor)
-
-			for i = 1, _G.UIDROPDOWNMENU_MAXBUTTONS do
-				local name = prefix..level..'Button'..i
-				local button = _G[name]
-				if not button then -- fallback to blizzards
-					name = 'DropDownList'..level..'Button'..i
-					button = _G[name]
-				end
-
-				local highlight = _G[name..'Highlight']
-				if highlight then
-					highlight:SetTexture(E.Media.Textures.Highlight)
-					highlight:SetBlendMode('BLEND')
-					highlight:SetDrawLayer('BACKGROUND')
-					highlight:SetVertexColor(r, g, b)
-				end
-
-				if not button.backdrop then
-					button:CreateBackdrop()
-				end
-
-				local check = _G[name..'Check']
-				if not button.notCheckable then
-					local text = _G[name..'NormalText']
-					if text then
-						S:HandlePointXY(text, textX or 5, textY)
-					end
-
-					local uncheck = _G[name..'UnCheck']
-					if uncheck then
-						uncheck:SetTexture()
-					end
-
-					if check then
-						if E.private.skins.checkBoxSkin then
-							check:SetTexture(E.media.normTex)
-							check:SetVertexColor(r, g, b, 1)
-							check:Size(10)
-							check:SetDesaturated(false)
-							button.backdrop:SetOutside(check)
-						else
-							check:SetTexture([[Interface\Buttons\UI-CheckBox-Check]])
-							check:SetVertexColor(r, g, b, 1)
-							check:Size(20)
-							check:SetDesaturated(true)
-							button.backdrop:SetInside(check, 4, 4)
-						end
-
-						check:SetTexCoord(0, 1, 0, 1)
-					end
-
-					button.backdrop:Show()
-				else
-					if check then
-						check:Size(16)
-					end
-
-					button.backdrop:Hide()
-				end
-			end
-		end)
+		hooksecurefunc('UIDropDownMenu_CreateFrames', function(level, index) S:DropDownMenu_CreateFrames(prefix, level, index) end)
+		hooksecurefunc('ToggleDropDownMenu', function(level) S:DropDownMenu_Toggle(prefix, level, textX, textY) end)
 	end
 end
 
@@ -539,6 +540,78 @@ do
 			frame.isSkinned = true
 			hooksecurefunc(frame, 'UpdateLayout', UpdateLayout)
 		end
+	end
+end
+
+do
+	local arrowDegree = { up = 0, down = 180, left = 90, right = -90 }
+	function S:SetupArrow(tex, direction)
+		if not tex then return end
+
+		tex:SetTexture(E.Media.Textures.ArrowUp)
+		tex:SetRotation(rad(arrowDegree[direction]))
+	end
+end
+
+do
+	local overlays = {}
+
+	local function OverlayHide(button)
+		local overlay = overlays[button]
+		if not overlay then return end
+
+		overlay:Hide()
+	end
+
+	local function OverlayShow(button)
+		local overlay = overlays[button]
+		if not overlay then return end
+
+		overlay:ClearAllPoints()
+		overlay:SetPoint(button:GetPoint())
+		overlay:Show()
+	end
+
+	local function OverlayOnEnter(button)
+		local overlay = overlays[button]
+		if not overlay then return end
+
+		overlay.text:SetTextColor(1, 1, 1)
+		S:SetBackdropBorderColor(overlay, 'OnEnter')
+	end
+
+	local function OverlayOnLeave(button)
+		local overlay = overlays[button]
+		if not overlay then return end
+
+		overlay.text:SetTextColor(1, 0.81, 0)
+		S:SetBackdropBorderColor(overlay, 'OnLeave')
+	end
+
+	function S:OverlayButton(button, name, width, height, text, textLayer, level, strata)
+		if overlays[button] then return end -- already exists
+
+		local overlay = CreateFrame('Frame', 'ElvUI_OverlayButton_'..name, E.UIParent)
+		overlay:Size(width or 120, height or 22) -- dont use GetSize it can taint the owner
+		overlay:SetTemplate(nil, true)
+		overlay:SetPoint(button:GetPoint())
+		overlay:SetFrameLevel(level or 10)
+		overlay:SetFrameStrata(strata or 'MEDIUM')
+		overlay:Hide()
+
+		local txt = overlay:CreateFontString(nil, textLayer or 'OVERLAY')
+		txt:SetPoint('CENTER')
+		txt:FontTemplate()
+		txt:SetText(text)
+		txt:SetTextColor(1, 0.81, 0)
+		overlay.text = txt
+
+		button:HookScript('OnEnter', OverlayOnEnter)
+		button:HookScript('OnLeave', OverlayOnLeave)
+		button:HookScript('OnHide', OverlayHide)
+		button:HookScript('OnShow', OverlayShow)
+
+		overlays[button] = overlay
 	end
 end
 
