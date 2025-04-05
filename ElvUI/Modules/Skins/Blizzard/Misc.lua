@@ -1,52 +1,56 @@
 local E, L, V, P, G = unpack(ElvUI)
-local S = E:GetModule("Skins")
+local S = E:GetModule('Skins')
 
---Lua functions
 local _G = _G
+local next = next
+local select = select
 local type = type
 local unpack = unpack
---WoW API / Variables
 
-S:AddCallback("Skin_Misc", function()
+local CreateFrame = CreateFrame
+local hooksecurefunc = hooksecurefunc
+
+S:AddCallback('Skin_Misc', function()
 	if not E.private.skins.blizzard.enable or not E.private.skins.blizzard.misc then return end
 
 	-- reskin all esc/menu buttons
-	for _, Button in pairs({_G.GameMenuFrame:GetChildren()}) do
-		if Button.IsObjectType and Button:IsObjectType("Button") then
+	local GameMenuFrame = _G.GameMenuFrame
+	for _, Button in next, { GameMenuFrame:GetChildren() } do
+		if Button.IsObjectType and Button:IsObjectType('Button') then
 			S:HandleButton(Button)
 		end
 	end
 
 	GameMenuFrame:StripTextures()
-	GameMenuFrame:SetTemplate("Transparent")
-	GameMenuFrameHeader:SetTexture()
-	GameMenuFrameHeader:ClearAllPoints()
-	GameMenuFrameHeader:Point("TOP", GameMenuFrame, 0, 7)
+	GameMenuFrame:SetTemplate('Transparent')
+	_G.GameMenuFrameHeader:SetTexture()
+	_G.GameMenuFrameHeader:ClearAllPoints()
+	_G.GameMenuFrameHeader:Point('TOP', GameMenuFrame, 0, 7)
 
 	-- Static Popups
 	for i = 1, 4 do
-		local staticPopup = _G["StaticPopup"..i]
-		local itemFrame = _G["StaticPopup"..i.."ItemFrame"]
-		local itemFrameBox = _G["StaticPopup"..i.."EditBox"]
-		local itemFrameTexture = _G["StaticPopup"..i.."ItemFrameIconTexture"]
-		local itemFrameNormal = _G["StaticPopup"..i.."ItemFrameNormalTexture"]
-		local itemFrameName = _G["StaticPopup"..i.."ItemFrameNameFrame"]
-		local closeButton = _G["StaticPopup"..i.."CloseButton"]
-		local wideBox = _G["StaticPopup"..i.."WideEditBox"]
+		local staticPopup = _G['StaticPopup'..i]
+		local itemFrame = _G['StaticPopup'..i..'ItemFrame']
+		local itemFrameBox = _G['StaticPopup'..i..'EditBox']
+		local itemFrameTexture = _G['StaticPopup'..i..'ItemFrameIconTexture']
+		local itemFrameNormal = _G['StaticPopup'..i..'ItemFrameNormalTexture']
+		local itemFrameName = _G['StaticPopup'..i..'ItemFrameNameFrame']
+		local closeButton = _G['StaticPopup'..i..'CloseButton']
+		local wideBox = _G['StaticPopup'..i..'WideEditBox']
 
-		staticPopup:SetTemplate("Transparent")
+		staticPopup:SetTemplate('Transparent')
 
 		S:HandleEditBox(itemFrameBox)
-		itemFrameBox.backdrop:Point("TOPLEFT", -2, -4)
-		itemFrameBox.backdrop:Point("BOTTOMRIGHT", 2, 4)
+		itemFrameBox.backdrop:Point('TOPLEFT', -2, -4)
+		itemFrameBox.backdrop:Point('BOTTOMRIGHT', 2, 4)
 
-		S:HandleEditBox(_G["StaticPopup"..i.."MoneyInputFrameGold"])
-		S:HandleEditBox(_G["StaticPopup"..i.."MoneyInputFrameSilver"])
-		S:HandleEditBox(_G["StaticPopup"..i.."MoneyInputFrameCopper"])
+		S:HandleEditBox(_G['StaticPopup'..i..'MoneyInputFrameGold'])
+		S:HandleEditBox(_G['StaticPopup'..i..'MoneyInputFrameSilver'])
+		S:HandleEditBox(_G['StaticPopup'..i..'MoneyInputFrameCopper'])
 
 		for j = 1, itemFrameBox:GetNumRegions() do
 			local region = select(j, itemFrameBox:GetRegions())
-			if region and region:IsObjectType("Texture") then
+			if region and region:IsObjectType('Texture') then
 				if region:GetTexture() == [[Interface\ChatFrame\UI-ChatInputBorder-Left]] or region:GetTexture() == [[Interface\ChatFrame\UI-ChatInputBorder-Right]] then
 					region:Kill()
 				end
@@ -60,12 +64,12 @@ S:AddCallback("Skin_Misc", function()
 		itemFrame:SetTemplate()
 		itemFrame:StyleButton()
 
-		hooksecurefunc("StaticPopup_Show", function(which, _, _, data)
-			local info = StaticPopupDialogs[which]
+		hooksecurefunc('StaticPopup_Show', function(which, _, _, data)
+			local info = _G.StaticPopupDialogs[which]
 			if not info then return nil end
 
 			if info.hasItemFrame then
-				if data and type(data) == "table" then
+				if data and type(data) == 'table' then
 					if data.color then
 						itemFrame:SetBackdropBorderColor(unpack(data.color))
 					else
@@ -86,7 +90,7 @@ S:AddCallback("Skin_Misc", function()
 		wideBox:Height(22)
 
 		for j = 1, 3 do
-			S:HandleButton(_G["StaticPopup"..i.."Button"..j])
+			S:HandleButton(_G['StaticPopup'..i..'Button'..j])
 		end
 	end
 
@@ -94,83 +98,85 @@ S:AddCallback("Skin_Misc", function()
 	S:SkinDropDownMenu('DropDownList')
 
 	-- Other Frames
-	TicketStatusFrameButton:SetTemplate("Transparent")
-	AutoCompleteBox:SetTemplate("Transparent")
-	ConsolidatedBuffsTooltip:SetTemplate("Transparent")
+	_G.TicketStatusFrameButton:SetTemplate('Transparent')
+	_G.AutoCompleteBox:SetTemplate('Transparent')
+	_G.ConsolidatedBuffsTooltip:SetTemplate('Transparent')
 
 	-- Basic Script Errors
-	BasicScriptErrors:SetScale(E.global.general.UIScale)
-	BasicScriptErrors:SetTemplate("Transparent")
-	S:HandleButton(BasicScriptErrorsButton)
+	_G.BasicScriptErrors:SetScale(E.global.general.UIScale)
+	_G.BasicScriptErrors:SetTemplate('Transparent')
+	S:HandleButton(_G.BasicScriptErrorsButton)
 
 	-- BNToast Frame
-	BNToastFrame:SetTemplate("Transparent")
+	_G.BNToastFrame:SetTemplate('Transparent')
 
-	BNToastFrameCloseButton:Size(32)
-	S:HandleCloseButton(BNToastFrameCloseButton, BNToastFrame)
+	_G.BNToastFrameCloseButton:Size(32)
+	S:HandleCloseButton(_G.BNToastFrameCloseButton, _G.BNToastFrame)
 
 	-- Ready Check Frame
+	local ReadyCheckFrame = _G.ReadyCheckFrame
 	ReadyCheckFrame:EnableMouse(true)
-	ReadyCheckFrame:SetTemplate("Transparent")
+	ReadyCheckFrame:SetTemplate('Transparent')
 
-	S:HandleButton(ReadyCheckFrameYesButton)
-	ReadyCheckFrameYesButton:SetParent(ReadyCheckFrame)
-	ReadyCheckFrameYesButton:ClearAllPoints()
-	ReadyCheckFrameYesButton:Point("TOPRIGHT", ReadyCheckFrame, "CENTER", -3, -5)
+	S:HandleButton(_G.ReadyCheckFrameYesButton)
+	_G.ReadyCheckFrameYesButton:SetParent(ReadyCheckFrame)
+	_G.ReadyCheckFrameYesButton:ClearAllPoints()
+	_G.ReadyCheckFrameYesButton:Point('TOPRIGHT', ReadyCheckFrame, 'CENTER', -3, -5)
 
-	S:HandleButton(ReadyCheckFrameNoButton)
-	ReadyCheckFrameNoButton:SetParent(ReadyCheckFrame)
-	ReadyCheckFrameNoButton:ClearAllPoints()
-	ReadyCheckFrameNoButton:Point("TOPLEFT", ReadyCheckFrame, "CENTER", 4, -5)
+	S:HandleButton(_G.ReadyCheckFrameNoButton)
+	_G.ReadyCheckFrameNoButton:SetParent(ReadyCheckFrame)
+	_G.ReadyCheckFrameNoButton:ClearAllPoints()
+	_G.ReadyCheckFrameNoButton:Point('TOPLEFT', ReadyCheckFrame, 'CENTER', 4, -5)
 
-	ReadyCheckFrameText:SetParent(ReadyCheckFrame)
-	ReadyCheckFrameText:Point("TOP", 0, -15)
-	ReadyCheckFrameText:SetTextColor(1, 1, 1)
+	_G.ReadyCheckFrameText:SetParent(ReadyCheckFrame)
+	_G.ReadyCheckFrameText:Point('TOP', 0, -15)
+	_G.ReadyCheckFrameText:SetTextColor(1, 1, 1)
 
-	ReadyCheckListenerFrame:SetAlpha(0)
+	_G.ReadyCheckListenerFrame:SetAlpha(0)
 
 	-- Coin PickUp Frame
-	CoinPickupFrame:StripTextures()
-	CoinPickupFrame:SetTemplate("Transparent")
+	_G.CoinPickupFrame:StripTextures()
+	_G.CoinPickupFrame:SetTemplate('Transparent')
 
-	S:HandleButton(CoinPickupOkayButton)
-	S:HandleButton(CoinPickupCancelButton)
+	S:HandleButton(_G.CoinPickupOkayButton)
+	S:HandleButton(_G.CoinPickupCancelButton)
 
 	-- Zone Text Frame
-	ZoneTextFrame:ClearAllPoints()
-	ZoneTextFrame:Point("TOP", 0, -128)
+	_G.ZoneTextFrame:ClearAllPoints()
+	_G.ZoneTextFrame:Point('TOP', 0, -128)
 
 	-- Stack Split Frame
-	StackSplitFrame:SetTemplate("Transparent")
+	local StackSplitFrame = _G.StackSplitFrame
+	StackSplitFrame:SetTemplate('Transparent')
 	StackSplitFrame:GetRegions():Hide()
-	StackSplitFrame:SetFrameStrata("DIALOG")
+	StackSplitFrame:SetFrameStrata('DIALOG')
 
-	StackSplitFrame.bg1 = CreateFrame("Frame", nil, StackSplitFrame)
+	StackSplitFrame.bg1 = CreateFrame('Frame', nil, StackSplitFrame)
 	StackSplitFrame.bg1:SetFrameLevel(StackSplitFrame.bg1:GetFrameLevel() - 1)
-	StackSplitFrame.bg1:SetTemplate("Transparent")
-	StackSplitFrame.bg1:Point("TOPLEFT", 10, -15)
-	StackSplitFrame.bg1:Point("BOTTOMRIGHT", -10, 55)
+	StackSplitFrame.bg1:SetTemplate('Transparent')
+	StackSplitFrame.bg1:Point('TOPLEFT', 10, -15)
+	StackSplitFrame.bg1:Point('BOTTOMRIGHT', -10, 55)
 
-	S:HandleButton(StackSplitOkayButton)
-	S:HandleButton(StackSplitCancelButton)
+	S:HandleButton(_G.StackSplitOkayButton)
+	S:HandleButton(_G.StackSplitCancelButton)
 
 	-- Opacity Frame
-	OpacityFrame:StripTextures()
-	OpacityFrame:SetTemplate("Transparent")
+	_G.OpacityFrame:StripTextures()
+	_G.OpacityFrame:SetTemplate('Transparent')
 
-	S:HandleSliderFrame(OpacityFrameSlider)
+	S:HandleSliderFrame(_G.OpacityFrameSlider)
 
 	-- Channel Pullout Frame
-	ChannelPullout:SetTemplate("Transparent")
+	_G.ChannelPullout:SetTemplate('Transparent')
 
-	ChannelPulloutBackground:Kill()
+	_G.ChannelPulloutBackground:Kill()
 
-	S:HandleTab(ChannelPulloutTab)
-	ChannelPulloutTab:Size(107, 26)
-	ChannelPulloutTabText:Point("LEFT", ChannelPulloutTabLeft, "RIGHT", 0, 4)
+	S:HandleTab(_G.ChannelPulloutTab)
+	_G.ChannelPulloutTab:Size(107, 26)
+	_G.ChannelPulloutTabText:Point('LEFT', _G.ChannelPulloutTabLeft, 'RIGHT', 0, 4)
 
-	S:HandleCloseButton(ChannelPulloutCloseButton, ChannelPullout)
-	ChannelPulloutCloseButton:Size(32)
+	S:HandleCloseButton(_G.ChannelPulloutCloseButton, _G.ChannelPullout)
+	_G.ChannelPulloutCloseButton:Size(32)
 
 	-- Chat Menu
 	do
@@ -193,36 +199,43 @@ S:AddCallback("Skin_Misc", function()
 			else
 				menu:HookScript('OnShow', menuBackdrop)
 			end
+
+			local name = menu:GetName()
+			for _, child in next, { menu:GetChildren() } do
+				if child:GetName() and child:GetName():find(name..'Button') then
+					S:HandleButtonHighlight(child, unpack(E.media.rgbvaluecolor))
+				end
+			end
 		end
 	end
 
 	-- Localization specific frames
-	local locale = GetLocale()
-	if locale == "koKR" then
-		S:HandleButton(GameMenuButtonRatings)
+	if E.locale == 'koKR' then
+		S:HandleButton(_G.GameMenuButtonRatings)
 
 		-- RatingMenuFrame
-		RatingMenuFrame:SetTemplate("Transparent")
-		RatingMenuFrameHeader:SetTexture()
-		S:HandleButton(RatingMenuButtonOkay)
+		_G.RatingMenuFrame:SetTemplate('Transparent')
+		_G.RatingMenuFrameHeader:SetTexture()
+		S:HandleButton(_G.RatingMenuButtonOkay)
 
-		RatingMenuButtonOkay:Point("BOTTOMRIGHT", -8, 8)
-	elseif locale == "ruRU" then
+		_G.RatingMenuButtonOkay:Point('BOTTOMRIGHT', -8, 8)
+	elseif E.locale == 'ruRU' then
 		-- Declension Frame
-		DeclensionFrame:SetTemplate("Transparent")
+		local DeclensionFrame = _G.DeclensionFrame
+		DeclensionFrame:SetTemplate('Transparent')
 
-		S:HandleNextPrevButton(DeclensionFrameSetPrev, "left")
-		S:HandleNextPrevButton(DeclensionFrameSetNext, "right")
-		S:HandleButton(DeclensionFrameOkayButton)
-		S:HandleButton(DeclensionFrameCancelButton)
+		S:HandleNextPrevButton(_G.DeclensionFrameSetPrev, 'left')
+		S:HandleNextPrevButton(_G.DeclensionFrameSetNext, 'right')
+		S:HandleButton(_G.DeclensionFrameOkayButton)
+		S:HandleButton(_G.DeclensionFrameCancelButton)
 
-		DeclensionFrameSet:Point("BOTTOM", 0, 40)
-		DeclensionFrameOkayButton:Point("RIGHT", DeclensionFrame, "BOTTOM", -3, 19)
-		DeclensionFrameCancelButton:Point("LEFT", DeclensionFrame, "BOTTOM", 3, 19)
+		_G.DeclensionFrameSet:Point('BOTTOM', 0, 40)
+		_G.DeclensionFrameOkayButton:Point('RIGHT', DeclensionFrame, 'BOTTOM', -3, 19)
+		_G.DeclensionFrameCancelButton:Point('LEFT', DeclensionFrame, 'BOTTOM', 3, 19)
 
-		hooksecurefunc("DeclensionFrame_Update", function()
-			for i = 1, RUSSIAN_DECLENSION_PATTERNS do
-				_G["DeclensionFrameDeclension"..i.."Edit"]:SetTemplate("Default")
+		hooksecurefunc('DeclensionFrame_Update', function()
+			for i = 1, _G.RUSSIAN_DECLENSION_PATTERNS do
+				_G['DeclensionFrameDeclension'..i..'Edit']:SetTemplate('Default')
 			end
 		end)
 	end
