@@ -681,7 +681,7 @@ S:AddCallback("Skin_Friends", function()
 			self:Point("TOPLEFT", RaidFrame, "TOPRIGHT", -33, -12)
 		end
 
-		PlaySound(1115) -- UChatScrollButton
+		PlaySound('UChatScrollButton')
 	end)
 
 	RaidInfoScrollFrameScrollBar:SetScript("OnShow", function(self)
