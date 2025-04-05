@@ -30,6 +30,7 @@ local IsInInstance = IsInInstance
 local IsSecureCmd = IsSecureCmd
 local IsShiftKeyDown = IsShiftKeyDown
 local PanelTemplates_TabResize = PanelTemplates_TabResize
+local PlaySound = PlaySound
 local PlaySoundFile = PlaySoundFile
 local StaticPopup_Visible = StaticPopup_Visible
 local ToggleFrame = ToggleFrame
@@ -298,29 +299,25 @@ function CH:GetSmileyReplacementText(msg)
 	return outstr
 end
 
-function CH:OpenChatMenu(frame, chatMenu, buttonMenu)
-	if chatMenu then
-		chatMenu:ClearAllPoints()
+function CH:OpenChatMenu(frame, chatMenu)
+	chatMenu:ClearAllPoints()
 
-		local point = E:GetScreenQuadrant(frame)
-		if strfind(point, 'LEFT') then
-			chatMenu:SetPoint('BOTTOMLEFT', frame, 'TOPRIGHT')
-		else
-			chatMenu:SetPoint('BOTTOMRIGHT', frame, 'TOPLEFT')
-		end
+	ToggleFrame(chatMenu)
 
-		ToggleFrame(chatMenu)
-	elseif buttonMenu then
-		buttonMenu:ClearAllPoints()
-		buttonMenu:SetPoint('TOPLEFT', _G.ChatFrame1.copyButton, 'TOPRIGHT')
-		buttonMenu:OpenMenu()
+	PlaySound('igMainMenuOption')
+
+	local point = E:GetScreenQuadrant(frame)
+	if strfind(point, 'LEFT') then
+		chatMenu:SetPoint('BOTTOMLEFT', frame, 'TOPRIGHT')
+	else
+		chatMenu:SetPoint('BOTTOMRIGHT', frame, 'TOPLEFT')
 	end
 end
 
 function CH:CopyButtonOnMouseUp(btn)
 	local chat = self:GetParent()
 	if btn == 'RightButton' and chat:GetID() == 1 then
-		CH:OpenChatMenu(self, _G.ChatMenu, _G.ChatFrameMenuButton)
+		CH:OpenChatMenu(self, _G.ChatMenu)
 	else
 		CH:CopyChat(chat)
 	end
