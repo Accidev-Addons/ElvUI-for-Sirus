@@ -109,12 +109,11 @@ function M:HandleTrackingButton()
 
 	local hidden = not Minimap:IsShown()
 	if hidden or E.private.general.minimap.hideTracking then
-		tracking:SetParent(E.HiddenFrame)
+		tracking:Point('TOP', UIParent, 'BOTTOM') -- retail cant hide the parent otherwise the menu will error
 	else
 		local scale, position, xOffset, yOffset = M:GetIconSettings('tracking')
 
 		tracking:Point(position, Minimap, xOffset, yOffset)
-		M:SetIconParent(tracking)
 		M:SetScale(tracking, scale)
 
 		if _G.MiniMapTrackingButtonBorder then
@@ -193,17 +192,24 @@ end
 function M:Minimap_OnMouseDown(btn)
 	menuFrame:Hide()
 
-	if M.TrackingDropdown then
-		_G.HideDropDownMenu(1, nil, M.TrackingDropdown)
-	end
-
 	local position = M.MapHolder.mover:GetPoint()
 	if btn == 'MiddleButton' or (btn == 'RightButton' and IsShiftKeyDown()) then
 		if not E:AlertCombat() then
 			EasyMenu(menuList, menuFrame, 'cursor', position:match('LEFT') and 0 or -160, 0, 'MENU')
+			menuFrame:Show()
+
+			PlaySound('UChatScrollButton')
 		end
 	elseif btn == 'RightButton' then
-		_G.ToggleDropDownMenu(1, nil, M.TrackingDropdown, 'cursor')
+		local button = _G.MiniMapTrackingButton
+		if button then
+			button:Click()
+
+			local menu = M.TrackingDropdown
+			if menu and E.private.general.minimap.hideTracking then
+				_G.ToggleDropDownMenu(1, nil, menu, 'cursor')
+			end
+		end
 	else
 		_G.Minimap_OnClick(self)
 	end
