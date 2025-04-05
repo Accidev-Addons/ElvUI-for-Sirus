@@ -715,7 +715,7 @@ function AB:BlizzardOptionsPanel_OnEvent()
 	_G.InterfaceOptionsActionBarsPanelRightTwo:SetScript('OnEnter', nil)
 	_G.InterfaceOptionsActionBarsPanelRight:SetScript('OnEnter', nil)
 
-	E.Skins:HandlePointXY(_G.InterfaceOptionsActionBarsPanelRightTwo, 0, -8)
+	_G.InterfaceOptionsActionBarsPanelRightTwo:PointXY(0, -8)
 
 	_G.InterfaceOptionsActionBarsPanelSecureAbilityToggle:ClearAllPoints()
 	_G.InterfaceOptionsActionBarsPanelSecureAbilityToggle:Point('TOPLEFT', _G.InterfaceOptionsActionBarsPanelRightTwo, 'BOTTOMLEFT', 0, -8)

@@ -636,8 +636,8 @@ S:AddCallback("Skin_Friends", function()
 	S:HandleButton(RaidFrameRaidInfoButton)
 	S:HandleButton(RaidFrameNotInRaidRaidBrowserButton)
 
-	S:HandlePointXY(RaidFrameConvertToRaidButton, 45, -33)
-	S:HandlePointXY(RaidFrameRaidInfoButton, 69, 0)
+	RaidFrameConvertToRaidButton:PointXY(45, -33)
+	RaidFrameRaidInfoButton:PointXY(69, 0)
 
 	-- Raid Info Frame
 	RaidInfoFrame:StripTextures(true)

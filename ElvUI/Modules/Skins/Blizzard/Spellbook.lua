@@ -105,10 +105,10 @@ S:AddCallback('Skin_Spellbook', function()
 		local spellFrame = _G.SpellBookFrame
 		spellFrame:Height(spellFrame:GetHeight() + 85)
 
-		S:HandlePointXY(_G.SpellButton1, 100, -80)
-		S:HandlePointXY(_G.ShowAllSpellRanksCheckBox, 30, -30)
-		S:HandlePointXY(_G.SpellBookPrevPageButton, -95, 100)
-		S:HandlePointXY(_G.SpellBookNextPageButton, -60, 100)
-		S:HandlePointXY(_G.SpellBookTitleText, 5, 280)
+		_G.SpellButton1:PointXY(100, -80)
+		_G.ShowAllSpellRanksCheckBox:PointXY(30, -30)
+		_G.SpellBookPrevPageButton:PointXY(-95, 100)
+		_G.SpellBookNextPageButton:PointXY(-60, 100)
+		_G.SpellBookTitleText:PointXY(5, 280)
 	end
 end)

@@ -232,7 +232,7 @@ end
 local function HandleFrameTab(button)
     if not button.backdrop then
 		button:Size(33, 35)
-		S:HandlePointXY(button, -button:GetWidth() - 5)
+		button:PointXY(-button:GetWidth() - 5)
         button:CreateBackdrop()
 
         -- Create Highlight texture if it doesn't exist
@@ -796,10 +796,10 @@ S:AddCallback('Skin_Character', function()
 		_G.PetAttributesFrame:SetTemplate('Transparent')
 		_G.PetAttributesFrame:Size(_G.PetPaperDollFrameExpBar:GetWidth() + 1, 96)
 
-		S:HandlePointXY(_G.PetStatFrame1, 12, -5)
-		S:HandlePointXY(_G.PetAttributesFrame, 19, -286)
-		S:HandlePointXY(_G.PetAttackPowerFrame, 170, -5)
-		S:HandlePointXY(_G.PetLevelText, 0, -18)
+		_G.PetStatFrame1:PointXY(12, -5)
+		_G.PetAttributesFrame:PointXY(19, -286)
+		_G.PetAttackPowerFrame:PointXY(170, -5)
+		_G.PetLevelText:PointXY(0, -18)
 
 		for _, frame in ipairs({ PetAttributesFrame:GetChildren() }) do
 			if frame:IsObjectType('Frame') then
