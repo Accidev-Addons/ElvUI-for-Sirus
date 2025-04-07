@@ -916,11 +916,11 @@ function CH:UpdateEditboxAnchors(cvar, value)
 		if below or belowInside then
 			local showLeftPanel = E.db.datatexts.panels.LeftChatDataPanel.enable
 			editbox:Point('TOPLEFT', anchorTo, 'BOTTOMLEFT', classic and (showLeftPanel and 1 or 0) or -2, (classic and (belowInside and 1 or 0) or -5) + (belowInside and panel or 0))
-			editbox:Point('BOTTOMRIGHT', anchorTo, 'BOTTOMRIGHT', classic and (showLeftPanel and -1 or 0) or -2, (classic and (belowInside and 1 or 0) or -5) + (belowInside and -panel + panel or -panel))
+			editbox:Point('BOTTOMRIGHT', anchorTo, 'BOTTOMRIGHT', classic and (showLeftPanel and -1 or 0) or -2, (classic and (belowInside and 1 or 0) or -5) + (belowInside and 0 or -panel))
 		else
 			local aboveInside = CH.db.editBoxPosition == 'ABOVE_CHAT_INSIDE'
 			editbox:Point('BOTTOMLEFT', anchorTo, 'TOPLEFT', classic and (aboveInside and 1 or 0) or -2, (classic and (aboveInside and -1 or 0) or 2) + (aboveInside and -panel or 0))
-			editbox:Point('TOPRIGHT', anchorTo, 'TOPRIGHT', classic and (aboveInside and -1 or 0) or 2, (classic and (aboveInside and -1 or 0) or 2) + (aboveInside and -panel + panel or panel))
+			editbox:Point('TOPRIGHT', anchorTo, 'TOPRIGHT', classic and (aboveInside and -1 or 0) or 2, (classic and (aboveInside and -1 or 0) or 2) + (aboveInside and 0 or panel))
 		end
 	end
 end
