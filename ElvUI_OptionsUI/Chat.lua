@@ -12,8 +12,6 @@ local strlower = strlower
 local GetChannelList = GetChannelList
 local GameTooltip_Hide = GameTooltip_Hide
 
-local BINDING_HEADER_VOICE_CHAT = BINDING_HEADER_VOICE_CHAT
-
 local tabSelectorTable = {}
 local Chat = ACH:Group(L["Chat"], nil, 2, 'tab', function(info) return E.db.chat[info[#info]] end, function(info, value) E.db.chat[info[#info]] = value end)
 E.Options.args.chat = Chat
@@ -71,7 +69,7 @@ General.args.fontGroup.args.tabFont = ACH:SharedMediaFont(L["Tab Font"], nil, 3)
 General.args.fontGroup.args.tabFontOutline = ACH:FontFlags(L["Tab Font Outline"], nil, 5)
 General.args.fontGroup.args.tabFontSize = ACH:Range(L["Tab Font Size"], nil, 3, C.Values.FontSize)
 
-General.args.voicechatGroup = ACH:Group(BINDING_HEADER_VOICE_CHAT, nil, 90)
+General.args.voicechatGroup = ACH:Group(L["BINDING_HEADER_VOICE_CHAT"], nil, 90)
 General.args.voicechatGroup.args.hideVoiceButtons = ACH:Toggle(L["Hide Voice Buttons"], L["Completely hide the voice buttons."], 1, nil, nil, nil, nil, function(info, value) E.db.chat[info[#info]] = value E.ShowPopup = true end)
 General.args.voicechatGroup.args.pinVoiceButtons = ACH:Toggle(L["Pin Voice Buttons"], L["This will pin the voice buttons to the chat's tab panel. Unchecking it will create a voice button panel with a mover."], 2, nil, nil, nil, nil, function(info, value) E.db.chat[info[#info]] = value E.ShowPopup = true end, function() return E.db.chat.hideVoiceButtons end)
 General.args.voicechatGroup.args.desaturateVoiceIcons = ACH:Toggle(L["Desaturate Voice Icons"], nil, 3, nil, nil, nil, nil, function(info, value) E.db.chat[info[#info]] = value CH:UpdateVoiceChatIcons() end, function() return E.db.chat.hideVoiceButtons end)

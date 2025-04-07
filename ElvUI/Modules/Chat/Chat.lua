@@ -535,6 +535,8 @@ function CH:StyleChat(frame)
 	frame:SetMaxLines(CH.db.maxLines)
 	frame:SetFading(CH.db.fade)
 
+	tab:RegisterForClicks('AnyUp')
+	tab:SetScript('OnClick', CH.Tab_OnClick)
 	tab.Text:FontTemplate(LSM:Fetch('font', CH.db.tabFont), CH.db.tabFontSize, CH.db.tabFontOutline)
 
 	if not frame.isDocked then
@@ -547,23 +549,6 @@ function CH:StyleChat(frame)
 	frame:SetClampRectInsets(0,0,0,0)
 	frame:SetClampedToScreen(false)
 	frame:StripTextures(true)
-
-	_G[name.."ButtonFrame"]:Kill()
-
-	local scroll = frame.ScrollBar
-	if scroll then
-		scroll:Kill()
-	end
-
-	local scrollToBottom = frame.ScrollToBottomButton
-	if scrollToBottom then
-		scrollToBottom:Kill()
-	end
-
-	local scrollTex = _G[name..'ThumbTexture']
-	if scrollTex then
-		scrollTex:Kill()
-	end
 
 	--Character count
 	local editbox = frame.editBox
@@ -607,9 +592,6 @@ function CH:StyleChat(frame)
 	c:Kill()
 
 	-- stuff to hide
-	_G.ChatFrameMenuButton:Kill()
-	_G.FriendsMicroButton:Kill()
-
 	CH:PositionButtonFrame(frame)
 
 	local scrollBar = frame.ScrollBar
@@ -641,6 +623,12 @@ function CH:StyleChat(frame)
 
 	local editFocusRight = _G[name..'EditBoxFocusRight']
 	if editFocusRight then editFocusRight:Kill() end
+
+	local buttonFrame = _G[name..'ButtonFrame']
+	if buttonFrame then buttonFrame:Kill() end
+
+	_G.ChatFrameMenuButton:Kill()
+	_G.FriendsMicroButton:Kill()
 
 	editbox:SetAltArrowKeyMode(CH.db.useAltKey)
 	editbox:SetAllPoints(_G.LeftChatDataPanel)
@@ -907,7 +895,7 @@ function CH:CVAR_UPDATE(_, cvar, value)
 	end
 end
 
-function CH:UpdateEditboxAnchors(event, cvar, value)
+function CH:UpdateEditboxAnchors(cvar, value)
 	if not cvar then
 		value = GetCVar('chatStyle')
 	end
@@ -927,12 +915,12 @@ function CH:UpdateEditboxAnchors(event, cvar, value)
 		local below, belowInside = CH.db.editBoxPosition == 'BELOW_CHAT', CH.db.editBoxPosition == 'BELOW_CHAT_INSIDE'
 		if below or belowInside then
 			local showLeftPanel = E.db.datatexts.panels.LeftChatDataPanel.enable
-			editbox:Point('TOPLEFT', anchorTo, 'BOTTOMLEFT', classic and (showLeftPanel and 1 or 0) or -2, (classic and (belowInside and 1 or 0) or -5))
-			editbox:Point('BOTTOMRIGHT', anchorTo, 'BOTTOMRIGHT', classic and (showLeftPanel and -1 or 0) or -2, (classic and (belowInside and 1 or 0) or -5) + (belowInside and panel or -panel))
+			editbox:Point('TOPLEFT', anchorTo, 'BOTTOMLEFT', classic and (showLeftPanel and 1 or 0) or -2, (classic and (belowInside and 1 or 0) or -5) + (belowInside and panel or 0))
+			editbox:Point('BOTTOMRIGHT', anchorTo, 'BOTTOMRIGHT', classic and (showLeftPanel and -1 or 0) or -2, (classic and (belowInside and 1 or 0) or -5) + (belowInside and -panel + panel or -panel))
 		else
 			local aboveInside = CH.db.editBoxPosition == 'ABOVE_CHAT_INSIDE'
-			editbox:Point('BOTTOMLEFT', anchorTo, 'TOPLEFT', classic and (aboveInside and 1 or 0) or -2, (classic and (aboveInside and -1 or 0) or 2))
-			editbox:Point('TOPRIGHT', anchorTo, 'TOPRIGHT', classic and (aboveInside and -1 or 0) or 2, (classic and (aboveInside and -1 or 0) or 2) + (aboveInside and -panel or panel))
+			editbox:Point('BOTTOMLEFT', anchorTo, 'TOPLEFT', classic and (aboveInside and 1 or 0) or -2, (classic and (aboveInside and -1 or 0) or 2) + (aboveInside and -panel or 0))
+			editbox:Point('TOPRIGHT', anchorTo, 'TOPRIGHT', classic and (aboveInside and -1 or 0) or 2, (classic and (aboveInside and -1 or 0) or 2) + (aboveInside and -panel + panel or panel))
 		end
 	end
 end
@@ -2764,7 +2752,7 @@ function CH:FCF_Close(fallback)
 	CH:PostChatClose(self) -- also call this since it won't call from blizzard in this case
 end
 
---Same reason as CH.FCF_Close
+--Same reason as CH.FCF_Close (see note)
 function CH:FCF_PopInWindow(fallback)
 	if fallback then self = fallback end
 	if not self or self == CH then self = _G.FCF_GetCurrentChatFrame() end
@@ -2773,6 +2761,50 @@ function CH:FCF_PopInWindow(fallback)
 	--Restore any chats this frame had to the DEFAULT_CHAT_FRAME
 	_G.FCF_RestoreChatsToFrame(_G.DEFAULT_CHAT_FRAME, self)
 	CH.FCF_Close(self) -- use ours to fix close chat bug
+end
+
+-- Same reason as CH.FCF_Close (see note) but in order to fix close by middle clicking
+function CH:FCF_Tab_OnClick(button)
+	local chat = self and CH:GetOwner(self)
+	if not chat then return end
+
+	if button == 'RightButton' then -- If Rightclick bring up the options menu
+		chat:StopMovingOrSizing()
+
+		_G.CURRENT_CHAT_FRAME_ID = self:GetID()
+		_G.ToggleDropDownMenu(1, nil, _G[self:GetName()..'DropDown'], 'cursor')
+	elseif button == 'MiddleButton' then
+		if (chat ~= _G.DEFAULT_CHAT_FRAME and not _G.IsCombatLog(chat)) and not (chat == _G.DEFAULT_CHAT_FRAME) then
+			if not chat.isTemporary then
+				CH.FCF_PopInWindow(self, chat)
+				return
+			elseif chat.chatType == 'WHISPER' or chat.chatType == 'BN_WHISPER' then
+				CH.FCF_PopInWindow(self, chat)
+				return
+			else
+				E:Print(format('Unhandled temporary window type. chatType: %s, chatTarget %s', tostring(chat.chatType), tostring(chat.chatTarget)))
+			end
+		end
+	else
+		_G.CloseDropDownMenus() -- Close all dropdowns
+		_G.SELECTED_CHAT_FRAME = chat -- If frame is docked assume that a click is to select a chat window, not drag it
+
+		if chat.isDocked and _G.FCFDock_GetSelectedWindow(_G.GeneralDockManager) ~= chat then
+			_G.FCF_SelectDockFrame(chat)
+		end
+
+		if GetCVar('chatStyle') ~= 'classic' then
+			local chatFrame = (chat.isDocked and _G.GeneralDockManager.primary) or chat
+			_G.ChatEdit_SetLastActiveWindow(chatFrame.editBox)
+		end
+
+		_G.FCF_FadeInChatFrame(chat)
+	end
+end
+
+function CH:Tab_OnClick(button)
+	CH.FCF_Tab_OnClick(self, button)
+	PlaySound('UChatScrollButton')
 end
 
 do
