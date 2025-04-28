@@ -94,7 +94,7 @@ S:AddCallback("Skin_Loot", function()
 		button.bg:SetTemplate("Default")
 		button.bg:Point("TOPLEFT", 40, 0)
 		button.bg:Point("BOTTOMRIGHT", 110, 0)
-		button.bg:SetFrameLevel(button.bg:GetFrameLevel() - 1)
+		button.bg:OffsetFrameLevel(-1)
 
 		local questTexture = button:CreateTexture(nil, "OVERLAY")
 		questTexture:SetInside()

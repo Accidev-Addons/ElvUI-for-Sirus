@@ -59,13 +59,13 @@ S:AddCallback("Skin_Trade", function()
 		playerButton.bg:SetTemplate("Default")
 		playerButton.bg:Point("TOPLEFT", playerButton, "TOPRIGHT", 4, 0)
 		playerButton.bg:Point("BOTTOMRIGHT", _G["TradePlayerItem"..i.."NameFrame"], "BOTTOMRIGHT", 0, 14)
-		playerButton.bg:SetFrameLevel(playerButton:GetFrameLevel() - 3)
+		playerButton.bg:OffsetFrameLevel(-3, playerButton)
 
 		recipientButton.bg = CreateFrame("Frame", nil, recipientButton)
 		recipientButton.bg:SetTemplate("Default")
 		recipientButton.bg:Point("TOPLEFT", recipientButton, "TOPRIGHT", 4, 0)
 		recipientButton.bg:Point("BOTTOMRIGHT", _G["TradeRecipientItem"..i.."NameFrame"], "BOTTOMRIGHT", 0, 14)
-		recipientButton.bg:SetFrameLevel(recipientButton:GetFrameLevel() - 3)
+		recipientButton.bg:OffsetFrameLevel(-3, recipientButton)
 	end
 
 	TradeHighlightPlayerTop:SetTexture(0, 1, 0, 0.2)

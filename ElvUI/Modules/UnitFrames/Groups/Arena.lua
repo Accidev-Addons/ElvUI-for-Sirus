@@ -15,7 +15,7 @@ ArenaHeader:SetFrameStrata("LOW")
 function UF:Construct_ArenaFrames(frame)
 	frame.RaisedElementParent = CreateFrame("Frame", nil, frame)
 	frame.RaisedElementParent.TextureParent = CreateFrame("Frame", nil, frame.RaisedElementParent)
-	frame.RaisedElementParent:SetFrameLevel(frame:GetFrameLevel() + 100)
+	frame.RaisedElementParent:OffsetFrameLevel(100, frame)
 
 	frame.Health = self:Construct_HealthBar(frame, true, true, "RIGHT")
 	frame.Name = self:Construct_NameText(frame)

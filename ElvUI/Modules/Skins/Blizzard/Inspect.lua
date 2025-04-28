@@ -61,7 +61,7 @@ S:AddCallbackForAddon("Blizzard_InspectUI", "Skin_Blizzard_InspectUI", function(
 		local frame = _G["Inspect"..slot]
 
 		frame:StripTextures()
-		frame:SetFrameLevel(frame:GetFrameLevel() + 2)
+		frame:OffsetFrameLevel(2)
 		frame:CreateBackdrop("Default")
 		frame.backdrop:SetAllPoints()
 

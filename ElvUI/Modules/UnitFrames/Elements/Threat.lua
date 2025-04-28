@@ -81,11 +81,11 @@ function UF:Configure_Threat(frame)
 			threat.texIcon:Point(point, frame.Health, point)
 		elseif db.threatStyle == "HEALTHBORDER" then
 			if frame.InfoPanel then
-				frame.InfoPanel:SetFrameLevel(frame.Health:GetFrameLevel() - 3)
+				frame.InfoPanel:OffsetFrameLevel(-3, frame.Health)
 			end
 		elseif db.threatStyle == "INFOPANELBORDER" then
 			if frame.InfoPanel then
-				frame.InfoPanel:SetFrameLevel(frame.Health:GetFrameLevel() + 3)
+				frame.InfoPanel:OffsetFrameLevel(3, frame.Health)
 			end
 		end
 	elseif frame:IsElementEnabled("ThreatIndicator") then

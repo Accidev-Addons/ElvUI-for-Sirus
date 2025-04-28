@@ -11,7 +11,7 @@ S:AddCallbackForAddon("Blizzard_TimeManager", "Skin_Blizzard_TimeManager", funct
 	TimeManagerFrame:SetTemplate("Transparent")
 
 	E:CreateMover(TimeManagerFrame, "TimeManagerFrameMover", TIMEMANAGER_TITLE)
-	TimeManagerFrame.mover:SetFrameLevel(TimeManagerFrame:GetFrameLevel() + 4)
+	TimeManagerFrame.mover:OffsetFrameLevel(4, TimeManagerFrame)
 
 	S:HandleCloseButton(TimeManagerCloseButton, TimeManagerFrame)
 

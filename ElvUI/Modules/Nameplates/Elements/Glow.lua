@@ -203,7 +203,7 @@ local Textures = {"Spark", "TopIndicator", "LeftIndicator", "RightIndicator"}
 
 function NP:Construct_Glow(frame)
 	frame.Shadow = CreateFrame("Frame", "$parentGlow", frame)
-	frame.Shadow:SetFrameLevel(frame.Health:GetFrameLevel() - 1)
+	frame.Shadow:OffsetFrameLevel(-1, frame.Health)
 	frame.Shadow:SetBackdrop({edgeFile = LSM:Fetch("border", "ElvUI GlowBorder"), edgeSize = E:Scale(6)})
 	frame.Shadow:Hide()
 

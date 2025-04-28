@@ -18,7 +18,7 @@ function UF:Construct_RaidpetFrames()
 
 	self.RaisedElementParent = CreateFrame("Frame", nil, self)
 	self.RaisedElementParent.TextureParent = CreateFrame("Frame", nil, self.RaisedElementParent)
-	self.RaisedElementParent:SetFrameLevel(self:GetFrameLevel() + 100)
+	self.RaisedElementParent:OffsetFrameLevel(100, self)
 
 	self.Health = UF:Construct_HealthBar(self, true, true, "RIGHT")
 	self.Name = UF:Construct_NameText(self)

@@ -11,7 +11,7 @@ local GetSpellInfo = GetSpellInfo
 
 function UF:Construct_AuraWatch(frame)
 	local auras = CreateFrame("Frame", nil, frame)
-	auras:SetFrameLevel(frame.RaisedElementParent:GetFrameLevel() + 10)
+	auras:OffsetFrameLevel(10, frame.RaisedElementParent)
 	auras:SetInside(frame.Health)
 	auras.presentAlpha = 1
 	auras.missingAlpha = 0
@@ -144,7 +144,7 @@ function UF:UpdateAuraWatch(frame, petOverride, db)
 
 				if not icon.text then
 					local f = CreateFrame("Frame", nil, icon)
-					f:SetFrameLevel(icon:GetFrameLevel() + 50)
+					f:OffsetFrameLevel(50, icon)
 					icon.text = f:CreateFontString(nil, "BORDER")
 				end
 
@@ -162,7 +162,7 @@ function UF:UpdateAuraWatch(frame, petOverride, db)
 					icon.cd.noOCC = true
 					icon.cd.noCooldownCount = true
 					icon.cd:SetReverse(true)
-					icon.cd:SetFrameLevel(icon:GetFrameLevel())
+					icon.cd:OffsetFrameLevel(nil, icon)
 				end
 
 				if icon.style == "coloredIcon" then

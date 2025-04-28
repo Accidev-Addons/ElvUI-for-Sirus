@@ -37,14 +37,12 @@ function M:PLAYER_REGEN_ENABLED()
 	WorldMapBlobFrame.Hide = nil
 	WorldMapBlobFrame.Show = nil
 
-	local frameLevel = WorldMapDetailFrame:GetFrameLevel() + 1
-
 	WorldMapBlobFrame:SetParent(WorldMapFrame)
 	WorldMapBlobFrame:ClearAllPoints()
 	WorldMapBlobFrame:SetPoint("TOPLEFT", WorldMapDetailFrame)
 	WorldMapBlobFrame:SetScale(self.blobNewScale or WORLDMAP_SETTINGS.size)
-	WorldMapBlobFrame:SetFrameLevel(frameLevel)
-	WorldMapBlobFrame:SetFrameLevel(frameLevel)	-- called twice to set frame level above the default limit (256)
+	WorldMapBlobFrame:OffsetFrameLevel(1, WorldMapDetailFrame)
+	WorldMapBlobFrame:OffsetFrameLevel(1, WorldMapDetailFrame)	-- called twice to set frame level above the default limit (256)
 
 	if self.blobWasVisible then
 		WorldMapBlobFrame:Show()

@@ -555,7 +555,7 @@ S:AddCallback("Skin_BlizzardOptions", function()
 				checkbox:CreateBackdrop()
 				checkbox.backdrop:Point("TOPLEFT", 3, -1)
 				checkbox.backdrop:Point("BOTTOMRIGHT", -3, 1)
-				checkbox.backdrop:SetFrameLevel(checkbox:GetParent():GetFrameLevel() + 1)
+				checkbox.backdrop:OffsetFrameLevel(1, checkbox:GetParent())
 
 				S:HandleCheckBox(_G[checkBoxName.."Check"])
 
@@ -609,7 +609,7 @@ S:AddCallback("Skin_BlizzardOptions", function()
 				swatch:CreateBackdrop()
 				swatch.backdrop:Point("TOPLEFT", 3, -1)
 				swatch.backdrop:Point("BOTTOMRIGHT", -3, 1)
-				swatch.backdrop:SetFrameLevel(swatch:GetParent():GetFrameLevel() + 1)
+				swatch.backdrop:OffsetFrameLevel(1, swatch:GetParent())
 
 				S:HandleColorSwatch(_G[nameString..index.."ColorSwatch"])
 			end

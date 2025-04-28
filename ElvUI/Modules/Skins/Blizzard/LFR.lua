@@ -48,9 +48,9 @@ S:AddCallback("Skin_LFR", function()
 	S:HandleCheckBox((LFRQueueFrameRoleButtonTank:GetChildren()))
 	S:HandleCheckBox((LFRQueueFrameRoleButtonHealer:GetChildren()))
 	S:HandleCheckBox((LFRQueueFrameRoleButtonDPS:GetChildren()))
-	LFRQueueFrameRoleButtonTank:GetChildren():SetFrameLevel(LFRQueueFrameRoleButtonTank:GetChildren():GetFrameLevel() + 2)
-	LFRQueueFrameRoleButtonHealer:GetChildren():SetFrameLevel(LFRQueueFrameRoleButtonHealer:GetChildren():GetFrameLevel() + 2)
-	LFRQueueFrameRoleButtonDPS:GetChildren():SetFrameLevel(LFRQueueFrameRoleButtonDPS:GetChildren():GetFrameLevel() + 2)
+	LFRQueueFrameRoleButtonTank:GetChildren():OffsetFrameLevel(2)
+	LFRQueueFrameRoleButtonHealer:GetChildren():OffsetFrameLevel(2)
+	LFRQueueFrameRoleButtonDPS:GetChildren():OffsetFrameLevel(2)
 
 	LFRQueueFrameSpecificListScrollFrame:StripTextures()
 

@@ -760,7 +760,7 @@ do
 			thumb:DisableDrawLayer('ARTWORK')
 			thumb:DisableDrawLayer('BACKGROUND')
 			thumb:CreateBackdrop('Transparent')
-			thumb.backdrop:SetFrameLevel(thumb:GetFrameLevel()+1)
+			thumb.backdrop:OffsetFrameLevel(1, thumb)
 
 			local r, g, b = unpack(E.media.rgbvaluecolor)
 			thumb.backdrop:SetBackdropColor(r, g, b, .25)
@@ -968,7 +968,7 @@ function S:HandleDropDownBox(frame, width, template, old)
 
 	if not frame.backdrop then
 		frame:CreateBackdrop(template)
-		frame:SetFrameLevel(frame:GetFrameLevel() + 2)
+		frame:OffsetFrameLevel(2)
 	end
 
 	local frameName = frame.GetName and frame:GetName()
@@ -998,7 +998,7 @@ function S:HandleDropDownBox(frame, width, template, old)
 end
 
 function S:HandleStatusBar(frame, color, template)
-	frame:SetFrameLevel(frame:GetFrameLevel() + 1)
+	frame:OffsetFrameLevel(1)
 	frame:StripTextures()
 	frame:CreateBackdrop(template or 'Transparent')
 	frame:SetStatusBarTexture(E.media.normTex)
@@ -1086,7 +1086,7 @@ function S:HandleColorSwatch(frame, size)
 
 	frame:StripTextures()
 	frame:CreateBackdrop('Default')
-	frame.backdrop:SetFrameLevel(frame:GetFrameLevel())
+	frame.backdrop:OffsetFrameLevel(nil, frame)
 
 	if size then
 		frame:Size(size)

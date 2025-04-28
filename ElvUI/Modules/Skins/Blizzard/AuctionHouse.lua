@@ -170,7 +170,7 @@ S:AddCallbackForAddon("Blizzard_AuctionUI", "Skin_Blizzard_AuctionUI", function(
 	local function createBackdrop(parent)
 		local background = CreateFrame("Frame", nil, parent)
 		background:SetTemplate("Transparent")
-		background:SetFrameLevel(parent:GetFrameLevel() - 1)
+		background:OffsetFrameLevel(-1, parent)
 		return background
 	end
 

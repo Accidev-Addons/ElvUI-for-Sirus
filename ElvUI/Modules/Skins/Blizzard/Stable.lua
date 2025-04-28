@@ -38,7 +38,7 @@ S:AddCallback("Skin_Stable", function()
 
 	-- texWidth, texHeight, cropWidth, cropHeight, offsetX, offsetY = 128, 64, 16, 16, 52, 4
 	PetStablePetInfo:GetRegions():SetTexCoord(0.03125, 0.15625, 0.0625, 0.3125)
-	PetStablePetInfo:SetFrameLevel(PetModelFrame:GetFrameLevel() + 2)
+	PetStablePetInfo:OffsetFrameLevel(2, PetModelFrame)
 	PetStablePetInfo:CreateBackdrop("Default")
 	PetStablePetInfo:Size(25)
 	PetStablePetInfo:Point("TOPLEFT", PetStableModelRotateLeftButton, "BOTTOMLEFT", 10, -4)

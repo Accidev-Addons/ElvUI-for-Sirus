@@ -17,7 +17,7 @@ function UF:Construct_AssistFrames()
 
 	self.RaisedElementParent = CreateFrame("Frame", nil, self)
 	self.RaisedElementParent.TextureParent = CreateFrame("Frame", nil, self.RaisedElementParent)
-	self.RaisedElementParent:SetFrameLevel(self:GetFrameLevel() + 100)
+	self.RaisedElementParent:OffsetFrameLevel(100, self)
 
 	self.Health = UF:Construct_HealthBar(self, true)
 	self.Name = UF:Construct_NameText(self)

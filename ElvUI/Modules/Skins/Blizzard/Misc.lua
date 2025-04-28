@@ -152,7 +152,7 @@ S:AddCallback('Skin_Misc', function()
 	StackSplitFrame:SetFrameStrata('DIALOG')
 
 	StackSplitFrame.bg1 = CreateFrame('Frame', nil, StackSplitFrame)
-	StackSplitFrame.bg1:SetFrameLevel(StackSplitFrame.bg1:GetFrameLevel() - 1)
+	StackSplitFrame.bg1:OffsetFrameLevel(-1)
 	StackSplitFrame.bg1:SetTemplate('Transparent')
 	StackSplitFrame.bg1:Point('TOPLEFT', 10, -15)
 	StackSplitFrame.bg1:Point('BOTTOMRIGHT', -10, 55)

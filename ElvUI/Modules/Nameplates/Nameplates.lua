@@ -110,8 +110,8 @@ function NP:SetPlateFrameLevel(frame, level, isTarget)
 		end
 
 		frame:SetFrameLevel(level+1)
---		frame.Glow:SetFrameLevel(frame:GetFrameLevel()-1)
-		frame.Shadow:SetFrameLevel(frame:GetFrameLevel()-1)
+--		frame.Glow:OffsetFrameLevel(-1, frame)
+		frame.Shadow:OffsetFrameLevel(-1, frame)
 		frame.Buffs:SetFrameLevel(level+1)
 		frame.Debuffs:SetFrameLevel(level+1)
 	end

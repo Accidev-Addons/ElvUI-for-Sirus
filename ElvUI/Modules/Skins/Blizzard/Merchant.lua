@@ -79,7 +79,7 @@ S:AddCallback("Skin_Merchant", function()
 
 				currencyIcon.backdrop = CreateFrame("Frame", nil, currencyItem)
 				currencyIcon.backdrop:SetTemplate("Default")
-				currencyIcon.backdrop:SetFrameLevel(currencyItem:GetFrameLevel())
+				currencyIcon.backdrop:OffsetFrameLevel(nil, currencyItem)
 				currencyIcon.backdrop:SetOutside(currencyIcon)
 
 				currencyIcon:SetTexCoord(unpack(E.TexCoords))

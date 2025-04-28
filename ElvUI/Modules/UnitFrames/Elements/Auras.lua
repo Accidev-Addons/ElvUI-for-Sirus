@@ -23,7 +23,7 @@ function UF:Construct_Buffs(frame)
 	buffs.PostCreateIcon = self.Construct_AuraIcon
 	buffs.PostUpdateIcon = self.PostUpdateAura
 	buffs.CustomFilter = self.AuraFilter
-	buffs:SetFrameLevel(frame.RaisedElementParent:GetFrameLevel() + 10) --Make them appear above any text element
+	buffs:OffsetFrameLevel(10, frame.RaisedElementParent) --Make them appear above any text element
 	buffs.type = "buffs"
 	--Set initial width to prevent division by zero. This value doesn't matter, as it will be updated later
 	buffs:Width(100)
@@ -39,7 +39,7 @@ function UF:Construct_Debuffs(frame)
 	debuffs.PostUpdateIcon = self.PostUpdateAura
 	debuffs.CustomFilter = self.AuraFilter
 	debuffs.type = "debuffs"
-	debuffs:SetFrameLevel(frame.RaisedElementParent:GetFrameLevel() + 10) --Make them appear above any text element
+	debuffs:OffsetFrameLevel(10, frame.RaisedElementParent) --Make them appear above any text element
 	--Set initial width to prevent division by zero. This value doesn't matter, as it will be updated later
 	debuffs:Width(100)
 

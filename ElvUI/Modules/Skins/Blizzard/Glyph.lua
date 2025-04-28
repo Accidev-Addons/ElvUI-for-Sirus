@@ -44,11 +44,10 @@ S:AddCallbackForAddon("Blizzard_GlyphUI", "Skin_Blizzard_GlyphUI", function()
 		{"BOTTOMLEFT", 7, 70}
 	}
 
-	local glyphFrameLevel = GlyphFrame:GetFrameLevel() + 1
 	for i = 1, 6 do
 		local frame = _G["GlyphFrameGlyph"..i]
 		frame:SetParent(GlyphFrameBackground.backdrop)
-		frame:SetFrameLevel(glyphFrameLevel)
+		frame:OffsetFrameLevel(1, GlyphFrame)
 		frame:SetScale(glyphBGScale)
 		frame:Point(unpack(glyphPositions[i]))
 	end

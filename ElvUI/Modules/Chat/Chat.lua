@@ -656,7 +656,7 @@ function CH:StyleChat(frame)
 	copyButton:SetAlpha(0.35)
 	copyButton:Size(20, 22)
 	copyButton:Point('TOPRIGHT', 0, -4)
-	copyButton:SetFrameLevel(frame:GetFrameLevel() + 5)
+	copyButton:OffsetFrameLevel(5, frame)
 	frame.copyButton = copyButton
 
 	local copyTexture = frame.copyButton:CreateTexture(nil, 'OVERLAY')
@@ -2579,7 +2579,7 @@ function CH:BuildCopyChatFrame()
 
 	local close = CreateFrame('Button', 'CopyChatFrameCloseButton', frame, 'UIPanelCloseButton')
 	close:Point('TOPRIGHT')
-	close:SetFrameLevel(close:GetFrameLevel() + 1)
+	close:OffsetFrameLevel(1)
 	close:EnableMouse(true)
 	S:HandleCloseButton(close)
 end

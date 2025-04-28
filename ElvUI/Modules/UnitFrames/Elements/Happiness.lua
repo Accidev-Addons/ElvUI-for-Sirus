@@ -10,7 +10,7 @@ function UF:Construct_Happiness(frame)
 	HappinessIndicator.backdrop = CreateFrame("Frame", nil, HappinessIndicator)
 	UF.statusbars[HappinessIndicator] = true
 	HappinessIndicator.backdrop:SetTemplate("Default", nil, nil, self.thinBorders, true)
-	HappinessIndicator.backdrop:SetFrameLevel(HappinessIndicator:GetFrameLevel() - 1)
+	HappinessIndicator.backdrop:OffsetFrameLevel(-1, HappinessIndicator)
 	HappinessIndicator:SetInside(HappinessIndicator.backdrop)
 	HappinessIndicator:SetOrientation("VERTICAL")
 	HappinessIndicator:SetMinMaxValues(0, 100)

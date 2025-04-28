@@ -52,7 +52,7 @@ S:AddCallback("Skin_Mail", function()
 		mail:StripTextures()
 		mail:CreateBackdrop("Transparent")
 		mail.backdrop:SetParent(button)
-		mail.backdrop:SetFrameLevel(mail:GetFrameLevel() - 1)
+		mail.backdrop:OffsetFrameLevel(-1, mail)
 		mail.backdrop:Point("TOPLEFT", mail, 44, -2)
 		mail.backdrop:Point("BOTTOMRIGHT", mail, 3, 9)
 

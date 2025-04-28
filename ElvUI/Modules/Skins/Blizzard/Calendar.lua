@@ -100,7 +100,7 @@ S:AddCallbackForAddon("Blizzard_Calendar", "Skin_Blizzard_Calendar", function()
 		local eventTexture = _G["CalendarDayButton"..i.."EventTexture"]
 		local overlayFrame = _G["CalendarDayButton"..i.."OverlayFrame"]
 
-		button:SetFrameLevel(button:GetFrameLevel() + 1)
+		button:OffsetFrameLevel(1)
 		button:Size(91 - E.Border)
 		button:SetTemplate("Default", nil, true)
 		button:SetBackdropColor(0, 0, 0, 0)
@@ -356,7 +356,7 @@ S:AddCallbackForAddon("Blizzard_Calendar", "Skin_Blizzard_Calendar", function()
 	CalendarEventPickerTitleFrame:StripTextures()
 
 	CalendarEventPickerFrame:SetTemplate("Transparent")
-	CalendarEventPickerFrame:SetFrameLevel(CalendarFrameModalOverlay:GetFrameLevel() + 10)
+	CalendarEventPickerFrame:OffsetFrameLevel(10, CalendarFrameModalOverlay)
 
 	S:HandleScrollBar(CalendarEventPickerScrollBar)
 	S:HandleButton(CalendarEventPickerCloseButton, true)

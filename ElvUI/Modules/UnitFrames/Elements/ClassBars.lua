@@ -168,7 +168,7 @@ function UF:Configure_ClassBar(frame)
 		end
 
 		if not db.classbar.strataAndLevel.useCustomLevel then
-			bars:SetFrameLevel(frame.Health:GetFrameLevel() + 10) --Health uses 10, Power uses (Health + 5) when attached
+			bars:OffsetFrameLevel(10, frame.Health) --Health uses 10, Power uses (Health + 5) when attached
 		else
 			bars:SetFrameLevel(db.classbar.strataAndLevel.frameLevel)
 		end
@@ -183,7 +183,7 @@ function UF:Configure_ClassBar(frame)
 
 		bars:SetParent(frame)
 		bars:SetFrameStrata("LOW")
-		bars:SetFrameLevel(frame.Health:GetFrameLevel() + 10) --Health uses 10, Power uses (Health + 5) when attached
+		bars:OffsetFrameLevel(10, frame.Health) --Health uses 10, Power uses (Health + 5) when attached
 
 		if bars.Holder and bars.Holder.mover then
 			bars.Holder.mover:SetScale(0.0001)
@@ -258,7 +258,7 @@ function UF:Construct_DeathKnightResourceBar(frame)
 
 		runes[i]:CreateBackdrop(nil, nil, nil, self.thinBorders, true)
 		runes[i].backdrop:SetParent(runes)
-		runes[i].backdrop:SetFrameLevel(runes[i]:GetFrameLevel() - 1)
+		runes[i].backdrop:OffsetFrameLevel(-1, runes[i])
 
 		runes[i].bg = runes[i]:CreateTexture(nil, "BORDER")
 		runes[i].bg:SetAllPoints()

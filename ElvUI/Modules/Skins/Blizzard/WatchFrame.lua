@@ -133,7 +133,7 @@ S:AddCallback("Skin_WatchFrame", function()
 				poiButton.bg:SetTemplate("Default", true)
 				poiButton.bg:Point("TOPLEFT", 6, -6)
 				poiButton.bg:Point("BOTTOMRIGHT", -6, 6)
-				poiButton.bg:SetFrameLevel(poiButton.bg:GetFrameLevel() - 1)
+				poiButton.bg:OffsetFrameLevel(-1)
 
 				poiButton:HookScript("OnEnter", poi_OnEnter)
 				poiButton:HookScript("OnLeave", poi_OnLeave)

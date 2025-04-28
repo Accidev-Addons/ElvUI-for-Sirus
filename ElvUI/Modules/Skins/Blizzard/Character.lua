@@ -291,7 +291,7 @@ S:AddCallback('Skin_Character', function()
 	_G.PlayerTitleFrame:CreateBackdrop('Default')
 	_G.PlayerTitleFrame.backdrop:Point('TOPLEFT', 20, 3)
 	_G.PlayerTitleFrame.backdrop:Point('BOTTOMRIGHT', -16, 15)
-	_G.PlayerTitleFrame.backdrop:SetFrameLevel(PlayerTitleFrame:GetFrameLevel())
+	_G.PlayerTitleFrame.backdrop:OffsetFrameLevel(nil, _G.PlayerTitleFrame)
 
 	S:HandleNextPrevButton(_G.PlayerTitleFrameButton)
 	_G.PlayerTitleFrameButton:Size(16)
@@ -301,7 +301,7 @@ S:AddCallback('Skin_Character', function()
 	_G.PlayerTitlePickerFrame:CreateBackdrop('Transparent')
 	_G.PlayerTitlePickerFrame.backdrop:Point('TOPLEFT', 6, -10)
 	_G.PlayerTitlePickerFrame.backdrop:Point('BOTTOMRIGHT', -13, 6)
-	_G.PlayerTitlePickerFrame.backdrop:SetFrameLevel(_G.PlayerTitlePickerFrame:GetFrameLevel())
+	_G.PlayerTitlePickerFrame.backdrop:OffsetFrameLevel(nil, _G.PlayerTitlePickerFrame)
 
 	S:HandleScrollBar(_G.PlayerTitlePickerScrollFrameScrollBar)
 
@@ -358,7 +358,7 @@ S:AddCallback('Skin_Character', function()
 		S:HandleIcon(icon)
 		icon:SetInside()
 
-		slot:SetFrameLevel(_G.PaperDollFrame:GetFrameLevel() + 2)
+		slot:OffsetFrameLevel(2, _G.PaperDollFrame)
 
 		if cooldown then
 			E:RegisterCooldown(cooldown)
@@ -457,7 +457,7 @@ S:AddCallback('Skin_Character', function()
 
 	for i, button in ipairs(_G.GearManagerDialogPopup.buttons) do
 		button:StripTextures()
-		button:SetFrameLevel(button:GetFrameLevel() + 2)
+		button:OffsetFrameLevel(2)
 		button:CreateBackdrop('Default')
 		button.backdrop:SetAllPoints()
 
@@ -539,7 +539,7 @@ S:AddCallback('Skin_Character', function()
 
 	_G.PetResistanceFrame:Point('TOPRIGHT', _G.PetPaperDollFrame, 'TOPLEFT', 344, -75)
 
-	_G.PetPaperDollPetInfo:SetFrameLevel(_G.PetModelFrame:GetFrameLevel() + 2)
+	_G.PetPaperDollPetInfo:OffsetFrameLevel(2, _G.PetModelFrame)
 	_G.PetPaperDollPetInfo:CreateBackdrop('Default')
 	_G.PetPaperDollPetInfo:Size(25)
 	_G.PetPaperDollPetInfo:Point('TOPLEFT', _G.PetModelFrameRotateLeftButton, 'BOTTOMLEFT', 10, -4)

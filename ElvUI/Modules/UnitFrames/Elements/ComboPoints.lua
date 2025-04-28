@@ -210,7 +210,7 @@ function UF:Configure_ComboPoints(frame)
 		end
 
 		if not db.combobar.strataAndLevel.useCustomLevel then
-			ComboPoints:SetFrameLevel(frame:GetFrameLevel() + 10) --Health uses 10, Power uses (Health + 5) when attached
+			ComboPoints:OffsetFrameLevel(10, frame) --Health uses 10, Power uses (Health + 5) when attached
 		else
 			ComboPoints:SetFrameLevel(db.combobar.strataAndLevel.frameLevel)
 		end
@@ -225,7 +225,7 @@ function UF:Configure_ComboPoints(frame)
 
 		ComboPoints:SetParent(frame)
 		ComboPoints:SetFrameStrata("LOW")
-		ComboPoints:SetFrameLevel(frame:GetFrameLevel() + 10) --Health uses 10, Power uses (Health + 5) when attached
+		ComboPoints:OffsetFrameLevel(10, frame) --Health uses 10, Power uses (Health + 5) when attached
 
 		if ComboPoints.Holder and ComboPoints.Holder.mover then
 			ComboPoints.Holder.mover:SetScale(0.0001)

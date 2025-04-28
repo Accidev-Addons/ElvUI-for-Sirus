@@ -9,7 +9,7 @@ function UF:Construct_Trinket(frame)
 	local trinket = CreateFrame("Frame", nil, frame)
 	trinket.bg = CreateFrame("Frame", nil, trinket)
 	trinket.bg:SetTemplate(nil, nil, nil, self.thinBorders, true)
-	trinket.bg:SetFrameLevel(trinket:GetFrameLevel() - 1)
+	trinket.bg:OffsetFrameLevel(-1, trinket)
 	trinket:SetInside(trinket.bg)
 
 	return trinket

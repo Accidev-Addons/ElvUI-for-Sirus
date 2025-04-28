@@ -250,7 +250,7 @@ S:AddCallback("Skin_Quest", function()
 			item:SetTemplate("Default")
 			item:StyleButton()
 			item:Size(143, 40)
-			item:SetFrameLevel(item:GetFrameLevel() + 2)
+			item:OffsetFrameLevel(2)
 
 			icon:Size(E.PixelMode and 38 or 32)
 			icon:SetDrawLayer("OVERLAY")

@@ -132,6 +132,13 @@ local function Height(frame, height, ...)
 	frame:SetHeight(E:Scale(height), ...)
 end
 
+local function OffsetFrameLevel(frame, offset, secondary)
+	if not secondary then secondary = frame end
+
+	local level = secondary:GetFrameLevel()
+	frame:SetFrameLevel(level + (offset or 0))
+end
+
 local function Point(obj, arg1, arg2, arg3, arg4, arg5, ...)
 	if not arg2 then arg2 = obj:GetParent() end
 
@@ -538,6 +545,7 @@ local API = {
 	StripTextures = StripTextures,
 	StripTexts = StripTexts,
 	StyleButton = StyleButton,
+	OffsetFrameLevel = OffsetFrameLevel,
 	CreateCloseButton = CreateCloseButton,
 	GetChild = GetChild,
 }

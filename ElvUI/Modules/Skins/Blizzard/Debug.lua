@@ -25,7 +25,7 @@ S:AddCallbackForAddon('Blizzard_DebugTools', 'Skin_Blizzard_DebugTools', functio
 
 	_G.ScriptErrorsFrameScrollFrame:CreateBackdrop('Default')
 	_G.ScriptErrorsFrameScrollFrame.backdrop:Point('BOTTOMRIGHT', 1, -2)
-	_G.ScriptErrorsFrameScrollFrame:SetFrameLevel(_G.ScriptErrorsFrameScrollFrame:GetFrameLevel() + 2)
+	_G.ScriptErrorsFrameScrollFrame:OffsetFrameLevel(2)
 	_G.ScriptErrorsFrameScrollFrame:Width(461)
 	_G.ScriptErrorsFrameScrollFrame:Point('TOPLEFT', 9, -30)
 
@@ -102,7 +102,7 @@ S:AddCallbackForAddon('ViragDevTool', 'Skin_ViragDevTool', function()
 				S:HandleButton(button, nil, nil, nil, true)
 
 				checked:SetVertexColor(color.r, color.g, color.b)
-				button:SetFrameLevel(button:GetFrameLevel() + 2)
+				button:OffsetFrameLevel(2)
 				if button:GetChecked() then
 					button.backdrop:SetBackdropColor(color.r, color.g, color.b)
 				else

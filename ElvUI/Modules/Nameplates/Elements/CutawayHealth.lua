@@ -53,7 +53,7 @@ function NP:ConstructElement_CutawayHealth(parent)
 	local cutawayHealth = CreateFrame("StatusBar", "$parentCutawayHealth", healthBar)
 	cutawayHealth:SetAllPoints()
 	cutawayHealth:SetStatusBarTexture(E.media.blankTex)
-	cutawayHealth:SetFrameLevel(healthBar:GetFrameLevel() - 1)
+	cutawayHealth:OffsetFrameLevel(-1, healthBar)
 
 	NP:RegisterHealthBarCallbacks(parent, NP.CutawayHealthValueChangeCallback, NP.CutawayHealthColorChangeCallback)
 

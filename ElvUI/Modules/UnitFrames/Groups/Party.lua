@@ -20,7 +20,7 @@ function UF:Construct_PartyFrames()
 
 	self.RaisedElementParent = CreateFrame("Frame", nil, self)
 	self.RaisedElementParent.TextureParent = CreateFrame("Frame", nil, self.RaisedElementParent)
-	self.RaisedElementParent:SetFrameLevel(self:GetFrameLevel() + 100)
+	self.RaisedElementParent:OffsetFrameLevel(100, self)
 	self.BORDER = E.Border
 	self.SPACING = E.Spacing
 	self.SHADOW_SPACING = 3

@@ -19,7 +19,7 @@ S:AddCallbackForAddon("Blizzard_BattlefieldMinimap", "Skin_Blizzard_BattlefieldM
 	S:SetBackdropHitRect(BattlefieldMinimap, nil, true)
 
 	S:HandleCloseButton(BattlefieldMinimapCloseButton, BattlefieldMinimap.backdrop)
-	BattlefieldMinimapCloseButton:SetFrameLevel(BattlefieldMinimap:GetFrameLevel() + 5)
+	BattlefieldMinimapCloseButton:OffsetFrameLevel(5, BattlefieldMinimap)
 
 	BattlefieldMinimap:EnableMouse(true)
 	BattlefieldMinimap:SetMovable(true)

@@ -7,7 +7,7 @@ local CreateFrame = CreateFrame
 
 function UF:Construct_GPS(frame)
 	local gps = CreateFrame("Frame", nil, frame)
-	gps:SetFrameLevel(frame:GetFrameLevel() + 50)
+	gps:OffsetFrameLevel(50, frame)
 	gps:Hide()
 
 	gps.Texture = gps:CreateTexture("OVERLAY")

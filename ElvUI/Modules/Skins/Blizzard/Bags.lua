@@ -196,7 +196,7 @@ S:AddCallback("Skin_Bags", function()
 	BankFrame.itemBackdrop = CreateFrame("Frame", "BankFrameItemBackdrop", BankFrame)
 	BankFrame.itemBackdrop:SetTemplate("Default")
 	BankFrame.itemBackdrop:SetOutside(BankFrameItem1, 6, 6, BankFrameItem28)
-	BankFrame.itemBackdrop:SetFrameLevel(BankFrame:GetFrameLevel())
+	BankFrame.itemBackdrop:OffsetFrameLevel(nil, BankFrame)
 
 	for i = 1, NUM_BANKBAGSLOTS do
 		local button = _G["BankFrameBag"..i]
@@ -217,7 +217,7 @@ S:AddCallback("Skin_Bags", function()
 	BankFrame.bagBackdrop = CreateFrame("Frame", "BankFrameBagBackdrop", BankFrame)
 	BankFrame.bagBackdrop:SetTemplate("Default")
 	BankFrame.bagBackdrop:SetOutside(BankFrameBag1, 6, 6, BankFrameBag7)
-	BankFrame.bagBackdrop:SetFrameLevel(BankFrame:GetFrameLevel())
+	BankFrame.bagBackdrop:OffsetFrameLevel(nil, BankFrame)
 
 	S:HandleButton(BankFramePurchaseButton)
 	BankFramePurchaseButton:Point("RIGHT", -4, -10)

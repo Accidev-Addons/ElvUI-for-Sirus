@@ -1204,7 +1204,7 @@ function E:Contruct_StaticPopups()
 
 		for i = 1, 3 do
 			local button = _G["ElvUI_StaticPopup"..index.."Button"..i]
-			button:SetFrameLevel(button:GetFrameLevel() + 1)
+			button:OffsetFrameLevel(1)
 			button:SetScript("OnClick", function(btn)
 				E.StaticPopup_OnClick(btn:GetParent(), btn:GetID())
 			end)
@@ -1218,7 +1218,7 @@ function E:Contruct_StaticPopups()
 		_G["ElvUI_StaticPopup"..index.."CheckButtonText"]:Point("LEFT", _G["ElvUI_StaticPopup"..index.."CheckButton"], "RIGHT", 4, 1)
 		Skins:HandleCheckBox(_G["ElvUI_StaticPopup"..index.."CheckButton"])
 
-		_G["ElvUI_StaticPopup"..index.."EditBox"]:SetFrameLevel(_G["ElvUI_StaticPopup"..index.."EditBox"]:GetFrameLevel()+1)
+		_G["ElvUI_StaticPopup"..index.."EditBox"]:OffsetFrameLevel(1, _G["ElvUI_StaticPopup"..index.."EditBox"])
 		Skins:HandleEditBox(_G["ElvUI_StaticPopup"..index.."EditBox"])
 
 		for k = 1, _G["ElvUI_StaticPopup"..index.."EditBox"]:GetNumRegions() do
