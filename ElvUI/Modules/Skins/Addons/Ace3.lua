@@ -52,6 +52,28 @@ function S:Ace3_CheckBoxIsEnable(widget)
 	if text and S.Ace3_EnableMatch then return strmatch(text, S.Ace3_EnableMatch) end
 end
 
+function S:Ace3_CheckBoxSetDesaturated(value)
+	local widget = self:GetParent():GetParent().obj
+	if value == true then
+		self:SetVertexColor(.6, .6, .6, .8)
+	elseif S:Ace3_CheckBoxIsEnable(widget) then
+		if widget.checked then
+			self:SetVertexColor(0.2, 1.0, 0.2, 1.0)
+		else
+			self:SetVertexColor(1.0, 0.2, 0.2, 1.0)
+		end
+	else
+		self:SetVertexColor(1, .82, 0, 0.8)
+	end
+end
+
+function S:Ace3_CheckBoxSetDisabled(disabled)
+	if S:Ace3_CheckBoxIsEnable(self) then
+		local tristateOrDisabled = disabled or (self.tristate and self.checked == nil)
+		self:SetLabel((tristateOrDisabled and S.Ace3_L.Enable) or (self.checked and S.Ace3_EnableOn) or S.Ace3_EnableOff)
+	end
+end
+
 function S:Ace3_EditBoxSetTextInsets(l, r, t, b)
 	if l == 0 then self:SetTextInsets(3, r, t, b) end
 end
@@ -108,79 +130,39 @@ function S:Ace3_SkinButton(button)
 	end
 end
 
+local function GetDesaturation(frame)
+    local r, g, b, a = frame:GetVertexColor()
+    return (r == .6 and g == .6 and b == .6 and a == .8) and 1 or 0
+end
+
 function S:Ace3_SkinCheckBox(widget, check, checkbg, highlight)
-	if not checkbg.backdrop then
-		checkbg:CreateBackdrop()
-		checkbg.backdrop:SetInside(widget.checkbg, 4, 4)
-		checkbg.backdrop:SetFrameLevel(widget.checkbg.backdrop:GetFrameLevel() + 1)
+    if not checkbg.backdrop then
+		checkbg:CreateBackdrop(nil, nil, nil, nil, nil, nil, nil, nil, true)
+		checkbg.backdrop:SetInside(widget.checkbg, E.private.skins.checkBoxSkin and 5 or 4, E.private.skins.checkBoxSkin and 5 or 4)
+
 		checkbg:SetTexture()
-		checkbg.SetTexture = E.noop
+		highlight:SetTexture()
 
 		check:SetParent(checkbg.backdrop)
 
-		highlight:SetTexture()
-		highlight.SetTexture = E.noop
-
-		hooksecurefunc(widget, 'SetDisabled', function(w, value)
-			local isEnable = S:Ace3_CheckBoxIsEnable(w)
-
-			if value then
-				if isEnable then
-					w:SetLabel(S.Ace3_EnableOff)
-				end
-			end
-		end)
-
-		hooksecurefunc(widget, 'SetValue', function(w, value)
-			local isEnable = S:Ace3_CheckBoxIsEnable(w)
-
-			if isEnable then
-				w:SetLabel(value and S.Ace3_EnableOn or S.Ace3_EnableOff)
-			end
-		end)
+		hooksecurefunc(widget, 'SetDisabled', S.Ace3_CheckBoxSetDisabled)
+		hooksecurefunc(widget, 'SetType', S.Ace3_CheckBoxSetType)
 
 		if E.private.skins.checkBoxSkin then
+			S.Ace3_CheckBoxSetDesaturated(check, GetDesaturation(check))
+			hooksecurefunc(check, 'SetDesaturated', S.Ace3_CheckBoxSetDesaturated)
+
 			checkbg.backdrop:SetInside(widget.checkbg, 5, 5)
-			check:SetTexture(E.Media.Textures.Melli)
-			check.SetTexture = E.noop
 			check:SetInside(widget.checkbg.backdrop)
 
-			hooksecurefunc(check, 'SetDesaturated', function(chk, value)
-				if value == true then
-					chk:SetDesaturated(false)
-				end
-			end)
-
-			hooksecurefunc(widget, 'SetDisabled', function(w, value)
-				local isEnable = S:Ace3_CheckBoxIsEnable(w)
-
-				if value then
-					if isEnable then
-						check:SetVertexColor(1.0, 0.2, 0.2, 1.0)
-					else
-						check:SetVertexColor(0.6, 0.6, 0.6, 0.8)
-					end
-				end
-			end)
-
-			hooksecurefunc(widget, 'SetValue', function(w, value)
-				local isEnable = S:Ace3_CheckBoxIsEnable(w)
-
-				if value then
-					if isEnable then
-						check:SetVertexColor(0.2, 1.0, 0.2, 1.0)
-					else
-						check:SetVertexColor(1, 0.82, 0, 0.8)
-					end
-				else
-					if w.tristate and value == nil then
-						check:SetVertexColor(.6, .6, .6, .8)
-					end
-				end
-			end)
+			check:SetTexture(E.Media.Textures.Melli)
+			check.SetTexture = E.noop
 		else
-			check:SetOutside(widget.checkbg.backdrop, 3, 3)
+			check:SetOutside(checkbg.backdrop, 3, 3)
 		end
+
+		checkbg.SetTexture = E.noop
+		highlight.SetTexture = E.noop
 	end
 end
 
