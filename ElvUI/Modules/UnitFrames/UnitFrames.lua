@@ -198,6 +198,23 @@ function UF:ConvertGroupDB(group)
 	end
 end
 
+function UF:ResetAuraPriority()
+	for unitName, content in pairs(E.db.unitframe.units) do
+		local default = P.unitframe.units[unitName]
+		if default then
+			if content.buffs then
+				content.buffs.priority = default.buffs.priority
+			end
+			if content.debuffs then
+				content.debuffs.priority = default.debuffs.priority
+			end
+			if content.aurabar then
+				content.aurabar.priority = default.aurabar.priority
+			end
+		end
+	end
+end
+
 function UF:Construct_UF(frame, unit)
 	frame:SetScript("OnEnter", UnitFrame_OnEnter)
 	frame:SetScript("OnLeave", UnitFrame_OnLeave)
