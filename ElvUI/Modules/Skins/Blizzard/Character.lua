@@ -12,7 +12,6 @@ local CreateFrame = CreateFrame
 local GetInventoryItemQuality = GetInventoryItemQuality
 local GetInventoryItemTexture = GetInventoryItemTexture
 local GetItemInfo = GetItemInfo
-local GetItemQualityColor = GetItemQualityColor
 local GetPetHappiness = GetPetHappiness
 local HasPetUI = HasPetUI
 local IsAddOnLoaded = IsAddOnLoaded
@@ -62,7 +61,7 @@ end
 
 local function HandleItemButtonQuality(button, rarity)
 	if rarity and rarity > 1 then
-		local r, g, b = GetItemQualityColor(rarity)
+		local r, g, b = E:GetItemQualityColor(rarity)
 		button:SetBackdropBorderColor(r, g, b)
 	else
 		button:SetBackdropBorderColor(unpack(E.media.bordercolor))

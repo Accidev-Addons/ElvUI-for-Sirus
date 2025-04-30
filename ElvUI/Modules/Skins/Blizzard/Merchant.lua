@@ -8,7 +8,6 @@ local floor = math.floor
 --WoW API / Variables
 local GetBuybackItemInfo = GetBuybackItemInfo
 local GetItemInfo = GetItemInfo
-local GetItemQualityColor = GetItemQualityColor
 local GetMerchantNumItems = GetMerchantNumItems
 
 S:AddCallback("Skin_Merchant", function()
@@ -169,7 +168,7 @@ S:AddCallback("Skin_Merchant", function()
 					_, _, quality = GetItemInfo(button.link)
 
 					if quality and quality > 1 then
-						local r, g, b = GetItemQualityColor(quality)
+						local r, g, b = E:GetItemQualityColor(quality)
 						button:SetBackdropBorderColor(r, g, b)
 						name:SetTextColor(r, g, b)
 					else
@@ -187,7 +186,7 @@ S:AddCallback("Skin_Merchant", function()
 				_, _, quality = GetItemInfo(itemName)
 
 				if quality and quality > 1 then
-					local r, g, b = GetItemQualityColor(quality)
+					local r, g, b = E:GetItemQualityColor(quality)
 					MerchantBuyBackItemItemButton:SetBackdropBorderColor(r, g, b)
 					MerchantBuyBackItemName:SetTextColor(r, g, b)
 				else
@@ -219,7 +218,7 @@ S:AddCallback("Skin_Merchant", function()
 					_, _, quality = GetItemInfo(itemName)
 
 					if quality and quality > 1 then
-						local r, g, b = GetItemQualityColor(quality)
+						local r, g, b = E:GetItemQualityColor(quality)
 						button:SetBackdropBorderColor(r, g, b)
 						name:SetTextColor(r, g, b)
 					else

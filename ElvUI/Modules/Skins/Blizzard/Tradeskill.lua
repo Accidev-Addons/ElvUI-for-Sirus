@@ -7,7 +7,6 @@ local unpack, select = unpack, select
 --WoW API / Variables
 local CreateFrame = CreateFrame
 local GetItemInfo = GetItemInfo
-local GetItemQualityColor = GetItemQualityColor
 local GetTradeSkillItemLink = GetTradeSkillItemLink
 local GetTradeSkillReagentInfo = GetTradeSkillReagentInfo
 local GetTradeSkillReagentItemLink = GetTradeSkillReagentItemLink
@@ -192,7 +191,7 @@ S:AddCallbackForAddon("Blizzard_TradeSkillUI", "Skin_Blizzard_TradeSkillUI", fun
 			local quality = select(3, GetItemInfo(skillLink))
 
 			if quality and quality > 1 then
-				r, g, b = GetItemQualityColor(quality)
+				r, g, b = E:GetItemQualityColor(quality)
 
 				TradeSkillSkillIcon:SetBackdropBorderColor(r, g, b)
 				TradeSkillSkillName:SetTextColor(r, g, b)
@@ -213,7 +212,7 @@ S:AddCallbackForAddon("Blizzard_TradeSkillUI", "Skin_Blizzard_TradeSkillUI", fun
 
 				if quality and quality > 1 then
 					local name = _G["TradeSkillReagent"..i.."Name"]
-					r, g, b = GetItemQualityColor(quality)
+					r, g, b = E:GetItemQualityColor(quality)
 
 					icon.backdrop:SetBackdropBorderColor(r, g, b)
 					reagent:SetBackdropBorderColor(r, g, b)

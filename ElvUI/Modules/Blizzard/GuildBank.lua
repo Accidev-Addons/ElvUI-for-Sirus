@@ -9,7 +9,6 @@ local _G = _G
 local GetCurrentGuildBankTab = GetCurrentGuildBankTab
 local GetGuildBankItemLink = GetGuildBankItemLink
 local GetItemInfo = GetItemInfo
-local GetItemQualityColor = GetItemQualityColor
 local hooksecurefunc = hooksecurefunc
 
 local NUM_SLOTS_PER_GUILDBANK_GROUP = 14
@@ -33,7 +32,7 @@ function BL:GuildBank_ItemLevel(button)
 	if itemlink then
 		local _, _, rarity, itemLevel, _, _, _, _, itemEquipLoc, _, _, classID, subclassID = GetItemInfo(itemlink)
         if rarity and rarity > 1 then
-            r, g, b = GetItemQualityColor(rarity)
+            r, g, b = E:GetItemQualityColor(rarity)
         end
 
         if rarity and rarity > 1 and db.itemQuality then
@@ -48,7 +47,7 @@ function BL:GuildBank_ItemLevel(button)
 			if color then
 				r, g, b = color.r, color.g, color.b
             elseif rarity and rarity > 1 then -- we already do this above otherwise
-				r, g, b = GetItemQualityColor(rarity)
+				r, g, b = E:GetItemQualityColor(rarity)
 			end
 
 			ilvl = itemLevel

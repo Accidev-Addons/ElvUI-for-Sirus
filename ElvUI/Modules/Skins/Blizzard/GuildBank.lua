@@ -7,7 +7,6 @@ local select, unpack = select, unpack
 local CreateFrame = CreateFrame
 local GetCurrentGuildBankTab = GetCurrentGuildBankTab
 local GetGuildBankItemLink = GetGuildBankItemLink
-local GetItemQualityColor = GetItemQualityColor
 local hooksecurefunc = hooksecurefunc
 
 S:AddCallbackForAddon("Blizzard_GuildBankUI", "Skin_Blizzard_GuildBankUI", function()

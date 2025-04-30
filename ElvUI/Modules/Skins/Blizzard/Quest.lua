@@ -8,7 +8,6 @@ local unpack = unpack
 local find, gsub = string.find, string.gsub
 --WoW API / Variables
 local GetItemInfo = GetItemInfo
-local GetItemQualityColor = GetItemQualityColor
 local GetMoney = GetMoney
 local GetNumQuestLeaderBoards = GetNumQuestLeaderBoards
 local GetQuestItemLink = GetQuestItemLink
@@ -266,7 +265,7 @@ S:AddCallback("Skin_Quest", function()
 		local quality = link and select(3, GetItemInfo(link))
 
 		if quality and quality > 1 then
-			local r, g, b = GetItemQualityColor(quality)
+			local r, g, b = E:GetItemQualityColor(quality)
 
 			frame:SetBackdropBorderColor(r, g, b)
 

@@ -25,7 +25,6 @@ local GetInventorySlotInfo = GetInventorySlotInfo
 local GetItemCount = GetItemCount
 local GetItemInfo = GetItemInfo
 local GetMouseFocus = GetMouseFocus
-local GetItemQualityColor = GetItemQualityColor
 local GetNumPartyMembers = GetNumPartyMembers
 local GetNumRaidMembers = GetNumRaidMembers
 local GetQuestDifficultyColor = GetQuestDifficultyColor
@@ -686,7 +685,7 @@ function TT:SetStyle(tt)
 		if TT.db.itemQuality then
 			local _, _, quality = GetItemInfo(link)
 			if quality and quality > 1 then
-				local r, g, b = GetItemQualityColor(quality)
+				local r, g, b = E:GetItemQualityColor(quality)
 				tt:SetBackdropBorderColor(r, g, b)
 
 				tt.qualityChanged = true

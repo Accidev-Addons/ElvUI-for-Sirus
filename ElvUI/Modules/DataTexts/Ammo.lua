@@ -13,7 +13,6 @@ local GetInventoryItemID = GetInventoryItemID
 local ContainerIDToInventoryID = ContainerIDToInventoryID
 local GetContainerNumSlots = GetContainerNumSlots
 local GetContainerNumFreeSlots = GetContainerNumFreeSlots
-local GetItemQualityColor = GetItemQualityColor
 
 local NUM_BAG_SLOTS = NUM_BAG_SLOTS
 local NUM_BAG_FRAMES = NUM_BAG_FRAMES
@@ -103,7 +102,7 @@ local function OnEnter()
 					local name, _, quality, _, _, _, _, _, equipLoc, texture = GetItemInfo(info.hyperlink)
 					local count = GetItemCount(info.itemID)
 					if equipLoc == 'INVTYPE_AMMO' or equipLoc == 'INVTYPE_THROWN' then
-						DT.tooltip:AddDoubleLine(strjoin('', format(iconString, texture), ' ', name), count, GetItemQualityColor(quality))
+						DT.tooltip:AddDoubleLine(strjoin('', format(iconString, texture), ' ', name), count, E:GetItemQualityColor(quality))
 						itemCount[info.itemID] = count
 						totalItemCount = totalItemCount + 1
 					end
@@ -123,7 +122,7 @@ local function OnEnter()
 			if equipLoc == 'INVTYPE_RANGED' or equipLoc == 'INVTYPE_THROWN' then
 				DT.tooltip:AddLine(' ')
 				DT.tooltip:AddLine(CURRENTLY_EQUIPPED)
-				DT.tooltip:AddDoubleLine(strjoin('', format(iconString, texture), ' ', name), count, GetItemQualityColor(quality))
+				DT.tooltip:AddDoubleLine(strjoin('', format(iconString, texture), ' ', name), count, E:GetItemQualityColor(quality))
 			end
 		end
 	end
@@ -137,7 +136,7 @@ local function OnEnter()
 				local used = total - free
 
 				DT.tooltip:AddLine(itemSubType)
-				DT.tooltip:AddDoubleLine(strjoin('', format(iconString, texture), '  ', name), format('%d / %d', used, total), GetItemQualityColor(quality))
+				DT.tooltip:AddDoubleLine(strjoin('', format(iconString, texture), '  ', name), format('%d / %d', used, total), E:GetItemQualityColor(quality))
 			end
 		end
 	end

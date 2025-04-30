@@ -10,7 +10,6 @@ local unpack = unpack
 local GetInboxHeaderInfo = GetInboxHeaderInfo
 local GetInboxItemLink = GetInboxItemLink
 local GetItemInfo = GetItemInfo
-local GetItemQualityColor = GetItemQualityColor
 local GetSendMailItem = GetSendMailItem
 
 local INBOXITEMS_TO_DISPLAY = INBOXITEMS_TO_DISPLAY
@@ -85,7 +84,7 @@ S:AddCallback("Skin_Mail", function()
 						local quality = select(3, GetItemInfo(itemLink))
 
 						if quality and quality > 1 then
-							button.backdrop:SetBackdropBorderColor(GetItemQualityColor(quality))
+							button.backdrop:SetBackdropBorderColor(E:GetItemQualityColor(quality))
 						else
 							button.backdrop:SetBackdropBorderColor(unpack(E.media.bordercolor))
 						end
@@ -144,7 +143,7 @@ S:AddCallback("Skin_Mail", function()
 				local quality = select(3, GetItemInfo(name))
 
 				if quality and quality > 1 then
-					button:SetBackdropBorderColor(GetItemQualityColor(quality))
+					button:SetBackdropBorderColor(E:GetItemQualityColor(quality))
 				else
 					button:SetBackdropBorderColor(unpack(E.media.bordercolor))
 				end
@@ -236,7 +235,7 @@ S:AddCallback("Skin_Mail", function()
 				local quality = select(3, GetItemInfo(itemLink))
 
 				if quality and quality > 1 then
-					button:SetBackdropBorderColor(GetItemQualityColor(quality))
+					button:SetBackdropBorderColor(E:GetItemQualityColor(quality))
 				else
 					button:SetBackdropBorderColor(unpack(E.media.bordercolor))
 				end

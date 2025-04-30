@@ -6,7 +6,6 @@ local _G = _G
 local unpack = unpack
 --WoW API / Variables
 local GetItemInfo = GetItemInfo
-local GetItemQualityColor = GetItemQualityColor
 local GetLFGDungeonRewardLink = GetLFGDungeonRewardLink
 local GetLFGDungeonRewards = GetLFGDungeonRewards
 local hooksecurefunc = hooksecurefunc
@@ -133,7 +132,7 @@ S:AddCallback("Skin_LFD", function()
 			if link then
 				local _, _, quality = GetItemInfo(link)
 				if quality and quality > 1 then
-					local r, g, b = GetItemQualityColor(quality)
+					local r, g, b = E:GetItemQualityColor(quality)
 					frame.backdrop:SetBackdropBorderColor(r, g, b)
 					name:SetTextColor(r, g, b)
 				end
@@ -228,7 +227,7 @@ S:AddCallback("Skin_LFD", function()
 		local link = getLFGDungeonRewardLinkFix(dungeonID, rewardIndex)
 		if link then
 			local _, _, quality = GetItemInfo(link)
-			button:SetBackdropBorderColor(GetItemQualityColor(quality))
+			button:SetBackdropBorderColor(E:GetItemQualityColor(quality))
 		else
 			button:SetBackdropBorderColor(unpack(E.media.bordercolor))
 		end

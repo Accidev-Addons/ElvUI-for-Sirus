@@ -237,6 +237,23 @@ function E:ClassColor(class, usePriestColor)
 	end
 end
 
+function E:GetQualityColor(quality)
+	return _G.ITEM_QUALITY_COLORS[quality]
+end
+
+function E:GetItemQualityColor(quality)
+	if quality == -1 then
+		return 0, 0, 0
+	end
+
+	local color = quality and E:GetQualityColor(quality)
+	if color then
+		return color.r, color.g, color.b
+	else
+		return unpack(E.media.bordercolor)
+	end
+end
+
 function E:InverseClassColor(class, usePriestColor, forceCap)
 	local color = E:CopyTable({}, E:ClassColor(class, usePriestColor))
 	local capColor = class == 'PRIEST' or forceCap

@@ -8,7 +8,6 @@ local strjoin = strjoin
 
 local GetInventoryItemQuality = GetInventoryItemQuality
 local GetInventoryItemTexture = GetInventoryItemTexture
-local GetItemQualityColor = GetItemQualityColor
 
 local GetBagName = GetBagName
 local GetContainerNumFreeSlots = GetContainerNumFreeSlots
@@ -73,7 +72,7 @@ local function OnEnter()
 
 			if i > 0 then
 				local id = ContainerIDToInventoryID(i)
-				r, g, b = GetItemQualityColor(GetInventoryItemQuality('player', id) or 1)
+				r, g, b = E:GetItemQualityColor(GetInventoryItemQuality('player', id) or 1)
 				icon = GetInventoryItemTexture('player', id)
 			end
 

@@ -5,7 +5,6 @@ local S = E:GetModule("Skins")
 local _G = _G
 local unpack, select = unpack, select
 --WoW API / Variables
-local GetItemQualityColor = GetItemQualityColor
 local GetLootRollItemInfo = GetLootRollItemInfo
 local GetLootSlotInfo = GetLootSlotInfo
 local IsFishingLoot = IsFishingLoot
@@ -128,7 +127,7 @@ S:AddCallback("Skin_Loot", function()
 					elseif questId or isQuestItem then
 						button.backdrop:SetBackdropBorderColor(1.0, 0.3, 0.3)
 					elseif quality and quality > 1 then
-						button.backdrop:SetBackdropBorderColor(GetItemQualityColor(quality))
+						button.backdrop:SetBackdropBorderColor(E:GetItemQualityColor(quality))
 					else
 						button.backdrop:SetBackdropBorderColor(unpack(E.media.bordercolor))
 					end
@@ -149,7 +148,7 @@ S:AddCallback("Skin_LootRoll", function()
 		local iconFrame = _G[frameName.."IconFrame"]
 		local statusBar = _G[frameName.."Timer"]
 		local _, _, _, quality = GetLootRollItemInfo(self.rollID)
-		local r, g, b = GetItemQualityColor(quality)
+		local r, g, b = E:GetItemQualityColor(quality)
 
 		self:SetTemplate("Transparent")
 

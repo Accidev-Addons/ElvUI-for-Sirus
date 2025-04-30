@@ -7,7 +7,6 @@ local unpack = unpack
 --WoW API / Variables
 local GetInventoryItemID = GetInventoryItemID
 local GetItemInfo = GetItemInfo
-local GetItemQualityColor = GetItemQualityColor
 
 S:AddCallbackForAddon("Blizzard_InspectUI", "Skin_Blizzard_InspectUI", function()
 	if not E.private.skins.blizzard.enable or not E.private.skins.blizzard.inspect then return end
@@ -89,7 +88,7 @@ S:AddCallbackForAddon("Blizzard_InspectUI", "Skin_Blizzard_InspectUI", function(
 						E:Delay(0.1, awaitCache, button)
 						return
 					elseif quality and quality > 1 then
-						button.backdrop:SetBackdropBorderColor(GetItemQualityColor(quality))
+						button.backdrop:SetBackdropBorderColor(E:GetItemQualityColor(quality))
 						return
 					end
 				end

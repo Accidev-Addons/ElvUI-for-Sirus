@@ -6,7 +6,6 @@ local _G = _G
 local unpack, select = unpack, select
 --WoW API / Variables
 local GetItemInfo = GetItemInfo
-local GetItemQualityColor = GetItemQualityColor
 local GetTradePlayerItemLink = GetTradePlayerItemLink
 local GetTradeTargetItemLink = GetTradeTargetItemLink
 
@@ -97,10 +96,10 @@ S:AddCallback("Skin_Trade", function()
 			local tradeItemName = _G["TradePlayerItem"..id.."Name"]
 			local quality = select(3, GetItemInfo(link))
 
-			tradeItemName:SetTextColor(GetItemQualityColor(quality))
+			tradeItemName:SetTextColor(E:GetItemQualityColor(quality))
 
 			if quality and quality > 1 then
-				tradeItemButton:SetBackdropBorderColor(GetItemQualityColor(quality))
+				tradeItemButton:SetBackdropBorderColor(E:GetItemQualityColor(quality))
 			else
 				tradeItemButton:SetBackdropBorderColor(unpack(E.media.bordercolor))
 			end
@@ -117,10 +116,10 @@ S:AddCallback("Skin_Trade", function()
 			local tradeItemName = _G["TradeRecipientItem"..id.."Name"]
 			local quality = select(3, GetItemInfo(link))
 
-			tradeItemName:SetTextColor(GetItemQualityColor(quality))
+			tradeItemName:SetTextColor(E:GetItemQualityColor(quality))
 
 			if quality and quality > 1 then
-				tradeItemButton:SetBackdropBorderColor(GetItemQualityColor(quality))
+				tradeItemButton:SetBackdropBorderColor(E:GetItemQualityColor(quality))
 			else
 				tradeItemButton:SetBackdropBorderColor(unpack(E.media.bordercolor))
 			end

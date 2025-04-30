@@ -13,7 +13,6 @@ local GetContainerItemQuestInfo = GetContainerItemQuestInfo
 local GetContainerNumFreeSlots = GetContainerNumFreeSlots
 local GetInventoryItemLink = GetInventoryItemLink
 local GetItemInfo = GetItemInfo
-local GetItemQualityColor = GetItemQualityColor
 local GetInventoryItemID = GetInventoryItemID
 
 local BANK_CONTAINER = BANK_CONTAINER
@@ -142,7 +141,7 @@ S:AddCallback("Skin_Bags", function()
 					item:SetBackdropBorderColor(unpack(B.QuestColors.questItem))
 					item.ignoreBorderColors = true
 				elseif quality and quality > 1 then
-					item:SetBackdropBorderColor(GetItemQualityColor(quality))
+					item:SetBackdropBorderColor(E:GetItemQualityColor(quality))
 					item.ignoreBorderColors = true
 				else
 					item:SetBackdropBorderColor(unpack(E.media.bordercolor))
@@ -232,7 +231,7 @@ S:AddCallback("Skin_Bags", function()
 				local quality = select(3, GetItemInfo(link))
 
 				if quality and quality > 1 then
-					button:SetBackdropBorderColor(GetItemQualityColor(quality))
+					button:SetBackdropBorderColor(E:GetItemQualityColor(quality))
 					button.ignoreBorderColors = true
 				else
 					button:SetBackdropBorderColor(unpack(E.media.bordercolor))
@@ -267,7 +266,7 @@ S:AddCallback("Skin_Bags", function()
 					local quality = select(3, GetItemInfo(link))
 
 					if quality and quality > 1 then
-						button:SetBackdropBorderColor(GetItemQualityColor(quality))
+						button:SetBackdropBorderColor(E:GetItemQualityColor(quality))
 						button.ignoreBorderColors = true
 					else
 						button:SetBackdropBorderColor(unpack(E.media.bordercolor))

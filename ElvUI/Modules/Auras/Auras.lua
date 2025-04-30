@@ -15,7 +15,6 @@ local UnitAura = UnitAura
 local CancelItemTempEnchantment = CancelItemTempEnchantment
 local CancelUnitBuff = CancelUnitBuff
 local GetInventoryItemQuality = GetInventoryItemQuality
-local GetItemQualityColor = GetItemQualityColor
 local GetWeaponEnchantInfo = GetWeaponEnchantInfo
 local GetInventoryItemTexture = GetInventoryItemTexture
 local DebuffTypeColor = DebuffTypeColor
@@ -365,7 +364,7 @@ function A:ConfigureAuras(header, auraTable, weaponPosition)
 					local index = enchantableSlots[weapon]
 					button.texture:SetTexture(GetInventoryItemTexture("player", index))
 
-					button:SetBackdropBorderColor(GetItemQualityColor(GetInventoryItemQuality("player", index) or 1))
+					button:SetBackdropBorderColor(E:GetItemQualityColor(GetInventoryItemQuality("player", index) or 1))
 
 					local duration = 600
 					local expirationTime = weaponEnchantTime[weapon]

@@ -6,7 +6,6 @@ local _G = _G
 local ipairs, unpack = ipairs, unpack
 --WoW API / Variables
 local GetAuctionSellItemInfo = GetAuctionSellItemInfo
-local GetItemQualityColor = GetItemQualityColor
 local PlaySound = PlaySound
 local hooksecurefunc = hooksecurefunc
 
@@ -385,7 +384,7 @@ S:AddCallbackForAddon("Blizzard_AuctionUI", "Skin_Blizzard_AuctionUI", function(
 			local _, _, _, quality = GetAuctionSellItemInfo()
 
 			if quality and quality > 1 then
-				self:SetBackdropBorderColor(GetItemQualityColor(quality))
+				self:SetBackdropBorderColor(E:GetItemQualityColor(quality))
 			else
 				self:SetBackdropBorderColor(unpack(E.media.bordercolor))
 			end
