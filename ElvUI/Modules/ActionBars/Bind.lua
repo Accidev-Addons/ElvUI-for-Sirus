@@ -177,14 +177,9 @@ function AB:BindUpdate(button, spellmacro)
 			button.bindstring = 'SPELL '..bind.name
 		end
 	elseif spellmacro == 'SPELL' then
-		if E.Retail then
-			local slotIndex = button.slotIndex or button:GetParent().slotIndex
-			if slotIndex then
-				bind.name = GetSpellBookItemName(slotIndex, BOOKTYPE_SPELL) or nil
-			end
-		else
-			button.id = SpellBook_GetSpellBookSlot(button)
-			bind.name = button.id and GetSpellBookItemName(button.id, _G.SpellBookFrame.bookType) or nil
+		local slotIndex = button.slotIndex or button:GetParent().slotIndex
+		if slotIndex then
+			bind.name = GetSpellBookItemName(slotIndex, BOOKTYPE_SPELL) or nil
 		end
 
 		if bind.name then button.bindstring = 'SPELL '..bind.name end
@@ -332,7 +327,7 @@ function AB:LoadKeyBinder()
 	bind:EnableMouseWheel(true)
 	bind.texture = bind:CreateTexture()
 	bind.texture:SetAllPoints(bind)
-	bind.texture:SetColorTexture(0, 0, 0, .25)
+	bind.texture:SetTexture(0, 0, 0, .25)
 	bind:Hide()
 
 	AB:SecureHook(GameTooltip, 'Hide', AB.ShowBinds) -- helper for BindTooltip

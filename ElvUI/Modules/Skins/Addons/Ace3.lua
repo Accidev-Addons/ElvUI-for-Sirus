@@ -357,7 +357,7 @@ function S:Ace3_RegisterAsWidget(widget)
 
 			local bg = colorSwatch.background
 			if bg then
-				bg:SetColorTexture(0, 0, 0, 0)
+				bg:SetTexture(0, 0, 0, 0)
 			end
 
 			local checkers = colorSwatch.checkers
