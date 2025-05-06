@@ -1,17 +1,24 @@
-local MAJOR_VERSION = "LibCustomGlow-1.0"
+local MAJOR_VERSION = "LibCustomGlow-1.0-ElvUI"
 local MINOR_VERSION = 16
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
 if not lib then return end
 
+local LC = LibStub("LibCompat-1.0")
+
 local pairs, ipairs = pairs, ipairs
 local ceil, floor, min, mod = math.ceil, math.floor, math.min, mod
 local tinsert, tremove = table.insert, table.remove
 
+local CreateFramePool = LC.CreateFramePool
+local CreateTexturePool = LC.CreateTexturePool
+
+local texturePath = [[Interface\AddOns\ElvUI\Libraries\LibCustomGlow-1.0\]]
+
 local textureList = {
-	["empty"] = [[Interface\AddOns\ElvUI\Libraries\LibCustomGlow-1.0\AM_29]],
+	["empty"] = texturePath..[[AM_29]],
 	["white"] = [[Interface\BUTTONS\WHITE8X8]],
-	["shine"] = [[Interface\AddOns\ElvUI\Libraries\LibCustomGlow-1.0\Artifacts]]
+	["shine"] = texturePath..[[Artifacts]]
 }
 
 function lib.RegisterTextures(texture, id)
@@ -626,14 +633,14 @@ local function configureButtonGlow(f, alpha)
 	f.spark = f:CreateTexture(nil, "BACKGROUND")
 	f.spark:SetPoint("CENTER")
 	f.spark:SetAlpha(0)
-	f.spark:SetTexture([[Interface\AddOns\ElvUI\Libraries\LibCustomGlow-1.0\IconAlert]])
+	f.spark:SetTexture(texturePath..[[IconAlert]])
 	f.spark:SetTexCoord(0.00781250, 0.61718750, 0.00390625, 0.26953125)
 
 	-- inner glow
 	f.innerGlow = f:CreateTexture()
 	f.innerGlow:SetPoint("CENTER")
 	f.innerGlow:SetAlpha(0)
-	f.innerGlow:SetTexture([[Interface\AddOns\ElvUI\Libraries\LibCustomGlow-1.0\IconAlert]])
+	f.innerGlow:SetTexture(texturePath..[[IconAlert]])
 	f.innerGlow:SetTexCoord(0.00781250, 0.50781250, 0.27734375, 0.52734375)
 	f.innerGlow:Show()
 
@@ -642,14 +649,14 @@ local function configureButtonGlow(f, alpha)
 	f.innerGlowOver:SetPoint("TOPLEFT", f.innerGlow, "TOPLEFT")
 	f.innerGlowOver:SetPoint("BOTTOMRIGHT", f.innerGlow, "BOTTOMRIGHT")
 	f.innerGlowOver:SetAlpha(0)
-	f.innerGlowOver:SetTexture([[Interface\AddOns\ElvUI\Libraries\LibCustomGlow-1.0\IconAlert]])
+	f.innerGlowOver:SetTexture(texturePath..[[IconAlert]])
 	f.innerGlowOver:SetTexCoord(0.00781250, 0.50781250, 0.53515625, 0.78515625)
 
 	-- outer glow
 	f.outerGlow = f:CreateTexture()
 	f.outerGlow:SetPoint("CENTER")
 	f.outerGlow:SetAlpha(0)
-	f.outerGlow:SetTexture([[Interface\AddOns\ElvUI\Libraries\LibCustomGlow-1.0\IconAlert]])
+	f.outerGlow:SetTexture(texturePath..[[IconAlert]])
 	f.outerGlow:SetTexCoord(0.00781250, 0.50781250, 0.27734375, 0.52734375)
 
 	-- outer glow over
@@ -657,14 +664,14 @@ local function configureButtonGlow(f, alpha)
 	f.outerGlowOver:SetPoint("TOPLEFT", f.outerGlow, "TOPLEFT")
 	f.outerGlowOver:SetPoint("BOTTOMRIGHT", f.outerGlow, "BOTTOMRIGHT")
 	f.outerGlowOver:SetAlpha(0)
-	f.outerGlowOver:SetTexture([[Interface\AddOns\ElvUI\Libraries\LibCustomGlow-1.0\IconAlert]])
+	f.outerGlowOver:SetTexture(texturePath..[[IconAlert]])
 	f.outerGlowOver:SetTexCoord(0.00781250, 0.50781250, 0.53515625, 0.78515625)
 
 	-- ants
 	f.ants = f:CreateTexture(nil, "OVERLAY")
 	f.ants:SetPoint("CENTER")
 	f.ants:SetAlpha(0)
-	f.ants:SetTexture([[Interface\AddOns\ElvUI\Libraries\LibCustomGlow-1.0\IconAlertAnts]])
+	f.ants:SetTexture(texturePath..[[IconAlertAnts]])
 
 	f.animIn = f:CreateAnimationGroup()
 	f.animIn.appear = {}
@@ -817,35 +824,35 @@ lib.stopList["Action Button Glow"] = lib.ButtonGlow_Stop
 -- ProcGlow
 
 local BaseTexCoord = {
-  ["Loop"] = {0.412598, 0.575195, 0.000976562, 0.391602},
-  ["Start"] = {0.000488281, 0.411621, 0.000976562, 0.987305},
+	["Loop"] = {0.412598, 0.575195, 0.000976562, 0.391602},
+	["Start"] = {0.000488281, 0.411621, 0.000976562, 0.987305},
 }
 
 local function SetTile(texture, frame, rows, columns, frameScaleW, frameScaleH, key)
-  frame = frame - 1
-  local row = math.floor(frame / columns)
-  local column = frame % columns
+	frame = frame - 1
+	local row = math.floor(frame / columns)
+	local column = frame % columns
 
-  local leftStart, rightEnd, topStart, bottomEnd = BaseTexCoord[key][1], BaseTexCoord[key][2], BaseTexCoord[key][3], BaseTexCoord[key][4]
+	local leftStart, rightEnd, topStart, bottomEnd = BaseTexCoord[key][1], BaseTexCoord[key][2], BaseTexCoord[key][3], BaseTexCoord[key][4]
 
-  local fullWidth = rightEnd - leftStart
-  local fullHeight = bottomEnd - topStart
+	local fullWidth = rightEnd - leftStart
+	local fullHeight = bottomEnd - topStart
 
-  local baseDeltaX = fullWidth / columns
-  local baseDeltaY = fullHeight / rows
+	local baseDeltaX = fullWidth / columns
+	local baseDeltaY = fullHeight / rows
 
-  local deltaX = baseDeltaX * frameScaleW
-  local deltaY = baseDeltaY * frameScaleH
+	local deltaX = baseDeltaX * frameScaleW
+	local deltaY = baseDeltaY * frameScaleH
 
-  local left = leftStart + baseDeltaX * column + (baseDeltaX - deltaX) / 2
-  local right = left + deltaX
+	local left = leftStart + baseDeltaX * column + (baseDeltaX - deltaX) / 2
+	local right = left + deltaX
 
-  local top = topStart + baseDeltaY * row + (baseDeltaY - deltaY) / 2
-  local bottom = top + deltaY
+	local top = topStart + baseDeltaY * row + (baseDeltaY - deltaY) / 2
+	local bottom = top + deltaY
 
-  pcall(function()
-    texture:SetTexCoord(left, right, top, bottom)
-  end)
+	pcall(function()
+		texture:SetTexCoord(left, right, top, bottom)
+	end)
 end
 
 local StartFlipbook
@@ -923,7 +930,7 @@ local function InitProcGlow(f)
     -- Start-Flipbook
     f.ProcStart = f:CreateTexture(nil, "ARTWORK")
     f.ProcStart:SetBlendMode("ADD")
-    f.ProcStart:SetTexture([[Interface\AddOns\ElvUI\Libraries\LibCustomGlow-1.0\UIActionBarFX]])
+    f.ProcStart:SetTexture(texturePath..[[UIActionBarFX]])
     f.ProcStart:SetTexCoord(0.0827148248, 0.1649413686, 0.000976562, 0.165364635) -- First Frame
     f.ProcStart:SetAlpha(1)
     f.ProcStart:SetSize(150, 150)
@@ -932,7 +939,7 @@ local function InitProcGlow(f)
 
     -- Loop-Flipbook
     f.ProcLoop = f:CreateTexture(nil, "ARTWORK")
-    f.ProcLoop:SetTexture([[Interface\AddOns\ElvUI\Libraries\LibCustomGlow-1.0\UIActionBarFX]])
+    f.ProcLoop:SetTexture(texturePath..[[UIActionBarFX]])
     f.ProcLoop:SetTexCoord(0.412598, 0.4451174, 0.000976562, 0.066080801666667) -- First Frame
     f.ProcLoop:SetAlpha(1)
     f.ProcLoop:SetAllPoints()
