@@ -42,23 +42,6 @@ local function ToTime(start, seconds)
 	return SecondsToTime(start, not seconds, nil, 3)
 end
 
-local function ApplySettings(self, hex)
-	if not db then
-		db = E.global.datatexts.settings[self.name]
-	end
-
-	updateTime = db.seconds and 1 or 5
-
-	local sec = db.seconds and ':|r%02d' or '|r%s'
-	displayFormats.eu_nocolor = strjoin('', '%02d', ':|r%02d', sec)
-	displayFormats.na_nocolor = strjoin('', '', '%d', ':|r%02d', sec, ' %s|r')
-	displayFormats.eu_color = strjoin('', '%02d', hex, ':|r%02d', hex, sec)
-	displayFormats.na_color = strjoin('', '', '%d', hex, ':|r%02d', hex, sec, hex, ' %s|r')
-
-
-	OnUpdate(self, 20000)
-end
-
 local function ConvertTime(h, m, s)
 	local secs = db.seconds and s or ''
 	if db.time24 then
@@ -247,6 +230,23 @@ function OnUpdate(self, t)
 
 	local Hr, Min, Sec, AmPm = GetTimeValues()
 	self.text:SetFormattedText(displayFormats[AmPm == -1 and 'eu_color' or 'na_color'], Hr, Min, Sec, APM[AmPm])
+end
+
+local function ApplySettings(self, hex)
+	if not db then
+		db = E.global.datatexts.settings[self.name]
+	end
+
+	updateTime = db.seconds and 1 or 5
+
+	local sec = db.seconds and ':|r%02d' or '|r%s'
+	displayFormats.eu_nocolor = strjoin('', '%02d', ':|r%02d', sec)
+	displayFormats.na_nocolor = strjoin('', '', '%d', ':|r%02d', sec, ' %s|r')
+	displayFormats.eu_color = strjoin('', '%02d', hex, ':|r%02d', hex, sec)
+	displayFormats.na_color = strjoin('', '', '%d', hex, ':|r%02d', hex, sec, hex, ' %s|r')
+
+
+	OnUpdate(self, 20000)
 end
 
 DT:RegisterDatatext('Time', nil, { 'UPDATE_INSTANCE_INFO', 'LOADING_SCREEN_ENABLED' }, OnEvent, OnUpdate, OnClick, OnEnter, OnLeave, nil, nil, ApplySettings)

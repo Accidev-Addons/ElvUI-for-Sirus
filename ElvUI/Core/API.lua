@@ -24,7 +24,6 @@ local GetQuestLogLeaderBoard = GetQuestLogLeaderBoard
 local GetItemInfo = GetItemInfo
 local GetNumPartyMembers = GetNumPartyMembers
 local HideUIPanel = HideUIPanel
-local ShowUIPanel = ShowUIPanel
 local InCombatLockdown = InCombatLockdown
 local GetActiveTalentGroup = GetActiveTalentGroup
 local GetCVarBool = GetCVarBool

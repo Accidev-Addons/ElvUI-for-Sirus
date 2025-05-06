@@ -26,7 +26,7 @@ function BL:GuildBank_ItemLevel(button)
 	button.itemLevel:Point(db.itemLevelPosition, db.itemLevelxOffset, db.itemLevelyOffset)
 	button.itemLevel:FontTemplate(LSM:Fetch('font', db.itemLevelFont), db.itemLevelFontSize, db.itemLevelFontOutline)
 
-	local r, g, b, ilvl
+	local ilvl, r, g, b
 	local tab = GetCurrentGuildBankTab()
 	local itemlink = tab and GetGuildBankItemLink(tab, button:GetID())
 	if itemlink then
