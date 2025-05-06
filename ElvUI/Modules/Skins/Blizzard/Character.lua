@@ -60,12 +60,8 @@ local function HandleCompanionsPerPage()
 end
 
 local function HandleItemButtonQuality(button, rarity)
-	if rarity and rarity > 1 then
-		local r, g, b = E:GetItemQualityColor(rarity)
-		button:SetBackdropBorderColor(r, g, b)
-	else
-		button:SetBackdropBorderColor(unpack(E.media.bordercolor))
-	end
+	local r, g, b = E:GetItemQualityColor(rarity and rarity > 1 and rarity)
+	button:SetBackdropBorderColor(r, g, b)
 end
 
 local function PaperDollItemButtonQuality(button, event, slotID, exists)
