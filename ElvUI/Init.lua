@@ -100,11 +100,12 @@ end
 
 function E:ParseVersionString(addon)
 	local version = GetAddOnMetadata(addon, 'Version')
-	return tonumber(version), version
+	local release, extra = strmatch(version, '^v?([%d.]+)(.*)')
+	return tonumber(release), release..extra, extra ~= ''
 end
 
 do
-	E.Libs = {}
+	E.Libs = { version = 7.00 } -- E:ParseVersionString('ElvUI_Libraries') will add later
 	E.LibsMinor = {}
 	function E:AddLib(name, major, minor)
 		if not name then return end
@@ -129,7 +130,7 @@ do
 	E:AddLib('SimpleSticky', 'LibSimpleSticky-1.0')
 	E:AddLib('SpellRange', 'SpellRange-1.0')
 	E:AddLib('ItemSearch', 'LibItemSearch-1.2-ElvUI')
-	E:AddLib('ButtonGlow', 'LibButtonGlow-1.0')
+	E:AddLib('CustomGlow', 'LibCustomGlow-1.0-ElvUI')
 	E:AddLib('Deflate', 'LibDeflate')
 	E:AddLib('Masque', 'Masque', true)
 	E:AddLib('Translit', 'LibTranslit-1.0')
@@ -141,6 +142,51 @@ do
 	E.LSM = E.Libs.LSM
 	E.UnitFrames.LSM = E.Libs.LSM
 	E.Masque = E.Libs.Masque
+end
+
+do -- expand LibCustomGlow for button handling
+	local LCG, frames, proc = E.Libs.CustomGlow, {}, { xOffset = 3, yOffset = 3 }
+	function LCG.ShowOverlayGlow(button, custom)
+		local db = custom or E.db.general.customGlow
+		local glow = LCG.startList[db.style]
+		if glow then -- TODO: frameLevel isnt actually used yet
+			local color = db.useColor and ((custom and custom.color) or E.media.customGlowColor)
+
+			if db.style == 'Proc Glow' then -- this uses an options table
+				proc.color = color
+				proc.duration = db.duration
+				proc.startAnim = db.startAnimation
+				proc.frameLevel = db.frameLevel
+
+				glow(button, proc)
+			else
+				local pixel, cast = db.style == 'Pixel Glow', db.style == 'Autocast Shine'
+				local arg3, arg4, arg6, arg9, arg11
+
+				if pixel or cast then arg3, arg4 = db.lines, db.speed else arg3 = db.speed end
+				if pixel then arg6, arg11 = db.size, db.frameLevel elseif cast then arg9 = db.frameLevel end
+
+				glow(button, color, arg3, arg4, nil, arg6, nil, nil, arg9, nil, arg11)
+			end
+
+			frames[button] = true
+		end
+	end
+
+	function LCG.HideOverlayGlow(button, style)
+		local glow = LCG.stopList[style or E.db.general.customGlow.style]
+		if glow then
+			glow(button)
+
+			frames[button] = nil
+		end
+	end
+
+	function E:StopAllCustomGlows()
+		for button in next, frames do
+			LCG.HideOverlayGlow(button)
+		end
+	end
 end
 
 do
