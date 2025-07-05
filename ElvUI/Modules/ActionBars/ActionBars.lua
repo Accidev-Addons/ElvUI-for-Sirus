@@ -10,6 +10,7 @@ local CreateFrame = CreateFrame
 local GetBindingKey = GetBindingKey
 local hooksecurefunc = hooksecurefunc
 local InCombatLockdown = InCombatLockdown
+local IsPossessBarVisible = IsPossessBarVisible
 local PetDismiss = PetDismiss
 local RegisterStateDriver = RegisterStateDriver
 local SetModifiedClick = SetModifiedClick
@@ -1038,7 +1039,7 @@ function AB:UpdateAuraCooldown(button, duration)
 	if not cd then return end
 
 	local oldstate = cd.hideText
-	cd.hideText = (not E.db.cooldown.targetAura) or button.cooldown or (duration and duration > 1.5) or nil
+	cd.hideText = (not E.db.cooldown.targetAura) or (duration and duration > 1.5) or nil
 	if cd.timer and (oldstate ~= cd.hideText) then
 		E:ToggleBlizzardCooldownText(cd, cd.timer)
 		E:Cooldown_TimerUpdate(cd.timer)
@@ -1065,17 +1066,12 @@ function AB:ToggleCooldownOptions()
 end
 
 function AB:SetButtonDesaturation(button, duration)
-	if button.LevelLinkLockIcon and button.LevelLinkLockIcon:IsShown() then
-		button.saturationLocked = nil
-		return
-	end
-
 	if AB.db.desaturateOnCooldown and (duration and duration > 1.5) then
 		button.icon:SetDesaturated(true)
-		button.saturationLocked = true
+
+		AB:LAB_CooldownDone(button)
 	else
 		button.icon:SetDesaturated(false)
-		button.saturationLocked = nil
 	end
 end
 
@@ -1105,10 +1101,18 @@ function AB:LAB_ButtonUpdate(button)
 end
 
 function AB:LAB_CooldownDone(button)
-	AB:SetButtonDesaturation(button, 0)
+	local cd = button.cooldown
+	if not cd then return end
 
-	if button._state_type == 'action' then
-		AB:UpdateAuraCooldown(button)
+	if not cd.cooldownDoneHooked then
+		cd:HookScript("OnHide", function(self)
+			local parent = self:GetParent()
+			if parent and parent.icon then
+				parent.icon:SetDesaturated(false)
+			end
+		end)
+
+		cd.cooldownDoneHooked = true
 	end
 end
 
@@ -1154,7 +1158,6 @@ function AB:Initialize()
 	LAB.RegisterCallback(AB, 'OnButtonUpdate', AB.LAB_ButtonUpdate)
 	LAB.RegisterCallback(AB, 'OnButtonCreated', AB.LAB_ButtonCreated)
 	LAB.RegisterCallback(AB, 'OnCooldownUpdate', AB.LAB_CooldownUpdate)
-	LAB.RegisterCallback(AB, 'OnCooldownDone', AB.LAB_CooldownDone)
 
 	AB.fadeParent = CreateFrame('Frame', 'Elv_ABFade', UIParent)
 	AB.fadeParent:SetAlpha(1 - AB.db.globalFadeAlpha)
