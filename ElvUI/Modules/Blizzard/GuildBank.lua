@@ -43,9 +43,9 @@ function BL:GuildBank_ItemLevel(button)
 
 		local canShowItemLevel = B:IsItemEligibleForItemLevelDisplay(classID, subclassID, itemEquipLoc, rarity)
 		if canShowItemLevel and db.itemLevel then
-			local color = db.itemLevelCustomColorEnable and db.itemLevelCustomColor
-			if color then
-				r, g, b = color.r, color.g, color.b
+			local custom = db.itemLevelCustomColorEnable and db.itemLevelCustomColor
+			if custom  then
+				r, g, b = custom.r, custom.g, custom.b
             elseif rarity and rarity > 1 then -- we already do this above otherwise
 				r, g, b = E:GetItemQualityColor(rarity)
 			end
