@@ -3,10 +3,12 @@ local DT = E:GetModule('DataTexts')
 local AB = E:GetModule('ActionBars')
 
 local _G = _G
-local type, pairs, tonumber = type, pairs, tonumber
-local format, lower, split = string.format, string.lower, string.split
-local wipe, next, print = wipe, next, print
+local type, pairs, sort, tonumber = type, pairs, sort, tonumber
+local lower, wipe, next, print = strlower, wipe, next, print
+local ipairs, format, tinsert = ipairs, format, tinsert
+local strmatch, gsub = strmatch, gsub
 
+local CopyTable = CopyTable
 local ReloadUI = ReloadUI
 
 local DisableAddOn = DisableAddOn
@@ -49,7 +51,7 @@ local AddOns = {
 	ElvUI = true,
 	ElvUI_OptionsUI = true,
 	-- ElvUI_Libraries = true,
-	ElvUI_CPU = true -- debug tool located at https://github.com/Resike/ElvUI_CPU
+	-- ElvUI_CPU = true -- debug tool located at https://github.com/Resike/ElvUI_CPU
 }
 
 function E:LuaError(msg)
@@ -221,7 +223,7 @@ function E:GetCPUImpact()
 	if not toggleMode then
 		ResetCPUUsage()
 		toggleMode, num_frames, debugTimer = true, 0, debugprofilestop()
-		self:Print('CPU Impact being calculated, type /cpuimpact to get results when you are ready.')
+		E:Print('CPU Impact being calculated, type /cpuimpact to get results when you are ready.')
 		f:Show()
 	else
 		f:Hide()
@@ -231,44 +233,46 @@ function E:GetCPUImpact()
 		local per, passed =
 			((num_frames == 0 and 0) or (GetAddOnCPUUsage('ElvUI') / num_frames)),
 			((num_frames == 0 and 0) or (ms_passed / num_frames))
-		self:Print(format(cpuImpactMessage, per and per > 0 and format('%.3f', per) or 0, passed and passed > 0 and format('%.3f', passed) or 0))
+		E:Print(format(cpuImpactMessage, per and per > 0 and format('%.3f', per) or 0, passed and passed > 0 and format('%.3f', passed) or 0))
 		toggleMode = false
 	end
 end
 
 function E:LoadCommands()
 	if E.private.actionbar.enable then
-		self:RegisterChatCommand('kb', AB.ActivateBindMode)
+		E:RegisterChatCommand('kb', AB.ActivateBindMode)
 	end
 
-	self:RegisterChatCommand('in', 'DelayScriptCall')
-	self:RegisterChatCommand('ec', 'ToggleOptionsUI')
-	self:RegisterChatCommand('elvui', 'ToggleOptionsUI')
+	E:RegisterChatCommand('in', 'DelayScriptCall')
+	E:RegisterChatCommand('ec', 'ToggleOptionsUI')
+	E:RegisterChatCommand('elvui', 'ToggleOptionsUI')
 
-	self:RegisterChatCommand('bgstats', DT.ToggleBattleStats)
+	E:RegisterChatCommand('bgstats', DT.ToggleBattleStats)
 
-	self:RegisterChatCommand('moveui', 'ToggleMoveMode')
-	self:RegisterChatCommand('resetui', 'ResetUI')
+	E:RegisterChatCommand('moveui', 'ToggleMoveMode')
+	E:RegisterChatCommand('resetui', 'ResetUI')
 
-	self:RegisterChatCommand('emove', 'ToggleMoveMode')
-	self:RegisterChatCommand('ereset', 'ResetUI')
-	self:RegisterChatCommand('edebug', 'LuaError')
+	E:RegisterChatCommand('emove', 'ToggleMoveMode')
+	E:RegisterChatCommand('ereset', 'ResetUI')
+	E:RegisterChatCommand('edebug', 'LuaError')
 
-	self:RegisterChatCommand('ehelp', 'DisplayCommands')
-	self:RegisterChatCommand('ecommands', 'DisplayCommands')
-	self:RegisterChatCommand('eblizzard', 'EnableBlizzardAddOns')
-	self:RegisterChatCommand('estatus', 'ShowStatusReport')
-	self:RegisterChatCommand('efixdb', 'DBConvertProfile')
-	self:RegisterChatCommand('egrid', 'Grid')
 
-	self:RegisterChatCommand('ishd', 'HDCheck')
+	E:RegisterChatCommand('ehelp', 'DisplayCommands')
+	E:RegisterChatCommand('ecommands', 'DisplayCommands')
+	E:RegisterChatCommand('eblizzard', 'EnableBlizzardAddOns')
+	E:RegisterChatCommand('estatus', 'ShowStatusReport')
+	E:RegisterChatCommand('efixdb', 'DBConvertProfile')
+	E:RegisterChatCommand('egrid', 'Grid')
+
+	-- custom commands
+	E:RegisterChatCommand('ishd', 'HDCheck')
 
 	-- older commands
-	self:RegisterChatCommand('bgstats', 'BGStats')
-	self:RegisterChatCommand('cleanguild', 'MassGuildKick')
+	E:RegisterChatCommand('bgstats', 'BGStats')
+	E:RegisterChatCommand('cleanguild', 'MassGuildKick')
 
-	self:RegisterChatCommand('cpuimpact', 'GetCPUImpact')
-	self:RegisterChatCommand('cpuusage', 'GetTopCPUFunc')
+	E:RegisterChatCommand('cpuimpact', 'GetCPUImpact')
+	E:RegisterChatCommand('cpuusage', 'GetTopCPUFunc')
 	-- args: module, showall, delay, minCalls
 	-- Example1: /cpuusage all
 	-- Example2: /cpuusage Bags true
