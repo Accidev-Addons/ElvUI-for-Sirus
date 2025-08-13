@@ -2,7 +2,11 @@ local E, L, V, P, G = unpack(ElvUI)
 local LSM = E.Libs.LSM
 
 local format, ipairs, type, pcall = format, ipairs, type, pcall
-local westAndRU = LSM.LOCALE_BIT_ruRU + LSM.LOCALE_BIT_western
+local koKR = LSM.LOCALE_BIT_koKR
+local ruRU = LSM.LOCALE_BIT_ruRU
+local zhCN = LSM.LOCALE_BIT_zhCN
+local zhTW = LSM.LOCALE_BIT_zhTW
+local western = LSM.LOCALE_BIT_western
 
 E.Media = {
 	Fonts = {},
@@ -79,9 +83,9 @@ end
 AddMedia('font','ActionMan.ttf',			'Action Man')
 AddMedia('font','ContinuumMedium.ttf',		'Continuum Medium')
 AddMedia('font','DieDieDie.ttf',			'Die Die Die!')
-AddMedia('font','PTSansNarrow.ttf',			'PT Sans Narrow', nil, westAndRU)
-AddMedia('font','Expressway.ttf',			true, nil, westAndRU)
-AddMedia('font','Homespun.ttf',				true, nil, westAndRU)
+AddMedia('font','PTSansNarrow.ttf',			'PT Sans Narrow', nil, koKR + ruRU + zhCN + zhTW + western)
+AddMedia('font','Expressway.ttf',			true, nil, ruRU + western)
+AddMedia('font','Homespun.ttf',				true, nil, ruRU + western)
 AddMedia('font','Invisible.ttf')
 
 AddMedia('sound','AwwCrap.ogg',					'Awww Crap')
