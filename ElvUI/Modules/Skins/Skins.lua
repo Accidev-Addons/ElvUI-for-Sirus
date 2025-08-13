@@ -1107,6 +1107,60 @@ function S:HandleColorSwatch(frame, size)
 	frame.isSkinned = true
 end
 
+do
+	local background = [[Interface\Minimap\UI-Minimap-Background]]
+
+	local function buttonNormalTexture(frame, texture) if texture ~= E.ClearTexture then frame:SetNormalTexture(E.ClearTexture) end end
+	local function buttonPushedTexture(frame, texture) if texture ~= E.ClearTexture then frame:SetPushedTexture(E.ClearTexture) end end
+	local function buttonDisabledTexture(frame, texture) if texture ~= E.ClearTexture then frame:SetDisabledTexture(E.ClearTexture) end end
+	local function buttonHighlightTexture(frame, texture) if texture ~= E.ClearTexture then frame:SetHighlightTexture(E.ClearTexture) end end
+
+	function S:HandleRadioButton(Button)
+		if Button.IsSkinned then return end
+
+		local InsideMask = Button:CreateTexture()
+		InsideMask:SetTexture(background)
+		InsideMask:Size(10)
+		InsideMask:Point('CENTER')
+		Button.InsideMask = InsideMask
+
+		local OutsideMask = Button:CreateTexture()
+		OutsideMask:SetTexture(background)
+		OutsideMask:Size(13)
+		OutsideMask:Point('CENTER')
+		Button.OutsideMask = OutsideMask
+
+		Button:SetCheckedTexture(E.media.normTex)
+		Button:SetNormalTexture(E.media.normTex)
+		Button:SetHighlightTexture(E.media.normTex)
+		Button:SetDisabledTexture(E.media.normTex)
+
+		local Check = Button:GetCheckedTexture()
+		Check:SetVertexColor(unpack(E.media.rgbvaluecolor))
+		Check:SetTexCoord(0, 1, 0, 1)
+		Check:SetInside()
+
+		local Highlight = Button:GetHighlightTexture()
+		Highlight:SetTexCoord(0, 1, 0, 1)
+		Highlight:SetVertexColor(1, 1, 1)
+
+		local Normal = Button:GetNormalTexture()
+		Normal:SetOutside()
+		Normal:SetTexCoord(0, 1, 0, 1)
+		Normal:SetVertexColor(unpack(E.media.bordercolor))
+
+		local Disabled = Button:GetDisabledTexture()
+		Disabled:SetVertexColor(.3, .3, .3)
+
+		hooksecurefunc(Button, 'SetNormalTexture', buttonNormalTexture)
+		hooksecurefunc(Button, 'SetPushedTexture', buttonPushedTexture)
+		hooksecurefunc(Button, 'SetDisabledTexture', buttonDisabledTexture)
+		hooksecurefunc(Button, 'SetHighlightTexture', buttonHighlightTexture)
+
+		Button.IsSkinned = true
+	end
+end
+
 function S:ReplaceIconString(text)
 	if not text then text = self:GetText() end
 	if not text or text == '' then return end
