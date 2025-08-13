@@ -2,6 +2,7 @@
 local E = unpack(ElvUI)
 local L = E.Libs.ACL:NewLocale('ElvUI', 'esMX')
 
+L["Restrict Pings"] = "Limitar Marcas"
 L["Player"] = true
 L["Small"] = "Pequeño"
 L["Medium"] = "Mediano"
@@ -15,7 +16,6 @@ L["%s frame has a conflicting anchor point. Forcing the Buffs to be attached to 
 L["%s is attempting to share the Private Profile (%s) with you. Would you like to accept the request?"] = "%s quiere compartir el Perfil Privado (%s) contigo. ¿Aceptas la petición?"
 L["%s is attempting to share the Global Profile with you. Would you like to accept the request?"] = "%s quiere compartir el Perfil Global contigo. ¿Aceptas la petición?"
 L["%s is attempting to share the Profile (%s) with you. Would you like to accept the request?"] = "%s quiere compartir el Perfil (%s) contigo. ¿Aceptas la petición?"
-L["%s: %s tried to call the protected function '%s'."] = "%s: %s intentó llamar a la función protegida '%s'."
 L["(Ctrl & Shift Click) Toggle CPU Profiling"] = "(Ctrl y Clic Shift) Mostrar/Ocultar perfilado de CPU"
 L["(Hold Shift) Memory Usage"] = "(Mantén Shift) Uso de Memoria"
 L["(Shift Click) Collect Garbage"] = "(Clic Shift) Recolectar basura"
@@ -36,6 +36,7 @@ L["Already Running.. Bailing Out!"] = "Ya está en ejecución... ¡Cancelando!"
 L["Alternative Power"] = "Poder Alternativo"
 L["Ammo/Shard Counter"] = "Contador de Municiones/Fragmentos"
 L["AP:"] = "PA:"
+L["Archeology Progress Bar"] = "Barra de Progreso de Arqueología"
 L["Are you sure you want to apply this font to all ElvUI elements?"] = "¿Estás seguro de que deseas aplicar esta fuente a todos los elementos de ElvUI?"
 L["Are you sure you want to disband the group?"] = "¿Estás seguro que quieres deshacer el grupo?"
 L["Are you sure you want to reset all the settings on this profile?"] = "¿Estás seguro que deseas restablecer todos los ajustes de este perfil?"
@@ -48,6 +49,7 @@ L["Auras"] = "Auras"
 L["Auto Scale"] = "Escalado Automático"
 L["AVD: "] = "EVA: "
 L["Avoidance Breakdown"] = "Desglose de Evasión"
+L["Azerite Bar"] = "Barra de Azerita"
 L["Bag Bar"] = "Barra de las Bolsas"
 L["Bags (Grow Down)"] = "Bolsas (Crecer hacia abajo)"
 L["Bags (Grow Up)"] = "Bolsas (Crecer hacia arriba)"
@@ -60,6 +62,7 @@ L["Bar "] = "Barra "
 L["Bars"] = "Barras"
 L["Battleground datatexts temporarily hidden, to show type /bgstats"] = "Los textos de datos de los campos de batalla están temporalmente ocultos, para mostrarlos escribe /bgstats"
 L["Battleground datatexts will now show again if you are inside a battleground."] = "Los textos de datos de los campos de batalla serán visibles de nuevo si estás en un campo de batalla."
+L["BelowMinimapWidget"] = true
 L["Binding"] = "Controles"
 L["BINDINGS_HELP"] = ("Hover your mouse over any *action|r, *micro|r, *macro|r, or *spellbook|r button to bind it. This also works for items in your *bag|r. Press the ^ESC|r key to ^clear|r the current bindings."):gsub('*', E.InfoColor):gsub('%^', E.InfoColor2)
 L["Binds Discarded"] = "Teclas Descartadas"
@@ -206,6 +209,7 @@ L["KEY_SPACE"] = "SpB"
 L["Layout Set"] = "Distribución Establecida"
 L["Layout"] = "Distribución"
 L["Left Chat"] = "Chat Izquierdo"
+L["Right Click:"] = "Clic Derecho"
 L["Left Click:"] = "Clic Izquierdo"
 L["Level %d"] = "Nivel %d"
 L["Level"] = "Nivel"
@@ -215,7 +219,6 @@ L["Location"] = "Ubicación"
 L["Lock"] = "Bloquear"
 L["LOGIN_MSG"] = ("Bienvenido a *ElvUI|r versión *%s|r, escribe */ec|r para acceder al menú de configuración del juego. Si necesita ayuda, puede visítenos en https://tukui.org o unirse a nuestro Discord: https://discord.tukui.org"):gsub('*', E.InfoColor)
 L["LOGIN_MSG_HELP"] = ("Por favor, escriba */ehelp|r para obtener una lista de los comandos de *ElvUI|r disponibles."):gsub('*', E.InfoColor)
-L["LOGIN_PTR"] = ("|cffff3333You are currently not running the PTR version of *ElvUI|r which may cause issues.|r ^Please download the PTR version from the following link.|r %s"):gsub('*', E.InfoColor):gsub('%^', E.InfoColor2)
 L["Loot / Alert Frames"] = "Marcos de Botín / Alerta"
 L["Loot Frame"] = "Marco de Botín"
 L["Lord! It's a miracle! The download up and vanished like a fart in the wind! Try Again!"] = "¡Milagro! ¡La descarga se desvaneció como pedo! Intenta de nuevo"
@@ -331,11 +334,12 @@ L["Stack Items In Bags"] = "Apilar Objetos en Bolsas"
 L["Stack Items In Bank"] = "Apilar Objetos en Banco"
 L["Stack Items To Bags"] = "Apilar Objetos a las Bolsas"
 L["Stack Items To Bank"] = "Apilar Objetos al Banco"
+L["Stack Size"] = "Tamaño de Apilar"
 L["Stance Bar"] = "Barra de Forma"
 L["Steps"] = "Pasos"
 L["Sticky Frames"] = "Marcos Adhesivos"
 L["System"] = "Sistema"
-L["Talent Specialization"] = "Especialización en Talento / Botín"
+L["Talent/Loot Specialization"] = "Especialización en Talento / Botín"
 L["Target Aura Bars"] = "Barras de Aura del Objetivo"
 L["Target Castbar"] = "Barra de Lanzamiento del Objetivo"
 L["Target Frame"] = "Marco de Objetivo"
@@ -363,6 +367,7 @@ L["To setup chat colors, chat channels and chat font size, right-click the chat 
 L["Toggle Bags"] = "Mostrar/Ocultar Bolsas"
 L["Toggle Chat Frame"] = "Mostrar/Ocultar Marco de Chat"
 L["Toggle Configuration"] = "Mostrar/Ocultar Configuración"
+L["Toggle Mover Mode"] = true
 L["Toggle Volume Stream"] = "Mostrar/Ocultar Flujo de Volumen"
 L["Tooltip"] = "Descripción Emergente"
 L["TopCenterWidget"] = true
@@ -437,6 +442,7 @@ L["EHELP_COMMANDS"] = ([=[Aquí hay una lista de todos los comandos importantes 
  */estatus|r  -  Información importante para preguntas de soporte.
  */egrid|r ^64|r or ^128|r or ^256|r  -  Mostrar/Ocultar una cuadrícula de líneas.
  */edebug|r ^on|r or ^off|r  -  Deshabilitar todos los AddOns excepto ElvUI.
-  NOTA: */edebug|r ^off|r volverá a habilitar los complementos deshabilitado
-  mediante el uso de */edebug|r ^on|r dentro de esa sesión.
+  NOTA: */edebug|r ^off|r volverá a habilitar los complementos deshabilitado mediante el uso de */edebug|r ^on|r dentro de esa sesión.
+ */guildlist|r ^minPlayers|r  -  Dumps the sorted list of guilds from the finder.
+ */guildapply|r ^"message"|r  -  Applies to the top 5 new guilds with an optional message.
 ]=]):gsub('*', E.InfoColor):gsub('%^', E.InfoColor2)

@@ -127,7 +127,7 @@ L["ElvUI has a dual spec feature which allows you to load different profiles bas
 L["ElvUI Installation"] = "ElvUI 설치"
 L["ElvUI is five or more revisions out of date. You can download the newest version from tukui.org."] = "현재 사용하는 ElvUI가 5버전 이상 뒤처진 버전입니다. http://tukui.org 에서 새 버전을 다운로드 받으세요."
 L["ElvUI is out of date. You can download the newest version from tukui.org."] = "ElvUI가 오래된 버전입니다. http://tukui.org 에서 새 버전을 다운로드 받으세요."
-L["ElvUI Plugin Installation"] = "ElvUI 플러그인  설치"
+L["ElvUI Plugin Installation"] = "ElvUI 플러그인 설치"
 L["Status"] = "상태창"
 L["ElvUI Version:"] = "ElvUI 버전:"
 L["Error resetting UnitFrame."] = "유닛 프레임 초기화 오류"
@@ -445,4 +445,6 @@ L["EHELP_COMMANDS"] = ([=[*ElvUI의 주요 명령어 목록입니다.|r 명령�
  */egrid|r ^64|r or ^128|r or ^256|r  -  픽셀 격자를 변경합니다.
  */edebug|r ^on|r or ^off|r  -  ElvUI를 제외한 모든 애드온을 비활성화합니다.
  참고: */edebug|r ^off\r 명령어는 */edebug|r ^on|r 명령어를 통해 비활성화된 애드온을 다시 활성화합니다.
+ */guildlist|r ^minPlayers|r  -  Dumps the sorted list of guilds from the finder.
+ */guildapply|r ^"message"|r  -  Applies to the top 5 new guilds with an optional message.
 ]=]):gsub('*', E.InfoColor):gsub('%^', E.InfoColor2)

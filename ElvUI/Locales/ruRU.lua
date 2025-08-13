@@ -2,6 +2,7 @@
 local E = unpack(ElvUI)
 local L = E.Libs.ACL:NewLocale('ElvUI', 'ruRU')
 
+L["Restrict Pings"] = true
 L["Player"] = "Игрок"
 L["Small"] = "Малый"
 L["Medium"] = "Средний"
@@ -15,7 +16,6 @@ L["%s frame has a conflicting anchor point. Forcing the Buffs to be attached to 
 L["%s is attempting to share the Private Profile (%s) with you. Would you like to accept the request?"] = true
 L["%s is attempting to share the Global Profile with you. Would you like to accept the request?"] = true
 L["%s is attempting to share the Profile (%s) with you. Would you like to accept the request?"] = "%s хочет передать Вам профиль (%s). Желаете ли Вы принять его?"
-L["%s: %s tried to call the protected function '%s'."] = "%s: %s попытался вызвать защищенную функцию '%s'."
 L["(Ctrl & Shift Click) Toggle CPU Profiling"] = "(CTRL & Shift клик) Переключить профайлинг ЦПУ"
 L["(Hold Shift) Memory Usage"] = "(Зажать Shift) Использование памяти"
 L["(Shift Click) Collect Garbage"] = "(Shift + клик) Очистить мусор"
@@ -36,6 +36,7 @@ L["Already Running.. Bailing Out!"] = "Уже выполняется.. Бобе�
 L["Alternative Power"] = "Альтернативный ресурс"
 L["Ammo/Shard Counter"] = "Счетчик патронов/осколков"
 L["AP:"] = "СА:"
+L["Archeology Progress Bar"] = "Прогресс археологии"
 L["Are you sure you want to apply this font to all ElvUI elements?"] = "Вы уверены, что хотите применить этот шрифт ко всем элементам ElvUI?"
 L["Are you sure you want to disband the group?"] = "Вы уверены, что хотите распустить группу?"
 L["Are you sure you want to reset all the settings on this profile?"] = "Вы уверены, что хотите сбросить все настройки для этого профиля?"
@@ -48,6 +49,7 @@ L["Auras"] = "Ауры"
 L["Auto Scale"] = "Автомасштаб"
 L["AVD: "] = "Защита: "
 L["Avoidance Breakdown"] = "Распределение защиты"
+L["Azerite Bar"] = "Азерит"
 L["Bag Bar"] = "Панель сумок"
 L["Bags (Grow Down)"] = "Сумки (Рост вниз)"
 L["Bags (Grow Up)"] = "Сумки (Рост вверх)"
@@ -60,6 +62,7 @@ L["Bar "] = "Панель "
 L["Bars"] = "Полосы"
 L["Battleground datatexts temporarily hidden, to show type /bgstats"] = "Информация поля боя временно скрыта. Чтобы показать ее, напишите /bgstats"
 L["Battleground datatexts will now show again if you are inside a battleground."] = "Информация поля боя снова будет отображаться, если Вы находитесь на них."
+L["BelowMinimapWidget"] = "Виджет миникарты"
 L["Binding"] = "Назначение"
 L["BINDINGS_HELP"] = ("Наведите курсор на любую кнопку *панели команд|r, *микроменю|r, *макроса|r или *книги заклинаний|r для назначения. Также работает для предметов в *сумках|r. Нажмите ^ESC|r для ^удаления|r текущей назначенной клавиши."):gsub('*', E.InfoColor):gsub('%^', E.InfoColor2)
 L["Binds Discarded"] = "Назначения отменены"
@@ -206,6 +209,7 @@ L["KEY_SPACE"] = "SpB"
 L["Layout Set"] = "Расположение установлено"
 L["Layout"] = "Расположение"
 L["Left Chat"] = "Левый чат"
+L["Right Click:"] = "ПКМ:"
 L["Left Click:"] = "ЛКМ:"
 L["Level %d"] = "Уровень %d"
 L["Level"] = "Уровень"
@@ -215,7 +219,6 @@ L["Location"] = "Локация"
 L["Lock"] = "Закрепить"
 L["LOGIN_MSG"] = ("Добро пожаловать в *ElvUI|r версии *%s|r, наберите */ec|r для доступа в меню настроек. Если Вам нужна техническая поддержка, посетите наш форум на https://tukui.org или присоединяйтесь к серверу Discord: https://discord.tukui.org"):gsub('*', E.InfoColor)
 L["LOGIN_MSG_HELP"] = ("Используйте */ehelp|r для вызова доступных команд *ElvUI|r."):gsub('*', E.InfoColor)
-L["LOGIN_PTR"] = ("|cffff3333You are currently not running the PTR version of *ElvUI|r which may cause issues.|r ^Please download the PTR version from the following link.|r %s"):gsub('*', E.InfoColor):gsub('%^', E.InfoColor2)
 L["Loot / Alert Frames"] = "Розыгрыш/оповещения"
 L["Loot Frame"] = "Окно добычи"
 L["Lord! It's a miracle! The download up and vanished like a fart in the wind! Try Again!"] = "Чтоб его! Загрузка была... да сплыла. Попробуйте еще раз!"
@@ -331,11 +334,12 @@ L["Stack Items In Bags"] = "Собрать предметы в стопку (с�
 L["Stack Items In Bank"] = "Собрать предметы в стопку (банк)"
 L["Stack Items To Bags"] = "Собрать предметы в стопку (в сумку)"
 L["Stack Items To Bank"] = "Собрать предметы в стопку (в банк)"
+L["Stack Size"] = "Размер стопки"
 L["Stance Bar"] = "Панель стоек"
 L["Steps"] = "Шаги"
 L["Sticky Frames"] = "Клейкие фреймы"
 L["System"] = "Система"
-L["Talent Specialization"] = "Таланты/добыча"
+L["Talent/Loot Specialization"] = "Таланты/добыча"
 L["Target Aura Bars"] = "Полосы аур цели"
 L["Target Castbar"] = "Полоса заклинаний цели"
 L["Target Frame"] = "Цель"
@@ -363,6 +367,7 @@ L["To setup chat colors, chat channels and chat font size, right-click the chat 
 L["Toggle Bags"] = "Показать сумки"
 L["Toggle Chat Frame"] = "Показать/скрыть чат"
 L["Toggle Configuration"] = "Конфигурация"
+L["Toggle Mover Mode"] = true
 L["Toggle Volume Stream"] = "Вкл/откл звуковой поток"
 L["Tooltip"] = "Подсказка"
 L["TopCenterWidget"] = "Центральный виджет"
@@ -438,4 +443,6 @@ L["EHELP_COMMANDS"] = ([=[Ниже представлен список всех 
  */egrid|r ^64|r или ^128|r или ^256|r  -  Вкл/выкл экранную сетку.
  */edebug|r ^on|r или ^off|r  -  Отключить все аддоны, кроме ElvUI.
   ВАЖНО: */edebug|r ^off|r включит обратно все отключенные В ДАННОЙ СЕССИИ (без /rl) командой */edebug|r ^on|r аддоны.
+ */guildlist|r ^minPlayers|r  -  Dumps the sorted list of guilds from the finder.
+ */guildapply|r ^"message"|r  -  Applies to the top 5 new guilds with an optional message.
 ]=]):gsub('*', E.InfoColor):gsub('%^', E.InfoColor2)

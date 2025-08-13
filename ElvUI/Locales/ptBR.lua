@@ -2,6 +2,7 @@
 local E = unpack(ElvUI)
 local L = E.Libs.ACL:NewLocale('ElvUI', 'ptBR')
 
+L["Restrict Pings"] = "Restringir Pings"
 L["Player"] = true
 L["Small"] = "Pequeno"
 L["Medium"] = "Médio"
@@ -15,7 +16,6 @@ L["%s frame has a conflicting anchor point. Forcing the Buffs to be attached to 
 L["%s is attempting to share the Private Profile (%s) with you. Would you like to accept the request?"] = "%s está tentando compartilhar o Perfil Privado (%s) com você. Gostaria de aceitar o pedido?"
 L["%s is attempting to share the Global Profile with you. Would you like to accept the request?"] = "%s está tentando compartilhar o Perfil Global com você. Gostaria de aceitar o pedido?"
 L["%s is attempting to share the Profile (%s) with you. Would you like to accept the request?"] = "%s está tentando compartilhar o Perfil (%s) com você. Gostaria de aceitar o pedido?"
-L["%s: %s tried to call the protected function '%s'."] = "%s: %s tentou chamar a função protegida '%s'."
 L["(Ctrl & Shift Click) Toggle CPU Profiling"] = "(Ctrl & Shift Clique) Alternar Medição de Desempenho da CPU"
 L["(Hold Shift) Memory Usage"] = "(Segurar Shift) Memória em Uso"
 L["(Shift Click) Collect Garbage"] = "(Clique Shift) Coletar lixo"
@@ -36,6 +36,7 @@ L["Already Running.. Bailing Out!"] = "Já está executando... Caindo fora!"
 L["Alternative Power"] = "Poder Alternativo"
 L["Ammo/Shard Counter"] = "Contador de Munição/Fragmento"
 L["AP:"] = "PA:"
+L["Archeology Progress Bar"] = "Barra de Progressão de Arqueologia"
 L["Are you sure you want to apply this font to all ElvUI elements?"] = "Tem certeza que quer aplicar essa fonte para todos os elementos do ElvUI?"
 L["Are you sure you want to disband the group?"] = "Tem a certeza de que quer dissolver o grupo?"
 L["Are you sure you want to reset all the settings on this profile?"] = "Tem certeza que quer redefinir todas as configurações desse perfil?"
@@ -48,6 +49,7 @@ L["Auras"] = true
 L["Auto Scale"] = "Dimensionar automaticamente"
 L["AVD: "] = true
 L["Avoidance Breakdown"] = "Separação de Evasão"
+L["Azerite Bar"] = "Barra de Azerita"
 L["Bag Bar"] = "Barra das Bolsas"
 L["Bags (Grow Down)"] = "Bolsas (crescer para baixo)"
 L["Bags (Grow Up)"] = "Bolsas (crescer para cima)"
@@ -60,6 +62,7 @@ L["Bar "] = "Barra "
 L["Bars"] = "Barras"
 L["Battleground datatexts temporarily hidden, to show type /bgstats"] = "Textos Informativos de Campo de Batalha estão temporariamente escondidos, para mostrar digite /bgstats"
 L["Battleground datatexts will now show again if you are inside a battleground."] = "Os Textos Informativos irão agora ser mostrados se estiver dentro de um Campo de Batalha."
+L["BelowMinimapWidget"] = true
 L["Binding"] = "Ligações"
 L["BINDINGS_HELP"] = ("Hover your mouse over any *action|r, *micro|r, *macro|r, or *spellbook|r button to bind it. This also works for items in your *bag|r. Press the ^ESC|r key to ^clear|r the current bindings."):gsub('*', E.InfoColor):gsub('%^', E.InfoColor2)
 L["Binds Discarded"] = "Ligações Descartadas"
@@ -166,7 +169,7 @@ L["I Swear"] = "Eu Juro"
 L["I"] = true
 L["Icons Only"] = "Apenas Ícones"
 L["If you accidentally removed a default chat tab you can always re-run the chat part of the ElvUI installer."] = "Se você removeu acidentalmente uma aba padrão do Bate-papo você sempre pode rodar a parte de Bate-papo do instalador do ElvUI."
-L["If you are experiencing issues with ElvUI try disabling all your addons except ElvUI first."] = "Se você estiver enfrentando problemas com o ElvUI  tente desabilitar todos os seus addons exceto o ElvUI."
+L["If you are experiencing issues with ElvUI try disabling all your addons except ElvUI first."] = "Se você estiver enfrentando problemas com o ElvUI tente desabilitar todos os seus addons exceto o ElvUI."
 L["If you have an icon or aurabar that you don't want to display simply hold down shift and right click the icon for it to disapear."] = "Se você tiver um Ícone ou Barra de Auras que você não quer mostrar, segure Shift e clique com o botão direito para ela desaparecer."
 L["IL"] = "IL"
 L["Importance: |cFF33FF33Low|r"] = "Importância: |cFF33FF33Baixa|r"
@@ -206,6 +209,7 @@ L["KEY_SPACE"] = "SpB"
 L["Layout Set"] = "Definições do Layout"
 L["Layout"] = "Layout"
 L["Left Chat"] = "Bate-papo esquerdo"
+L["Right Click:"] = "Clique Direito:"
 L["Left Click:"] = "Clique Esquerdo:"
 L["Level %d"] = "Nível %d"
 L["Level"] = "Nível"
@@ -215,7 +219,6 @@ L["Location"] = "Localização"
 L["Lock"] = "Travar"
 L["LOGIN_MSG"] = ("Bem-vindo ao *ElvUI|r versão *%s|r, digite */ec|r para acessar as configurações dentro do jogo. Se você precisa de suporte técnico nos contate em https://tukui.org ou se entre no Discord: https://discord.tukui.org"):gsub('*', E.InfoColor)
 L["LOGIN_MSG_HELP"] = ("Por favor use */ehelp|r para ver a lista de comandos do *ElvUI|r."):gsub('*', E.InfoColor)
-L["LOGIN_PTR"] = ("|cffff3333Atualmente você não está utilizando uma versão de PTR do *ElvUI|r o que pode causar problemas.|r ^Por favor baixe a versão de PTR no link a seguir.|r %s"):gsub('*', E.InfoColor):gsub('%^', E.InfoColor2)
 L["Loot / Alert Frames"] = "Quadro de Saque / Alerta"
 L["Loot Frame"] = "Quadro de Saque"
 L["Lord! It's a miracle! The download up and vanished like a fart in the wind! Try Again!"] = "Senhor! É um milagre! O Download sumiu como um peido no vento! Tente novamente!"
@@ -331,11 +334,12 @@ L["Stack Items In Bags"] = "Empilhar Itens nas Bolsas"
 L["Stack Items In Bank"] = "Empilhar Itens nos Bancos"
 L["Stack Items To Bags"] = "Empilhar Itens para as Bolsas"
 L["Stack Items To Bank"] = "Empilhar Itens para os Bolsas"
+L["Stack Size"] = "Tamanho da Pilha"
 L["Stance Bar"] = "Barra de Postura"
 L["Steps"] = "Passos"
 L["Sticky Frames"] = "Quadros Pegadiços"
 L["System"] = "Sistema"
-L["Talent Specialization"] = "Especialização em Talentos/Saque"
+L["Talent/Loot Specialization"] = "Especialização em Talentos/Saque"
 L["Target Aura Bars"] = "Barras de Aura do Alvo"
 L["Target Castbar"] = "Barra de lançamento do Alvo"
 L["Target Frame"] = "Quadro do Alvo"
@@ -363,6 +367,7 @@ L["To setup chat colors, chat channels and chat font size, right-click the chat 
 L["Toggle Bags"] = "Mostrar/Ocultar Bolsas"
 L["Toggle Chat Frame"] = "Mostrar/Ocultar Bate-papo"
 L["Toggle Configuration"] = "Mostrar/Ocultar Modo de Configuração"
+L["Toggle Mover Mode"] = true
 L["Toggle Volume Stream"] = "Mostrar/Ocultar Volume do Canal"
 L["Tooltip"] = "Dica"
 L["TopCenterWidget"] = "Widget Central"
@@ -437,6 +442,7 @@ L["EHELP_COMMANDS"] = ([=[Aqui está a lista de todos os comandos importantes do
  */estatus|r  -  Informações importantes para questões com o suporte.
  */egrid|r ^64|r or ^128|r or ^256|r  -  Alternar o grid de pixels.
  */edebug|r ^on|r or ^off|r  -  Desabilitar todos os AddOns exceto ElvUI.
-  NOTA: */edebug|r ^off|r irá reabilitar os addons desabilitados por ter
-  usar */edebug|r ^on|r nesta sessão.
+  NOTA: */edebug|r ^off|r irá reabilitar os addons desabilitados por ter usar */edebug|r ^on|r nesta sessão.
+ */guildlist|r ^minPlayers|r  -  Dumps the sorted list of guilds from the finder.
+ */guildapply|r ^"message"|r  -  Applies to the top 5 new guilds with an optional message.
 ]=]):gsub('*', E.InfoColor):gsub('%^', E.InfoColor2)
