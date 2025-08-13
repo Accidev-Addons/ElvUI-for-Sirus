@@ -153,6 +153,7 @@ function E:SetupCVars(noDisplayMsg)
 	E:SetCVar("rotateMinimap", 0)
 	E:SetCVar("spamFilter", 0)
 	E:SetCVar("showItemLevel", 1)
+	E:SetCVar('cameraDistanceMax', 50)
 
 	if E.private.chat.enable then
 		E:SetCVar("chatMouseScroll", 1)
