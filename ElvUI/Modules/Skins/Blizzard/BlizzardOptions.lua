@@ -365,7 +365,7 @@ S:AddCallback("Skin_BlizzardOptions", function()
 	VideoOptionsResolutionPanelBrightnessGrayScale:SetTexture([[Interface\OptionsFrame\21stepgrayscale]])
 
 	-- Mac Options
-	if IsMacClient() then
+	if E.IsMacClient then
 		S:HandleButton(GameMenuButtonMacOptions)
 
 		MacOptionsFrame:SetTemplate("Transparent")
