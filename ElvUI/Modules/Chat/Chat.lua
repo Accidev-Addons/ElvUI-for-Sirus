@@ -409,6 +409,8 @@ do -- this fixes a taint when you push tab on editbox which blocks secure comman
 	local safe, list = {}, _G.hash_ChatTypeInfoList
 
 	function CH:ChatEdit_UntaintTabList()
+		if issecurevariable ~= nil then return end
+
 		for cmd, name in next, list do
 			if not issecurevariable(list, cmd) then
 				safe[cmd] = name
