@@ -148,9 +148,9 @@ function hook(self, obj, method, handler, script, secure, raw, forceSecure, usag
 	else
 		local issecure
 		if obj then
-			issecure = onceSecure[obj] and onceSecure[obj][method] or issecurevariable(obj, method)
+			issecure = onceSecure[obj] and onceSecure[obj][method] or ((issecurevariable ~= nil) and issecurevariable(obj, method))
 		else
-			issecure = onceSecure[method] or issecurevariable(method)
+			issecure = onceSecure[method] or ((issecurevariable ~= nil) and issecurevariable(method))
 		end
 		if issecure then
 			if forceSecure then
