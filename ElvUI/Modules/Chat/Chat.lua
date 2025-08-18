@@ -200,7 +200,6 @@ do --this can save some main file locals
 	specialChatIcons = z
 
 	local portal = GetCVar('portal')
-	print(portal)
 	if portal == 'en' or portal == '' then
 	-- Bunny
 		z['Крольчонак-x100'] 			= ElvPink
