@@ -11,19 +11,20 @@ local _G = _G
 local wipe, pairs, strmatch, strsplit, tostring = wipe, pairs, strmatch, strsplit, tostring
 local next, sort, tonumber, format = next, sort, tonumber, format
 
-local GetClassInfo = LC.GetClassInfo
-local GetDifficultyInfo = GetDifficultyInfo
 local GetInstanceInfo = GetInstanceInfo
 local GetRealZoneText = GetRealZoneText
 local GetSpellInfo = GetSpellInfo
 local GetSpellTexture = GetSpellTexture
-local tIndexOf = tIndexOf
+
+local tIndexOf = LC.tIndexOf
+local GetClassInfo = LC.GetClassInfo
+local GetDifficultyInfo = LC.GetDifficultyInfo
 
 local GetMapInfo = GetMapInfo
 local GetNumSpecializationsForClassID = LCS.GetNumSpecializationsForClassID
 local GetSpecializationInfoForClassID = LCS.GetSpecializationInfoForClassID
 
-local MAX_PLAYER_LEVEL = GetMaxPlayerLevel()
+local MAX_PLAYER_LEVEL = _G.MAX_PLAYER_LEVEL_TABLE[_G.GetAccountExpansionLevel()]
 
 local filters = {}
 local exportList = {}
@@ -582,8 +583,8 @@ StyleFilters.triggers.args.instanceType.args.dungeonDifficulty = ACH:MultiSelect
 StyleFilters.triggers.args.instanceType.args.raidDifficulty = ACH:MultiSelect(L["Raid Difficulty"], L["Check these to only have the filter active in certain difficulties. If none are checked, it is active in all difficulties."], 11, { legacy10normal = GetDifficultyInfo(3), legacy25normal = GetDifficultyInfo(4) }, nil, nil, function(_, key) local triggers = GetFilter(true) return triggers.instanceDifficulty.raid[key] end, function(_, key, value) local triggers = GetFilter(true) triggers.instanceDifficulty.raid[key] = value NP:ConfigureAll() end, nil, function() local filter = GetFilter() return not filter.triggers.instanceType.raid end)
 StyleFilters.triggers.args.instanceType.args.raidDifficulty.values.legacy40normal = GetDifficultyInfo(9)
 StyleFilters.triggers.args.instanceType.args.raidDifficulty.values.legacy20normal = GetDifficultyInfo(148)
-StyleFilters.triggers.args.instanceType.args.raidDifficulty.values.normal = GetDifficultyInfo(173)
-StyleFilters.triggers.args.instanceType.args.raidDifficulty.values.heroic = GetDifficultyInfo(174)
+StyleFilters.triggers.args.instanceType.args.raidDifficulty.values.normal = GetDifficultyInfo(3)
+StyleFilters.triggers.args.instanceType.args.raidDifficulty.values.heroic = GetDifficultyInfo(4)
 
 local removeLocationTable = { removeMapID = "mapIDs", removeInstanceID = "instanceIDs", removeZoneName = "zoneNames", removeSubZoneName = "subZoneNames" }
 local function removeLocationList(info)

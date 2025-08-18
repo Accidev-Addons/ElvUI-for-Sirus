@@ -22,7 +22,7 @@ Skins.lua
 Tooltip.lua
 UnitFrames.lua
 Nameplates.lua
-# StyleFilters.lua
+StyleFilters.lua
 Maps.lua
 Search.lua
 Tags.lua
