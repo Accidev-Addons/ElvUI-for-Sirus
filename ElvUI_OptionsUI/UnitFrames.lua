@@ -231,7 +231,7 @@ local function GetOptionsTable_AuraBars(updateFunc, groupName)
 					["TIME_REMAINING_REVERSE"] = L["Time Remaining Reverse"],
 					["TIME_DURATION"] = L["Duration"],
 					["TIME_DURATION_REVERSE"] = L["Duration Reverse"],
-					["NAME"] = L["Name"],
+					["Name"] = L["Name"],
 					["NONE"] = L["None"]
 				}
 			},
@@ -483,7 +483,7 @@ local function GetOptionsTable_Auras(auraType, updateFunc, groupName, numUnits)
 				values = {
 					["TIME_REMAINING"] = L["Time Remaining"],
 					["DURATION"] = L["Duration"],
-					["NAME"] = L["Name"],
+					["Name"] = L["Name"],
 					["INDEX"] = L["Index"],
 					["PLAYER"] = L["PLAYER"]
 				}
@@ -5767,7 +5767,7 @@ E.Options.args.unitframe.args.party = {
 							desc = L["Set the order that the group will sort."],
 							values = {
 								["CLASS"] = L["CLASS"],
-								["NAME"] = L["Name"],
+								["Name"] = L["Name"],
 								["MTMA"] = L["Main Tanks / Main Assist"],
 								["GROUP"] = L["GROUP"]
 							}
@@ -6359,7 +6359,7 @@ E.Options.args.unitframe.args.raid = {
 							desc = L["Set the order that the group will sort."],
 							values = {
 								["CLASS"] = L["CLASS"],
-								["NAME"] = L["Name"],
+								["Name"] = L["Name"],
 								["MTMA"] = L["Main Tanks / Main Assist"],
 								["GROUP"] = L["GROUP"]
 							}
@@ -6778,7 +6778,7 @@ E.Options.args.unitframe.args.raid40 = {
 							desc = L["Set the order that the group will sort."],
 							values = {
 								["CLASS"] = L["CLASS"],
-								["NAME"] = L["Name"],
+								["Name"] = L["Name"],
 								["MTMA"] = L["Main Tanks / Main Assist"],
 								["GROUP"] = L["GROUP"]
 							}
@@ -7107,7 +7107,7 @@ E.Options.args.unitframe.args.raidpet = {
 							name = L["Group By"],
 							desc = L["Set the order that the group will sort."],
 							values = {
-								["NAME"] = L["Owners Name"],
+								["Name"] = L["Owners Name"],
 								["PETNAME"] = L["Pet Name"],
 								["GROUP"] = L["GROUP"]
 							}

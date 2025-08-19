@@ -462,7 +462,7 @@ local function UpdateFilterGroup()
 				names = {
 					order = 4,
 					type = "group",
-					name = L["NAME"],
+					name = L["Name"],
 					disabled = function() return not (E.db.nameplates and E.db.nameplates.filters and E.db.nameplates.filters[selectedNameplateFilter] and E.db.nameplates.filters[selectedNameplateFilter].triggers and E.db.nameplates.filters[selectedNameplateFilter].triggers.enable) end,
 					args = {
 						addName = {
@@ -720,7 +720,7 @@ local function UpdateFilterGroup()
 						healer = {
 							order = 2,
 							type = "toggle",
-							name = L["HEALER"],
+							name = L["Healer"],
 							get = function(info)
 								return E.global.nameplates.filters[selectedNameplateFilter].triggers.role.healer
 							end,
@@ -1746,7 +1746,7 @@ local function UpdateFilterGroup()
 						name = {
 							order = 7,
 							type = "toggle",
-							name = L["NAME"],
+							name = L["Name"],
 							get = function(info)
 								return E.global.nameplates.filters[selectedNameplateFilter].actions.color.name
 							end,
