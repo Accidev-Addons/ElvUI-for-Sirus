@@ -58,7 +58,7 @@ end
 
 local function UpdateInstanceDifficulty()
 	if E.global.nameplates.filters[selectedNameplateFilter].triggers.instanceType.party then
-		E.Options.args.nameplate.args.filters.args.triggers.args.instanceType.args.dungeonDifficulty = {
+		E.Options.args.nameplates.args.filters.args.triggers.args.instanceType.args.dungeonDifficulty = {
 			order = 10,
 			type = "group",
 			name = L["DUNGEON_DIFFICULTY"],
@@ -84,11 +84,11 @@ local function UpdateInstanceDifficulty()
 			}
 		}
 	else
-		E.Options.args.nameplate.args.filters.args.triggers.args.instanceType.args.dungeonDifficulty = nil
+		E.Options.args.nameplates.args.filters.args.triggers.args.instanceType.args.dungeonDifficulty = nil
 	end
 
 	if E.global.nameplates.filters[selectedNameplateFilter].triggers.instanceType.raid then
-		E.Options.args.nameplate.args.filters.args.triggers.args.instanceType.args.raidDifficulty = {
+		E.Options.args.nameplates.args.filters.args.triggers.args.instanceType.args.raidDifficulty = {
 			order = 11,
 			type = "group",
 			name = L["Raid Difficulty"],
@@ -114,13 +114,13 @@ local function UpdateInstanceDifficulty()
 			}
 		}
 	else
-		E.Options.args.nameplate.args.filters.args.triggers.args.instanceType.args.raidDifficulty = nil
+		E.Options.args.nameplates.args.filters.args.triggers.args.instanceType.args.raidDifficulty = nil
 	end
 end
 
 local function UpdateStyleLists()
 	if E.global.nameplates.filters[selectedNameplateFilter] and E.global.nameplates.filters[selectedNameplateFilter].triggers and E.global.nameplates.filters[selectedNameplateFilter].triggers.names then
-		E.Options.args.nameplate.args.filters.args.triggers.args.names.args.names = {
+		E.Options.args.nameplates.args.filters.args.triggers.args.names.args.names = {
 			order = 50,
 			type = "group",
 			name = "",
@@ -129,7 +129,7 @@ local function UpdateStyleLists()
 		}
 		if next(E.global.nameplates.filters[selectedNameplateFilter].triggers.names) then
 			for name in pairs(E.global.nameplates.filters[selectedNameplateFilter].triggers.names) do
-				E.Options.args.nameplate.args.filters.args.triggers.args.names.args.names.args[name] = {
+				E.Options.args.nameplates.args.filters.args.triggers.args.names.args.names.args[name] = {
 					order = -1,
 					type = "toggle",
 					name = name,
@@ -145,7 +145,7 @@ local function UpdateStyleLists()
 		end
 	end
 	if E.global.nameplates.filters[selectedNameplateFilter] and E.global.nameplates.filters[selectedNameplateFilter].triggers.casting and E.global.nameplates.filters[selectedNameplateFilter].triggers.casting.spells then
-		E.Options.args.nameplate.args.filters.args.triggers.args.casting.args.spells = {
+		E.Options.args.nameplates.args.filters.args.triggers.args.casting.args.spells = {
 			order = 50,
 			type = "group",
 			name = "",
@@ -167,7 +167,7 @@ local function UpdateStyleLists()
 						end
 					end
 				end
-				E.Options.args.nameplate.args.filters.args.triggers.args.casting.args.spells.args[name] = {
+				E.Options.args.nameplates.args.filters.args.triggers.args.casting.args.spells.args[name] = {
 					order = -1,
 					type = "toggle",
 					name = spell,
@@ -184,7 +184,7 @@ local function UpdateStyleLists()
 	end
 
 	if E.global.nameplates.filters[selectedNameplateFilter] and E.global.nameplates.filters[selectedNameplateFilter].triggers.cooldowns and E.global.nameplates.filters[selectedNameplateFilter].triggers.cooldowns.names then
-		E.Options.args.nameplate.args.filters.args.triggers.args.cooldowns.args.names = {
+		E.Options.args.nameplates.args.filters.args.triggers.args.cooldowns.args.names = {
 			order = 50,
 			type = "group",
 			name = "",
@@ -206,7 +206,7 @@ local function UpdateStyleLists()
 						end
 					end
 				end
-				E.Options.args.nameplate.args.filters.args.triggers.args.cooldowns.args.names.args[name] = {
+				E.Options.args.nameplates.args.filters.args.triggers.args.cooldowns.args.names.args[name] = {
 					order = -1,
 					type = "select",
 					name = spell,
@@ -228,7 +228,7 @@ local function UpdateStyleLists()
 	end
 
 	if E.global.nameplates.filters[selectedNameplateFilter] and E.global.nameplates.filters[selectedNameplateFilter].triggers.buffs and E.global.nameplates.filters[selectedNameplateFilter].triggers.buffs.names then
-		E.Options.args.nameplate.args.filters.args.triggers.args.buffs.args.names = {
+		E.Options.args.nameplates.args.filters.args.triggers.args.buffs.args.names = {
 			order = 50,
 			type = "group",
 			name = "",
@@ -250,7 +250,7 @@ local function UpdateStyleLists()
 						end
 					end
 				end
-				E.Options.args.nameplate.args.filters.args.triggers.args.buffs.args.names.args[name] = {
+				E.Options.args.nameplates.args.filters.args.triggers.args.buffs.args.names.args[name] = {
 					order = -1,
 					type = "toggle",
 					name = spell,
@@ -268,7 +268,7 @@ local function UpdateStyleLists()
 	end
 
 	if E.global.nameplates.filters[selectedNameplateFilter] and E.global.nameplates.filters[selectedNameplateFilter].triggers.debuffs and E.global.nameplates.filters[selectedNameplateFilter].triggers.debuffs.names then
-		E.Options.args.nameplate.args.filters.args.triggers.args.debuffs.args.names = {
+		E.Options.args.nameplates.args.filters.args.triggers.args.debuffs.args.names = {
 			order = 50,
 			type = "group",
 			name = "",
@@ -290,7 +290,7 @@ local function UpdateStyleLists()
 						end
 					end
 				end
-				E.Options.args.nameplate.args.filters.args.triggers.args.debuffs.args.names.args[name] = {
+				E.Options.args.nameplates.args.filters.args.triggers.args.debuffs.args.names.args[name] = {
 					textWidth = true,
 					order = -1,
 					type = "toggle",
@@ -323,7 +323,7 @@ local function UpdateStyleLists()
 				titemSchoolLoc, order = OTHER, 54
 			end
 
-			E.Options.args.nameplate.args.filters.args.triggers.args.totems.args[totemSchool] = {
+			E.Options.args.nameplates.args.filters.args.triggers.args.totems.args[totemSchool] = {
 				order = order,
 				type = "group",
 				name = (totemsColor[totemSchool] or "")..titemSchoolLoc,
@@ -334,7 +334,7 @@ local function UpdateStyleLists()
 		end
 
 		for totem, data in pairs(NP.TriggerConditions.totems) do
-			E.Options.args.nameplate.args.filters.args.triggers.args.totems.args[data[2]].args[totem] = {
+			E.Options.args.nameplates.args.filters.args.triggers.args.totems.args[data[2]].args[totem] = {
 				textWidth = true,
 				order = -1,
 				type = "toggle",
@@ -360,7 +360,7 @@ local function UpdateStyleLists()
 				name, order = "PvE", 51
 			end
 
-			E.Options.args.nameplate.args.filters.args.triggers.args.uniqueUnits.args[unitType] = {
+			E.Options.args.nameplates.args.filters.args.triggers.args.uniqueUnits.args[unitType] = {
 				order = order,
 				type = "group",
 				name = name,
@@ -371,7 +371,7 @@ local function UpdateStyleLists()
 		end
 
 		for unit, data in pairs(NP.TriggerConditions.uniqueUnits) do
-			E.Options.args.nameplate.args.filters.args.triggers.args.uniqueUnits.args[data[2]].args[unit] = {
+			E.Options.args.nameplates.args.filters.args.triggers.args.uniqueUnits.args[data[2]].args[unit] = {
 				textWidth = true,
 				order = -1,
 				type = "toggle",
@@ -390,17 +390,17 @@ end
 
 local function UpdateFilterGroup()
 	if not selectedNameplateFilter or not E.global.nameplates.filters[selectedNameplateFilter] then
-		E.Options.args.nameplate.args.filters.args.header = nil
-		E.Options.args.nameplate.args.filters.args.actions = nil
-		E.Options.args.nameplate.args.filters.args.triggers = nil
+		E.Options.args.nameplates.args.filters.args.header = nil
+		E.Options.args.nameplates.args.filters.args.actions = nil
+		E.Options.args.nameplates.args.filters.args.triggers = nil
 	end
 	if selectedNameplateFilter and E.global.nameplates.filters[selectedNameplateFilter] then
-		E.Options.args.nameplate.args.filters.args.header = {
+		E.Options.args.nameplates.args.filters.args.header = {
 			order = 4,
 			type = "header",
 			name = selectedNameplateFilter
 		}
-		E.Options.args.nameplate.args.filters.args.triggers = {
+		E.Options.args.nameplates.args.filters.args.triggers = {
 			order = 5,
 			type = "group",
 			name = L["Triggers"],
@@ -1563,7 +1563,7 @@ local function UpdateFilterGroup()
 				}
 			}
 		}
-		E.Options.args.nameplate.args.filters.args.actions = {
+		E.Options.args.nameplates.args.filters.args.actions = {
 			order = 6,
 			type = "group",
 			name = L["Actions"],
@@ -3402,7 +3402,7 @@ local function GetUnitSettings(unit, name)
 	return group
 end
 
-E.Options.args.nameplate = {
+E.Options.args.nameplates = {
 	order = 2,
 	type = "group",
 	name = L["Nameplates"],
@@ -4135,25 +4135,6 @@ E.Options.args.nameplate = {
 						return filters
 					end
 				},
-				removeFilter = {
-					order = 3,
-					type = "execute",
-					name = L["Delete Filter"],
-					desc = L["Delete a created filter, you cannot delete pre-existing filters, only custom ones."],
-					func = function()
-						for profile in pairs(E.data.profiles) do
-							if E.data.profiles[profile].nameplates and E.data.profiles[profile].nameplates.filters and E.data.profiles[profile].nameplates.filters[selectedNameplateFilter] then
-								E.data.profiles[profile].nameplates.filters[selectedNameplateFilter] = nil
-							end
-						end
-						E.global.nameplates.filters[selectedNameplateFilter] = nil
-						selectedNameplateFilter = nil
-						UpdateFilterGroup()
-						NP:ConfigureAll()
-					end,
-					disabled = function() return G.nameplates.filters[selectedNameplateFilter] end,
-					hidden = function() return selectedNameplateFilter == nil end
-				}
 			}
 		}
 	}
@@ -4161,7 +4142,7 @@ E.Options.args.nameplate = {
 
 do -- target arrow textures
 	local arrows = {}
-	E.Options.args.nameplate.args.targetGroup.args.arrows.values = arrows
+	E.Options.args.nameplates.args.targetGroup.args.arrows.values = arrows
 
 	for key, arrow in pairs(E.Media.Arrows) do
 		arrows[key] = E:TextureString(arrow, ":45:45")
@@ -4169,7 +4150,7 @@ do -- target arrow textures
 end
 
 for i = 1, 5 do
-	E.Options.args.nameplate.args.generalGroup.args.colorsGroup.args.comboPoints.args["COMBO_POINTS" .. i] = {
+	E.Options.args.nameplates.args.generalGroup.args.colorsGroup.args.comboPoints.args["COMBO_POINTS" .. i] = {
 		type = "color",
 		order = i,
 		name = L["COMBO_POINTS"] .. " #" .. i,

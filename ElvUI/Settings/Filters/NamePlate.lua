@@ -10,13 +10,35 @@ G.nameplates.filters = {
 		triggers = {
 			level = true,
 			curlevel = -1,
+			priority = 2
+		},
+		actions = {
+			usePortrait = true,
+			scale = 1.15
+		}
+	},
+	ElvUI_Target = {
+		triggers = {
+			isTarget = true
+		},
+		actions = {
+			scale = 1.2
+		}
+	},
+	ElvUI_NonTarget = {
+		triggers = {
+			notTarget = true,
+			requireTarget = true,
 			nameplateType = {
 				enable = true,
+				friendlyPlayer = true,
+				friendlyNPC = true,
+				enemyPlayer = true,
 				enemyNPC = true
 			}
 		},
 		actions = {
-			scale = 1.15
+			alpha = 50
 		}
 	},
 	ElvUI_Totem = {
@@ -28,7 +50,7 @@ G.nameplates.filters = {
 		actions = {
 			iconOnly = true
 		}
-	}
+	},
 }
 
 E.StyleFilterDefaults = {
