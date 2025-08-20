@@ -2076,7 +2076,7 @@ function B:GetContainerFrameScale()
 	return max(containerScale, CONTAINER_SCALE)
 end
 
-function B:UpdateContainerFrameAnchors()
+function B:updateContainerFrameAnchors()
 	local containerScale = B:GetContainerFrameScale()
 	local screenHeight = E.screenHeight / containerScale
 
@@ -2352,7 +2352,7 @@ function B:Initialize()
 		BagFrameHolder:Point('BOTTOMRIGHT', _G.RightChatPanel, 'BOTTOMRIGHT', -(E.Border*2), 22 + E.Border*4 - E.Spacing*2)
 		E:CreateMover(BagFrameHolder, 'ElvUIBagMover', L["Bags"], nil, nil, B.PostBagMove, nil, nil, 'bags,general')
 		CONTAINER_SPACING = E.private.skins.blizzard.enable and E.private.skins.blizzard.bags and (E.Border*2) or 0
-		B:SecureHook('UpdateContainerFrameAnchors')
+		B:SecureHook('updateContainerFrameAnchors')
 		return
 	end
 
