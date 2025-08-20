@@ -490,7 +490,7 @@ do
 
 	-- crc
 	local function crc32(str)
-		local val = tonumber((select(2, GetBuildInfo())))	-- Use WoW build as CRC base
+		local val = tonumber((select(2, GetBuildInfo()))) or 1 -- Use WoW build as CRC base
 		for i = 1,#str do
 			val = bit.band(val * 2 + str:byte(i), 0xFFFF)
 		end
