@@ -1531,7 +1531,7 @@ function CH:MessageFormatter(frame, info, chatType, chatGroup, chatTarget, chann
 	local data = CH:GetPlayerInfoByGUID(arg12)
 	if data then
 		realm = data.realm
-		nameWithRealm = data.nameWithRealm
+		-- nameWithRealm = data.nameWithRealm
 	end
 
 	local playerLink
@@ -1547,7 +1547,7 @@ function CH:MessageFormatter(frame, info, chatType, chatGroup, chatTarget, chann
 		playerLinkDisplayText = format('[%s]', coloredName)
 	end
 
-	local playerName, lineID, bnetIDAccount = (nameWithRealm ~= arg2 and nameWithRealm) or arg2, arg11, arg13
+	local playerName, lineID, bnetIDAccount = arg2, arg11, arg13
 	if chatType == 'BN_WHISPER' or chatType == 'BN_WHISPER_INFORM' then
 		playerLink = GetBNPlayerLink(playerName, playerLinkDisplayText, bnetIDAccount, lineID, chatGroup, chatTarget)
 	else
@@ -1827,7 +1827,7 @@ function CH:ChatFrame_MessageEventHandler(frame, event, arg1, arg2, arg3, arg4, 
 			local typeID = _G.ChatHistory_GetAccessID(infoType, chatTarget, arg12 or arg13)
 			local body = CH:MessageFormatter(frame, info, chatType, chatGroup, chatTarget, channelLength, coloredName, historySavedName, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, isHistory, historyTime, historyName, historyBTag) or arg1
 
-			frame:AddMessage(body, info.r, info.g, info.b, info.id, accessID, typeID, event, eventArgs, msgFormatter, isHistory, historyTime)
+			frame:AddMessage(body, info.r, info.g, info.b, info.id, accessID, typeID, event, _, _, isHistory, historyTime)
 		end
 
 		if notChatHistory and (chatType == 'WHISPER' or chatType == 'BN_WHISPER') then
