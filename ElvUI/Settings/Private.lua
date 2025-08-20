@@ -27,7 +27,6 @@ V.general = {
 	noFontScale = false,
 	totemTracker = true,
 	classColors = false,
-	queueStatus = true,
 	minimap = {
 		enable = true,
 		hideCalendar = true,
