@@ -2,7 +2,6 @@ local ElvUI = select(2, ...)
 ElvUI[2] = ElvUI[1].Libs.ACL:GetLocale('ElvUI', ElvUI[1]:GetLocale()) -- Locale doesn't exist yet, make it exist.
 local E, L, V, P, G = unpack(ElvUI)
 local LC = E.Libs.Compat
-local LCS = E.Libs.LCS
 
 local _G = _G
 local tonumber, pairs, ipairs, error, unpack, select, tostring = tonumber, pairs, ipairs, error, unpack, select, tostring
@@ -12,12 +11,9 @@ local assert, type, pcall, xpcall, next, print = assert, type, pcall, xpcall, ne
 local rawget, rawset, setmetatable = rawget, rawset, setmetatable
 
 local CreateFrame = CreateFrame
-local GetAddOnInfo = GetAddOnInfo
 local GetBindingKey = GetBindingKey
 local GetCVar = GetCVar
 local GetCurrentBindingSet = GetCurrentBindingSet
-local GetNumPartyMembers = GetNumPartyMembers
-local GetNumRaidMembers = GetNumRaidMembers
 local GetSpellInfo = GetSpellInfo
 local InCombatLockdown = InCombatLockdown
 local IsInGuild = IsInGuild
@@ -32,7 +28,8 @@ local UnitGUID = UnitGUID
 local IsInRaid = LC.IsInRaid
 local IsInGroup = LC.IsInGroup
 local GetNumGroupMembers = LC.GetNumGroupMembers
-local GetSpecialization = LCS.GetSpecialization
+local GetSpecialization = LC.GetSpecialization
+local GetPhysicalScreenSize = LC.GetPhysicalScreenSize
 
 local DisableAddOn = DisableAddOn
 local SendAddonMessage = SendAddonMessage
@@ -59,19 +56,19 @@ local LSM = E.Libs.LSM
 --Constants
 E.noop = function() end
 E.isMacClient = IsMacClient()
-E.title = format('|cffff7000E|r|cffe5e3e3lvUI|r')
+E.title = format('%s%s|r', E.InfoColor, 'ElvUI')
 E.toc = tonumber(GetAddOnMetadata('ElvUI', 'X-Interface'))
 E.version, E.versionString = E:ParseVersionString('ElvUI')
 E.myfaction, E.myLocalizedFaction = UnitFactionGroup('player')
 E.myLocalizedClass, E.myclass = UnitClass('player')
 E.myLocalizedRace, E.myrace = UnitRace('player')
+E.mygender = UnitSex('player')
 E.mylevel = UnitLevel('player')
 E.myname = UnitName('player')
 E.myrealm = GetRealmName()
 E.mynameRealm = format('%s - %s', E.myname, E.myrealm) -- contains spaces/dashes in realm (for profile keys)
-E.myspec = GetSpecialization()
 E.wowbuild = tonumber(E.wowbuild)
-E.physicalWidth, E.physicalHeight = LC.GetPhysicalScreenSize()
+E.physicalWidth, E.physicalHeight = GetPhysicalScreenSize()
 E.screenWidth, E.screenHeight = GetScreenWidth(), GetScreenHeight()
 E.resolution = format('%dx%d', E.physicalWidth, E.physicalHeight)
 E.perfect = 768 / E.physicalHeight
@@ -1848,6 +1845,7 @@ function E:Initialize()
 	wipe(E.global)
 	wipe(E.private)
 
+	E.myspec = GetSpecialization()
 	E.myguid = UnitGUID('player')
 
 	E.data = E.Libs.AceDB:New('ElvDB', E.DF, true)

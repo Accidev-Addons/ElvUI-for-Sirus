@@ -14,17 +14,36 @@ local GetNumAddOns = GetNumAddOns
 
 local UNKNOWN = UNKNOWN
 
+E.Status_Addons = {
+	ElvUI = true,
+	ElvUI_OptionsUI = true
+}
+
+E.Status_Bugsack = {
+	['!BugGrabber'] = true,
+	BugSack = true
+}
+
 function E:AreOtherAddOnsEnabled()
-	local EP, addons, plugins = E.Libs.EP.plugins
+	local EP, addons, bugs, plugins = E.Libs.EP.plugins
+
+	local addon = E.Status_Addons
+	local bugsack = E.Status_Bugsack
 
 	for i = 1, GetNumAddOns() do
 		local name = GetAddOnInfo(i)
-		if name ~= 'ElvUI' and name ~= 'ElvUI_OptionsUI' and name ~= 'ElvUI_CPU' and E:IsAddOnEnabled(name) then
-			if EP[name] then plugins = true else addons = true end
+		if not addon[name] and E:IsAddOnEnabled(name) then
+			if EP[name] then
+				plugins = true
+			elseif bugsack[name] then
+				bugs = true
+			else
+				addons = true
+			end
 		end
 	end
 
-	return addons, plugins
+	return addons, bugs, plugins
 end
 
 function E:GetDisplayMode()
@@ -146,7 +165,7 @@ function E:CreateStatusFrame()
 	titleLogoFrame:SetSize(240, 80)
 	titleLogoFrame:EnableMouse(true)
 	titleLogoFrame:RegisterForDrag('LeftButton')
-	titleLogoFrame:SetScript('OnDragStart', function() StatusFrame:StartMoving() StatusFrame:SetUserPlaced(false) end)
+	titleLogoFrame:SetScript('OnDragStart', function() StatusFrame:StartMoving(); StatusFrame:SetUserPlaced(false) end)
 	titleLogoFrame:SetScript('OnDragStop', function() StatusFrame:StopMovingOrSizing() end)
 	StatusFrame.TitleLogoFrame = titleLogoFrame
 
