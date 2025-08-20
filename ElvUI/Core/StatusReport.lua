@@ -13,8 +13,6 @@ local GetNumAddOns = GetNumAddOns
 
 local UNKNOWN = UNKNOWN
 
-local wowbuild = E.wowbuild or select(2, GetBuildInfo()) or UNKNOWN
-
 E.Status_Addons = {
 	ElvUI = true,
 	ElvUI_OptionsUI = true
@@ -198,7 +196,7 @@ function E:CreateStatusFrame()
 	StatusFrame.Section1.Content.Line3.Text:SetFormattedText('Recommended Scale: |cff4beb2c%s|r', E:PixelBestSize())
 	StatusFrame.Section1.Content.Line4.Text:SetFormattedText('UI Scale Is: |cff4beb2c%s|r', E.global.general.UIScale)
 
-	StatusFrame.Section2.Content.Line1.Text:SetFormattedText('Version of WoW: |cff4beb2c%s (build %s)|r', E.wowpatch, wowbuild)
+	StatusFrame.Section2.Content.Line1.Text:SetFormattedText('Version of WoW: |cff4beb2c%s (build %s)|r', E.wowpatch, E.wowbuild)
 	StatusFrame.Section2.Content.Line2.Text:SetFormattedText('Client Language: |cff4beb2c%s|r', E.locale)
 
 	StatusFrame.Section3.Content.Line1.Text:SetFormattedText('Realm: |cff4beb2c%s|r', E.myrealm)
