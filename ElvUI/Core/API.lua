@@ -48,10 +48,8 @@ local UnitAura = UnitAura
 
 local IsInRaid = LC.IsInRaid
 
-local GetSpecialization = LCS.GetSpecialization
-local GetSpecializationInfo = LCS.GetSpecializationInfo
-local GetSpecializationInfoForClassID = LCS.GetSpecializationInfoForClassID
-local GetClassInfo = LCS.GetClassInfo
+local GetSpecialization = LC.GetSpecialization
+local GetSpecializationInfo = LC.GetSpecializationInfo
 
 local MAX_TALENT_TABS = MAX_TALENT_TABS
 local NONE = NONE
@@ -265,13 +263,141 @@ function E:InverseClassColor(class, usePriestColor, forceCap)
 	return color
 end
 
+-- taken from https://gitlab.com/Tsoukie/classicapi/-/blob/main/!!!ClassicAPI/Util/C_CreatureInfo.lua
+local classData
+local function GetClassInfo(classID)
+		classData = {
+			[1] = "WARRIOR",
+			[2] = "PALADIN",
+			[3] = "HUNTER",
+			[4] = "ROGUE",
+			[5] = "PRIEST",
+			[6] = "DEATHKNIGHT",
+			[7] = "SHAMAN",
+			[8] = "MAGE",
+			[9] = "WARLOCK",
+			[10] = "DRUID",
+		}
+
+	local classInfo = classData[classID]
+
+	if classInfo then
+		classInfo = {
+			className = _G.LOCALIZED_CLASS_NAMES_MALE[classInfo],
+			classFile = classInfo,
+			classID = classID
+		}
+		classData[classID] = classInfo
+	end
+
+	return classInfo
+end
+
+do
+	local classByID = {}
+	local classByFile = {}
+
+	E.ClassInfoByID = classByID
+	E.ClassInfoByFile = classByFile
+
+	for index = 1, 10 do
+		local info = GetClassInfo(index)
+		if info then
+			classByID[info.classID] = info
+			classByFile[info.classFile] = info
+		end
+	end
+
+	function E:GetClassInfo(value) -- classFile or classID
+		return classByFile[value] or classByID[value]
+	end
+end
+
 do -- other non-english locales require this
 	E.UnlocalizedClasses = {}
-	for k, v in pairs(_G.LOCALIZED_CLASS_NAMES_MALE) do E.UnlocalizedClasses[v] = k end
-	for k, v in pairs(_G.LOCALIZED_CLASS_NAMES_FEMALE) do E.UnlocalizedClasses[v] = k end
+
+	local classMale = _G.LOCALIZED_CLASS_NAMES_MALE
+	local classFemale = _G.LOCALIZED_CLASS_NAMES_FEMALE
+
+	for k, v in pairs(classMale) do E.UnlocalizedClasses[v] = k end
+	for k, v in pairs(classFemale) do E.UnlocalizedClasses[v] = k end
 
 	function E:UnlocalizedClassName(className)
 		return E.UnlocalizedClasses[className]
+	end
+
+	function E:LocalizedClassName(className, unit)
+		local gender = (type(unit) == 'number' and unit) or (not unit and E.mygender) or UnitSex(unit)
+		return (gender == 3 and classFemale[className]) or classMale[className]
+	end
+end
+
+function E:GetUnitSpecInfo(unit)
+	if not UnitIsPlayer(unit) then return end
+
+	E.ScanTooltip:SetOwner(UIParent, 'ANCHOR_NONE')
+	E.ScanTooltip:SetUnit(unit)
+	E.ScanTooltip:Show()
+
+	local _, specLine = TT:GetLevelLine(E.ScanTooltip, 1, true)
+	local specText = specLine and specLine.leftText
+	if specText then
+		return E.SpecInfoBySpecClass[specText]
+	end
+end
+
+function E:PopulateSpecInfo()
+	wipe(E.SpecInfoBySpecID)
+	wipe(E.SpecInfoBySpecClass)
+
+	for classFile, specID in next, E.SpecByClass do
+		local info = E.ClassInfoByFile[classFile]
+		if info then -- exclude evoker on mists
+			local classMale, classFemale = E:LocalizedClassName(classFile, 2), E:LocalizedClassName(classFile, 3)
+			for index, id in next, specID do
+				local data = {
+					id = id,
+					index = index,
+					classFile = classFile,
+					className = info.className,
+					classMale = classMale,
+					classFemale = classFemale,
+					englishName = E.SpecName[id]
+				}
+
+				E.SpecInfoBySpecID[id] = data
+
+				for x = 3, 1, -1 do
+					local _, name, desc, icon, _, role = GetSpecializationInfo(id, x)
+					print(name, desc, icon, role)
+					if name then
+						if x == 1 then -- SpecInfoBySpecID
+							data.name = name
+							data.desc = desc
+							data.icon = icon
+							data.role = role
+
+							local specClass = name..' '..info.className
+							E.SpecInfoBySpecClass[specClass] = data
+						else
+							local copy = E:CopyTable({}, data)
+							copy.name = name
+							copy.desc = desc
+							copy.icon = icon
+							copy.role = role
+
+							local localized = (x == 3 and classFemale) or classMale
+							copy.className = localized
+
+							if localized then
+								local specClassLocalized = name..' '..localized
+								E.SpecInfoBySpecClass[specClassLocalized] = copy
+							end
+						end
+					end
+				end
+			end
+		end
 	end
 end
 
@@ -880,20 +1006,6 @@ function E:CompatibleTooltip(tt) -- knock off compatibility
 	end
 end
 
-function E:GetUnitSpecInfo(unit)
-	if not UnitIsPlayer(unit) then return end
-
-	E.ScanTooltip:SetOwner(UIParent, 'ANCHOR_NONE')
-	E.ScanTooltip:SetUnit(unit)
-	E.ScanTooltip:Show()
-
-	local _, specLine = TT:GetLevelLine(E.ScanTooltip, 1, true)
-	local specText = specLine and specLine.leftText
-	if specText then
-		return E.SpecInfoBySpecClass[specText]
-	end
-end
-
 function E:GetClassCoords(classFile, crop, get)
 	local t = _G.CLASS_ICON_TCOORDS[classFile]
 	if not t then return 0, 1, 0, 1 end
@@ -960,59 +1072,7 @@ function E:LoadAPI()
 	E:RegisterEvent('UI_SCALE_CHANGED', 'PixelScaleChanged')
 
 	E:SetupGameMenu()
-
-	do -- fill the spec info tables
-		local MALE = _G.LOCALIZED_CLASS_NAMES_MALE
-		local FEMALE = _G.LOCALIZED_CLASS_NAMES_FEMALE
-
-		local i = 1
-		local className, classFile, classID = GetClassInfo(i)
-		local male, female = MALE[classFile], FEMALE[classFile]
-		while classID do
-			for index, id in next, E.SpecByClass[classFile] do
-				local info = {
-					id = id,
-					index = index,
-					classFile = classFile,
-					className = className,
-					englishName = E.SpecName[id]
-				}
-
-				E.SpecInfoBySpecID[id] = info
-
-				for x = 3, 1, -1 do
-					local _, name, desc, icon, role = GetSpecializationInfoForClassID(id, x)
-					name = name or ''
-
-					if x == 1 then -- SpecInfoBySpecID
-						info.name = name
-						info.desc = desc
-						info.icon = icon
-						info.role = role
-
-						E.SpecInfoBySpecClass[name..' '..className] = info
-					else
-						local copy = E:CopyTable({}, info)
-						copy.name = name
-						copy.desc = desc
-						copy.icon = icon
-						copy.role = role
-
-						local localized = (x == 3 and female) or male
-						copy.className = localized
-
-						if localized then
-							E.SpecInfoBySpecClass[name..' '..localized] = copy
-						end
-					end
-				end
-			end
-
-			i = i + 1
-			className, classFile, classID = GetClassInfo(i)
-			male, female = MALE[classFile], FEMALE[classFile]
-		end
-	end
+	E:PopulateSpecInfo()
 
 	E:CompatibleTooltip(E.ScanTooltip)
 	E:CompatibleTooltip(E.ConfigTooltip)

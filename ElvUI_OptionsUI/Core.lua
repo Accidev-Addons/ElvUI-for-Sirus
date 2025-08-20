@@ -1,10 +1,8 @@
 local E, _, V, P, G = unpack(ElvUI)
-local UF = E:GetModule("UnitFrames")
-local MC = E:GetModule("ModuleCopy")
-local D = E:GetModule("Distributor")
-local S = E:GetModule("Skins")
-
-local LCS = E.Libs.LCS
+local UF = E:GetModule('UnitFrames')
+local MC = E:GetModule('ModuleCopy')
+local D = E:GetModule('Distributor')
+local S = E:GetModule('Skins')
 
 -- libraries used for options
 E:AddLib('AceGUI', 'AceGUI-3.0')
@@ -13,16 +11,15 @@ E:AddLib('AceConfigDialog', 'AceConfigDialog-3.0-ElvUI')
 E:AddLib('AceConfigRegistry', 'AceConfigRegistry-3.0-ElvUI')
 E:AddLib('AceDBOptions', 'AceDBOptions-3.0')
 
-local GetAddOnMetadata = GetAddOnMetadata
 -- GLOBALS: ElvDB
 
 local ACH = E.Libs.ACH
-local L = E.Libs.ACL:GetLocale("ElvUI", E.global.general.locale)
+local L = E.Libs.ACL:GetLocale('ElvUI', E.global.general.locale)
 local C = {
 	version = E:ParseVersionString('ElvUI_OptionsUI'),
 	Blank = function() return "" end,
 	SearchCache = {},
-	SearchText = "",
+	SearchText = '',
 }
 
 E.Config = select(2, ...)
@@ -39,6 +36,7 @@ local UnitExists = UnitExists
 local UnitIsUnit = UnitIsUnit
 local UnitIsFriend = UnitIsFriend
 local UnitIsPlayer = UnitIsPlayer
+
 local CLASS_SORT_ORDER = CLASS_SORT_ORDER
 local NUM_CLASSES = #CLASS_SORT_ORDER
 
@@ -57,7 +55,7 @@ C.Values = {
 	NUM_CLASSES = NUM_CLASSES,
 	FontFlags = ACH.FontValues,
 	FontSize = { min = 8, max = 24, step = 1 },
-	Roman = { "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII", "XIII", "XIV", "XV", "XVI", "XVII", "XVIII", "XIX", "XX" }, -- 1 to 20
+	Roman = { 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII', 'XIII', 'XIV', 'XV', 'XVI', 'XVII', 'XVIII', 'XIX', 'XX' }, -- 1 to 20
 	AllPositions = { LEFT = 'LEFT', RIGHT = 'RIGHT', TOP = 'TOP', BOTTOM = 'BOTTOM', CENTER = 'CENTER' },
 	EdgePositions = { LEFT = 'LEFT', RIGHT = 'RIGHT', TOP = 'TOP', BOTTOM = 'BOTTOM' },
 	SidePositions = { LEFT = 'LEFT', RIGHT = 'RIGHT' },
@@ -77,11 +75,8 @@ C.Values = {
 do
 	C.ClassTable = {}
 
-	for i = 1, NUM_CLASSES do
-		local name, tag = LCS.GetClassInfo(i)
-		if tag then
-			C.ClassTable[tag] = name
-		end
+	for _, info in next, E.ClassInfoByID do
+		C.ClassTable[info.classFile] = info.className
 	end
 end
 
