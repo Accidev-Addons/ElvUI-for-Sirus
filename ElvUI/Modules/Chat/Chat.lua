@@ -1548,7 +1548,7 @@ function CH:MessageFormatter(frame, info, chatType, chatGroup, chatTarget, chann
 	end
 
 	local playerName, lineID, bnetIDAccount = arg2, arg11, arg13
-	if chatType == 'BN_WHISPER' or chatType == 'BN_WHISPER_INFORM' then
+	if chatType == 'BN_WHISPER' or chatType == 'BN_WHISPER_INFORM' or chatType == 'BN_CONVERSATION' then
 		playerLink = GetBNPlayerLink(playerName, playerLinkDisplayText, bnetIDAccount, lineID, chatGroup, chatTarget)
 	else
 		playerLink = GetPlayerLink(playerName, playerLinkDisplayText, lineID, chatGroup, chatTarget)
