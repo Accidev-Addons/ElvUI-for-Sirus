@@ -1,7 +1,7 @@
 ## Interface: 30300
 ## Author: Elv, Simpy, (Private: Bunny, Loaal, Apollyonn, Crum)
 ## Version: 7.00
-## Title: |cff1784d1E|r|cffe5e3e3lvUI|r
+## Title: |cff1784d1E|cff3399d1l|cff4daed1v|cff66c3d1U|cff80d8d1I|r
 ## Notes: User Interface replacement AddOn for World of Warcraft.
 ## SavedVariables: ElvDB, ElvPrivateDB
 ## SavedVariablesPerCharacter: ElvCharacterDB
