@@ -220,6 +220,35 @@ do
 	end
 end
 
+do
+	local others = {} -- addons we check for
+	local addons = { -- a few are not exact matches
+		ArkInventory = true,
+		BigWigs = true,
+		ColorPickerPlus = true,
+		ColorTools = true,
+		DejaCharacterStats = true,
+		OptionHouse = true,
+		Questie = true,
+		SimplePowerBar = true,
+		Tukui = true,
+		WeakAuras = true,
+		DBM = 'DBM-Core',
+		ConsolePort = 'ConsolePort_Menu',
+	}
+
+	E.OtherAddons = others
+
+	function E:CheckAddons()
+		for key, value in next, addons do
+			if type(value) == 'string' then
+				others[key] = E:IsAddOnEnabled(value)
+			else
+				others[key] = E:IsAddOnEnabled(key)
+			end
+		end
+	end
+end
 
 do
 	local fps = {}
@@ -388,6 +417,7 @@ function E:OnInitialize()
 	E.Spacing = E.PixelMode and 0 or 1
 	E.loadedtime = GetTime()
 
+	E:CheckAddons()
 	E:SetupDB()
 	E:UIMult()
 	E:UpdateMedia()
