@@ -3,12 +3,11 @@ local DT = E:GetModule('DataTexts')
 local AB = E:GetModule('ActionBars')
 
 local _G = _G
-local type, pairs, sort, tonumber = type, pairs, sort, tonumber
+local type, tonumber = type, tonumber
 local lower, wipe, next, print = strlower, wipe, next, print
-local ipairs, format, tinsert = ipairs, format, tinsert
-local strmatch, gsub = strmatch, gsub
+local format = format
+local split = strsplit
 
-local CopyTable = CopyTable
 local ReloadUI = ReloadUI
 
 local DisableAddOn = DisableAddOn
@@ -259,7 +258,6 @@ function E:LoadCommands()
 
 	E:RegisterChatCommand('ehelp', 'DisplayCommands')
 	E:RegisterChatCommand('ecommands', 'DisplayCommands')
-	E:RegisterChatCommand('eblizzard', 'EnableBlizzardAddOns')
 	E:RegisterChatCommand('estatus', 'ShowStatusReport')
 	E:RegisterChatCommand('efixdb', 'DBConvertProfile')
 	E:RegisterChatCommand('egrid', 'Grid')
@@ -270,6 +268,7 @@ function E:LoadCommands()
 	-- older commands
 	E:RegisterChatCommand('bgstats', 'BGStats')
 	E:RegisterChatCommand('cleanguild', 'MassGuildKick')
+	E:RegisterChatCommand('eblizzard', 'EnableBlizzardAddOns')
 
 	E:RegisterChatCommand('cpuimpact', 'GetCPUImpact')
 	E:RegisterChatCommand('cpuusage', 'GetTopCPUFunc')
