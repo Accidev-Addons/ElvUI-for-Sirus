@@ -220,6 +220,57 @@ do
 	end
 end
 
+
+do
+	local fps = {}
+	E.FPS = fps
+
+	local CollectRate = function(rate)
+		fps.count = (fps.count or 0) + 1
+		fps.total = (fps.total or 0) + rate
+
+		fps.rate = rate
+		fps.average = fps.total / fps.count
+
+		if not fps.high or (rate > fps.high) then
+			fps.high = rate
+		end
+
+		if not fps.low or (rate < fps.low) then
+			fps.low = rate
+		end
+	end
+
+	local ignore, wait, rate = true, 0, 0
+	local TrackRate = function(_, elapsed)
+		if wait < 1 then
+			wait = wait + elapsed
+			rate = rate + 1
+		else
+			wait = 0
+
+			if ignore then -- ignore the first update
+				ignore = false
+			else
+				CollectRate(rate)
+			end
+
+			rate = 0 -- ok reset it
+		end
+	end
+
+	local ResetRate = function()
+		wipe(fps)
+
+		ignore = true -- ignore the first again
+	end
+
+	local frame = CreateFrame('Frame')
+	frame:SetScript('OnUpdate', TrackRate)
+	frame:SetScript('OnEvent', ResetRate)
+	frame:RegisterEvent('PLAYER_ENTERING_WORLD')
+end
+
 function E:SetCVar(cvar, value, ...)
 	local valstr = ((type(value) == 'boolean') and (value and '1' or '0')) or tostring(value)
 	if GetCVar(cvar) ~= valstr then
