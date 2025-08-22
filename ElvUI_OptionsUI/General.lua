@@ -73,7 +73,7 @@ GenGen.scaling.args.ScaleAuto = ACH:Execute(L["Auto Scale"], nil, 5, function() 
 
 GenGen.gameMenuGroup = ACH:Group(L["Game Menu"], nil, 70, nil, function(info) return E.db.general[info[#info]] end, function(info, value) E.db.general[info[#info]] = value E:ScaleGameMenu() end)
 GenGen.gameMenuGroup.inline = true
-GenGen.gameMenuGroup.args.gameMenuScale = ACH:Range(E.NewSign..L["Scale"], L["Change the scale of the Game Menu which shows up when you press ESC."], 1, { min = 0.25, max = 1.50, step = 0.000000000000001, bigStep = 0.01 })
+GenGen.gameMenuGroup.args.gameMenuScale = ACH:Range(L["Scale"], L["Change the scale of the Game Menu which shows up when you press ESC."], 1, { min = 0.25, max = 1.50, step = 0.000000000000001, bigStep = 0.01 })
 
 GenGen.automation = ACH:Group(L["Automation"], nil, 80)
 GenGen.automation.inline = true
@@ -95,8 +95,8 @@ Fonts.general.inline = true
 
 Fonts.blizzard = ACH:Group('', nil, 12, nil, function(info) return E.private.general[info[#info]] end, function(info, value) E.private.general[info[#info]] = value E.ShowPopup = true end)
 Fonts.blizzard.args.replaceBlizzFonts = ACH:Toggle(L["Replace Blizzard Fonts"], L["Replaces the default Blizzard fonts on various panels and frames with the fonts chosen in the Media section of the ElvUI Options. NOTE: Any font that inherits from the fonts ElvUI usually replaces will be affected as well if you disable this. Enabled by default."], 1)
-Fonts.blizzard.args.blizzardFontSize = ACH:Toggle(E.NewSign..L["Blizzard Font Size"], L["Font Size as defined by Blizzard."], 2, nil, nil, nil, nil, function(info, value) E.private.general[info[#info]] = value E:UpdateBlizzardFonts() end, function() return not E.private.general.replaceBlizzFonts end)
-Fonts.blizzard.args.noFontScale = ACH:Toggle(E.NewSign..L["No Font Scale"], L["Dont scale by Font Size as base."], 3, nil, nil, nil, nil, function(info, value) E.private.general[info[#info]] = value E:UpdateBlizzardFonts() end, function() return not E.private.general.replaceBlizzFonts end)
+Fonts.blizzard.args.blizzardFontSize = ACH:Toggle(L["Blizzard Font Size"], L["Font Size as defined by Blizzard."], 2, nil, nil, nil, nil, function(info, value) E.private.general[info[#info]] = value E:UpdateBlizzardFonts() end, function() return not E.private.general.replaceBlizzFonts end)
+Fonts.blizzard.args.noFontScale = ACH:Toggle(L["No Font Scale"], L["Dont scale by Font Size as base."], 3, nil, nil, nil, nil, function(info, value) E.private.general[info[#info]] = value E:UpdateBlizzardFonts() end, function() return not E.private.general.replaceBlizzFonts end)
 Fonts.blizzard.inline = true
 
 Fonts.combat = ACH:Group('', nil, 13, nil, function(info) return E.private.general[info[#info]] end, function(info, value) E.private.general[info[#info]] = value E.ShowPopup = true end)
@@ -296,7 +296,7 @@ for tag, name in next, C.ClassTable do
 	blizz.classColors.args[tag] = ACH:Color(name, nil, nil, nil, 120)
 end
 
-blizz.guildBank = ACH:Group(E.NewSign..L["Guild Bank"], nil, 70, 'tab', function(info) return E.db.general.guildBank[info[#info]] end, function(info, value) E.db.general.guildBank[info[#info]] = value BL:GuildBank_Update() end)
+blizz.guildBank = ACH:Group(L["Guild Bank"], nil, 70, 'tab', function(info) return E.db.general.guildBank[info[#info]] end, function(info, value) E.db.general.guildBank[info[#info]] = value BL:GuildBank_Update() end)
 blizz.guildBank.args.itemQuality = ACH:Toggle(L["Item Quality"], nil, 1)
 
 blizz.guildBank.args.ilvlGroup = ACH:Group(L["Item Level"], nil, 10)
