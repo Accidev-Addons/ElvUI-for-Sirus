@@ -578,7 +578,6 @@ function NP:OnCreated(frame)
 	unitFrame:Hide()
 	unitFrame:SetAllPoints()
 	unitFrame:SetScript("OnEvent", self.OnEvent)
-	unitFrame:SetScale(E.uiscale)
 	unitFrame.plateID = plateID
 
 	unitFrame.Health = self:Construct_HealthBar(unitFrame)
