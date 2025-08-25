@@ -249,6 +249,11 @@ local function SetEnabled(frame, enabled)
 	end
 end
 
+local function GetDesaturation(frame)
+    local r, g, b, a = frame:GetVertexColor()
+    return (r == .6 and g == .6 and b == .6 and a == .8) and 1 or 0
+end
+
 local function SetTemplate(frame, template, glossTex, ignoreUpdates, forcePixelMode, isUnitFrameElement, isNamePlateElement, noScale)
 	GetTemplate(template, isUnitFrameElement)
 
@@ -535,6 +540,7 @@ local API = {
 	GrabPoint = GrabPoint,
 	NudgePoint = NudgePoint,
 	SetEnabled = SetEnabled,
+	GetDesaturation = GetDesaturation,
 	SetOutside = SetOutside,
 	SetInside = SetInside,
 	SetShown = SetShown,

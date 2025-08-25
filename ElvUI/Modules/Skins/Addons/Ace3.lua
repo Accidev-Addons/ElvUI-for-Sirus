@@ -130,11 +130,6 @@ function S:Ace3_SkinButton(button)
 	end
 end
 
-local function GetDesaturation(frame)
-    local r, g, b, a = frame:GetVertexColor()
-    return (r == .6 and g == .6 and b == .6 and a == .8) and 1 or 0
-end
-
 function S:Ace3_SkinCheckBox(widget, check, checkbg, highlight)
     if not checkbg.backdrop then
 		checkbg:CreateBackdrop(nil, nil, nil, nil, nil, nil, nil, nil, true)
@@ -149,7 +144,7 @@ function S:Ace3_SkinCheckBox(widget, check, checkbg, highlight)
 		hooksecurefunc(widget, 'SetType', S.Ace3_CheckBoxSetType)
 
 		if E.private.skins.checkBoxSkin then
-			S.Ace3_CheckBoxSetDesaturated(check, GetDesaturation(check))
+			S.Ace3_CheckBoxSetDesaturated(check, check:GetDesaturation())
 			hooksecurefunc(check, 'SetDesaturated', S.Ace3_CheckBoxSetDesaturated)
 
 			checkbg.backdrop:SetInside(widget.checkbg, 5, 5)
