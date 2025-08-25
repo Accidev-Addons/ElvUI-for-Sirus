@@ -133,7 +133,7 @@ end
 function S:Ace3_SkinCheckBox(widget, check, checkbg, highlight)
     if not checkbg.backdrop then
 		checkbg:CreateBackdrop(nil, nil, nil, nil, nil, nil, nil, nil, true)
-		checkbg.backdrop:SetInside(widget.checkbg, E.private.skins.checkBoxSkin and 5 or 4, E.private.skins.checkBoxSkin and 5 or 4)
+		checkbg.backdrop:SetInside(widget.checkbg, 4, 4)
 
 		checkbg:SetTexture()
 		highlight:SetTexture()
@@ -212,7 +212,7 @@ function S:Ace3_RegisterAsWidget(widget)
 		end
 	elseif TYPE == 'CheckBox' then
 		S:Ace3_SkinCheckBox(widget, widget.check, widget.checkbg, widget.highlight)
-	elseif TYPE == 'Dropdown' or TYPE == 'LQDropdown' then
+	elseif TYPE == 'Dropdown' or TYPE == 'Dropdown-ElvUI' or TYPE == 'LQDropdown' then
 		local frame = widget.dropdown
 
 		frame:StripTextures()
@@ -568,6 +568,7 @@ function S:Ace3_MetaIndex(k, v)
 		S:SecureHookScript(v, 'OnShow', S.Ace3_StyleTooltip)
 	elseif k == 'popup' then
 		rawset(self, k, v)
+
 		S:SecureHookScript(v, 'OnShow', S.Ace3_StylePopup)
 	elseif k == 'RegisterAsContainer' then
 		rawset(self, k, function(s, w, ...)
@@ -698,7 +699,7 @@ do -- Early Skin Loading
 
 	for n in next, LibStub.libs do
 		if n == 'AceGUI-3.0' then
-			for _, x in ipairs({UIParent:GetChildren()}) do
+			for _, x in next, { UIParent:GetChildren() } do
 				if x and x.obj then earlyWidget(x.obj) end
 			end
 		end
