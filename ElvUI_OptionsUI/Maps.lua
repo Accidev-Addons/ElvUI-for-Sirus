@@ -83,17 +83,7 @@ Maps.args.minimap.args.icons.args.lfgEye.args.scale = ACH:Range(L["Scale"], nil,
 Maps.args.minimap.args.icons.args.lfgEye.args.xOffset = ACH:Range(L["X-Offset"], nil, 3, buttonOffsets)
 Maps.args.minimap.args.icons.args.lfgEye.args.yOffset = ACH:Range(L["Y-Offset"], nil, 4, buttonOffsets)
 
-Maps.args.minimap.args.icons.args.queueStatus = ACH:Group(L["Queue Status"], nil, 3, nil, nil, nil, nil)
-Maps.args.minimap.args.icons.args.queueStatus.args.enable = ACH:Toggle(L["Enable"], nil, 1)
-Maps.args.minimap.args.icons.args.queueStatus.args.spacer1 = ACH:Spacer(2)
-Maps.args.minimap.args.icons.args.queueStatus.args.position = ACH:Select(L["Position"], nil, 3, buttonPositions, nil, nil, nil, nil, function() return not E.db.general.minimap.icons.queueStatus.enable end)
-Maps.args.minimap.args.icons.args.queueStatus.args.xOffset = ACH:Range(L["X-Offset"], nil, 4, buttonOffsets, nil, nil, nil, function() return not E.db.general.minimap.icons.queueStatus.enable end)
-Maps.args.minimap.args.icons.args.queueStatus.args.yOffset = ACH:Range(L["Y-Offset"], nil, 5, buttonOffsets, nil, nil, nil, function() return not E.db.general.minimap.icons.queueStatus.enable end)
-Maps.args.minimap.args.icons.args.queueStatus.args.font = ACH:SharedMediaFont(L["Font"], nil, 6, nil, nil, nil, function() return not E.db.general.minimap.icons.queueStatus.enable end)
-Maps.args.minimap.args.icons.args.queueStatus.args.fontSize = ACH:Range(L["Font Size"], nil, 7, textFontSize, nil, nil, nil, function() return not E.db.general.minimap.icons.queueStatus.enable end)
-Maps.args.minimap.args.icons.args.queueStatus.args.fontOutline = ACH:Select(L["Font Outline"], nil, 8, C.Values.FontFlags, nil, nil, nil, nil, function() return not E.db.general.minimap.icons.queueStatus.enable end)
-
-Maps.args.minimap.args.icons.args.tracking = ACH:Group(L["Tracking"], nil, 4, nil, nil, nil, function() return not E.db.general.minimap.clusterDisable end)
+Maps.args.minimap.args.icons.args.tracking = ACH:Group(L["Tracking"], nil, 3, nil, nil, nil, function() return not E.db.general.minimap.clusterDisable end)
 Maps.args.minimap.args.icons.args.tracking.args.hideTracking = ACH:Toggle(L["Hide"], nil, 1, nil, nil, nil, function() return E.private.general.minimap.hideTracking end, function(_, value) E.private.general.minimap.hideTracking = value; MM:UpdateSettings() end)
 Maps.args.minimap.args.icons.args.tracking.args.spacer = ACH:Spacer(2, "full")
 Maps.args.minimap.args.icons.args.tracking.args.position = ACH:Select(L["Position"], nil, 3, buttonPositions, nil, nil, nil, nil, function() return E.private.general.minimap.hideTracking end)
@@ -101,7 +91,7 @@ Maps.args.minimap.args.icons.args.tracking.args.scale = ACH:Range(L["Scale"], ni
 Maps.args.minimap.args.icons.args.tracking.args.xOffset = ACH:Range(L["X-Offset"], nil, 5, buttonOffsets, nil, nil, nil, function() return E.private.general.minimap.hideTracking end)
 Maps.args.minimap.args.icons.args.tracking.args.yOffset = ACH:Range(L["Y-Offset"], nil, 6, buttonOffsets, nil, nil, nil, function() return E.private.general.minimap.hideTracking end)
 
-Maps.args.minimap.args.icons.args.calendar = ACH:Group(L["Calendar"], nil, 5, nil, nil, nil, function() return not E.db.general.minimap.clusterDisable end)
+Maps.args.minimap.args.icons.args.calendar = ACH:Group(L["Calendar"], nil, 4, nil, nil, nil, function() return not E.db.general.minimap.clusterDisable end)
 Maps.args.minimap.args.icons.args.calendar.args.hideCalendar = ACH:Toggle(L["Hide"], nil, 1, nil, nil, nil, function() return E.private.general.minimap.hideCalendar end, function(_, value) E.private.general.minimap.hideCalendar = value; MM:UpdateSettings() end)
 Maps.args.minimap.args.icons.args.calendar.args.spacer = ACH:Spacer(2, 'full')
 Maps.args.minimap.args.icons.args.calendar.args.position = ACH:Select(L["Position"], nil, 3, buttonPositions, nil, nil, nil, nil, function() return E.private.general.minimap.hideCalendar end)
@@ -109,7 +99,7 @@ Maps.args.minimap.args.icons.args.calendar.args.scale = ACH:Range(L["Scale"], ni
 Maps.args.minimap.args.icons.args.calendar.args.xOffset = ACH:Range(L["X-Offset"], nil, 5, buttonOffsets, nil, nil, nil, function() return E.private.general.minimap.hideCalendar end)
 Maps.args.minimap.args.icons.args.calendar.args.yOffset = ACH:Range(L["Y-Offset"], nil, 6, buttonOffsets, nil, nil, nil, function() return E.private.general.minimap.hideCalendar end)
 
-Maps.args.minimap.args.icons.args.mail = ACH:Group(L["MAIL_LABEL"], nil, 6, nil, nil, nil, function() return not E.db.general.minimap.clusterDisable end)
+Maps.args.minimap.args.icons.args.mail = ACH:Group(L["MAIL_LABEL"], nil, 5, nil, nil, nil, function() return not E.db.general.minimap.clusterDisable end)
 Maps.args.minimap.args.icons.args.mail.args.position = ACH:Select(L["Position"], nil, 1, buttonPositions)
 Maps.args.minimap.args.icons.args.mail.args.scale = ACH:Range(L["Scale"], nil, 2, buttonScale)
 Maps.args.minimap.args.icons.args.mail.args.xOffset = ACH:Range(L["X-Offset"], nil, 3, buttonOffsets)
@@ -125,13 +115,13 @@ do -- mail icons
 	end
 end
 
-Maps.args.minimap.args.icons.args.battlefield = ACH:Group(L["Battlefield"], nil, 7)
+Maps.args.minimap.args.icons.args.battlefield = ACH:Group(L["Battlefield"], nil, 6)
 Maps.args.minimap.args.icons.args.battlefield.args.position = ACH:Select(L["Position"], nil, 1, buttonPositions)
 Maps.args.minimap.args.icons.args.battlefield.args.scale = ACH:Range(L["Scale"], nil, 2, buttonScale)
 Maps.args.minimap.args.icons.args.battlefield.args.xOffset = ACH:Range(L["X-Offset"], nil, 3, buttonOffsets)
 Maps.args.minimap.args.icons.args.battlefield.args.yOffset = ACH:Range(L["Y-Offset"], nil, 4, buttonOffsets)
 
-Maps.args.minimap.args.icons.args.difficulty = ACH:Group(L["Instance Difficulty"], nil, 8)
+Maps.args.minimap.args.icons.args.difficulty = ACH:Group(L["Instance Difficulty"], nil, 7)
 Maps.args.minimap.args.icons.args.difficulty.args.position = ACH:Select(L["Position"], nil, 1, buttonPositions)
 Maps.args.minimap.args.icons.args.difficulty.args.scale = ACH:Range(L["Scale"], nil, 2, buttonScale)
 Maps.args.minimap.args.icons.args.difficulty.args.xOffset = ACH:Range(L["X-Offset"], nil, 3, buttonOffsets)

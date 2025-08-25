@@ -8,6 +8,5 @@
 	<Script file='TotemTracker.lua'/>
 	<Script file='InfoItemLevel.lua'/>
 	<Script file='RaidUtility.lua'/>
-	<Script file='QueueStatus.lua'/>
 	<Script file='AFK.lua'/>
 </Ui>
