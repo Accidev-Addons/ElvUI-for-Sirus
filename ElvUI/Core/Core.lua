@@ -1845,6 +1845,7 @@ function E:Initialize()
 	wipe(E.private)
 
 	E.myspec = GetSpecialization()
+	E.myguid = UnitGUID('player')
 
 	E.data = E.Libs.AceDB:New('ElvDB', E.DF, true)
 	E.data.RegisterCallback(E, 'OnProfileChanged', 'StaggeredUpdateAll')

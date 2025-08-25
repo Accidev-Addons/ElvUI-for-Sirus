@@ -14,7 +14,6 @@ local GetLocale = GetLocale
 local GetTime = GetTime
 local ReloadUI = ReloadUI
 local UIParent = UIParent
-local UnitGUID = UnitGUID
 
 local UIDropDownMenu_SetAnchor = UIDropDownMenu_SetAnchor
 
@@ -417,8 +416,6 @@ function E:OnInitialize()
 	E.Border = (E.PixelMode and not E.twoPixelsPlease) and 1 or 2
 	E.Spacing = E.PixelMode and 0 or 1
 	E.loadedtime = GetTime()
-
-	E.myguid = UnitGUID('player')
 
 	E:CheckAddons()
 	E:SetupDB()
