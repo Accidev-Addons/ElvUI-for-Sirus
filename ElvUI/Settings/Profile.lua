@@ -461,6 +461,7 @@ P.nameplates = {
 		enemyWidth = 150,
 		enemyHeight = 30,
 	},
+	plateScale = false,
 	font = "PT Sans Narrow",
 	fontSize = 11,
 	fontOutline = "OUTLINE",

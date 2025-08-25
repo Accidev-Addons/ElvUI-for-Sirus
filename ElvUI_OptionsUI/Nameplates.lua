@@ -3524,13 +3524,20 @@ E.Options.args.nameplates = {
 								NP:ConfigureAll()
 							end
 						},
-						highlight = {
+						plateScale = {
 							order = 10,
+							type = "toggle",
+							name = L["Nameplate Scaling"],
+							desc = L["Scale Nameplates to UI Scale."],
+							set = function(info, value) E.db.nameplates[info[#info]] = value E:StaticPopup_Show("CONFIG_RL") end
+						},
+						highlight = {
+							order = 11,
 							type = "toggle",
 							name = L["Hover Highlight"]
 						},
 						nameColoredGlow = {
-							order = 11,
+							order = 12,
 							type = "toggle",
 							name = L["Name Colored Glow"],
 							desc = L["Use the Name Color of the unit for the Name Glow."],
