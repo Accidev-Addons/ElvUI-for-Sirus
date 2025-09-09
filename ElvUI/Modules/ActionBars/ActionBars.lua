@@ -729,15 +729,17 @@ function AB:BlizzardOptionsPanel_OnEvent()
 	_G.InterfaceOptionsActionBarsPanelSecureAbilityToggle:Point('TOPLEFT', _G.InterfaceOptionsActionBarsPanelRightTwo, 'BOTTOMLEFT', 0, -8)
 end
 
-function AB:FadeParent_OnEvent()
-	if UnitCastingInfo('player') or UnitChannelInfo('player') or UnitExists('target') or UnitExists('focus') or UnitExists('vehicle')
-	or UnitAffectingCombat('player') or (UnitHealth('player') ~= UnitHealthMax('player')) or IsPossessBarVisible() then
-		self.mouseLock = true
-		E:UIFrameFadeIn(self, 0.2, self:GetAlpha(), 1)
-	else
-		self.mouseLock = false
-		local a = 1 - (AB.db.globalFadeAlpha or 0)
-		E:UIFrameFadeOut(self, 0.2, self:GetAlpha(), a)
+do
+	function AB:FadeParent_OnEvent()
+		if UnitCastingInfo('player') or UnitChannelInfo('player') or UnitExists('target') or UnitExists('focus') or UnitExists('vehicle')
+		or UnitAffectingCombat('player') or (UnitHealth('player') ~= UnitHealthMax('player')) or IsPossessBarVisible() then
+			self.mouseLock = true
+			E:UIFrameFadeIn(self, 0.2, self:GetAlpha(), 1)
+		else
+			self.mouseLock = false
+			local a = 1 - (AB.db.globalFadeAlpha or 0)
+			E:UIFrameFadeOut(self, 0.2, self:GetAlpha(), a)
+		end
 	end
 end
 
@@ -889,6 +891,13 @@ function AB:GetHotkeyConfig(db)
 	return font, size, flags, anchor, offsetX, offsetY, AB:GetTextJustify(anchor), { color.r or 1, color.g or 1, color.b or 1 }, show
 end
 
+do
+	local fixBars = {}
+	function AB:GetKeyTarget(buttonName, id)
+		return format('%s%d', fixBars[buttonName] or buttonName, id)
+	end
+end
+
 function AB:UpdateButtonConfig(barName, buttonName)
 	if InCombatLockdown() then
 		AB.NeedsUpdateButtonSettings = true
@@ -896,11 +905,14 @@ function AB:UpdateButtonConfig(barName, buttonName)
 		return
 	end
 
-	local db = AB.db[barName]
 	local bar = AB.handledBars[barName]
+	if not bar.buttonConfig then
+		bar.buttonConfig = E:CopyTable({}, buttonDefaults)
+	end
 
-	if not bar.buttonConfig then bar.buttonConfig = E:CopyTable({}, buttonDefaults) end
-	local text = bar.buttonConfig.text
+	local config = bar.buttonConfig
+	local text = config.text
+	local db = AB.db[barName]
 
 	do -- hotkey text
 		local font, size, flags, anchor, offsetX, offsetY, justify, color = AB:GetHotkeyConfig(db)
@@ -943,18 +955,18 @@ function AB:UpdateButtonConfig(barName, buttonName)
 		text.macro.color = { c.r, c.g, c.b }
 	end
 
-	bar.buttonConfig.hideElements.count = not db.counttext
-	bar.buttonConfig.hideElements.macro = not db.macrotext
-	bar.buttonConfig.hideElements.hotkey = not db.hotkeytext
+	config.hideElements.count = not db.counttext
+	config.hideElements.macro = not db.macrotext
+	config.hideElements.hotkey = not db.hotkeytext
 
-	bar.buttonConfig.showGrid = db.showGrid
-	bar.buttonConfig.clickOnDown = AB.db.keyDown
-	bar.buttonConfig.outOfRangeColoring = (AB.db.useRangeColorText and 'hotkey') or 'button'
-	bar.buttonConfig.colors.range = E:SetColorTable(bar.buttonConfig.colors.range, AB.db.noRangeColor)
-	bar.buttonConfig.colors.mana = E:SetColorTable(bar.buttonConfig.colors.mana, AB.db.noPowerColor)
-	bar.buttonConfig.colors.usable = E:SetColorTable(bar.buttonConfig.colors.usable, AB.db.usableColor)
-	bar.buttonConfig.colors.notUsable = E:SetColorTable(bar.buttonConfig.colors.notUsable, AB.db.notUsableColor)
-	bar.buttonConfig.handleOverlay = AB.db.handleOverlay
+	config.showGrid = db.showGrid
+	config.clickOnDown = AB.db.keyDown
+	config.outOfRangeColoring = (AB.db.useRangeColorText and 'hotkey') or 'button'
+	config.colors.range = E:SetColorTable(config.colors.range, AB.db.noRangeColor)
+	config.colors.mana = E:SetColorTable(config.colors.mana, AB.db.noPowerColor)
+	config.colors.usable = E:SetColorTable(config.colors.usable, AB.db.usableColor)
+	config.colors.notUsable = E:SetColorTable(config.colors.notUsable, AB.db.notUsableColor)
+	config.handleOverlay = AB.db.handleOverlay
 	SetModifiedClick('PICKUPACTION', AB.db.movementModifier)
 
 	if not buttonName then
@@ -964,8 +976,9 @@ function AB:UpdateButtonConfig(barName, buttonName)
 	for i, button in ipairs(bar.buttons) do
 		AB:ToggleCountDownNumbers(bar, button)
 
-		bar.buttonConfig.keyBoundTarget = format(buttonName..'%d', i)
-		button.keyBoundTarget = bar.buttonConfig.keyBoundTarget
+		local keyTarget = AB:GetKeyTarget(buttonName, i)
+		config.keyBoundTarget = keyTarget -- for LAB
+		button.keyBoundTarget = keyTarget -- for bind mode
 		button.postKeybind = AB.FixKeybindText
 
 		button:SetAttribute('buttonlock', AB.db.lockActionBars or nil)
