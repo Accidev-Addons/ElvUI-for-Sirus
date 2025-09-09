@@ -774,7 +774,6 @@ L["Hide by Status"] = "Cacher par statut"
 L["Hide Castbar text. Useful if your power height is very low or if you use power offset."] = "Masquer le texte de la barre de sorts. Utile si la hauteur de la puissance est très basse ou si vous utilisez le décalage de puissance."
 L["Hide Channels"] = "Cacher les canaux"
 L["Hide Chat Toggles"] = "Masquer les boutons de chat"
-L["Hide Cooldown Bling"] = "Masquer l'effet du temps de recharge"
 L["Hide Copy Button"] = "Masquer le bouton de copie"
 L["Hide Delay"] = "Délai de dissimulation"
 L["Hide Quest Progress and Error Text"] = true

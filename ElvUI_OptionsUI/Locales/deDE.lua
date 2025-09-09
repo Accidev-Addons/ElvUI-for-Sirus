@@ -773,7 +773,6 @@ L["Hide by Status"] = "Verstecke nach Status"
 L["Hide Castbar text. Useful if your power height is very low or if you use power offset."] = "Versteckt den Zauberleistentext. Nützlich wenn deine Kraft Höhe sehr niedrig ist oder wenn du den Kraft Versatz benutzt."
 L["Hide Channels"] = "Verstecke Kanäle"
 L["Hide Chat Toggles"] = "Versteckt Chatschalter"
-L["Hide Cooldown Bling"] = "Versteckt das Abklingzeitsleuchten"
 L["Hide Copy Button"] = "Verstecke Kopiertaste"
 L["Hide Delay"] = "Versteckungsverzögerung"
 L["Hide Quest Progress and Error Text"] = true

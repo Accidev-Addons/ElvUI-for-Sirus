@@ -1,7 +1,6 @@
 local E, L, V, P, G = unpack(ElvUI)
 local TT = E:GetModule('Tooltip')
 local LC = E.Libs.Compat
-local LCS = E.Libs.LCS
 
 local _G = _G
 local type, ipairs, pairs, unpack = type, ipairs, pairs, unpack

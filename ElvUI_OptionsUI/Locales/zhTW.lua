@@ -774,7 +774,6 @@ L["Hide by Status"] = "依狀態隱藏"
 L["Hide Castbar text. Useful if your power height is very low or if you use power offset."] = "隱藏施法條文字"
 L["Hide Channels"] = "隱藏頻道"
 L["Hide Chat Toggles"] = "隱藏聊天按鍵"
-L["Hide Cooldown Bling"] = "隱藏冷卻閃光"
 L["Hide Copy Button"] = "隱藏複製按鍵"
 L["Hide Delay"] = "隱藏延遲"
 L["Hide Quest Progress and Error Text"] = true

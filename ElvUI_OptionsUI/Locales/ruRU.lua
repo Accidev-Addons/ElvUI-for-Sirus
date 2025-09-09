@@ -781,7 +781,6 @@ L["Hide by Status"] = "Скрыть по статусу"
 L["Hide Castbar text. Useful if your power height is very low or if you use power offset."] = "Скрывать текст полосы заклинаний. Полезно, если у Вас выставлена очень малая высота полосы или используется сдвиг ресурса."
 L["Hide Channels"] = "Скрыть каналы"
 L["Hide Chat Toggles"] = "Скрыть переключатели чата"
-L["Hide Cooldown Bling"] = "Скрыть вспышку восстановления"
 L["Hide Copy Button"] = "Скрыть кнопку копирования"
 L["Hide Delay"] = "Задержка скрытия"
 L["Hide Quest Progress and Error Text"] = true

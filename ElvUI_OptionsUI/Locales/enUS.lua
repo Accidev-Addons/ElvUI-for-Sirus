@@ -774,7 +774,6 @@ L["Hide by Status"] = true
 L["Hide Castbar text. Useful if your power height is very low or if you use power offset."] = true
 L["Hide Channels"] = true
 L["Hide Chat Toggles"] = true
-L["Hide Cooldown Bling"] = true
 L["Hide Copy Button"] = true
 L["Hide Delay"] = true
 L["Hide Quest Progress and Error Text"] = true

@@ -4392,7 +4392,6 @@ local ACTION_SLOTS = _G.NUM_PET_ACTION_SLOTS or 10
 local STANCE_SLOTS = _G.NUM_STANCE_SLOTS or 10
 
 P.actionbar = {
-	colorSwipeLOC = { r = 0.25, g = 0, b = 0, a = 0.8 },
 	colorSwipeNormal = { r = 0, g = 0, b = 0, a = 0.8 },
 	hotkeyTextPosition = 'TOPRIGHT',
 	macroTextPosition = 'TOPRIGHT',

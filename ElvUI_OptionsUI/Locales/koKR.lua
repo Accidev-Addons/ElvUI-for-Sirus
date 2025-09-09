@@ -787,7 +787,6 @@ L["Hide by Status"] = "내 상태 숨기기"
 L["Hide Castbar text. Useful if your power height is very low or if you use power offset."] = "시전바 문자 숨기기. 자원바(마나/분노/기력)의 길이/높이가 작거나 짧을겨우 유용합니다."
 L["Hide Channels"] = "체널 숨김"
 L["Hide Chat Toggles"] = "채팅창 숨김[<][>] 버튼"
-L["Hide Cooldown Bling"] = "재사용 깜빡임 끄기"
 L["Hide Copy Button"] = "복사 버튼 숨기기"
 L["Hide Delay"] = "숨김 지연"
 L["Hide Quest Progress and Error Text"] = true

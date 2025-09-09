@@ -956,7 +956,7 @@ function S:HandleSearchBox(frame, unskinned)
 	frame.backdrop:Point('BOTTOMRIGHT', 2, -12)
 end
 
-function S:HandleDropDownBox(frame, width, template, old)
+function S:HandleDropDownBox(frame, width, template)
 	assert(frame, 'doesn\'t exist!')
 
 	if not width then

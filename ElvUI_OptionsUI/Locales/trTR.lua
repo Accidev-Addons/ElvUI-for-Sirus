@@ -774,7 +774,6 @@ L["Hide by Status"] = "Duruma Gore Gizle"
 L["Hide Castbar text. Useful if your power height is very low or if you use power offset."] = "Yetenek cubugu metnini gizle. Guc yuksekliginiz cok dusukse veya guc ofseti kullaniyorsaniz kullanislidir."
 L["Hide Channels"] = "Kanallari Gizle"
 L["Hide Chat Toggles"] = "Sohbet Gecislerini Gizle"
-L["Hide Cooldown Bling"] = "Bekleme Suresi Bittiginde Cikan Pariltiyi Gizle"
 L["Hide Copy Button"] = "Kopyala Dugmesini Gizle"
 L["Hide Delay"] = "Gecikmeyi Gizle"
 L["Hide Quest Progress and Error Text"] = true
