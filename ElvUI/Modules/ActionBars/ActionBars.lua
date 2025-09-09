@@ -588,12 +588,12 @@ end
 
 function AB:StyleButton(button, noBackdrop, useMasque, ignoreNormal)
 	local name = button:GetName()
-	local icon = _G[name..'Icon']
-	local hotkey = _G[name..'HotKey']
-	local shine = _G[name..'Shine']
-	local flash = _G[name..'Flash']
-	local border = _G[name..'Border']
-	local normal = _G[name..'NormalTexture']
+	local icon = button.icon or _G[name..'Icon']
+	local hotkey = button.HotKey or _G[name..'HotKey']
+	local shine = button.AutoCastShine or _G[name..'Shine']
+	local flash = button.Flash or _G[name..'Flash']
+	local border = button.Border or _G[name..'Border']
+	local normal = button.NormalTexture or _G[name..'NormalTexture']
 	local normal2 = button:GetNormalTexture()
 	local cooldown = _G[name..'Cooldown']
 
@@ -659,6 +659,13 @@ function AB:UpdateMasque(bar, masqueGroup)
 			AB:TrimIcon(btn, true)
 		end
 	end
+end
+
+function AB:ColorSwipeTexture(cooldown)
+	if not cooldown then return end
+
+	local color = AB.db.colorSwipeNormal
+	cooldown:SetSwipeColor(color.r, color.g, color.b, color.a)
 end
 
 function AB:Bar_OnEnter(bar)
@@ -1120,6 +1127,10 @@ function AB:LAB_CooldownUpdate(button, _, duration)
 	if button._state_type == 'action' then
 		AB:SetButtonDesaturation(button, duration)
 		AB:UpdateAuraCooldown(button, duration)
+	end
+
+	if button.cooldown then
+		AB:ColorSwipeTexture(button.cooldown)
 	end
 end
 

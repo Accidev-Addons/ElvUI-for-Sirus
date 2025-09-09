@@ -10,6 +10,7 @@ local getmetatable = getmetatable
 
 local EnumerateFrames = EnumerateFrames
 local CreateFrame = CreateFrame
+local GetTime = GetTime
 
 local backdropr, backdropg, backdropb, backdropa = 0, 0, 0, 1
 local borderr, borderg, borderb, bordera = 0, 0, 0, 1
@@ -530,6 +531,54 @@ do
 	end
 end
 
+local function GetSwipe(self)
+	if not self._swipeTex then
+		local swipe = self:CreateTexture(nil, 'BACKGROUND', nil, -5)
+		swipe:SetAllPoints(self)
+		swipe:SetTexture(E.Media.Textures.White8x8)
+		swipe:SetBlendMode('ADD')
+		self._swipeTex = swipe
+	end
+	return self._swipeTex
+end
+
+local DEFAULT_SWIPE_ALPHA = 1
+local function OnCooldownSet(self, start, duration)
+	local swipe = self._swipeTex
+	self._cdStart, self._cdDuration = start, duration
+
+	if swipe and start and duration and duration > 0.1 then
+		swipe:Show()
+		swipe:SetAlpha(self._swipeAlpha or DEFAULT_SWIPE_ALPHA)
+		self:SetScript('OnUpdate', function(self, elapsed)
+			local cooldown = GetTime() - self._cdStart
+			if cooldown >= self._cdDuration then
+				self._swipeTex:Hide()
+				self:SetScript('OnUpdate', nil)
+			end
+		end)
+	elseif swipe and not start then
+		swipe:Hide()
+		self:SetScript('OnUpdate', nil)
+	end
+end
+
+local function SetSwipeColor(self, r, g, b, a)
+	local swipe = GetSwipe(self)
+	local alpha = a and a * DEFAULT_SWIPE_ALPHA or DEFAULT_SWIPE_ALPHA
+	self._swipeAlpha = alpha
+	swipe:SetVertexColor(r or 1, g or 1, b or 1)
+	swipe:SetAlpha(alpha)
+
+	if not self._swipeHooked then
+		hooksecurefunc(self, 'SetCooldown', OnCooldownSet)
+		self._swipeHooked = true
+	end
+end
+
+local CooldownProto = getmetatable(CreateFrame('Cooldown', nil, UIParent)).__index
+CooldownProto.SetSwipeColor = SetSwipeColor
+
 local API = {
 	Kill = Kill,
 	Size = Size,
@@ -554,6 +603,7 @@ local API = {
 	OffsetFrameLevel = OffsetFrameLevel,
 	CreateCloseButton = CreateCloseButton,
 	GetChild = GetChild,
+	SetSwipeColor = SetSwipeColor,
 }
 
 local function addapi(object)
@@ -594,3 +644,4 @@ while object do
 end
 
 addapi(_G.GameFontNormal) --Add API to `CreateFont` objects without actually creating one
+addapi(CreateFrame('Cooldown')) -- register our new Cooldown methods too
