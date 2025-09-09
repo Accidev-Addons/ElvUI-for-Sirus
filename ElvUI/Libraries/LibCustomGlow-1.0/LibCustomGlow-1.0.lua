@@ -923,7 +923,7 @@ local function ProcGlowResetter(framePool, frame)
     end
 end
 
-local ProcGlowPool = CreateFramePool("Frame", GlowParent, nil, ProcGlowResetter)
+local ProcGlowPool = CreateFramePool("Frame", GlowParent, "", ProcGlowResetter)
 lib.ProcGlowPool = ProcGlowPool
 
 local function InitProcGlow(f)
