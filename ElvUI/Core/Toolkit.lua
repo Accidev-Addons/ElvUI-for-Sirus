@@ -549,7 +549,6 @@ local function OnCooldownSet(self, start, duration)
 
 	if swipe and start and duration and duration > 0.1 then
 		swipe:Show()
-		swipe:SetAlpha(self._swipeAlpha or DEFAULT_SWIPE_ALPHA)
 		self:SetScript('OnUpdate', function(self, elapsed)
 			local cooldown = GetTime() - self._cdStart
 			if cooldown >= self._cdDuration then
@@ -565,10 +564,7 @@ end
 
 local function SetSwipeColor(self, r, g, b, a)
 	local swipe = GetSwipe(self)
-	local alpha = a and a * DEFAULT_SWIPE_ALPHA or DEFAULT_SWIPE_ALPHA
-	self._swipeAlpha = alpha
-	swipe:SetVertexColor(r or 1, g or 1, b or 1)
-	swipe:SetAlpha(alpha)
+	swipe:SetVertexColor(r or 1, g or 1, b or 1, a or 1)
 
 	if not self._swipeHooked then
 		hooksecurefunc(self, 'SetCooldown', OnCooldownSet)
