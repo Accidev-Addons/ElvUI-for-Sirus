@@ -542,7 +542,6 @@ local function GetSwipe(self)
 	return self._swipeTex
 end
 
-local DEFAULT_SWIPE_ALPHA = 1
 local function OnCooldownSet(self, start, duration)
 	local swipe = self._swipeTex
 	self._cdStart, self._cdDuration = start, duration
