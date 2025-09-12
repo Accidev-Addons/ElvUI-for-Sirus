@@ -1,9 +1,9 @@
 local E, L, V, P, G = unpack(ElvUI)
-local AB = E:GetModule("ActionBars")
+local AB = E:GetModule('ActionBars')
 local LSM = E.Libs.LSM
 
 local next, ipairs, pairs = next, ipairs, pairs
-local floor, tinsert = floor, tinsert
+local time, floor, tinsert = time, floor, tinsert
 
 local GetTime = GetTime
 local CreateFrame = CreateFrame
@@ -15,6 +15,14 @@ local ICON_SIZE = 36 --the normal size for an icon (don't change this)
 local FONT_SIZE = 20 --the base font size to use at a scale of 1
 local MIN_SCALE = 0.5 --the minimum scale we want to show cooldown counts at, anything below this will be hidden
 local MIN_DURATION = 1.5 --the minimum duration to show cooldown text for
+
+function E:Cooldown_UnbuggedTime(timer)
+	if timer.buggedTime then
+		return time() - GetTime()
+	else
+		return GetTime()
+	end
+end
 
 function E:Cooldown_TextThreshold(cd, timeLeft)
 	if cd.parent and cd.parent.textThreshold and cd.endTime then
@@ -46,19 +54,18 @@ function E:Cooldown_OnUpdate(elapsed)
 		E:Cooldown_TimerStop(self)
 		return 2
 	else
-		local now = GetTime()
-
+		local now = E:Cooldown_UnbuggedTime(self)
 		if self.endCooldown and now >= self.endCooldown then
 			E:Cooldown_TimerStop(self)
 		elseif E:Cooldown_BelowScale(self) then
-			self.text:SetText("")
+			self.text:SetText('')
 			if not forced then
 				self.nextUpdate = 500
 			end
 		elseif self.endTime then
 			local timeLeft = (self.endTime - now) / (self.modRate or 1)
 			if E:Cooldown_TextThreshold(self, timeLeft) then
-				self.text:SetText("")
+				self.text:SetText('')
 				if not forced then
 					self.nextUpdate = 1
 				end
@@ -99,7 +106,7 @@ function E:Cooldown_OnSizeChanged(cd, width, force)
 	if cd.customFont then -- override font
 		cd.text:FontTemplate(cd.customFont, (scale * cd.customFontSize), cd.customFontOutline)
 	elseif scale then -- default, no override
-		cd.text:FontTemplate(nil, (scale * FONT_SIZE), "OUTLINE")
+		cd.text:FontTemplate(nil, (scale * FONT_SIZE), 'OUTLINE')
 	else -- this should never happen but just incase
 		cd.text:FontTemplate()
 	end
@@ -128,43 +135,45 @@ function E:Cooldown_TimerStop(timer)
 	timer:Hide()
 end
 
-function E:Cooldown_Options(timer, db, parent)
+function E:Cooldown_Options(timer, opt, parent)
 	local threshold, colors, icolors, hhmm, mmss, fonts
-	if parent and db.override then
-		threshold = db.threshold
-		icolors = db.useIndicatorColor and E.TimeIndicatorColors[parent.CooldownOverride]
+	if parent and opt.override then
+		threshold = opt.threshold
+		icolors = opt.useIndicatorColor and E.TimeIndicatorColors[parent.CooldownOverride]
 		colors = E.TimeColors[parent.CooldownOverride]
 	end
 
-	if db.checkSeconds then
-		hhmm, mmss = db.hhmmThreshold, db.mmssThreshold
+	if opt.checkSeconds then
+		hhmm, mmss = opt.hhmmThreshold, opt.mmssThreshold
 	end
 
+	local db = E.db.cooldown
 	timer.timeColors = colors or E.TimeColors
-	timer.threshold = threshold or E.db.cooldown.threshold or E.TimeThreshold
-	timer.textColors = icolors or (E.db.cooldown.useIndicatorColor and E.TimeIndicatorColors)
-	timer.hhmmThreshold = hhmm or (E.db.cooldown.checkSeconds and E.db.cooldown.hhmmThreshold)
-	timer.mmssThreshold = mmss or (E.db.cooldown.checkSeconds and E.db.cooldown.mmssThreshold)
-	timer.targetAura = E.db.cooldown.targetAura and parent.targetAura
-	timer.hideBlizzard = db.hideBlizzard or E.db.cooldown.hideBlizzard
-	timer.roundTime = E.db.cooldown.roundTime
+	timer.threshold = threshold or db.threshold or E.TimeThreshold
+	timer.textColors = icolors or (db.useIndicatorColor and E.TimeIndicatorColors)
+	timer.hhmmThreshold = hhmm or (db.checkSeconds and db.hhmmThreshold)
+	timer.mmssThreshold = mmss or (db.checkSeconds and db.mmssThreshold)
+	timer.targetAura = db.targetAura and parent.targetAura
+	timer.hideBlizzard = opt.hideBlizzard or db.hideBlizzard
+	timer.roundTime = db.roundTime
+	timer.showModRate = opt.showModRate
 
-	if db.reverse ~= nil then
+	if opt.reverse ~= nil then
 		local enabled = E:CooldownEnabled()
-		timer.reverseToggle = (enabled and not db.reverse) or (db.reverse and not enabled)
+		timer.reverseToggle = (enabled and not opt.reverse) or (opt.reverse and not enabled)
 	else
 		timer.reverseToggle = nil
 	end
 
-	if timer.CooldownOverride ~= "auras" then
-		if (db ~= E.db.cooldown) and db.fonts and db.fonts.enable then
-			fonts = db.fonts -- custom fonts override default fonts
-		elseif E.db.cooldown.fonts and E.db.cooldown.fonts.enable then
-			fonts = E.db.cooldown.fonts -- default global font override
+	if timer.CooldownOverride ~= 'auras' then
+		if (opt ~= db) and opt.fonts and opt.fonts.enable then
+			fonts = opt.fonts -- custom fonts override default fonts
+		elseif db.fonts and db.fonts.enable then
+			fonts = db.fonts -- default global font override
 		end
 
 		if fonts and fonts.enable then
-			timer.customFont = LSM:Fetch("font", fonts.font)
+			timer.customFont = LSM:Fetch('font', fonts.font)
 			timer.customFontSize = fonts.fontSize
 			timer.customFontOutline = fonts.fontOutline
 		else
@@ -176,15 +185,15 @@ function E:Cooldown_Options(timer, db, parent)
 end
 
 function E:CreateCooldownTimer(parent)
-	local timer = CreateFrame("Frame", nil, parent)
+	local timer = CreateFrame('Frame', nil, parent)
 	timer:Hide()
 	timer:SetAllPoints()
 	timer.parent = parent
 	parent.timer = timer
 
-	local text = timer:CreateFontString(nil, "OVERLAY")
-	text:Point("CENTER", 1, 1)
-	text:SetJustifyH("CENTER")
+	local text = timer:CreateFontString(nil, 'OVERLAY')
+	text:Point('CENTER', 1, 1)
+	text:SetJustifyH('CENTER')
 	timer.text = text
 
 	-- can be used to modify elements created from this function
@@ -198,7 +207,7 @@ function E:CreateCooldownTimer(parent)
 		E:Cooldown_Options(timer, db.cooldown, parent)
 
 		-- prevent LibActionBar from showing blizzard CD when the CD timer is created
-		if parent.CooldownOverride == "actionbar" then
+		if parent.CooldownOverride == 'actionbar' then
 			AB:ToggleCountDownNumbers(nil, nil, parent)
 		end
 	end
@@ -207,12 +216,12 @@ function E:CreateCooldownTimer(parent)
 
 	-- keep an eye on the size so we can rescale the font if needed
 	E:Cooldown_OnSizeChanged(timer, parent:GetWidth())
-	parent:SetScript("OnSizeChanged", function(_, width)
+	parent:SetScript('OnSizeChanged', function(_, width)
 		E:Cooldown_OnSizeChanged(timer, width)
 	end)
 
 	-- keep this after Cooldown_OnSizeChanged
-	timer:SetScript("OnUpdate", E.Cooldown_OnUpdate)
+	timer:SetScript('OnUpdate', E.Cooldown_OnUpdate)
 
 	return timer
 end
@@ -223,10 +232,23 @@ function E:OnSetCooldown(start, duration, modRate)
 
 	if not self.forceDisabled and (start and duration) and (duration > MIN_DURATION) then
 		local timer = self.timer or E:CreateCooldownTimer(self)
+
 		timer.start = start
-		timer.duration = duration
-		timer.modRate = modRate
-		timer.endTime = start + duration
+		timer.modRate = timer.showModRate and modRate or 1
+		timer.duration = duration * (not timer.showModRate and modRate or 1)
+
+		local now = GetTime()
+		if start <= (now + 1) then -- this second is for Target Aura
+			timer.endTime = start + duration
+			timer.buggedTime = nil
+		else -- https://github.com/Stanzilla/WoWUIBugs/issues/47
+			local startup = time() - now
+			local cdtime = (2 ^ 32) * 0.001 - start
+			local startTime = startup - cdtime
+			timer.endTime = startTime + duration
+			timer.buggedTime = true
+		end
+
 		timer.endCooldown = timer.endTime - 0.05
 		timer.paused = nil -- a new cooldown was called
 
@@ -239,14 +261,15 @@ end
 function E:OnPauseCooldown()
 	local timer = self.timer
 	if timer then
-		timer.paused = GetTime()
+		timer.paused = E:Cooldown_UnbuggedTime(timer)
 	end
 end
 
 function E:OnResumeCooldown()
 	local timer = self.timer
 	if timer and timer.paused then
-		timer.endTime = timer.start + timer.duration + (GetTime() - timer.paused) -- calcuate time since paused
+		local now = E:Cooldown_UnbuggedTime(timer)
+		timer.endTime = timer.start + timer.duration + (now - timer.paused) -- calcuate time since paused
 		timer.endCooldown = timer.endTime - 0.05
 
 		timer.paused = nil
@@ -276,11 +299,11 @@ end
 -- USED BY WEAKAURAS
 function E:RegisterCooldown(cooldown, module)
 	if not cooldown.isHooked then
-		hooksecurefunc(cooldown, "SetCooldown", E.OnSetCooldown)
+		hooksecurefunc(cooldown, 'SetCooldown', E.OnSetCooldown)
 
 		if cooldown.Pause then
-			hooksecurefunc(cooldown, "Pause", E.OnPauseCooldown)
-			hooksecurefunc(cooldown, "Resume", E.OnResumeCooldown)
+			hooksecurefunc(cooldown, 'Pause', E.OnPauseCooldown)
+			hooksecurefunc(cooldown, 'Resume', E.OnResumeCooldown)
 		end
 	end
 
@@ -290,11 +313,15 @@ function E:RegisterCooldown(cooldown, module)
 		if module then
 			cooldown.CooldownOverride = module
 		else
-			module = cooldown.CooldownOverride or "global"
+			module = cooldown.CooldownOverride or 'global'
 		end
 
 		if not E.RegisteredCooldowns[module] then
 			E.RegisteredCooldowns[module] = {}
+		end
+
+		if module == 'WeakAuras' then
+			cooldown.skipScale = true -- [Animations: Preset Grow] will shut off the timer so ignore the scale
 		end
 
 		tinsert(E.RegisteredCooldowns[module], cooldown)
@@ -309,7 +336,9 @@ function E:ToggleBlizzardCooldownText(cd, timer, request)
 		if request then
 			return forceHide or E:Cooldown_TimerEnabled(timer)
 		else
-			cd:SetHideCountdownNumbers(forceHide or E:Cooldown_TimerEnabled(timer))
+			local hideCooldownText = forceHide or E:Cooldown_TimerEnabled(timer)
+			cd:SetHideCountdownNumbers(hideCooldownText)
+			cd:GetRegions():SetAlpha(hideCooldownText and 0 or 1) -- Default CD timer is region #1
 		end
 	end
 end
@@ -333,22 +362,23 @@ function E:UpdateCooldownOverride(module)
 				E:Cooldown_OnSizeChanged(cd, parent:GetWidth(), true)
 
 				E:ToggleBlizzardCooldownText(parent, cd)
-				if (not blizzText) and parent.CooldownOverride == "actionbar" then
+
+				if (not blizzText) and parent.CooldownOverride == 'actionbar' then
 					blizzText = true
 				end
 			elseif cd.text then
 				if cd.customFont then
 					cd.text:FontTemplate(cd.customFont, cd.customFontSize, cd.customFontOutline)
-				elseif parent.CooldownOverride == "auras" then
+				elseif parent.CooldownOverride == 'auras' then
 					-- parent.auraType defined in `A:UpdateHeader` and `A:CreateIcon`
 					local fontDB = parent.auraType and db[parent.auraType]
 					if fontDB and fontDB.timeFont then
-						cd.text:FontTemplate(LSM:Fetch("font", fontDB.timeFont), fontDB.timeFontSize, fontDB.timeFontOutline)
+						cd.text:FontTemplate(LSM:Fetch('font', fontDB.timeFont), fontDB.timeFontSize, fontDB.timeFontOutline)
 					end
 				end
 
 				-- force update top aura cooldowns
-				if parent.CooldownOverride == "auras" then
+				if parent.CooldownOverride == 'auras' then
 					E.Cooldown_OnUpdate(parent, -1)
 				end
 			end
@@ -365,9 +395,9 @@ function E:UpdateCooldownOverride(module)
 end
 
 do
-	local function RGB(db) return E:CopyTable({r = 1, g = 1, b = 1}, db) end
-	local function HEX(db) return E:RGBToHex(db.r, db.g, db.b) end
-	local dummy9th = "|cFFffffff"
+	local function RGB(db) E:UpdateClassColor(db) return E:CopyTable({r = 1, g = 1, b = 1}, db) end
+	local function HEX(db) E:UpdateClassColor(db) return E:RGBToHex(db.r, db.g, db.b) end
+	local dummy9th = '|cFFffffff'
 
 	function E:GetCooldownColors(db)
 		if not db then db = E.db.cooldown end -- just incase someone calls this without a first arg use the global
@@ -402,9 +432,9 @@ end
 function E:UpdateCooldownSettings(module)
 	local db, timeColors, textColors, _ = E.db.cooldown, E.TimeColors, E.TimeIndicatorColors
 
-	-- update the module timecolors if the config called it but ignore "global" and "all":
+	-- update the module timecolors if the config called it but ignore 'global' and 'all':
 	-- global is the main call from config, all is the core file calls
-	local isModule = module and (module ~= "global" and module ~= "all") and E.db[module] and E.db[module].cooldown
+	local isModule = module and (module ~= 'global' and module ~= 'all') and E.db[module] and E.db[module].cooldown
 	if isModule then
 		if not timeColors[module] then timeColors[module] = {} end
 		if not textColors[module] then textColors[module] = {} end
@@ -435,7 +465,7 @@ function E:UpdateCooldownSettings(module)
 	textColors[9], -- dummy9th
 	_ = E:GetCooldownColors(db)
 
-	if module == "actionbar" then	-- special population for target aura as they only have 2 colors (expiring or not)
+	if module == 'actionbar' then	-- special population for target aura as they only have 2 colors (expiring or not)
 		for i = 10, 14 do			-- but have other states like days, mins, etc. so we need to move the colors properly
 			local timec = E:CopyTable({}, timeColors[i == 14 and 9 or 8]) -- 14 is expiring otherwise use target aura color for all
 			local textc = textColors[i == 14 and 8 or 7] -- same deal
@@ -448,22 +478,22 @@ function E:UpdateCooldownSettings(module)
 		end
 	end
 
-	if AB.Initialized and (module == "global" or module == "actionbar") then
+	if AB.Initialized and (module == 'global' or module == 'actionbar') then
 		AB:SetAuraCooldowns(E.db.cooldown.targetAura)
 	end
 
 	if isModule then
 		E:UpdateCooldownOverride(module)
-	elseif module == "global" then -- this is only a call from the config change
+	elseif module == 'global' then -- this is only a call from the config change
 		for key in pairs(E.RegisteredCooldowns) do
 			E:UpdateCooldownOverride(key)
 		end
-	elseif module == "all" then -- okay update the other override settings if it was one of the core file calls
-		E:UpdateCooldownSettings("bags")
-		E:UpdateCooldownSettings("nameplates")
-		E:UpdateCooldownSettings("actionbar")
-		E:UpdateCooldownSettings("unitframe")
-		E:UpdateCooldownSettings("auras")
+	elseif module == 'all' then -- okay update the other override settings if it was one of the core file calls
+		E:UpdateCooldownSettings('bags')
+		E:UpdateCooldownSettings('nameplates')
+		E:UpdateCooldownSettings('actionbar')
+		E:UpdateCooldownSettings('unitframe')
+		E:UpdateCooldownSettings('auras')
 
 		if IsAddOnLoaded('WeakAuras') then
 			E:UpdateCooldownSettings('WeakAuras')
