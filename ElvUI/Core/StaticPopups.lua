@@ -18,8 +18,7 @@ local MoneyFrame_Update = MoneyFrame_Update
 local MoneyInputFrame_GetCopper = MoneyInputFrame_GetCopper
 local MoneyInputFrame_ResetMoney = MoneyInputFrame_ResetMoney
 local PurchaseSlot, GetBankSlotCost = PurchaseSlot, GetBankSlotCost
-local ReloadUI, PlaySound, StopMusic = ReloadUI, PlaySound, StopMusic
-local StaticPopup_Resize = StaticPopup_Resize
+local ReloadUI, PlaySound = ReloadUI, PlaySound
 local UIErrorsFrame = UIErrorsFrame
 local UnitIsDeadOrGhost, InCinematic = UnitIsDeadOrGhost, InCinematic
 
@@ -36,12 +35,15 @@ local PickupPlayerMoney = PickupPlayerMoney
 local STATICPOPUP_TEXTURE_ALERT = STATICPOPUP_TEXTURE_ALERT
 local STATICPOPUP_TEXTURE_ALERTGEAR = STATICPOPUP_TEXTURE_ALERTGEAR
 local YES, NO, OKAY, CANCEL, ACCEPT, DECLINE = YES, NO, OKAY, CANCEL, ACCEPT, DECLINE
+
 -- GLOBALS: ElvUIBindPopupWindowCheckButton
 
 local DOWNLOAD_URL = 'https://github.com/ElvUI-WotLK/ElvUI/releases/latest'
+local FALLBACK_COLOR = { 1, 1, 1, 1 }
 
 E.PopupDialogs = {}
 E.StaticPopup_DisplayedFrames = {}
+E.MAX_STATIC_POPUPS = 4
 
 E.PopupDialogs.ELVUI_UPDATE_AVAILABLE = {
 	text = L["ElvUI is five or more revisions out of date. You can download the newest version from https://github.com/ElvUI-WotLK/ElvUI/."],
@@ -113,7 +115,6 @@ E.PopupDialogs.ELVUI_EDITBOX = {
 
 		self:HighlightText()
 	end,
-	OnAccept = E.noop,
 	whileDead = 1,
 	preferredIndex = 3,
 	hideOnEscape = 1,
@@ -143,8 +144,17 @@ E.PopupDialogs.CONFIRM_LOSE_BINDING_CHANGES = {
 
 E.PopupDialogs.TUKUI_ELVUI_INCOMPATIBLE = {
 	text = L["Oh lord, you have got ElvUI and Tukui both enabled at the same time. Select an addon to disable."],
-	OnAccept = function() DisableAddOn('ElvUI'); ReloadUI() end,
-	OnCancel = function() DisableAddOn('Tukui'); ReloadUI() end,
+	OnAccept = function()
+		for addon in next, E.Status_Addons do
+			DisableAddOn(addon, E.myguid)
+		end
+
+		ReloadUI()
+	end,
+	OnCancel = function()
+		DisableAddOn('Tukui', E.myguid)
+		ReloadUI()
+	end,
 	button1 = 'ElvUI',
 	button2 = 'Tukui',
 	whileDead = 1,
@@ -157,9 +167,12 @@ E.PopupDialogs.DISABLE_INCOMPATIBLE_ADDON = {
 		E.global.ignoreIncompatible = true
 	end,
 	OnCancel = function()
-		local popup = E.PopupDialogs.INCOMPATIBLE_ADDON
 		E:StaticPopup_Hide('DISABLE_INCOMPATIBLE_ADDON')
-		E:StaticPopup_Show('INCOMPATIBLE_ADDON', popup.button1, popup.button2)
+
+		local popup = E.PopupDialogs.INCOMPATIBLE_ADDON
+		if popup then
+			E:StaticPopup_Show('INCOMPATIBLE_ADDON', popup.button1, popup.button2)
+		end
 	end,
 	button1 = L["I Swear"],
 	button2 = DECLINE,
@@ -254,17 +267,6 @@ E.PopupDialogs.RESET_UF_UNIT = {
 	hideOnEscape = false,
 }
 
-E.PopupDialogs.RESET_UF_AF = {
-	text = L["Accepting this will reset your Filter Priority lists for all auras on UnitFrames. Are you sure?"],
-	button1 = ACCEPT,
-	button2 = CANCEL,
-	OnAccept = function()
-		UF:ResetAuraPriority()
-	end,
-	whileDead = 1,
-	hideOnEscape = false,
-}
-
 E.PopupDialogs.RESET_NP_AF = {
 	text = L["Accepting this will reset your Filter Priority lists for all auras on NamePlates. Are you sure?"],
 	button1 = ACCEPT,
@@ -274,55 +276,6 @@ E.PopupDialogs.RESET_NP_AF = {
 	end,
 	whileDead = 1,
 	hideOnEscape = false,
-}
-
-E.PopupDialogs.DELETE_GRAYS = {
-	text = format("|cffff0000%s|r", L["Delete gray items?"]),
-	button1 = YES,
-	button2 = NO,
-	OnAccept = function()
-		B:VendorGrays(true)
-
-		for _, info in ipairs(B.SellFrame.Info.itemList) do
-			PickupContainerItem(info[1], info[2])
-			DeleteCursorItem()
-		end
-
-		wipe(B.SellFrame.Info.itemList)
-	end,
-	OnShow = function(self)
-		MoneyFrame_Update(self.moneyFrame, E.PopupDialogs.DELETE_GRAYS.Money)
-	end,
-	timeout = 4,
-	whileDead = 1,
-	hideOnEscape = false,
-	hasMoneyFrame = 1,
-}
-
-E.PopupDialogs.PICKUP_MONEY = {
-	text = L["Amount to Pickup"],
-	button1 = ACCEPT,
-	button2 = CANCEL,
-	OnAccept = function(self)
-		local moneyInput = MoneyInputFrame_GetCopper(_G[self:GetName()..'MoneyInputFrame'])
-		if moneyInput > GetMoney() then
-			UIErrorsFrame:AddMessage(ERR_NOT_ENOUGH_MONEY, 1.0, 0.1, 0.1, 1.0)
-		else
-			PickupPlayerMoney(moneyInput)
-		end
-	end,
-	OnHide = function(self)
-		MoneyInputFrame_ResetMoney(_G[self:GetName()..'MoneyInputFrame'])
-		PlaySound(851)
-	end,
-	EditBoxOnEnterPressed = function(self)
-		local parent = self:GetParent():GetParent()
-		PickupPlayerMoney(_G[parent:GetName()..'MoneyInputFrame'])
-		parent:Hide();
-	end,
-	hasMoneyInputFrame = 1,
-	timeout = 0,
-	hideOnEscape = 1
 }
 
 E.PopupDialogs.BUY_BANK_SLOT = {
@@ -420,22 +373,73 @@ E.PopupDialogs.SCRIPT_PROFILE = {
 	hideOnEscape = false,
 }
 
-local MAX_STATIC_POPUPS = 4
+E.PopupDialogs.DELETE_GRAYS = {
+	text = format("|cffff0000%s|r", L["Delete gray items?"]),
+	button1 = YES,
+	button2 = NO,
+	OnAccept = function()
+		B:VendorGrays(true)
+
+		for _, info in ipairs(B.SellFrame.Info.itemList) do
+			PickupContainerItem(info[1], info[2])
+			DeleteCursorItem()
+		end
+
+		wipe(B.SellFrame.Info.itemList)
+	end,
+	OnShow = function(self)
+		MoneyFrame_Update(self.moneyFrame, E.PopupDialogs.DELETE_GRAYS.Money)
+	end,
+	timeout = 4,
+	whileDead = 1,
+	hideOnEscape = false,
+	hasMoneyFrame = 1,
+}
+
+E.PopupDialogs.PICKUP_MONEY = {
+	text = L["Amount to Pickup"],
+	button1 = ACCEPT,
+	button2 = CANCEL,
+	OnAccept = function(self)
+		local moneyInput = MoneyInputFrame_GetCopper(_G[self:GetName()..'MoneyInputFrame'])
+		if moneyInput > GetMoney() then
+			UIErrorsFrame:AddMessage(ERR_NOT_ENOUGH_MONEY, 1.0, 0.1, 0.1, 1.0)
+		else
+			PickupPlayerMoney(moneyInput)
+		end
+	end,
+	OnHide = function(self)
+		MoneyInputFrame_ResetMoney(_G[self:GetName()..'MoneyInputFrame'])
+		PlaySound(851)
+	end,
+	EditBoxOnEnterPressed = function(self)
+		local parent = self:GetParent():GetParent()
+		PickupPlayerMoney(_G[parent:GetName()..'MoneyInputFrame'])
+		parent:Hide();
+	end,
+	hasMoneyInputFrame = 1,
+	timeout = 0,
+	hideOnEscape = 1
+}
+
 function E:StaticPopup_OnShow()
 	PlaySound(850) --IG_MAINMENU_OPEN
 
 	local dialog = E.PopupDialogs[self.which]
-	local OnShow = dialog.OnShow
+	if dialog then
+		local OnShow = dialog.OnShow
+		if OnShow then
+			OnShow(self, self.data)
+		end
 
-	if OnShow then
-		OnShow(self, self.data)
-	end
-	if dialog.hasMoneyInputFrame then
 		local dialogName = self:GetName()
-		_G[dialogName..'MoneyInputFrameGold']:SetFocus()
-	end
-	if dialog.enterClicksFirstButton or dialog.hideOnEscape then
-		self:SetScript('OnKeyDown', E.StaticPopup_OnKeyDown)
+		if dialog.hasMoneyInputFrame then
+			_G[dialogName..'MoneyInputFrameGold']:SetFocus()
+		end
+
+		if dialog.enterClicksFirstButton or dialog.hideOnEscape then
+			self:SetScript('OnKeyDown', E.StaticPopup_OnKeyDown)
+		end
 	end
 
 	-- boost static popups over ace gui
@@ -457,15 +461,14 @@ function E:StaticPopup_EscapePressed()
 	local closed = nil
 	for _, frame in pairs(E.StaticPopup_DisplayedFrames) do
 		if frame:IsShown() and frame.hideOnEscape then
-			local standardDialog = E.PopupDialogs[frame.which]
-			if standardDialog then
-				local OnCancel = standardDialog.OnCancel
-				local noCancelOnEscape = standardDialog.noCancelOnEscape
-				if OnCancel and not noCancelOnEscape then
+			local dialog = E.PopupDialogs[frame.which]
+			if dialog then
+				frame:Hide()
+
+				local OnCancel = dialog.OnCancel
+				if OnCancel and not dialog.noCancelOnEscape then
 					OnCancel(frame, frame.data, 'clicked')
 				end
-
-				frame:Hide()
 			else
 				E:StaticPopupSpecial_Hide(frame)
 			end
@@ -515,6 +518,14 @@ function E:StaticPopupSpecial_Hide(frame)
 	E:StaticPopup_CollapseTable()
 end
 
+function E:StaticPopupSpecial_Toggle(frame)
+	if frame:IsShown() then
+		E:StaticPopupSpecial_Hide(frame)
+	else
+		E:StaticPopupSpecial_Show(frame)
+	end
+end
+
 --Used to figure out if we can resize a frame
 function E:StaticPopup_IsLastDisplayedFrame(frame)
 	for i = #E.StaticPopup_DisplayedFrames, 1, -1 do
@@ -527,6 +538,11 @@ function E:StaticPopup_IsLastDisplayedFrame(frame)
 	return false
 end
 
+function E:StaticPopup_ClearText()
+	self:SetText('')
+	self:ClearFocus()
+end
+
 function E:StaticPopup_OnKeyDown(key)
 	if GetBindingFromClick(key) == 'TOGGLEGAMEMENU' then
 		return E:StaticPopup_EscapePressed()
@@ -534,16 +550,12 @@ function E:StaticPopup_OnKeyDown(key)
 
 	local dialog = key == 'ENTER' and E.PopupDialogs[self.which]
 	if dialog and dialog.enterClicksFirstButton then
-		local i, dialogName = 1, self:GetName()
-		local button = _G[dialogName..'Button'..i]
-		while button do
+		for i, button in next, self.buttons do
 			if button:IsShown() then
 				E.StaticPopup_OnClick(self, i)
-				return
-			end
 
-			i = i + 1
-			button = _G[dialogName..'Button'..i]
+				break -- we clicked one so stop
+			end
 		end
 	end
 end
@@ -554,13 +566,36 @@ function E:StaticPopup_OnHide()
 	E:StaticPopup_CollapseTable()
 
 	local dialog = E.PopupDialogs[self.which]
-	local OnHide = dialog.OnHide
-	if OnHide then
-		OnHide(self, self.data)
+	if dialog then
+		local OnHide = dialog.OnHide
+		if OnHide then
+			OnHide(self, self.data)
+		end
+
+		if dialog.enterClicksFirstButton then
+			self:SetScript('OnKeyDown', nil)
+		end
 	end
-	self.extraFrame:Hide()
-	if dialog.enterClicksFirstButton then
-		self:SetScript('OnKeyDown', nil)
+
+	if self.extraFrame then
+		self.extraFrame:Hide()
+	end
+
+	if self.editBox then
+		self.editBox:ClearText()
+	end
+
+	if self.insertedFrame then
+		self.insertedFrame:Hide()
+		self.insertedFrame:SetParent(nil)
+
+		if self.moneyFrame then
+			self.moneyFrame:Point('TOP', self.text or self, 'BOTTOM', 0, -5)
+		end
+
+		if self.moneyInputFrame then
+			self.moneyInputFrame:Point('TOP', self.text or self, 'BOTTOM', 0, -5)
+		end
 	end
 
 	-- static popup was boosted over ace gui, set it back to normal
@@ -577,9 +612,11 @@ end
 
 function E:StaticPopup_OnUpdate(elapsed)
 	local info = E.PopupDialogs[self.which]
+	if not info then return end
 
 	if self.timeleft and self.timeleft > 0 then
 		self.timeleft = self.timeleft - elapsed
+
 		if self.timeleft <= 0 then
 			if not info.timeoutInformationalOnly then
 				self.timeleft = nil
@@ -599,14 +636,17 @@ function E:StaticPopup_OnUpdate(elapsed)
 	local button1 = _G[dialogName..'Button1']
 	if self.startDelay then
 		self.startDelay = self.startDelay - elapsed
+
 		if self.startDelay <= 0 then
 			self.startDelay = nil
 
-			local text = _G[dialogName..'Text']
-			text:SetFormattedText(info.text, text.text_arg1, text.text_arg2)
-			button1:Enable()
+			self.button1:Enable()
 
-			StaticPopup_Resize(self, self.which)
+			if self.text then
+				self.text:SetFormattedText(info.text, self.text.text_arg1, self.text.text_arg2)
+			end
+
+			E:StaticPopup_Resize(self, self.which)
 
 			return
 		end
@@ -631,7 +671,7 @@ function E:StaticPopup_OnUpdate(elapsed)
 		end
 	end
 
-	if info.OnUpdate then
+	if info and info.OnUpdate then
 		info.OnUpdate(self, elapsed)
 	end
 end
@@ -643,37 +683,59 @@ function E:StaticPopup_OnClick(index)
 	local info = E.PopupDialogs[which]
 	if not info then return end
 
-	local hide = true
-	if index == 1 then
-		local OnAccept = info.OnAccept
-		if OnAccept then
-			hide = not OnAccept(self, self.data, self.data2)
+	if info.selectCallbackByIndex then
+		local func
+		if index == 1 then
+			func = info.OnAccept or info.OnButton1
+		elseif index == 2 then
+			func = info.OnCancel or info.OnButton2
+		elseif index == 3 then
+			func = info.OnButton3
+		elseif index == 4 then
+			func = info.OnButton4
+		elseif index == 5 then
+			func = info.OnExtraButton
 		end
-	elseif index == 3 then
-		local OnAlt = info.OnAlt
-		if OnAlt then
-			OnAlt(self, self.data, 'clicked')
+
+		if func then
+			local keepOpen = func(self, self.data, 'clicked')
+			if not keepOpen and which == self.which then
+				self:Hide()
+			end
 		end
 	else
-		local OnCancel = info.OnCancel
-		if OnCancel then
-			hide = not OnCancel(self, self.data, 'clicked')
+		local hide = true
+		if index == 1 then
+			local OnAccept = info.OnAccept or info.OnButton1
+			if OnAccept then
+				hide = not OnAccept(self, self.data, self.data2)
+			end
+		elseif index == 3 then
+			local OnAlt = info.OnAlt or info.OnButton2
+			if OnAlt then
+				OnAlt(self, self.data, 'clicked')
+			end
+		else
+			local OnCancel = info.OnCancel
+			if OnCancel then
+				hide = not OnCancel(self, self.data, 'clicked')
+			end
 		end
-	end
 
-	if hide and (which == self.which) then
 		-- can self.which change inside one of the On* functions???
-		self:Hide()
+		if hide and (which == self.which) then
+			self:Hide()
+		end
 	end
 end
 
 function E:StaticPopup_EditBoxOnEnterPressed()
 	if not self.autoCompleteParams or not AutoCompleteEditBox_OnEnterPressed(self) then
 		local parent = self:GetParent()
-		local owner = parent:GetParent()
+		local owner = parent and parent:GetParent()
 		local which, dialog
 
-		if parent.which then
+		if parent and parent.which then
 			which = parent.which
 			dialog = parent
 		elseif owner and owner.which then -- This is needed if this is a money input frame since it's nested deeper than a normal edit box
@@ -682,29 +744,29 @@ function E:StaticPopup_EditBoxOnEnterPressed()
 		end
 
 		local popup = E.PopupDialogs[which]
-		local onEnterPressed = popup and popup.EditBoxOnEnterPressed
-		if onEnterPressed then
-			onEnterPressed(self, dialog.data)
+		local OnEnterPressed = popup and popup.EditBoxOnEnterPressed
+		if OnEnterPressed then
+			OnEnterPressed(self, dialog.data)
 		end
 	end
 end
 
 function E:StaticPopup_EditBoxOnEscapePressed()
 	local parent = self:GetParent()
-	local popup = E.PopupDialogs[parent.which]
-	local onEscapePressed = popup and popup.EditBoxOnEscapePressed
-	if onEscapePressed then
-		onEscapePressed(self, parent.data)
+	local popup = parent and E.PopupDialogs[parent.which]
+	local OnEscapePressed = popup and popup.EditBoxOnEscapePressed
+	if OnEscapePressed then
+		OnEscapePressed(self, parent.data)
 	end
 end
 
 function E:StaticPopup_EditBoxOnTextChanged(userInput)
 	if not self.autoCompleteParams or not AutoCompleteEditBox_OnTextChanged(self, userInput) then
 		local parent = self:GetParent()
-		local popup = E.PopupDialogs[parent.which]
-		local onTextChanged = popup and popup.EditBoxOnTextChanged
-		if onTextChanged then
-			onTextChanged(self, parent.data)
+		local popup = parent and E.PopupDialogs[parent.which]
+		local OnTextChanged = popup and popup.EditBoxOnTextChanged
+		if OnTextChanged then
+			OnTextChanged(self, parent.data)
 		end
 	end
 end
@@ -713,10 +775,9 @@ function E:StaticPopup_FindVisible(which, data)
 	local info = E.PopupDialogs[which]
 	if not info then return end
 
-	for index = 1, MAX_STATIC_POPUPS do
-		local frame = _G['ElvUI_StaticPopup'..index]
-		if frame and frame:IsShown() and (frame.which == which) and (not info.multiple or (frame.data == data)) then
-			return frame
+	for _, popup in next, E.StaticPopupFrames do
+		if popup:IsShown() and (popup.which == which) and (not info.multiple or (popup.data == data)) then
+			return popup
 		end
 	end
 end
@@ -730,14 +791,16 @@ function E:StaticPopup_Resize(dialog, which)
 	local editBox = _G[dialogName..'EditBox']
 	local button1 = _G[dialogName..'Button1']
 
-	local maxHeightSoFar, maxWidthSoFar = (dialog.maxHeightSoFar or 0), (dialog.maxWidthSoFar or 0)
+	local maxHeightSoFar = dialog.maxHeightSoFar or 0
+	local maxWidthSoFar = dialog.maxWidthSoFar or 0
 	local width = 320
 
-	if dialog.numButtons == 3 then
+	if dialog.numButtons == 4 then
+		width = 574
+	elseif dialog.numButtons == 3 then
 		width = 440
 	elseif info.showAlert or info.showAlertGear or info.closeButton then
-		-- Widen
-		width = 420
+		width = 420 -- Widen
 	elseif info.editBoxWidth and info.editBoxWidth > 260 then
 		width = width + (info.editBoxWidth - 260)
 	end
@@ -747,13 +810,7 @@ function E:StaticPopup_Resize(dialog, which)
 		dialog.maxWidthSoFar = width
 	end
 
-	if info.wideText then
-		dialog.text:Width(360)
-		dialog.SubText:Width(360)
-	else
-		dialog.text:Width(290)
-		-- dialog.SubText:Width(290)
-	end
+	text:Width(info.wideText and 360 or 290)
 
 	local height = 32 + (text and text:GetHeight() or 0) + 8 + button1:GetHeight()
 	if info.hasEditBox then
@@ -763,13 +820,11 @@ function E:StaticPopup_Resize(dialog, which)
 	elseif info.hasMoneyInputFrame then
 		height = height + 22
 	end
+
 	if info.hasItemFrame then
-		if info.compactItemFrame then
-			height = height + 44
-		else
-			height = height + 64
-		end
+		height = height + (info.compactItemFrame and 44 or 64)
 	end
+
 	if info.hasCheckButton then
 		height = height + 32
 	end
@@ -782,11 +837,32 @@ end
 
 function E:StaticPopup_OnEvent()
 	self.maxHeightSoFar = 0
+
 	E:StaticPopup_Resize(self, self.which)
 end
 
+function E:StaticPopup_HideExclusive()
+	for _, frame in pairs(E.StaticPopup_DisplayedFrames) do
+		if frame:IsShown() and frame.exclusive then
+			local dialog = E.PopupDialogs[frame.which]
+			if dialog then
+				frame:Hide()
+
+				local OnCancel = dialog.OnCancel
+				if OnCancel then
+					OnCancel(frame, frame.data, 'override')
+				end
+			else
+				E:StaticPopupSpecial_Hide(frame)
+			end
+
+			break
+		end
+	end
+end
+
 local tempButtonLocs = {}	--So we don't make a new table each time.
-function E:StaticPopup_Show(which, text_arg1, text_arg2, data)
+function E:StaticPopup_Show(which, text_arg1, text_arg2, data, insertedFrame)
 	local info = E.PopupDialogs[which]
 	if not info then return end
 
@@ -806,16 +882,19 @@ function E:StaticPopup_Show(which, text_arg1, text_arg2, data)
 		return
 	end
 
-	if info.cancels then
-		for index = 1, MAX_STATIC_POPUPS do
-			local frame = _G['ElvUI_StaticPopup'..index]
-			if frame:IsShown() and (frame.which == info.cancels) then
-				frame:Hide()
+	if info.exclusive then
+		E:StaticPopup_HideExclusive()
+	end
 
-				local popup = E.PopupDialogs[frame.which]
-				local OnCancel = popup and popup.OnCancel
+	if info.cancels then
+		for _, popup in next, E.StaticPopupFrames do
+			if popup:IsShown() and (popup.which == info.cancels) then
+				popup:Hide()
+
+				local dialog = E.PopupDialogs[popup.which]
+				local OnCancel = dialog and dialog.OnCancel
 				if OnCancel then
-					OnCancel(frame, frame.data, 'override')
+					OnCancel(popup, popup.data, 'override')
 				end
 			end
 		end
@@ -824,23 +903,18 @@ function E:StaticPopup_Show(which, text_arg1, text_arg2, data)
 	-- Pick a free dialog to use, find an open dialog of the requested type
 	local dialog = E:StaticPopup_FindVisible(which, data)
 	if dialog then
-		if not info.noCancelOnReuse then
-			local OnCancel = info.OnCancel
-			if OnCancel then
-				OnCancel(dialog, dialog.data, 'override')
-			end
+		local OnCancel = not info.noCancelOnReuse and info.OnCancel
+		if OnCancel then
+			OnCancel(dialog, dialog.data, 'override')
 		end
 
 		dialog:Hide()
-	else -- Find a free dialog
-		local index = 1
-		if info.preferredIndex then
-			index = info.preferredIndex
-		end
-		for i = index, MAX_STATIC_POPUPS do
-			local frame = _G['ElvUI_StaticPopup'..i]
-			if frame and not frame:IsShown() then
-				dialog = frame
+	else
+		-- Find a free dialog
+		for i = (info.preferredIndex or 1), E.MAX_STATIC_POPUPS do
+			local popup = _G['ElvUI_StaticPopup'..i]
+			if popup and not popup:IsShown() then
+				dialog = popup
 				break
 			end
 		end
@@ -848,9 +922,9 @@ function E:StaticPopup_Show(which, text_arg1, text_arg2, data)
 		--If dialog not found and there's a preferredIndex then try to find an available frame before the preferredIndex
 		if not dialog and info.preferredIndex then
 			for i = 1, info.preferredIndex do
-				local frame = _G['ElvUI_StaticPopup'..i]
-				if frame and not frame:IsShown() then
-					dialog = frame
+				local popup = _G['ElvUI_StaticPopup'..i]
+				if popup and not popup:IsShown() then
+					dialog = popup
 					break
 				end
 			end
@@ -865,61 +939,51 @@ function E:StaticPopup_Show(which, text_arg1, text_arg2, data)
 		return
 	end
 
-	dialog.maxHeightSoFar, dialog.maxWidthSoFar = 0, 0
+	-- Set the miscellaneous variables for the dialog
+	dialog.which = which
+	dialog.data = data
+	dialog.maxWidthSoFar = 0
+	dialog.maxHeightSoFar = 0
+	dialog.insertedFrame = insertedFrame
+	dialog.timeleft = info.timeout
+	dialog.exclusive = info.exclusive
+	dialog.hideOnEscape = info.hideOnEscape
+	dialog.enterClicksFirstButton = info.enterClicksFirstButton
 
 	-- Set the text of the dialog
 	local dialogName = dialog:GetName()
-	local text = _G[dialogName..'Text']
-	text:SetFormattedText(info.text, text_arg1, text_arg2)
-
-	-- Show or hide the close button
-	if info.closeButton then
-		local closeButton = _G[dialogName..'CloseButton']
-		if info.closeButtonIsHide then
-			closeButton:SetNormalTexture([[Interface\Buttons\UI-Panel-HideButton-Up]])
-			closeButton:SetPushedTexture([[Interface\Buttons\UI-Panel-HideButton-Down]])
-		else
-			closeButton:SetNormalTexture([[Interface\Buttons\UI-Panel-MinimizeButton-Up]])
-			closeButton:SetPushedTexture([[Interface\Buttons\UI-Panel-MinimizeButton-Down]])
-		end
-
-		closeButton:Show()
-	else
-		_G[dialogName..'CloseButton']:Hide()
+	local text = dialog.text or _G[dialogName..'Text']
+	if text then
+		text:SetFormattedText(info.text, text_arg1, text_arg2)
 	end
 
-	-- Set the editbox of the dialog
-	local editBox = _G[dialogName..'EditBox']
-	if info.hasEditBox then
-		editBox:Show()
-		editBox:SetText('')
+	-- Show or hide the close button
+		local closeButton = dialog.closeButton or _G[dialogName..'CloseButton']
+	if closeButton then
+		if info.closeButton then
+			if info.closeButtonIsHide then
+				closeButton:SetNormalTexture([[Interface\Buttons\UI-Panel-HideButton-Up]])
+				closeButton:SetPushedTexture([[Interface\Buttons\UI-Panel-HideButton-Down]])
+			else
+				closeButton:SetNormalTexture([[Interface\Buttons\UI-Panel-MinimizeButton-Up]])
+				closeButton:SetPushedTexture([[Interface\Buttons\UI-Panel-MinimizeButton-Down]])
+			end
 
-		if info.maxLetters then
-			editBox:SetMaxLetters(info.maxLetters)
-			editBox:SetCountInvisibleLetters(info.countInvisibleLetters)
-		end
-
-		if info.maxBytes then
-			editBox:SetMaxBytes(info.maxBytes)
-		end
-
-		if info.editBoxWidth then
-			editBox:Width(info.editBoxWidth)
+			closeButton:Show()
 		else
-			editBox:Width(130)
+			closeButton:Hide()
 		end
-	else
-		editBox:Hide()
 	end
 
 	-- Show or hide money frame
+	local moneyFrame = dialog.moneyFrame or _G[dialogName..'MoneyFrame']
+	local moneyInputFrame = dialog.moneyInputFrame or _G[dialogName..'MoneyInputFrame']
 	if info.hasMoneyFrame then
-		_G[dialogName..'MoneyFrame']:Show()
-		_G[dialogName..'MoneyInputFrame']:Hide()
+		moneyFrame:Show()
+		moneyInputFrame:Hide()
 	elseif info.hasMoneyInputFrame then
-		local moneyInputFrame = _G[dialogName..'MoneyInputFrame']
 		moneyInputFrame:Show()
-		_G[dialogName..'MoneyFrame']:Hide()
+		moneyFrame:Hide()
 
 		-- Set OnEnterPress for money input frames
 		if info.EditBoxOnEnterPressed then
@@ -932,48 +996,127 @@ function E:StaticPopup_Show(which, text_arg1, text_arg2, data)
 			moneyInputFrame.copper:SetScript('OnEnterPressed', nil)
 		end
 	else
-		_G[dialogName..'MoneyFrame']:Hide()
-		_G[dialogName..'MoneyInputFrame']:Hide()
+		moneyFrame:Hide()
+		moneyInputFrame:Hide()
+	end
+
+	if insertedFrame then
+		insertedFrame:SetParent(dialog)
+		insertedFrame:ClearAllPoints()
+		insertedFrame:Point('TOP', dialog.text or dialog, 'BOTTOM')
+		insertedFrame:Show()
+
+		if moneyFrame then
+			moneyFrame:Point('TOP', insertedFrame, 'BOTTOM')
+		end
+
+		if moneyInputFrame then
+			moneyInputFrame:Point('TOP', insertedFrame, 'BOTTOM')
+		end
 	end
 
 	-- Show or hide item button
-	if info.hasItemFrame then
-		_G[dialogName..'ItemFrame']:Show()
+	local itemFrame = dialog.itemFrame or _G[dialogName..'ItemFrame']
+	local itemFrameText = dialog.itemFrameText or _G[dialogName..'ItemFrameText']
+	local itemFrameIconTexture = dialog.itemFrameIconTexture or _G[dialogName..'ItemFrameIconTexture']
+	local itemFrameCount = dialog.itemFrameCount or _G[dialogName..'ItemFrameCount']
+	if itemFrame then
+		if info.hasItemFrame then
+			itemFrame:Show()
 
-		if data and type(data) == 'table' then
-			_G[dialogName..'ItemFrame'].link = data.link
-			_G[dialogName..'ItemFrameIconTexture']:SetTexture(data.texture)
+			if data and type(data) == 'table' then
+				itemFrame.link = data.link
 
-			local nameText = _G[dialogName..'ItemFrameText']
-			nameText:SetTextColor(unpack(data.color or {1, 1, 1, 1}))
-			nameText:SetText(data.name)
+				if itemFrameIconTexture then
+					itemFrameIconTexture:SetTexture(data.texture)
+				end
 
-			if data.count and data.count > 1 then
-				_G[dialogName..'ItemFrameCount']:SetText(data.count)
-				_G[dialogName..'ItemFrameCount']:Show()
-			else
-				_G[dialogName..'ItemFrameCount']:Hide()
+				if itemFrameText then
+					itemFrameText:SetTextColor(unpack(data.color or FALLBACK_COLOR))
+					itemFrameText:SetText(data.name)
+				end
+
+				if itemFrameCount then
+					if data.count and data.count > 1 then
+						itemFrameCount:SetText(data.count)
+						itemFrameCount:Show()
+					else
+						itemFrameCount:Hide()
+					end
+				end
 			end
+		else
+			itemFrame:Hide()
 		end
-	else
-		_G[dialogName..'ItemFrame']:Hide()
 	end
 
-	-- Set the miscellaneous variables for the dialog
-	dialog.which = which
-	dialog.timeleft = info.timeout
-	dialog.hideOnEscape = info.hideOnEscape
-	dialog.exclusive = info.exclusive
-	dialog.enterClicksFirstButton = info.enterClicksFirstButton
+	-- Set the editbox of the dialog
+	local editBox = dialog.editBox or _G[dialogName..'EditBox']
+	if editBox then
+		if info.hasEditBox then
+			editBox:Show()
 
-	-- Clear out data
-	dialog.data = data
+			if info.maxLetters then
+				editBox:SetMaxLetters(info.maxLetters)
+				editBox:SetCountInvisibleLetters(info.countInvisibleLetters)
+			end
+
+			if info.maxBytes then
+				editBox:SetMaxBytes(info.maxBytes)
+			end
+
+			editBox:Width(info.editBoxWidth or 130)
+		else
+			editBox:Hide()
+		end
+	end
 
 	-- Set the buttons of the dialog
 	local button1 = _G[dialogName..'Button1']
 	local button2 = _G[dialogName..'Button2']
 	local button3 = _G[dialogName..'Button3']
 	local button4 = _G[dialogName..'Button4']
+
+	-- Show or hide the alert icon
+	local alertIcon = dialog.alertIcon or _G[dialogName..'AlertIcon']
+	if alertIcon then
+		if info.showAlert then
+			alertIcon:SetTexture(STATICPOPUP_TEXTURE_ALERT)
+			alertIcon:Point('LEFT', 24, dialog.button3:IsShown() and 10 or 0)
+			alertIcon:Show()
+		elseif info.showAlertGear then
+			alertIcon:SetTexture(STATICPOPUP_TEXTURE_ALERTGEAR)
+			alertIcon:Point('LEFT', 24, 0)
+			alertIcon:Show()
+		else
+			alertIcon:SetTexture()
+			alertIcon:Hide()
+		end
+	end
+
+	local checkButton = dialog.checkButton or _G[dialogName..'CheckButton']
+	local checkButtonText = dialog.checkButtonText or _G[dialogName..'CheckButtonText']
+	if checkButton then
+		if checkButton then
+			if info.hasCheckButton then
+				checkButton:ClearAllPoints()
+				checkButton:Point('BOTTOMLEFT', 24, 20 + button1:GetHeight())
+
+				if checkButtonText then
+					if info.checkButtonText then
+						checkButtonText:SetText(info.checkButtonText)
+						checkButtonText:Show()
+					else
+						checkButtonText:Hide()
+					end
+				end
+
+				checkButton:Show()
+			else
+				checkButton:Hide()
+			end
+		end
+	end
 
 	do	--If there is any recursion in this block, we may get errors (tempButtonLocs is static). If you have to recurse, we'll have to create a new table each time.
 		assert(#tempButtonLocs == 0)	--If this fails, we're recursing. (See the table.wipe at the end of the block)
@@ -984,13 +1127,17 @@ function E:StaticPopup_Show(which, text_arg1, text_arg2, data)
 		tinsert(tempButtonLocs, button4)
 
 		for i = #tempButtonLocs, 1, -1 do
-			--Do this stuff before we move it. (This is why we go back-to-front)
-			tempButtonLocs[i]:SetText(info['button'..i])
-			tempButtonLocs[i]:Hide()
-			tempButtonLocs[i]:ClearAllPoints()
+			local tempButtonLoc = tempButtonLocs[i]
+
+			-- Do this stuff before we move it. (This is why we go back-to-front)
+			local button = info['button'..i]
+			tempButtonLoc:SetText(button)
+			tempButtonLoc:Hide()
+			tempButtonLoc:ClearAllPoints()
 
 			--Now we possibly remove it.
-			if not (info['button'..i] and (not info['DisplayButton'..i] or info['DisplayButton'..i](dialog))) then
+			local displayButton = info['DisplayButton'..i]
+			if not (button and (not displayButton or displayButton(dialog))) then
 				tremove(tempButtonLocs, i)
 			end
 		end
@@ -999,7 +1146,9 @@ function E:StaticPopup_Show(which, text_arg1, text_arg2, data)
 		local numButtons = #tempButtonLocs
 		dialog.numButtons = numButtons
 
-		if numButtons == 3 then
+		if numButtons == 4 then
+			tempButtonLocs[1]:Point('BOTTOMRIGHT', dialog, 'BOTTOM', -139, 16);
+		elseif numButtons == 3 then
 			tempButtonLocs[1]:Point('BOTTOMRIGHT', dialog, 'BOTTOM', -72, 16)
 		elseif numButtons == 2 then
 			tempButtonLocs[1]:Point('BOTTOMRIGHT', dialog, 'BOTTOM', -6, 16)
@@ -1008,93 +1157,38 @@ function E:StaticPopup_Show(which, text_arg1, text_arg2, data)
 		end
 
 		for i = 1, numButtons do
+			local tempButtonLoc = tempButtonLocs[i]
+
 			if i > 1 then
-				tempButtonLocs[i]:Point('LEFT', tempButtonLocs[i-1], 'RIGHT', 13, 0)
+				tempButtonLoc:Point('LEFT', tempButtonLocs[i-1], 'RIGHT', 13, 0)
 			end
 
-			local width = tempButtonLocs[i]:GetTextWidth()
-			if width > 110 then
-				tempButtonLocs[i]:Width(width + 20)
-			else
-				tempButtonLocs[i]:Width(120)
-			end
-
-			tempButtonLocs[i]:Enable()
-			tempButtonLocs[i]:Show()
+			local width = tempButtonLoc:GetTextWidth()
+			tempButtonLoc:Width((width and width > 110 and (width + 20)) or 120)
+			tempButtonLoc:Enable()
+			tempButtonLoc:Show()
 		end
 
 		wipe(tempButtonLocs)
 	end
 
-	-- Show or hide the alert icon
-	local alertIcon = _G[dialogName..'AlertIcon']
-	if info.showAlert then
-		alertIcon:SetTexture(STATICPOPUP_TEXTURE_ALERT)
-		if button3:IsShown() then
-			alertIcon:Point('LEFT', 24, 10)
-		else
-			alertIcon:Point('LEFT', 24, 0)
-		end
-		alertIcon:Show()
-	elseif info.showAlertGear then
-		alertIcon:SetTexture(STATICPOPUP_TEXTURE_ALERTGEAR)
-		if button3:IsShown() then
-			alertIcon:Point('LEFT', 24, 0)
-		else
-			alertIcon:Point('LEFT', 24, 0)
-		end
-		alertIcon:Show()
-	else
-		alertIcon:SetTexture()
-		alertIcon:Hide()
-	end
-
-	-- Show or hide the checkbox
-	local checkButton = _G[dialogName..'CheckButton']
-	local checkButtonText = _G[dialogName..'CheckButtonText']
-	if info.hasCheckButton then
-		checkButton:ClearAllPoints()
-		checkButton:Point('BOTTOMLEFT', 24, 20 + button1:GetHeight())
-
-		if info.checkButtonText then
-			checkButtonText:SetText(info.checkButtonText)
-			checkButtonText:Show()
-		else
-			checkButtonText:Hide()
-		end
-
-		checkButton:Show()
-	else
-		checkButton:Hide()
-	end
-
+	-- Handle the first button delay
 	if info.StartDelay then
-		dialog.startDelay = info.StartDelay()
-		button1:Disable()
+		dialog.startDelay = info.StartDelay(dialog)
+		dialog.button1:SetEnabled(not dialog.startDelay or dialog.startDelay <= 0)
+	elseif info.acceptDelay then
+		dialog.acceptDelay = info.acceptDelay
+		dialog.button1:Disable()
 	else
 		dialog.startDelay = nil
-		button1:Enable()
-	end
-
-	if info.acceptDelay then
-		dialog.acceptDelay = info.acceptDelay
-		button1:Disable()
-	else
 		dialog.acceptDelay = nil
-		button1:Enable()
+		dialog.button1:Enable()
 	end
-
-	editBox.autoCompleteParams = info.autoCompleteParams
-	editBox.autoCompleteRegex = info.autoCompleteRegex
-	editBox.autoCompleteFormatRegex = info.autoCompleteFormatRegex
-
-	editBox.addHighlightedText = true
 
 	-- Finally size and show the dialog
+	E:StaticPopup_Resize(dialog, which)
 	E:StaticPopup_SetUpPosition(dialog)
 	dialog:Show()
-
-	E:StaticPopup_Resize(dialog, which)
 
 	if info.sound then
 		PlaySound(info.sound)
@@ -1104,21 +1198,23 @@ function E:StaticPopup_Show(which, text_arg1, text_arg2, data)
 end
 
 function E:StaticPopup_Hide(which, data)
-	for index = 1, MAX_STATIC_POPUPS do
-		local dialog = _G['ElvUI_StaticPopup'..index]
-		if dialog.which == which and (not data or (data == dialog.data)) then
-			dialog:Hide()
+	for _, popup in next, E.StaticPopupFrames do
+		if popup.which == which and (not data or (data == popup.data)) then
+			popup:Hide()
 		end
 	end
 end
 
 function E:StaticPopup_ButtonOnClick()
-	E.StaticPopup_OnClick(self:GetParent(), self:GetID())
+	local id = self:GetID()
+	local parent = self:GetParent()
+
+	E.StaticPopup_OnClick(parent, id)
 end
 
 function E:StaticPopup_CheckButtonOnClick()
 	local parent = self:GetParent()
-	local which = parent.which
+	local which = parent and parent.which
 	local info = E.PopupDialogs[which]
 	if not info then return end
 
@@ -1146,15 +1242,16 @@ function E:StaticPopup_CreateSecureButton(popup, button, text, attributes)
 		btn:SetAttribute(key, value)
 	end
 
-	local t = btn:CreateFontString(nil, 'OVERLAY')
-	t:Point('CENTER', 0, 1)
-	t:FontTemplate(nil, nil, 'SHADOW')
-	t:SetJustifyH('CENTER')
-	t:SetText(text)
-	btn.text = t
+	local txt = btn:CreateFontString(nil, 'OVERLAY')
+	txt:Point('CENTER', 0, 1)
+	txt:FontTemplate(nil, nil, 'SHADOW')
+	txt:SetJustifyH('CENTER')
+	txt:SetText(text)
 
-	btn:SetFontString(t)
+	btn.text = txt
+	btn:SetFontString(txt)
 	btn:SetTemplate(nil, true)
+
 	SecureOnLeave(btn)
 
 	return btn
@@ -1182,74 +1279,186 @@ function E:StaticPopup_SetSecureButton(which, btn)
 	SecureButtons[which] = btn
 end
 
-function E:Contruct_StaticPopups()
+function E:StaticPopup_HandleButton(button)
+	if not button then return end
+
+	button:OffsetFrameLevel(1)
+	button:SetScript('OnClick', E.StaticPopup_ButtonOnClick)
+
+	S:HandleButton(button)
+end
+
+function E:StaticPopup_GetElement(popup, text)
+	local lower = gsub(text, '^%w', strlower)
+	local element = popup[lower] or popup[text]
+	if element then
+		return element
+	end
+
+	local name = popup:GetName()
+	if name then
+		return _G[name..text]
+	end
+end
+
+function E:StaticPopup_OnLoad(popup)
+	-- reference elements with compatibility
+	popup.text = E:StaticPopup_GetElement(popup, 'Text')
+	popup.editBox = E:StaticPopup_GetElement(popup, 'EditBox')
+	popup.alertIcon = E:StaticPopup_GetElement(popup, 'AlertIcon')
+	popup.extraButton = E:StaticPopup_GetElement(popup, 'ExtraButton')
+	popup.extraFrame = E:StaticPopup_GetElement(popup, 'ExtraFrame')
+	popup.moneyFrame = E:StaticPopup_GetElement(popup, 'MoneyFrame')
+	popup.moneyInputFrame = E:StaticPopup_GetElement(popup, 'MoneyInputFrame')
+	popup.closeButton = E:StaticPopup_GetElement(popup, 'CloseButton')
+
+	local i = 1
+	local button = E:StaticPopup_GetElement(popup, 'Button'..i)
+	while button do
+		popup['button'..i] = button
+
+		i = i + 1
+		button = E:StaticPopup_GetElement(popup, 'Button'..i)
+	end
+
+	local itemFrame = E:StaticPopup_GetElement(popup, 'ItemFrame')
+	if itemFrame then
+		popup.itemFrame = itemFrame -- reference the main element
+		popup.itemFrameText = itemFrame.Text or E:StaticPopup_GetElement(popup, 'ItemFrameText')
+		popup.itemFrameNameFrame = itemFrame.NameFrame or E:StaticPopup_GetElement(popup, 'ItemFrameNameFrame')
+
+		local item = itemFrame.Item
+		if item then
+			popup.itemFrameItem = item -- reference the item element
+		end
+
+		popup.itemFrameCount = (item and (item.count or item.Count)) or E:StaticPopup_GetElement(popup, 'ItemFrameCount')
+		popup.itemFrameIconTexture = (item and (item.icon or item.Icon)) or E:StaticPopup_GetElement(popup, 'ItemFrameIconTexture')
+	end
+
+	-- resize on event
+	popup:RegisterEvent('DISPLAY_SIZE_CHANGED')
+end
+
+function E:StaticPopup_HandleButtons(popup)
+	if not popup.buttons then
+		popup.buttons = {}
+	end
+
+	local i = 1
+	local button = popup['button'..i]
+	while button do
+		E:StaticPopup_HandleButton(button)
+
+		popup.buttons[i] = button
+
+		i = i + 1
+		button = popup['button'..i]
+	end
+end
+
+function E:LoadStaticPopups()
 	E.StaticPopupFrames = {}
 
-	for index = 1, MAX_STATIC_POPUPS do
-		local popup = CreateFrame('Frame', 'ElvUI_StaticPopup'..index, E.UIParent, 'StaticPopupTemplate')
-		popup:SetID(index)
+	for index = 1, E.MAX_STATIC_POPUPS do
+		local name = 'ElvUI_StaticPopup'..index
+		local popup = CreateFrame('Frame', name, E.UIParent, 'ElvUIStaticPopupTemplate')
+
+		E.StaticPopupFrames[index] = popup
+
+		E:StaticPopup_OnLoad(popup)
+		E:StaticPopup_HandleButtons(popup)
 
 		--Fix Scripts
 		popup:SetScript('OnShow', E.StaticPopup_OnShow)
 		popup:SetScript('OnHide', E.StaticPopup_OnHide)
-		popup:SetScript('OnUpdate', E.StaticPopup_OnUpdate)
 		popup:SetScript('OnEvent', E.StaticPopup_OnEvent)
-
-		local checkbutton = CreateFrame('CheckButton', 'ElvUI_StaticPopup'..index..'CheckButton', _G['ElvUI_StaticPopup'..index], 'UICheckButtonTemplate')
-		checkbutton:SetScript('OnClick', E.StaticPopup_CheckButtonOnClick)
-		checkbutton:Size(24)
-		S:HandleCheckBox(checkbutton)
-
-		local checkbuttontext = _G['ElvUI_StaticPopup'..index..'CheckButtonText']
-		checkbuttontext:FontTemplate(nil, nil, 'SHADOW')
-		checkbuttontext:SetTextColor(1,0.17,0.26)
-		checkbuttontext:Point('LEFT', checkbutton, 'RIGHT', 4, 1)
-
-		--Skin
+		popup:SetScript('OnUpdate', E.StaticPopup_OnUpdate)
 		popup:SetTemplate('Transparent')
+		popup:SetID(index)
+		popup:Hide()
 
-		for i = 1, 3 do
-			local button = _G['ElvUI_StaticPopup'..index..'Button'..i]
-			button:OffsetFrameLevel(1)
-			button:SetScript('OnClick', E.StaticPopup_ButtonOnClick)
-			S:HandleButton(button)
+		if not popup.checkButton then
+			popup.checkButton = CreateFrame('CheckButton', name..'CheckButton', popup, 'UICheckButtonTemplate')
+			popup.checkButton:SetScript('OnClick', E.StaticPopup_CheckButtonOnClick)
+			popup.checkButton:Size(24)
+
+			if not E.OtherAddons.Tukui then
+				S:HandleCheckBox(popup.checkButton)
+			end
+
+			popup.checkButtonText = _G[name..'CheckButtonText']
+
+			if popup.checkButtonText then
+				popup.checkButtonText:Point('LEFT', popup.checkButton, 'RIGHT', 4, 1)
+				popup.checkButtonText:FontTemplate(nil, nil, 'SHADOW')
+				popup.checkButtonText:SetTextColor(1,0.17,0.26)
+			end
 		end
 
-		local editbox = _G['ElvUI_StaticPopup'..index..'EditBox']
-		editbox:SetScript('OnEnterPressed', E.StaticPopup_EditBoxOnEnterPressed)
-		editbox:SetScript('OnEscapePressed', E.StaticPopup_EditBoxOnEscapePressed)
-		editbox:SetScript('OnTextChanged', E.StaticPopup_EditBoxOnTextChanged)
-		editbox:OffsetFrameLevel(1)
-
-		S:HandleEditBox(_G['ElvUI_StaticPopup'..index..'MoneyInputFrameGold'])
-		S:HandleEditBox(_G['ElvUI_StaticPopup'..index..'MoneyInputFrameSilver'])
-		S:HandleEditBox(_G['ElvUI_StaticPopup'..index..'MoneyInputFrameCopper'])
-
-		S:HandleEditBox(editbox)
-		editbox.backdrop:Point('TOPLEFT', -2, -4)
-		editbox.backdrop:Point('BOTTOMRIGHT', 2, 4)
-
-		local nameFrame = _G['ElvUI_StaticPopup'..index..'ItemFrameNameFrame']
-		if nameFrame then
-			nameFrame:Kill()
+		if popup.Border then
+			popup.Border:StripTextures()
 		end
 
-		local itemFrame = _G['ElvUI_StaticPopup'..index..'ItemFrame']
+		local extraButton = popup.extraButton
+		if extraButton then
+			extraButton:Hide()
+
+			E:StaticPopup_HandleButton(extraButton)
+		end
+
+		local moneyInputFrame = popup.moneyInputFrame
+		if moneyInputFrame and not E.OtherAddons.Tukui then
+			S:HandleEditBox(moneyInputFrame.gold)
+			S:HandleEditBox(moneyInputFrame.silver)
+			S:HandleEditBox(moneyInputFrame.copper)
+		end
+
+		local editBox = popup.editBox
+		if editBox then
+			editBox.ClearText = E.StaticPopup_ClearText -- use our own function, it doesnt exist on era
+
+			editBox:SetScript('OnEnterPressed', E.StaticPopup_EditBoxOnEnterPressed)
+			editBox:SetScript('OnEscapePressed', E.StaticPopup_EditBoxOnEscapePressed)
+			editBox:SetScript('OnTextChanged', E.StaticPopup_EditBoxOnTextChanged)
+			editBox:OffsetFrameLevel(1)
+
+			if not E.OtherAddons.Tukui then
+				S:HandleEditBox(editBox)
+				for _, region in next, { editBox:GetRegions() } do
+					if region:IsObjectType('Texture') and (region:GetTexture() == [[Interface\ChatFrame\UI-ChatInputBorder-Left]] or region:GetTexture() == [[Interface\ChatFrame\UI-ChatInputBorder-Right]]) then
+						region:Kill()
+					end
+				end
+
+				if not editBox.NineSlice then
+					editBox.backdrop:Point('TOPLEFT', -2, -4)
+					editBox.backdrop:Point('BOTTOMRIGHT', 2, 4)
+				end
+			end
+		end
+
+		local itemFrame = popup.itemFrame
 		if itemFrame then
-			itemFrame:GetNormalTexture():Kill()
-			itemFrame:SetTemplate()
-			itemFrame:StyleButton()
-		end
+			local item = popup.itemFrameItem or itemFrame
+			if item then
+				local normalTexture = item:GetNormalTexture()
+				if normalTexture then
+					normalTexture:Kill()
+				end
 
-		local iconTexture = _G['ElvUI_StaticPopup'..index..'ItemFrameIconTexture']
-		if iconTexture then
-			iconTexture:SetTexCoord(unpack(E.TexCoords))
-			iconTexture:SetInside()
-		end
+				item:SetTemplate()
+				item:StyleButton()
+			end
 
-		E.StaticPopupFrames[index] = popup
+			if popup.itemFrameIconTexture then
+				popup.itemFrameIconTexture:SetTexCoord(unpack(E.TexCoords))
+				popup.itemFrameIconTexture:SetInside()
+			end
+
+			if popup.itemFrameNameFrame then
+				popup.itemFrameNameFrame:Kill()
+			end
+		end
 	end
-
-	E:SecureHook('StaticPopup_SetUpPosition')
-	E:SecureHook('StaticPopup_CollapseTable')
 end

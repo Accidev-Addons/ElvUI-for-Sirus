@@ -423,13 +423,12 @@ function E:OnInitialize()
 	E:SetupDB()
 	E:UIMult()
 	E:UpdateMedia()
-	E:InitializeInitialModules()
+
+	if not E.OtherAddons.Tukui then
+		E:InitializeInitialModules()
+	end
 
 	if E.private.general.minimap.enable then
 		E.Minimap:SetGetMinimapShape() -- This is just to support for other mods, keep below UIMult
-	end
-
-	if IsAddOnLoaded('Tukui') then
-		E:StaticPopup_Show('TUKUI_ELVUI_INCOMPATIBLE')
 	end
 end

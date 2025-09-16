@@ -411,7 +411,7 @@ function D:GetProfileData(dataType, dataKey)
 	if dataType == 'profile' then
 		--Copy current profile data
 		profileKey = dataKey or (ElvDB.profileKeys and ElvDB.profileKeys[E.mynameRealm])
-		--Copy current profile data
+
 		local data = ElvDB.profiles[profileKey]
 		if not data then return end -- bad dataKey
 
@@ -437,7 +437,6 @@ function D:GetProfileData(dataType, dataKey)
 		profileData.unitframe = {}
 		profileData.unitframe.aurafilters = E:CopyTable({}, ElvDB.global.unitframe.aurafilters)
 		profileData.unitframe.aurawatch = E:CopyTable({}, ElvDB.global.unitframe.aurawatch)
-		profileData.unitframe.buffwatch = E:CopyTable({}, ElvDB.global.unitframe.buffwatch)
 		profileData = E:RemoveTableDuplicates(profileData, G, D.GeneratedKeys.global)
 		profileKey = 'filters'
 	elseif dataType == 'styleFilters' then
@@ -481,8 +480,8 @@ function D:GetImportStringType(dataString)
 end
 
 function D:Decode(dataString)
-	local profileInfo, profileType, profileKey, profileData
 	local stringType = D:GetImportStringType(dataString)
+	local profileInfo, profileType, profileKey, profileData
 
 	if stringType == 'Deflate' then
 		local data = gsub(dataString, '^'..EXPORT_PREFIX, '')
@@ -652,12 +651,12 @@ E.PopupDialogs.IMPORT_PROFILE_EXISTS = {
 	OnAccept = function(frame, data)
 		D:SetImportedProfile(data.profileType, frame.editBox:GetText(), data.profileData, true)
 	end,
-	EditBoxOnTextChanged = function(self)
-		self:GetParent().button1:SetEnabled(self:GetText() ~= '')
+	EditBoxOnTextChanged = function(frame)
+		frame:GetParent().button1:SetEnabled(frame:GetText() ~= '')
 	end,
-	OnShow = function(self, data)
-		self.editBox:SetText(data.profileKey)
-		self.editBox:SetFocus()
+	OnShow = function(frame, data)
+		frame.editBox:SetText(data.profileKey)
+		frame.editBox:SetFocus()
 	end,
 	timeout = 0,
 	whileDead = 1,

@@ -1859,47 +1859,57 @@ function E:Initialize()
 
 	E:UpdateDB()
 	E:UIScale()
-	E:BuildPrefixValues()
-	E:LoadAPI()
-	E:LoadCommands()
-	E:InitializeModules()
-	E:LoadMovers()
-	E:UpdateMedia()
-	E:UpdateDispelColors()
-	E:UpdateCustomClassColors()
-	E:UpdateCooldownSettings('all')
-	E:Contruct_StaticPopups()
-	E:Tutorials()
+	E:LoadStaticPopups()
 
-	E.Libs.DualSpec:EnhanceDatabase(E.data, 'ElvUI')
+	if E.OtherAddons.Tukui then
+		E:StaticPopup_Show('TUKUI_ELVUI_INCOMPATIBLE')
+	else
+		E:BuildPrefixValues()
+		E:LoadAPI()
+		E:LoadCommands()
+		E:InitializeModules()
+		E:LoadMovers()
+		E:UpdateMedia()
+		E:UpdateDispelColors()
+		E:UpdateCustomClassColors()
+		E:UpdateCooldownSettings('all')
 
-	E.initialized = true
+		E.initialized = true
 
-	if E.db.general.tagUpdateRate and (E.db.general.tagUpdateRate ~= P.general.tagUpdateRate) then
-		E:TagUpdateRate(E.db.general.tagUpdateRate)
-	end
+		E:Tutorials()
 
-	if E.db.general.smoothingAmount and (E.db.general.smoothingAmount ~= P.general.smoothingAmount) then
-		E:SetSmoothingAmount(E.db.general.smoothingAmount)
-	end
+		E.Libs.DualSpec:EnhanceDatabase(E.data, 'ElvUI')
 
-	if not E.private.install_complete then
-		E:Install()
-	end
+		if E.db.general.tagUpdateRate and (E.db.general.tagUpdateRate ~= P.general.tagUpdateRate) then
+			E:TagUpdateRate(E.db.general.tagUpdateRate)
+		end
 
-	if E.version ~= E.Libs.version then
-		E.updateRequestTriggered = true
-		E:StaticPopup_Show('UPDATE_REQUEST')
-	end
+		if E.db.general.smoothingAmount and (E.db.general.smoothingAmount ~= P.general.smoothingAmount) then
+			E:SetSmoothingAmount(E.db.general.smoothingAmount)
+		end
 
-	if GetCVar('scriptProfile') == '1' then
-		E:StaticPopup_Show('SCRIPT_PROFILE')
-	end
+		if not E.private.install_complete then
+			E:Install()
+		end
 
-	if E.db.general.loginmessage then
-		local msg = format(L["LOGIN_MSG"], E.version)
-		if Chat.Initialized then msg = select(2, Chat:FindURL('CHAT_MSG_DUMMY', msg)) end
-		print(msg)
-		print(L["LOGIN_MSG_HELP"])
+		if E.version ~= E.Libs.version then
+			E.updateRequestTriggered = true
+			E:StaticPopup_Show('UPDATE_REQUEST')
+		end
+
+		if GetCVar('scriptProfile') == '1' then
+			E:StaticPopup_Show('SCRIPT_PROFILE')
+		end
+
+		if E.db.general.loginmessage then
+			local msg = format(L["LOGIN_MSG"], E.versionString)
+
+			if Chat.Initialized then -- setup the link
+				_, msg = Chat:FindURL('CHAT_MSG_DUMMY', msg)
+			end
+
+			print(msg)
+			print(L["LOGIN_MSG_HELP"])
+		end
 	end
 end
