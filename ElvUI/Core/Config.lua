@@ -808,7 +808,7 @@ function E:Config_CreateFrame(info, frame, unskinned, frameType, ...)
 
 	if frameType == 'Button' then
 		if not unskinned then
-			E.Skins:HandleButton(element)
+			S:HandleButton(element)
 		end
 
 		element:SetScript('OnClick', info.func)
@@ -825,9 +825,9 @@ function E:Config_CreateFrame(info, frame, unskinned, frameType, ...)
 		element:SetAutoFocus(false)
 
 		if not unskinned then
-			E.Skins:HandleEditBox(element, nil, true)
+			S:HandleEditBox(element, nil, true)
 		else
-			E.Skins:HandleSearchBox(element, unskinned)
+			S:HandleSearchBox(element, unskinned)
 		end
 
 		element:HookScript('OnTextChanged', info.update)
@@ -1550,7 +1550,7 @@ function E:ToggleOptionsUI(msg)
 				left:SetTemplate('Transparent')
 				top:SetTemplate('Transparent')
 
-				E.Skins:HandleCloseButton(close)
+				S:HandleCloseButton(close)
 			else
 				for _, region in next, { frame:GetRegions() } do
 					local texture = region:IsObjectType('Texture') and region:GetTexture()
