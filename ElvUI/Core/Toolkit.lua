@@ -94,7 +94,7 @@ local function GetTemplate(template, isUnitFrameElement)
 	backdropa, bordera = 1, 1
 
 	if template == 'ClassColor' then
-		local color = E:ClassColor(E.myclass)
+		local color = E.myClassColor
 		borderr, borderg, borderb = color.r, color.g, color.b
 		backdropr, backdropg, backdropb = unpack(E.media.backdropcolor)
 	elseif template == 'Transparent' then

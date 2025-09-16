@@ -599,6 +599,10 @@ do
 			color.colorStr = E:RGBToHex(r, g, b, 'ff')
 		end
 
+		if classTag == E.myclass then
+			E.myClassColor = E:ClassColor(E.myclass, true)
+		end
+
 		local db = E.db.general.classColors[classTag]
 		if db then
 			db.r, db.g, db.b = r, g, b
@@ -618,6 +622,10 @@ do
 			if color and (color.r ~= r or color.g ~= g or color.b ~= b) then
 				color.r, color.g, color.b = r, g, b
 				color.colorStr = E:RGBToHex(r, g, b, 'ff')
+
+				if classTag == E.myclass then
+					E.myClassColor = E:ClassColor(E.myclass, true)
+				end
 
 				changed = true
 			end
