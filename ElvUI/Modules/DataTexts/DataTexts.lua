@@ -171,11 +171,14 @@ end
 
 function DT:ReleasePanel(givenName)
 	local panel = DT.PanelPool.InUse[givenName]
-	if panel then
-		DT:EmptyPanel(panel)
-		DT.PanelPool.Free[givenName] = panel
-		DT.PanelPool.InUse[givenName] = nil
-		DT.RegisteredPanels[givenName] = nil
+	if not panel then return end
+
+	DT:EmptyPanel(panel)
+	DT.PanelPool.Free[givenName] = panel
+	DT.PanelPool.InUse[givenName] = nil
+	DT.RegisteredPanels[givenName] = nil
+
+	if E.db.movers then
 		E.db.movers[panel.moverName] = nil
 	end
 end
@@ -385,7 +388,6 @@ do
 	end
 end
 
-
 function DT:AssignPanelToDataText(dt, data, event, ...)
 	dt.name = data.name
 
@@ -569,12 +571,12 @@ function DT:UpdatePanelInfo(panelName, panel, ...)
 		dt.watchModKey = nil
 		dt.name = nil
 
-		E:StopFlash(dt)
+		E:StopFlash(dt, 1)
 
 		dt.text:FontTemplate(font, fontSize, fontOutline)
 		dt.text:SetJustifyH(db.textJustify or 'CENTER')
 		dt.text:SetWordWrap(DT.db.wordWrap)
-		dt.text:SetText()
+		dt.text:SetText('')
 
 		dt.icon:Size(iconSize)
 		dt.icon:SetTexture(E.ClearTexture)
@@ -588,7 +590,8 @@ function DT:UpdatePanelInfo(panelName, panel, ...)
 			assigned.eventFunc(dt, 'ELVUI_REMOVE')
 		end
 
-		local data = DT.RegisteredDataTexts[ (battlePanel and DT.db.battlePanel or DT.db.panels)[panelName][i] ]
+		local panelDB = battlePanel and DT.db.battlePanel or DT.db.panels
+		local data = DT.RegisteredDataTexts[panelDB[panelName][i]]
 		DT.AssignedDatatexts[dt] = data
 		if data then DT:AssignPanelToDataText(dt, data, ...) end
 
@@ -643,6 +646,8 @@ end
 
 function DT:UpdatePanelAttributes(name, db, fromLoad)
 	local Panel = DT.PanelPool.InUse[name]
+	if not Panel then return end
+
 	DT.OnLeave(Panel)
 
 	Panel.db = db
@@ -680,7 +685,7 @@ function DT:GetMenuListCategory(category)
 end
 
 do
-	local function menuSort(a, b)
+	local function MenuSort(a, b)
 		if a.order and b.order and not (a.order == b.order) then
 			return a.order < b.order
 		end
@@ -695,12 +700,12 @@ do
 			end
 		end
 
-		sort(list, menuSort)
+		sort(list, MenuSort)
 	end
 end
 
 do
-	local function hasName(tbl, name)
+	local function HasName(tbl, name)
 		for _, data in pairs(tbl) do
 			if data.text == name then
 				return true
@@ -718,7 +723,7 @@ do
 				tinsert(QuickList, { order = 0, text = info.category or MISCELLANEOUS, notCheckable = true, hasArrow = true, menuList = {} })
 			end
 
-			if not hasName(QuickList[category].menuList, info.localizedName or name) then
+			if not HasName(QuickList[category].menuList, info.localizedName or name) then
 				tinsert(QuickList[category].menuList, {
 					text = gsub(info.localizedName or name, '^LDB: ', ''),
 					checked = function() return E.EasyMenu.MenuGetItem(DT.SelectedDatatext, name) end,
@@ -744,23 +749,22 @@ function DT:PopulateData(currencyOnly)
 	local headerIndex
 	while listSize >= i do
 		local info = DT:CurrencyListInfo(i)
-		if info.isHeader and not info.isHeaderExpanded then
-			ExpandCurrencyList(i, true)
-			Collapsed[info.name] = true
 
-			listSize = GetCurrencyListSize()
-		end
 		if info.isHeader then
+			if not info.isHeaderExpanded then
+				ExpandCurrencyList(i, true)
+				Collapsed[info.name] = true
+
+				listSize = GetCurrencyListSize()
+			end
+
 			G.datatexts.settings.Currencies.tooltipData[i] = { info.name, nil, nil, (info.name == expansion or info.name == MISCELLANEOUS) or strfind(info.name, LFG_TYPE_DUNGEON) }
 			E.global.datatexts.settings.Currencies.tooltipData[i] = { info.name, nil, nil, E.global.datatexts.settings.Currencies.headers }
 
 			headerIndex = i
 		elseif info.name then
-			local _, currencyLink
-			if info.itemID then
-				_, currencyLink = GetItemInfo(info.itemID)
-			end
-			local currencyID = currencyLink and info.itemID
+			local currencyLink = info.itemID and select(2, GetItemInfo(info.itemID))
+			local currencyID = E:GetCurrencyIDFromLink(currencyLink)
 			if currencyID then
 				if DT.CurrencyList then
 					DT.CurrencyList[tostring(currencyID)] = info.name
@@ -876,7 +880,6 @@ end
 
 function DT:Initialize()
 	DT.Initialized = true
-	DT.db = E.db.datatexts
 
 	DT:BuildTables()
 
