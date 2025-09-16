@@ -194,6 +194,20 @@ function E:RemoveExtraSpaces(str)
 	return gsub(str, '     +', '    ')	--Replace all instances of 5+ spaces with only 4 spaces.
 end
 
+-- the secure header is different on retail because of evokers
+-- if both are registered on non-retail, it will fire on down and up
+function E:RegisterClicks(frame)
+	if E.Retail then
+		frame:RegisterForClicks('AnyDown', 'AnyUp')
+	else
+		frame:RegisterForClicks('AnyUp')
+	end
+end
+
+function E:GetCurrencyIDFromLink(link)
+	return link and tonumber(strmatch(link, 'currency:(%d+)'))
+end
+
 function E:GetDateTime(localTime, unix)
 	if not localTime then -- try to properly handle realm time
 		local dateTable = date('*t', time())
@@ -419,6 +433,28 @@ do
 		end
 
 		return tt.gems
+	end
+end
+
+do -- Spell renaming provided by BigWigs
+	function E:GetSpellRename(spellID)
+		if not spellID then return end
+
+		local API = _G.BigWigsAPI
+		local GetRename = API and API.GetSpellRename
+		if GetRename then
+			return GetRename(spellID)
+		end
+	end
+
+	function E:SetSpellRename(spellID, text)
+		if not spellID then return end
+
+		local API = _G.BigWigsAPI
+		local SetRename = API and API.SetSpellRename
+		if SetRename then
+			SetRename(spellID, text)
+		end
 	end
 end
 
