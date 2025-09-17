@@ -1425,11 +1425,6 @@ function E:LoadStaticPopups()
 
 			if not E.OtherAddons.Tukui then
 				S:HandleEditBox(editBox)
-				for _, region in next, { editBox:GetRegions() } do
-					if region:IsObjectType('Texture') and (region:GetTexture() == [[Interface\ChatFrame\UI-ChatInputBorder-Left]] or region:GetTexture() == [[Interface\ChatFrame\UI-ChatInputBorder-Right]]) then
-						region:Kill()
-					end
-				end
 
 				if not editBox.NineSlice then
 					editBox.backdrop:Point('TOPLEFT', -2, -4)

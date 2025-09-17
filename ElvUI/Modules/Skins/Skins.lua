@@ -812,26 +812,76 @@ do --Tab Regions
 	end
 end
 
-function S:HandleRotateButton(btn)
-	if btn.isSkinned then return end
+function S:HandleRotateButton(frame, width, height, noSize)
+	if frame.isSkinned then return end
 
-	btn:SetTemplate()
-	btn:Size(btn:GetWidth() - 14, btn:GetHeight() - 14)
+	if not noSize then
+		frame:Size(width or 24, height or 24)
+	end
 
-	local normTex = btn:GetNormalTexture()
-	local pushTex = btn:GetPushedTexture()
-	local highlightTex = btn:GetHighlightTexture()
+	frame:SetTemplate()
 
-	normTex:SetInside()
-	normTex:SetTexCoord(0.3, 0.29, 0.3, 0.65, 0.69, 0.29, 0.69, 0.65)
+	local normTex = frame:GetNormalTexture()
+	if normTex then
+		normTex:SetInside()
+		normTex:SetTexCoord(0.3, 0.29, 0.3, 0.65, 0.69, 0.29, 0.69, 0.65)
+	end
 
-	pushTex:SetAllPoints(normTex)
-	pushTex:SetTexCoord(0.3, 0.29, 0.3, 0.65, 0.69, 0.29, 0.69, 0.65)
+	local pushTex = frame:GetPushedTexture()
+	if pushTex then
+		pushTex:SetAllPoints(normTex)
+		pushTex:SetTexCoord(0.3, 0.29, 0.3, 0.65, 0.69, 0.29, 0.69, 0.65)
+	end
 
-	highlightTex:SetAllPoints(normTex)
-	highlightTex:SetTexture(1, 1, 1, 0.3)
+	local highlightTex = frame:GetHighlightTexture()
+	if highlightTex then
+		highlightTex:SetAllPoints(normTex)
+		highlightTex:SetTexture(1, 1, 1, 0.3)
+	end
 
-	btn.isSkinned = true
+	frame.isSkinned = true
+end
+
+do
+	local btns = {MaximizeButton = 'up', MinimizeButton = 'down'}
+
+	local function ButtonOnEnter(btn)
+		local r,g,b = unpack(E.media.rgbvaluecolor)
+		btn:GetNormalTexture():SetVertexColor(r,g,b)
+		btn:GetPushedTexture():SetVertexColor(r,g,b)
+	end
+	local function ButtonOnLeave(btn)
+		btn:GetNormalTexture():SetVertexColor(1, 1, 1)
+		btn:GetPushedTexture():SetVertexColor(1, 1, 1)
+	end
+
+	function S:HandleMaxMinFrame(frame)
+		if frame.isSkinned then return end
+
+		frame:StripTextures(true)
+
+		for name, direction in pairs(btns) do
+			local button = frame[name]
+			if button then
+				button:Size(14)
+				button:ClearAllPoints()
+				button:Point('CENTER')
+				button:SetHitRectInsets(1, 1, 1, 1)
+				button:GetHighlightTexture():Kill()
+
+				button:SetScript('OnEnter', ButtonOnEnter)
+				button:SetScript('OnLeave', ButtonOnLeave)
+
+				button:SetNormalTexture(E.Media.Textures.ArrowUp)
+				button:GetNormalTexture():SetRotation(S.ArrowRotation[direction])
+
+				button:SetPushedTexture(E.Media.Textures.ArrowUp)
+				button:GetPushedTexture():SetRotation(S.ArrowRotation[direction])
+			end
+		end
+
+		frame.isSkinned = true
+	end
 end
 
 function S:HandleBlizzardRegions(frame, name, kill, zero)
@@ -864,18 +914,34 @@ function S:HandleTooltip(tooltip, scale, showHook)
 end
 
 function S:HandleEditBox(frame, template, search)
-	assert(frame, 'doesn\'t exist!')
-
 	if frame.backdrop then return end
 
 	frame:CreateBackdrop(template, nil, nil, nil, nil, nil, nil, nil, true)
-	frame.backdrop:SetPoint('TOPLEFT', -2, 0)
-	frame.backdrop:SetPoint('BOTTOMRIGHT')
+
 	S:HandleBlizzardRegions(frame)
 
-	local EditBoxName = frame:GetName()
-	if EditBoxName and (strfind(EditBoxName, 'Silver') or strfind(EditBoxName, 'Copper')) then
-		frame.backdrop:Point('BOTTOMRIGHT', -12, -2)
+	for _, region in next, { frame:GetRegions() } do
+		if region:IsObjectType('Texture') and (region:GetTexture() == [[Interface\ChatFrame\UI-ChatInputBorder-Left]] or region:GetTexture() == [[Interface\ChatFrame\UI-ChatInputBorder-Right]]) then
+			region:Kill()
+		end
+	end
+
+	local name = frame:GetDebugName()
+	local gold, silver, copper = strfind(name, 'Gold'), strfind(name, 'Silver'), strfind(name, 'Copper')
+	if gold or silver or copper then
+		if frame.label then -- send mail, popups, auctionhouse sell tab and others
+			frame.backdrop:Point('TOPLEFT', -4, 0)
+			frame.backdrop:Point('BOTTOMRIGHT', (gold and 20) or 10, 0)
+		else -- others
+			frame.backdrop:Point('TOPLEFT', 4, -4)
+			frame.backdrop:Point('BOTTOMRIGHT', -4, 6)
+		end
+
+		frame.backdrop:SetFrameLevel(frame:GetFrameLevel() - 1)
+	else
+		local popup = strfind(name, 'StaticPopup')
+		frame.backdrop:Point('TOPLEFT', -4, popup and -4 or 0)
+		frame.backdrop:Point('BOTTOMRIGHT', 4, popup and 4 or 0)
 	end
 
 	if search then
@@ -884,13 +950,11 @@ function S:HandleEditBox(frame, template, search)
 end
 
 function S:HandleSearchBox(frame, unskinned)
-	assert(frame, 'doesn\'t exist!')
-
 	frame:SetTextInsets(16, 20, 0, 0)
 
 	frame.Instructions = frame:CreateFontString(nil, 'ARTWORK', 'GameFontDisableSmall')
 	frame.Instructions:SetText(SEARCH)
-	frame.Instructions:SetPoint('TOPLEFT', frame, 'TOPLEFT', 16, 0)
+	frame.Instructions:SetPoint('TOPLEFT', frame, 'TOPLEFT', 15, 0)
 	frame.Instructions:SetPoint('BOTTOMRIGHT', frame, 'BOTTOMRIGHT', -20, 0)
 	frame.Instructions:SetTextColor(0.35, 0.35, 0.35)
 	frame.Instructions:SetJustifyH('LEFT')
@@ -948,7 +1012,7 @@ function S:HandleSearchBox(frame, unskinned)
 		end
 	end)
 
-	if not unskinned or frame.backdrop then return end
+	if not unskinned or not frame.backdrop then return end
 
 	frame.backdrop = frame:CreateTexture(nil, 'BACKGROUND')
 	frame.backdrop:SetTexture([[Interface\Common\Common-Input-Border]])
@@ -957,8 +1021,6 @@ function S:HandleSearchBox(frame, unskinned)
 end
 
 function S:HandleDropDownBox(frame, width, template)
-	assert(frame, 'doesn\'t exist!')
-
 	if not width then
 		width = 155
 	end
