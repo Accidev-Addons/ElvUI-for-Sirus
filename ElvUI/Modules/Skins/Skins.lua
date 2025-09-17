@@ -973,7 +973,7 @@ function S:HandleSearchBox(frame, unskinned)
 	frame.clearButton.texture = frame.clearButton:CreateTexture()
 	frame.clearButton.texture:SetTexture([[Interface\FriendsFrame\ClearBroadcastIcon]])
 	frame.clearButton.texture:SetAlpha(0.5)
-	frame.clearButton.texture:Size(17)
+	frame.clearButton.texture:Size(16)
 	frame.clearButton.texture:Point('CENTER', 0, 0)
 
 	frame.clearButton:SetScript('OnEnter', function(self) self.texture:SetAlpha(1.0) end)
@@ -1012,7 +1012,7 @@ function S:HandleSearchBox(frame, unskinned)
 		end
 	end)
 
-	if not unskinned or not frame.backdrop then return end
+	if not unskinned or frame.backdrop then return end
 
 	frame.backdrop = frame:CreateTexture(nil, 'BACKGROUND')
 	frame.backdrop:SetTexture([[Interface\Common\Common-Input-Border]])
