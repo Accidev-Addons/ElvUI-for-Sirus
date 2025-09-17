@@ -1652,6 +1652,7 @@ function B:ConstructContainerFrame(name, isBank)
 
 		--Search
 		f.editBox:Point('BOTTOMLEFT', f.holderFrame, 'TOPLEFT', E.Border, 4)
+		f.editBox.backdrop:Point('BOTTOMRIGHT', 1, -1)
 	else
 		f.pickupGold:SetScript('OnClick', B.Container_ClickGold)
 
@@ -1697,6 +1698,7 @@ function B:ConstructContainerFrame(name, isBank)
 		--Search
 		f.editBox:Point('BOTTOMLEFT', f.holderFrame, 'TOPLEFT', E.Border, 4)
 		f.editBox:Point('RIGHT', f.vendorGraysButton, 'LEFT', -7, 0)
+		f.editBox.backdrop:Point('BOTTOMRIGHT', 3, -1)
 
 		--Currency
 		f.currencyButton = CreateFrame('Frame', nil, f)
