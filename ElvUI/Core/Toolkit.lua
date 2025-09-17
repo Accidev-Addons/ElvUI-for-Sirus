@@ -106,6 +106,22 @@ local function GetTemplate(template, isUnitFrameElement)
 	end
 end
 
+local function GetDebugName(frame)
+	if frame.GetName then
+		local name = frame:GetName()
+		if name then return name end
+	end
+
+	for k, v in pairs(frame) do
+		if type(v) == 'table' and v.GetName then
+			local name = v:GetName()
+			if name then return name end
+		end
+	end
+
+	return 'Unknown'
+end
+
 local function GetChild(frame, child, index, debug)
 	local name = frame and child and (frame.GetName and frame:GetName())
 	if not name then return nil end
@@ -597,6 +613,7 @@ local API = {
 	StyleButton = StyleButton,
 	OffsetFrameLevel = OffsetFrameLevel,
 	CreateCloseButton = CreateCloseButton,
+	GetDebugName = GetDebugName,
 	GetChild = GetChild,
 	SetSwipeColor = SetSwipeColor,
 }
