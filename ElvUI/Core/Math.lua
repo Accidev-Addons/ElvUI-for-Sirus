@@ -15,12 +15,12 @@ local BreakUpLargeNumbers = LC.BreakUpLargeNumbers
 
 E.ShortPrefixValues = {}
 E.ShortPrefixStyles = {
-	TCHINESE = {{1e8, '億'}, {1e4, '萬'}},
-	CHINESE = {{1e8, '亿'}, {1e4, '万'}},
-	ENGLISH = {{1e12, 'T'}, {1e9, 'B'}, {1e6, 'M'}, {1e3, 'K'}},
-	GERMAN = {{1e12, 'Bio'}, {1e9, 'Mrd'}, {1e6, 'Mio'}, {1e3, 'Tsd'}},
-	KOREAN = {{1e8, '억'}, {1e4, '만'}, {1e3, '천'}},
-	METRIC = {{1e12, 'T'}, {1e9, 'G'}, {1e6, 'M'}, {1e3, 'k'}}
+	TCHINESE = {{1e8,'億'}, {1e4,'萬'}},
+	CHINESE = {{1e8,'亿'}, {1e4,'万'}},
+	ENGLISH = {{1e12,'T'}, {1e9,'B'}, {1e6,'M'}, {1e3,'K'}},
+	GERMAN = {{1e12,'Bio'}, {1e9,'Mrd'}, {1e6,'Mio'}, {1e3,'Tsd'}},
+	KOREAN = {{1e8,'억'}, {1e4,'만'}, {1e3,'천'}},
+	METRIC = {{1e12,'T'}, {1e9,'G'}, {1e6,'M'}, {1e3,'k'}}
 }
 
 E.GetFormattedTextStyles = {
@@ -29,7 +29,7 @@ E.GetFormattedTextStyles = {
 	CURRENT_PERCENT = '%s - %.1f%%',
 	CURRENT_MAX_PERCENT = '%s - %s | %.1f%%',
 	PERCENT = '%.1f%%',
-	DEFICIT = '-%s'
+	DEFICIT = '-%s',
 }
 
 function E:BuildPrefixValues()
@@ -50,15 +50,17 @@ end
 
 --Return short value of a number
 function E:ShortValue(value, dec)
-	local abs_value = value < 0 and -value or value
 	local decimal = dec and format('%%.%df', tonumber(dec) or 0)
+	local abs_value = value<0 and -value or value
+	local values = E.ShortPrefixValues
 
-	for i = 1, #E.ShortPrefixValues do
-		if abs_value >= E.ShortPrefixValues[i][1] then
+	for i = 1, #values do
+		local arg1, arg2, arg3 = unpack(values[i])
+		if abs_value >= arg1 then
 			if decimal then
-				return format(decimal..E.ShortPrefixValues[i][2], value / E.ShortPrefixValues[i][1])
+				return format(decimal..arg2, value / arg1)
 			else
-				return format(E.ShortPrefixValues[i][3], value / E.ShortPrefixValues[i][1])
+				return format(arg3, value / arg1)
 			end
 		end
 	end
@@ -70,19 +72,20 @@ function E:IsEvenNumber(num)
 	return num % 2 == 0
 end
 
--- http://www.wowwiki.com/ColorGradient
+-- https://warcraft.wiki.gg/wiki/ColorGradient
 function E:ColorGradient(perc, ...)
+	local value = select('#', ...)
 	if perc >= 1 then
-		return select(select('#', ...) - 2, ...)
+		return select(value - 2, ...)
 	elseif perc <= 0 then
 		return ...
 	end
 
-	local num = select('#', ...) / 3
-	local segment, relperc = modf(perc*(num - 1))
-	local r1, g1, b1, r2, g2, b2 = select((segment*3) + 1, ...)
+	local num = value / 3
+	local segment, relperc = modf(perc*(num-1))
+	local r1, g1, b1, r2, g2, b2 = select((segment*3)+1, ...)
 
-	return r1 + (r2 - r1)*relperc, g1 + (g2 - g1)*relperc, b1 + (b2 - b1)*relperc
+	return r1+(r2-r1)*relperc, g1+(g2-g1)*relperc, b1+(b2-b1)*relperc
 end
 
 -- Text Gradient by Simpy
@@ -116,7 +119,7 @@ function E:HexsToRGBs(rgb, ...)
 	if not rgb then rgb = {} end
 	for i = 1, select('#', ...) do
 		local x, r, g, b = #rgb, E:HexToRGB(select(i, ...))
-		rgb[x + 1], rgb[x + 2], rgb[x + 3] = r / 255, g / 255, b / 255
+		rgb[x+1], rgb[x+2], rgb[x+3] = r/255, g/255, b/255
 	end
 
 	return unpack(rgb)
@@ -160,10 +163,10 @@ end
 
 --From http://wow.gamepedia.com/UI_coordinates
 function E:FramesOverlap(frameA, frameB)
-	if not frameA or not frameB then return end
+	if not frameA or not frameB then return	end
 
 	local sA, sB = frameA:GetEffectiveScale(), frameB:GetEffectiveScale()
-	if not sA or not sB then return end
+	if not sA or not sB then return	end
 
 	local frameALeft, frameARight, frameABottom, frameATop = frameA:GetLeft(), frameA:GetRight(), frameA:GetBottom(), frameA:GetTop()
 	local frameBLeft, frameBRight, frameBBottom, frameBTop = frameB:GetLeft(), frameB:GetRight(), frameB:GetBottom(), frameB:GetTop()
@@ -304,39 +307,57 @@ function E:AbbreviateString(str, allUpper)
 	return newString
 end
 
-function E:WaitFunc(elapse)
-	local i = 1
-	while i <= #E.WaitTable do
-		local data = E.WaitTable[i]
-		if data[1] > elapse then
-			data[1], i = data[1] - elapse, i + 1
-		else
-			tremove(E.WaitTable, i)
-			data[2](unpack(data[3]))
+do
+	local WaitTable = {}
+	local WaitFrame = CreateFrame('Frame')
+	local lastUpdate = 0
 
-			if #E.WaitTable == 0 then
-				E.WaitFrame:Hide()
+	local function WaitFunc(_, elapsed)
+		lastUpdate = lastUpdate + elapsed
+
+		-- Only process every few milliseconds to reduce CPU usage
+		if lastUpdate < 0.005 then return end
+
+		local processedElapsed = lastUpdate
+		lastUpdate = 0
+
+		for i = #WaitTable, 1, -1 do
+			local data = WaitTable[i]
+			data[1] = data[1] - processedElapsed
+
+			if data[1] <= 0 then
+				tremove(WaitTable, i)
+				data[2](unpack(data[3]))
 			end
 		end
-	end
-end
 
-E.WaitTable = {}
-E.WaitFrame = CreateFrame('Frame', 'ElvUI_WaitFrame', UIParent)
-E.WaitFrame:SetScript('OnUpdate', E.WaitFunc)
-
---Add time before calling a function
-function E:Delay(delay, func, ...)
-	if type(delay) ~= 'number' or type(func) ~= 'function' then
-		return false
+		-- Stop the frame when no more delays are pending
+		if #WaitTable == 0 then
+			WaitFrame:SetScript('OnUpdate', nil)
+		end
 	end
 
-	if delay < 0.01 then delay = 0.01 end
+	WaitFrame:SetScript('OnUpdate', WaitFunc)
+	WaitFrame:SetScript('OnUpdate', nil) -- Initially disabled
 
-	tinsert(E.WaitTable,{delay,func,{...}})
-	E.WaitFrame:Show()
+	function E:Delay(delay, func, ...)
+		if type(delay) ~= 'number' or type(func) ~= 'function' then
+			return false
+		end
 
-	return true
+		-- Clamp minimum delay
+		delay = delay < 0.01 and 0.01 or delay
+
+		tinsert(WaitTable, {delay, func, {...}})
+
+		-- Enable OnUpdate only when needed
+		if not WaitFrame:GetScript('OnUpdate') then
+			WaitFrame:SetScript('OnUpdate', WaitFunc)
+			lastUpdate = 0
+		end
+
+		return true
+	end
 end
 
 function E:StringTitle(str)
@@ -363,11 +384,6 @@ E.TimeFormats = { -- short / indicator color
 
 	[5] = {'%d:%02d', '%d%s:|r%02d'}, -- mmss
 }
-
-for _, x in pairs(E.TimeFormats) do
-	x[3] = gsub(x[1], 's$', '') -- 1 without seconds
-	x[4] = gsub(x[2], '%%ss', '%%s') -- 2 without seconds
-end
 
 E.TimeFormats[6] = E:CopyTable({}, E.TimeFormats[5]) -- hhmm
 E.TimeFormats[7] = E:CopyTable({}, E.TimeFormats[3]) -- modRate
