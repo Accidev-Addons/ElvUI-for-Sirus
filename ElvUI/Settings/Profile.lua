@@ -212,28 +212,6 @@ P.general = {
 		spacing = 4,
 		keepSizeRatio = true,
 	},
-	privateAuras = {
-		enable = true,
-		countdownFrame = true,
-		countdownNumbers = true,
-		icon = {
-			offset = 3,
-			point = 'LEFT',
-			amount = 2,
-			size = 32
-		},
-		duration = {
-			enable = true,
-			point = 'BOTTOM',
-			offsetX = 0,
-			offsetY = -1
-		},
-		parent = {
-			point = 'TOP',
-			offsetX = 0,
-			offsetY = 0
-		}
-	},
 	guildBank = {
 		itemQuality = true,
 		itemLevel = true,
