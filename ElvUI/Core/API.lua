@@ -839,18 +839,16 @@ function E:ExitVehicleShowFrames(_, unit)
 	end
 end
 
+function E:RequestBGInfo()
+	RequestBattlefieldScoreData()
+end
+
 do
 	local watchedInfo = {}
 	function E:GetWatchedFactionInfo()
-		if GetWatchedFactionInfo then
-			watchedInfo.name, watchedInfo.reaction, watchedInfo.currentReactionThreshold, watchedInfo.nextReactionThreshold, watchedInfo.currentStanding = GetWatchedFactionInfo()
-			return watchedInfo
-		end
+		watchedInfo.name, watchedInfo.reaction, watchedInfo.currentReactionThreshold, watchedInfo.nextReactionThreshold, watchedInfo.currentStanding = GetWatchedFactionInfo()
+		return watchedInfo
 	end
-end
-
-function E:RequestBGInfo()
-	RequestBattlefieldScoreData()
 end
 
 function E:PLAYER_ENTERING_WORLD()
