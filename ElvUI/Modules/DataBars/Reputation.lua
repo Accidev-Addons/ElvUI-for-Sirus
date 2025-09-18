@@ -12,15 +12,20 @@ local REPUTATION = REPUTATION
 local STANDING = STANDING
 local UNKNOWN = UNKNOWN
 
-local function GetValues(currentStanding, currentReactionThreshold, nextReactionThreshold)
-	local maximum = nextReactionThreshold - currentReactionThreshold
-	local current, diff = currentStanding - currentReactionThreshold, maximum
+local MAX_REPUTATION_REACTION = 8
 
-	if diff == 0 then diff = 1 end -- prevent a division by zero
+local function GetValues(currentStanding, currentReactionThreshold, nextReactionThreshold)
+	local current = currentStanding - currentReactionThreshold
+	local maximum = nextReactionThreshold - currentReactionThreshold
+
+	if maximum < 0 then
+		maximum = current -- account for negative maximum
+	end
 
 	if current == maximum then
 		return 1, 1, 100, true
 	else
+		local diff = (maximum ~= 0 and maximum) or 1 -- prevent a division by zero
 		return current, maximum, current / diff * 100
 	end
 end
@@ -39,7 +44,7 @@ function DB:ReputationBar_Update()
 		reaction = 1
 	end
 
-	local label = _G['FACTION_STANDING_LABEL'..reaction] or UNKNOWN
+	local standing = _G['FACTION_STANDING_LABEL'..reaction] or UNKNOWN
 
 	local customColors = DB.db.colors.useCustomFactionColors
 	local color = customColors and DB.db.colors.factionColors[reaction] or _G.FACTION_BAR_COLORS[reaction]
@@ -47,26 +52,28 @@ function DB:ReputationBar_Update()
 	local total = nextReactionThreshold == huge and 1 or nextReactionThreshold -- we need to correct the min/max of friendship factions to display the bar at 100%
 
 	bar:SetStatusBarColor(color.r or 1, color.g or 1, color.b or 1, alpha or 1)
-	bar:SetMinMaxValues(currentReactionThreshold, total)
+	bar:SetMinMaxValues((nextReactionThreshold == huge or currentReactionThreshold == nextReactionThreshold) and 0 or currentReactionThreshold, total) -- we force min to 0 because the min will match max when a rep is maxed and cause the bar to be 0%
 	bar:SetValue(currentStanding)
 
-	local current, maximum, percent, capped = GetValues(currentStanding, currentReactionThreshold, total)
-	if capped and textFormat ~= 'NONE' then -- show only name and standing on exalted
-		displayString = format('%s: [%s]', name, label)
-	elseif textFormat == 'PERCENT' then
-		displayString = format('%s: %d%% [%s]', name, percent, label)
-	elseif textFormat == 'CURMAX' then
-		displayString = format('%s: %s - %s [%s]', name, E:ShortValue(current), E:ShortValue(maximum), label)
-	elseif textFormat == 'CURPERC' then
-		displayString = format('%s: %s - %d%% [%s]', name, E:ShortValue(current), percent, label)
-	elseif textFormat == 'CUR' then
-		displayString = format('%s: %s [%s]', name, E:ShortValue(current), label)
-	elseif textFormat == 'REM' then
-		displayString = format('%s: %s [%s]', name, E:ShortValue(maximum - current), label)
-	elseif textFormat == 'CURREM' then
-		displayString = format('%s: %s - %s [%s]', name, E:ShortValue(current), E:ShortValue(maximum - current), label)
-	elseif textFormat == 'CURPERCREM' then
-		displayString = format('%s: %s - %d%% (%s) [%s]', name, E:ShortValue(current), percent, E:ShortValue(maximum - current), label)
+	if name then
+		local current, maximum, percent, capped = GetValues(currentStanding, currentReactionThreshold, total)
+		if capped and textFormat ~= 'NONE' then -- show only name and standing on exalted
+			displayString = format('%s: [%s]', name, standing)
+		elseif textFormat == 'PERCENT' then
+			displayString = format('%s: %d%% [%s]', name, percent, standing)
+		elseif textFormat == 'CURMAX' then
+			displayString = format('%s: %s - %s [%s]', name, E:ShortValue(current), E:ShortValue(maximum), standing)
+		elseif textFormat == 'CURPERC' then
+			displayString = format('%s: %s - %d%% [%s]', name, E:ShortValue(current), percent, standing)
+		elseif textFormat == 'CUR' then
+			displayString = format('%s: %s [%s]', name, E:ShortValue(current), standing)
+		elseif textFormat == 'REM' then
+			displayString = format('%s: %s [%s]', name, E:ShortValue(maximum - current), standing)
+		elseif textFormat == 'CURREM' then
+			displayString = format('%s: %s - %s [%s]', name, E:ShortValue(current), E:ShortValue(maximum - current), standing)
+		elseif textFormat == 'CURPERCREM' then
+			displayString = format('%s: %s - %d%% (%s) [%s]', name, E:ShortValue(current), percent, E:ShortValue(maximum - current), standing)
+		end
 	end
 
 	bar.text:SetText(displayString)
@@ -83,11 +90,15 @@ function DB:ReputationBar_OnEnter()
 
 	if name then
 		GameTooltip:ClearLines()
-		GameTooltip:SetOwner(self, 'ANCHOR_CURSOR', 0, -4)
+		GameTooltip:SetOwner(self, 'ANCHOR_CURSOR')
 		GameTooltip:AddLine(name)
 		GameTooltip:AddLine(' ')
 		GameTooltip:AddDoubleLine(STANDING..':', standing, 1, 1, 1)
-		GameTooltip:AddDoubleLine(REPUTATION..':', format('%d / %d (%d%%)', GetValues(currentStanding, currentReactionThreshold, nextReactionThreshold)), 1, 1, 1)
+
+		if (reaction ~= MAX_REPUTATION_REACTION) and nextReactionThreshold ~= huge then
+			GameTooltip:AddDoubleLine(REPUTATION..':', format('%d / %d (%d%%)', GetValues(currentStanding, currentReactionThreshold, nextReactionThreshold)), 1, 1, 1)
+		end
+
 		GameTooltip:Show()
 	end
 end
@@ -124,7 +135,12 @@ function DB:ReputationBar()
 	DB:CreateBarBubbles(Reputation)
 
 	Reputation.ShouldHide = function()
-		return (DB.db.reputation.hideBelowMaxLevel and not E:XPIsLevelMax()) or not E:GetWatchedFactionInfo()
+		if DB.db.reputation.hideBelowMaxLevel and not E:XPIsLevelMax() then
+			return true
+		else
+			local data = E:GetWatchedFactionInfo()
+			return not (data and data.name)
+		end
 	end
 
 	E:CreateMover(Reputation.holder, 'ReputationBarMover', L["Reputation Bar"], nil, nil, nil, nil, nil, 'databars,reputation')
