@@ -134,7 +134,6 @@ do
 	E:AddLib('Masque', 'Masque', true)
 	E:AddLib('Translit', 'LibTranslit-1.0')
 	E:AddLib('DualSpec', 'LibDualSpec-1.0')
-	E:AddLib('LCS', 'LibClassicSpecs-ElvUI')
 	E:AddLib('Compat', 'LibCompat-1.0')
 
 	-- backwards compatible for plugins

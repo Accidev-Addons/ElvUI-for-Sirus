@@ -3,7 +3,7 @@ local DT = E:GetModule('DataTexts')
 local TT = E:GetModule('Tooltip')
 local LDB = E.Libs.LDB
 local LSM = E.Libs.LSM
-local LCS = E.Libs.LCS
+local LC = E.Libs.Compat
 
 local _G = _G
 local min, max = min, max
@@ -24,7 +24,7 @@ local GetItemCount = GetItemCount
 local GetItemInfo = GetItemInfo
 local ExpandCurrencyList = ExpandCurrencyList
 local GetNumTalentTabs = GetNumTalentTabs
-local GetSpecializationInfo = LCS.GetSpecializationInfo
+local GetSpecializationInfo = LC.GetSpecializationInfo
 local InCombatLockdown = InCombatLockdown
 local IsInInstance = IsInInstance
 local MouseIsOver = MouseIsOver

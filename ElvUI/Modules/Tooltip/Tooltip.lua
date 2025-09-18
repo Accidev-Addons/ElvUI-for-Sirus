@@ -4,7 +4,6 @@ local AB = E:GetModule('ActionBars')
 local S = E:GetModule('Skins')
 local B = E:GetModule('Bags')
 local LSM = E.Libs.LSM
--- local LCS = E.Libs.LCS
 
 local _G = _G
 local unpack, select, ipairs = unpack, select, ipairs
