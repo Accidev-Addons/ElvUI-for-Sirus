@@ -178,7 +178,7 @@ function A:CreateIcon(button)
 	end
 
 	A:Update_CooldownOptions(button)
-	A:UpdateIcon(button, true)
+	A:UpdateIcon(button)
 end
 
 function A:UpdateTexture(button) -- self here can be the header from UpdateMasque calling this function
