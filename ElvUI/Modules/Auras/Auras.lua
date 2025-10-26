@@ -544,8 +544,8 @@ function A:UpdateHeader(header)
 	E:UpdateClassColor(db.barColor)
 
 	-- Calculate actual rows/columns needed based on button count
-	local maxButtons = db.maxButtons
-	local iconsPerRow = db.iconsPerRow
+	local maxButtons = 32
+	local iconsPerRow = db.wrapAfter
 
 	local numRows = math.ceil(maxButtons / iconsPerRow)  -- Calculate rows needed
 
