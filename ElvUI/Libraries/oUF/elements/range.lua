@@ -31,7 +31,11 @@ local oUF = ns.oUF
 local _FRAMES = {}
 local OnRangeFrame
 
-local UnitInRange, UnitIsConnected = UnitInRange, UnitIsConnected
+local next, tinsert, tremove = next, tinsert, tremove
+
+local CreateFrame = CreateFrame
+local UnitInRange = UnitInRange
+local UnitIsConnected = UnitIsConnected
 
 local function Update(self, event)
 	local element = self.Range
@@ -46,11 +50,11 @@ local function Update(self, event)
 		element:PreUpdate()
 	end
 
-	local inRange
+	local inRange, checkedRange
 	local connected = UnitIsConnected(unit)
 	if(connected) then
-		inRange = UnitInRange(unit)
-		if(not inRange) then
+		inRange, checkedRange = UnitInRange(unit)
+		if(checkedRange and not inRange) then
 			self:SetAlpha(element.outsideAlpha)
 		else
 			self:SetAlpha(element.insideAlpha)
@@ -59,16 +63,17 @@ local function Update(self, event)
 		self:SetAlpha(element.insideAlpha)
 	end
 
-	--[[ Callback: Range:PostUpdate(object, inRange, isConnected)
+	--[[ Callback: Range:PostUpdate(object, inRange, checkedRange, isConnected)
 	Called after the element has been updated.
 
 	* self         - the Range element
 	* object       - the parent object
 	* inRange      - indicates if the unit was within 40 yards of the player (boolean)
+	* checkedRange - indicates if the range check was actually performed (boolean)
 	* isConnected  - indicates if the unit is online (boolean)
 	--]]
 	if(element.PostUpdate) then
-		return element:PostUpdate(self, inRange, connected)
+		return element:PostUpdate(self, inRange, checkedRange, connected)
 	end
 end
 
@@ -105,12 +110,12 @@ local function Enable(self)
 		element.insideAlpha = element.insideAlpha or 1
 		element.outsideAlpha = element.outsideAlpha or 0.55
 
-		if(not OnRangeFrame) then
+		if not OnRangeFrame then
 			OnRangeFrame = CreateFrame('Frame')
 			OnRangeFrame:SetScript('OnUpdate', OnRangeUpdate)
 		end
 
-		table.insert(_FRAMES, self)
+		tinsert(_FRAMES, self)
 		OnRangeFrame:Show()
 
 		return true
@@ -120,18 +125,19 @@ end
 local function Disable(self)
 	local element = self.Range
 	if(element) then
+		self:SetAlpha(element.insideAlpha)
+
 		for index, frame in next, _FRAMES do
-			if(frame == self) then
-				table.remove(_FRAMES, index)
+			if frame == self then
+				tremove(_FRAMES, index)
 				break
 			end
 		end
-		self:SetAlpha(element.insideAlpha)
 
-		if(#_FRAMES == 0) then
+		if #_FRAMES == 0 then
 			OnRangeFrame:Hide()
 		end
 	end
 end
 
-oUF:AddElement('Range', nil, Enable, Disable)
+oUF:AddElement('Range', Path, Enable, Disable)

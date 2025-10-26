@@ -1,3 +1,5 @@
 local _, ns = ...
-ns.oUF = {}
-ns.oUF.Private = {}
+local oUF = { Private = {} }
+ns.oUF = oUF
+
+oUF.myLocalizedClass, oUF.myclass = UnitClass('player')

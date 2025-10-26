@@ -33,9 +33,10 @@ local FFA_ICON = [[Interface\TargetingFrame\UI-PVP-FFA]]
 local FACTION_ICON = [[Interface\TargetingFrame\UI-PVP-]]
 
 local function Update(self, event, unit)
-	if(unit ~= self.unit) then return end
+	if(unit and unit ~= self.unit) then return end
 
 	local element = self.PvPIndicator
+	unit = unit or self.unit
 
 	--[[ Callback: PvPIndicator:PreUpdate(unit)
 	Called before the element has been updated.

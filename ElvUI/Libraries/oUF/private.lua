@@ -1,5 +1,6 @@
 local _, ns = ...
-local Private = ns.oUF.Private
+local oUF = ns.oUF
+local Private = oUF.Private
 
 function Private.argcheck(value, num, ...)
 	assert(type(num) == 'number', "Bad argument #2 to 'argcheck' (number expected, got " .. type(num) .. ')')
@@ -23,4 +24,18 @@ end
 
 function Private.unitExists(unit)
 	return unit and UnitExists(unit)
+end
+
+function Private.xpcall(func, ...)
+	return xpcall(func, Private.nierror, ...)
+end
+
+local validator = CreateFrame('Frame')
+function Private.validateEvent(event)
+	local isOK = xpcall(validator.RegisterEvent, Private.nierror, validator, event)
+	if(isOK) then
+		validator:UnregisterEvent(event)
+	end
+
+	return isOK
 end

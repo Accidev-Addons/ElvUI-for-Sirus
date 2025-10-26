@@ -25,17 +25,12 @@ This element updates by changing the texture.
 local _, ns = ...
 local oUF = ns.oUF
 
-local GetPartyAssignment = GetPartyAssignment
-local UnitHasVehicleUI = UnitHasVehicleUI
-local UnitInRaid = UnitInRaid
-
 local MAINTANK_ICON = [[Interface\GROUPFRAME\UI-GROUP-MAINTANKICON]]
 local MAINASSIST_ICON = [[Interface\GROUPFRAME\UI-GROUP-MAINASSISTICON]]
 
 local function Update(self, event)
-	local unit = self.unit
-
 	local element = self.RaidRoleIndicator
+	local unit = self.unit
 
 	--[[ Callback: RaidRoleIndicator:PreUpdate()
 	Called before the element has been updated.
@@ -50,16 +45,18 @@ local function Update(self, event)
 	if(UnitInRaid(unit) and not UnitHasVehicleUI(unit)) then
 		if(GetPartyAssignment('MAINTANK', unit)) then
 			isShown = true
-			element:SetTexture(MAINTANK_ICON)
 			role = 'MAINTANK'
+			element:SetTexture(MAINTANK_ICON)
 		elseif(GetPartyAssignment('MAINASSIST', unit)) then
 			isShown = true
-			element:SetTexture(MAINASSIST_ICON)
 			role = 'MAINASSIST'
+			element:SetTexture(MAINASSIST_ICON)
 		end
 	end
 
-	if isShown then
+	if element.combatHide and UnitAffectingCombat(unit) then
+		element:Hide()
+	elseif isShown then
 		element:Show()
 	else
 		element:Hide()
@@ -97,7 +94,10 @@ local function Enable(self)
 		element.__owner = self
 		element.ForceUpdate = ForceUpdate
 
+		self:RegisterEvent('UNIT_FLAGS', Path)
 		self:RegisterEvent('PARTY_MEMBERS_CHANGED', Path, true)
+		self:RegisterEvent('PLAYER_REGEN_DISABLED', Path, true)
+		self:RegisterEvent('PLAYER_REGEN_ENABLED', Path, true)
 
 		return true
 	end
@@ -108,7 +108,10 @@ local function Disable(self)
 	if(element) then
 		element:Hide()
 
+		self:UnregisterEvent('UNIT_FLAGS', Path)
 		self:UnregisterEvent('PARTY_MEMBERS_CHANGED', Path)
+		self:UnregisterEvent('PLAYER_REGEN_DISABLED', Path)
+		self:UnregisterEvent('PLAYER_REGEN_ENABLED', Path)
 	end
 end
 

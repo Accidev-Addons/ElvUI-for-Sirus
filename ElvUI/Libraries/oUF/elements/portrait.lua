@@ -36,7 +36,6 @@ local _, ns = ...
 local oUF = ns.oUF
 
 local SetPortraitTexture = SetPortraitTexture
-local UnitExists = UnitExists
 local UnitGUID = UnitGUID
 local UnitIsConnected = UnitIsConnected
 local UnitIsUnit = UnitIsUnit

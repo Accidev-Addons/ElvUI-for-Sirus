@@ -3,7 +3,6 @@ local oUF = ns.oUF
 local Private = oUF.Private
 
 local argcheck = Private.argcheck
-local error = Private.error
 local frame_metatable = Private.frame_metatable
 
 -- Original event methods
@@ -19,11 +18,12 @@ function Private.UpdateUnits(frame, unit, realUnit)
 		frame.unit = unit
 		frame.realUnit = realUnit
 		frame.id = unit:match('^.-(%d+)')
+
 		return true
 	end
 end
 
-local function onEvent(self, event, ...)
+local function OnEvent(self, event, ...)
 	if(self:IsVisible() or event == 'UNIT_COMBO_POINTS') then
 		return self[event](self, event, ...)
 	end
@@ -75,7 +75,7 @@ function frame_metatable.__index:RegisterEvent(event, func)
 		self[event] = func
 
 		if(not self:GetScript('OnEvent')) then
-			self:SetScript('OnEvent', onEvent)
+			self:SetScript('OnEvent', OnEvent)
 		end
 
 		registerEvent(self, event)

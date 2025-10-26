@@ -38,9 +38,17 @@ Default textures will be applied if the layout does not provide custom ones. See
 
 local _, ns = ...
 local oUF = ns.oUF
+local Private = oUF.Private
 
+local unitExists = Private.unitExists
+
+local _G = _G
 local GetReadyCheckStatus = GetReadyCheckStatus
-local UnitExists = UnitExists
+
+-- fallback blizzard icons (incase a plugin fails to change icon properly)
+local READY_TEX = [[Interface\RaidFrame\ReadyCheck-Ready]]
+local NOT_READY_TEX = [[Interface\RaidFrame\ReadyCheck-NotReady]]
+local WAITING_TEX = [[Interface\RaidFrame\ReadyCheck-Waiting]]
 
 local function OnFinished(self)
 	local element = self:GetParent()
@@ -56,8 +64,13 @@ local function OnFinished(self)
 	end
 end
 
+local function SetIcon(element, texture)
+	element:SetTexture(texture)
+end
+
 local function Update(self, event)
 	local element = self.ReadyCheckIndicator
+	local unit = self.unit
 
 	--[[ Callback: ReadyCheckIndicator:PreUpdate()
 	Called before the element has been updated.
@@ -68,15 +81,14 @@ local function Update(self, event)
 		element:PreUpdate()
 	end
 
-	local unit = self.unit
 	local status = GetReadyCheckStatus(unit)
-	if(UnitExists(unit) and status) then
+	if(unitExists(unit) and status) then
 		if(status == 'ready') then
-			element:SetTexture(element.readyTexture)
+			SetIcon(element, element.readyTexture or READY_TEX)
 		elseif(status == 'notready') then
-			element:SetTexture(element.notReadyTexture)
+			SetIcon(element, element.notReadyTexture or NOT_READY_TEX)
 		else
-			element:SetTexture(element.waitingTexture)
+			SetIcon(element, element.waitingTexture or WAITING_TEX)
 		end
 
 		element.status = status
@@ -88,7 +100,7 @@ local function Update(self, event)
 
 	if(event == 'READY_CHECK_FINISHED') then
 		if(element.status == 'waiting') then
-			element:SetTexture(element.notReadyTexture)
+			SetIcon(element, element.notReadyTexture or NOT_READY_TEX)
 		end
 
 		element.Animation:Play()
@@ -122,22 +134,33 @@ end
 
 local function Enable(self, unit)
 	local element = self.ReadyCheckIndicator
-	if(element and (unit and (unit:sub(1, 5) == 'party' or unit:sub(1, 4) == 'raid'))) then
+	unit = unit and unit:match('(%a+)%d*$')
+	if(element and (unit == 'party' or unit == 'raid')) then
 		element.__owner = self
 		element.ForceUpdate = ForceUpdate
 
-		element.readyTexture = element.readyTexture or READY_CHECK_READY_TEXTURE
-		element.notReadyTexture = element.notReadyTexture or READY_CHECK_NOT_READY_TEXTURE
-		element.waitingTexture = element.waitingTexture or READY_CHECK_WAITING_TEXTURE
+		if not element.readyTexture then element.readyTexture = _G.READY_CHECK_READY_TEXTURE end
+		if not element.notReadyTexture then element.notReadyTexture = _G.READY_CHECK_NOT_READY_TEXTURE end
+		if not element.waitingTexture then element.waitingTexture = _G.READY_CHECK_WAITING_TEXTURE end
 
-		local AnimationGroup = element:CreateAnimationGroup()
-		AnimationGroup:HookScript('OnFinished', OnFinished)
-		element.Animation = AnimationGroup
+		local anim = element.Animation
+		if not anim then
+			anim = element:CreateAnimationGroup()
+			element.Animation = anim
+		end
 
-		local Animation = AnimationGroup:CreateAnimation('Alpha')
-		Animation:SetChange(-1)
-		Animation:SetDuration(element.fadeTime or 1.5)
-		Animation:SetStartDelay(element.finishedTime or 10)
+		anim:SetScript('OnFinished', OnFinished) -- use Set to purge other scripts on reenable
+
+		local animAlpha = anim.Alpha
+		if not animAlpha then
+			animAlpha = anim:CreateAnimation('Alpha')
+			anim.Alpha = animAlpha
+		end
+
+		animAlpha:SetFromAlpha(1)
+		animAlpha:SetToAlpha(0)
+		animAlpha:SetDuration(element.fadeTime or 1.5)
+		animAlpha:SetStartDelay(element.finishedTime or 10)
 
 		self:RegisterEvent('READY_CHECK', Path, true)
 		self:RegisterEvent('READY_CHECK_CONFIRM', Path, true)

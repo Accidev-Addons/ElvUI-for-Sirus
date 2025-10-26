@@ -1,4 +1,4 @@
-local parent, ns = ...
+local _, ns = ...
 local oUF = ns.oUF
 local Private = oUF.Private
 
@@ -26,47 +26,48 @@ local colors = {
 	threat = {},
 }
 
--- We do this because people edit the vars directly, and changing the default
--- globals makes SPICE FLOW!
-local function customClassColors()
-	if(CUSTOM_CLASS_COLORS) then
-		local function updateColors()
-			for classToken, color in next, CUSTOM_CLASS_COLORS do
-				colors.class[classToken] = {color.r, color.g, color.b}
-			end
-
-			for _, obj in next, oUF.objects do
-				obj:UpdateAllElements('CUSTOM_CLASS_COLORS')
-			end
+do	-- We do this because people edit the vars directly, and changing the default globals makes SPICE FLOW!
+	local function updateColors()
+		for classToken, color in next, _G.CUSTOM_CLASS_COLORS do
+			colors.class[classToken] = {color.r, color.g, color.b}
 		end
 
+		for _, obj in next, oUF.objects do
+			obj:UpdateAllElements('CUSTOM_CLASS_COLORS')
+		end
+	end
+
+	local function customClassColors()
+		if not _G.CUSTOM_CLASS_COLORS then return end
+
 		updateColors()
-		CUSTOM_CLASS_COLORS:RegisterCallback(updateColors)
+
+		_G.CUSTOM_CLASS_COLORS:RegisterCallback(updateColors)
 
 		return true
 	end
-end
 
-if(not customClassColors()) then
-	for classToken, color in next, RAID_CLASS_COLORS do
-		colors.class[classToken] = {color.r, color.g, color.b}
-	end
-
-	local eventHandler = CreateFrame('Frame')
-	eventHandler:RegisterEvent('ADDON_LOADED')
-	eventHandler:SetScript('OnEvent', function(self)
-		if(customClassColors()) then
-			self:UnregisterEvent('ADDON_LOADED')
-			self:SetScript('OnEvent', nil)
+	if not customClassColors() then
+		for classToken, color in next, _G.RAID_CLASS_COLORS do
+			colors.class[classToken] = {color.r, color.g, color.b}
 		end
-	end)
+
+		local eventHandler = CreateFrame('Frame')
+		eventHandler:RegisterEvent('ADDON_LOADED')
+		eventHandler:RegisterEvent('PLAYER_ENTERING_WORLD')
+		eventHandler:SetScript('OnEvent', function(frame)
+			if customClassColors() then
+				frame:UnregisterAllEvents()
+			end
+		end)
+	end
 end
 
-for debuffType, color in next, DebuffTypeColor do
+for debuffType, color in next, _G.DebuffTypeColor do
 	colors.debuff[debuffType] = {color.r, color.g, color.b}
 end
 
-for eclass, color in next, FACTION_BAR_COLORS do
+for eclass, color in next, _G.FACTION_BAR_COLORS do
 	colors.reaction[eclass] = {color.r, color.g, color.b}
 end
 
@@ -93,8 +94,10 @@ colors.power[4] = colors.power.HAPPINESS
 colors.power[5] = colors.power.RUNES
 colors.power[6] = colors.power.RUNIC_POWER
 
-for i = 0, 3 do
-	colors.threat[i] = {GetThreatStatusColor(i)}
+if GetThreatStatusColor then
+	for i = 0, 3 do
+		colors.threat[i] = {GetThreatStatusColor(i)}
+	end
 end
 
 local function colorsAndPercent(a, b, ...)

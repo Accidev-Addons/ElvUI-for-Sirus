@@ -67,18 +67,17 @@ in the `oUF.Tags.SharedEvents` table as follows: `oUF.Tags.SharedEvents.EVENT_NA
 
 local _, ns = ...
 local oUF = ns.oUF
--- local Private = oUF.Private
+local Private = oUF.Private
 
--- local unitExists = Private.unitExists
--- local validateEvent = Private.validateEvent
+local unitExists = Private.unitExists
+local validateEvent = Private.validateEvent
 
 -- ElvUI block
 local _G = _G
 local CreateFrame = CreateFrame
-local hooksecurefunc = hooksecurefunc
 local format, tinsert = format, tinsert
+local rawset, select, wipe = rawset, select, wipe
 local setfenv, getfenv, gsub, max = setfenv, getfenv, gsub, max
-local rawget, rawset, select, wipe = rawget, rawset, select, wipe
 local next, type, pcall, unpack = next, type, pcall, unpack
 local error, assert, loadstring = error, assert, loadstring
 -- end block
@@ -110,345 +109,335 @@ end
 
 local _PROXY = setmetatable(_ENV, {__index = _G})
 
-local tagStrings = {
-	['affix'] = [[function(u)
-		local c = UnitClassification(u)
-		if(c == 'minus') then
-			return 'Affix'
-		end
-	end]],
-
-	['classification'] = [[function(u)
-		local c = UnitClassification(u)
-		if(c == 'rare') then
-			return 'Rare'
-		elseif(c == 'rareelite') then
-			return 'Rare Elite'
-		elseif(c == 'elite') then
-			return 'Elite'
-		elseif(c == 'worldboss') then
-			return 'Boss'
-		end
-	end]],
-
-	['cpoints'] = [[function(u)
-		local cp
-		if(UnitHasVehicleUI('player')) then
-			cp = GetComboPoints('vehicle', 'target')
-		else
-			cp = GetComboPoints('player', 'target')
-		end
-
-		if(cp > 0) then
-			return cp
-		end
-	end]],
-
-	['creature'] = [[function(u)
-		return UnitCreatureFamily(u) or UnitCreatureType(u)
-	end]],
-
-	['curmana'] = [[function(unit)
-		return UnitPower(unit, SPELL_POWER_MANA)
-	end]],
-
-	['dead'] = [[function(u)
-		if(UnitIsDead(u)) then
-			return 'Dead'
-		elseif(UnitIsGhost(u)) then
-			return 'Ghost'
-		end
-	end]],
-
-	['deficit:name'] = [[function(u)
-		local missinghp = _TAGS['missinghp'](u)
-		if(missinghp) then
-			return '-' .. missinghp
-		else
-			return _TAGS['name'](u)
-		end
-	end]],
-
-	['difficulty'] = [[function(u)
-		if UnitCanAttack('player', u) then
-			local l = UnitLevel(u)
-			return Hex(GetQuestDifficultyColor((l > 0) and l or 999))
-		end
-	end]],
-
-	['group'] = [[function(unit)
-		local name, server = UnitName(unit)
-		if(server and server ~= '') then
-			name = format('%s-%s', name, server)
-		end
-
-		for i=1, GetNumRaidMembers() do
-			local raidName, _, group = GetRaidRosterInfo(i)
-			if(raidName == name) then
-				return group
-			end
-		end
-	end]],
-
-	['happiness'] = [[function(u)
-		if(UnitIsUnit(u, 'pet')) then
-			local happiness = GetPetHappiness()
-			if(happiness == 1) then
-				return ':<'
-			elseif(happiness == 2) then
-				return ':|'
-			elseif(happiness == 3) then
-				return ':D'
-			end
-		end
-	end]],
-
-	['leader'] = [[function(u)
-		if(UnitIsPartyLeader(u)) then
-			return 'L'
-		end
-	end]],
-
-	['leaderlong'] = [[function(u)
-		if(UnitIsPartyLeader(u)) then
-			return 'Leader'
-		end
-	end]],
-
-	['level'] = [[function(u)
-		local l = UnitLevel(u)
-		if(l > 0) then
-			return l
-		else
-			return '??'
-		end
-	end]],
-
-	['maxmana'] = [[function(unit)
-		return UnitPowerMax(unit, SPELL_POWER_MANA)
-	end]],
-
-	['missinghp'] = [[function(u)
-		local current = UnitHealthMax(u) - UnitHealth(u)
-		if(current > 0) then
-			return current
-		end
-	end]],
-
-	['missingpp'] = [[function(u)
-		local current = UnitPowerMax(u) - UnitPower(u)
-		if(current > 0) then
-			return current
-		end
-	end]],
-
-	['name'] = [[function(u, r)
-		return UnitName(r or u)
-	end]],
-
-	['offline'] = [[function(u)
-		if(not UnitIsConnected(u)) then
-			return 'Offline'
-		end
-	end]],
-
-	['perhp'] = [[function(u)
-		local m = UnitHealthMax(u)
-		if(m == 0) then
-			return 0
-		else
-			return floor(UnitHealth(u) / m * 100 + .5)
-		end
-	end]],
-
-	['perpp'] = [[function(u)
-		local m = UnitPowerMax(u)
-		if(m == 0) then
-			return 0
-		else
-			return floor(UnitPower(u) / m * 100 + .5)
-		end
-	end]],
-
-	['plus'] = [[function(u)
-		local c = UnitClassification(u)
-		if(c == 'elite' or c == 'rareelite') then
-			return '+'
-		end
-	end]],
-
-	['powercolor'] = [[function(u)
-		local pType, pToken, altR, altG, altB = UnitPowerType(u)
-		local t = _COLORS.power[pToken]
-
-		if not t then
-			return Hex(altR, altG, altB)
-		end
-
-		return Hex(t)
-	end]],
-
-	['pvp'] = [[function(u)
-		if(UnitIsPVP(u)) then
-			return 'PvP'
-		end
-	end]],
-
-	['raidcolor'] = [[function(u)
-		local _, x = UnitClass(u)
-		if(x) then
-			return Hex(_COLORS.class[x])
-		end
-	end]],
-
-	['rare'] = [[function(u)
-		local c = UnitClassification(u)
-		if(c == 'rare' or c == 'rareelite') then
-			return 'Rare'
-		end
-	end]],
-
-	['resting'] = [[function(u)
-		if(u == 'player' and IsResting()) then
-			return 'zzz'
-		end
-	end]],
-
-	['runes'] = [[function()
-		local amount = 0
-
-		for i = 1, 6 do
-			local _, _, ready = GetRuneCooldown(i)
-			if(ready) then
-				amount = amount + 1
-			end
-		end
-
-		return amount
-	end]],
-
-	['sex'] = [[function(u)
-		local s = UnitSex(u)
-		if(s == 2) then
-			return 'Male'
-		elseif(s == 3) then
-			return 'Female'
-		end
-	end]],
-
-	['shortclassification'] = [[function(u)
-		local c = UnitClassification(u)
-		if(c == 'rare') then
-			return 'R'
-		elseif(c == 'rareelite') then
-			return 'R+'
-		elseif(c == 'elite') then
-			return '+'
-		elseif(c == 'worldboss') then
-			return 'B'
-		end
-	end]],
-
-	['smartclass'] = [[function(u)
-		if(UnitIsPlayer(u)) then
-			return _TAGS['class'](u)
-		end
-
-		return _TAGS['creature'](u)
-	end]],
-
-	['smartlevel'] = [[function(u)
-		local c = UnitClassification(u)
-		if(c == 'worldboss') then
-			return 'Boss'
-		else
-			local plus = _TAGS['plus'](u)
-			local level = _TAGS['level'](u)
-			if(plus) then
-				return level .. plus
-			else
-				return level
-			end
-		end
-	end]],
-
-	['soulshards'] = [[function()
-		local count = GetItemCount(6265)
-
-		return count or 0
-	end]],
-
-	['status'] = [[function(u)
-		if(UnitIsDead(u)) then
-			return 'Dead'
-		elseif(UnitIsGhost(u)) then
-			return 'Ghost'
-		elseif(not UnitIsConnected(u)) then
-			return 'Offline'
-		else
-			return _TAGS['resting'](u)
-		end
-	end]],
-
-	['threat'] = [[function(u)
-		local s = UnitThreatSituation(u)
-		if(s == 1) then
-			return '++'
-		elseif(s == 2) then
-			return '--'
-		elseif(s == 3) then
-			return 'Aggro'
-		end
-	end]],
-
-	['threatcolor'] = [[function(u)
-		return Hex(GetThreatStatusColor(UnitThreatSituation(u)))
-	end]],
+local tagFunctions = {
+	curhp = UnitHealth,
+	curpp = UnitPower,
+	maxhp = UnitHealthMax,
+	maxpp = UnitPowerMax,
+	class = UnitClass,
+	faction = UnitFactionGroup,
+	race = UnitRace,
 }
 
-local tagFuncs = setmetatable(
-	{
-		curhp = UnitHealth,
-		curpp = UnitPower,
-		maxhp = UnitHealthMax,
-		maxpp = UnitPowerMax,
-		class = UnitClass,
-		faction = UnitFactionGroup,
-		race = UnitRace,
-	},
-	{
-		__index = function(self, key)
-			local tagString = tagStrings[key]
-			if(tagString) then
-				self[key] = tagString
-				tagStrings[key] = nil
+local tagFuncs = setmetatable(tagFunctions, {
+	__newindex = function(self, key, val)
+		if(type(val) == 'string') then
+			local func, err = loadstring('return ' .. val)
+			if(func) then
+				val = func()
+			else
+				error(err, 3)
 			end
+		end
 
-			return rawget(self, key)
-		end,
-		__newindex = function(self, key, val)
-			if(type(val) == 'string') then
-				local func, err = loadstring('return ' .. val)
-				if(func) then
-					val = func()
-				else
-					error(err, 3)
-				end
-			end
+		assert(type(val) == 'function', 'Tag function must be a function or a string that evaluates to a function.')
 
-			assert(type(val) == 'function', 'Tag function must be a function or a string that evaluates to a function.')
+		-- We don't want to clash with any custom envs
+		if(getfenv(val) == _G) then
+			-- pcall is needed for cases when Blizz functions are passed as strings, for
+			-- intance, 'UnitPowerMax', an attempt to set a custom env will result in an error
+			pcall(setfenv, val, _PROXY)
+		end
 
-			-- We don't want to clash with any custom envs
-			if(getfenv(val) == _G) then
-				-- pcall is needed for cases when Blizz functions are passed as strings, for
-				-- intance, 'UnitPowerMax', an attempt to set a custom env will result in an error
-				pcall(setfenv, val, _PROXY)
-			end
+		rawset(self, key, val)
+	end,
+})
 
-			rawset(self, key, val)
-		end,
-	}
-)
+
+tagFunctions.affix = function(u)
+	local c = UnitClassification(u)
+	if(c == 'minus') then
+		return 'Affix'
+	end
+end
+
+tagFunctions.classification = function(u)
+	local c = UnitClassification(u)
+	if(c == 'rare') then
+		return 'Rare'
+	elseif(c == 'rareelite') then
+		return 'Rare Elite'
+	elseif(c == 'elite') then
+		return 'Elite'
+	elseif(c == 'worldboss') then
+		return 'Boss'
+	end
+end
+
+tagFunctions.cpoints = function(u)
+	local cp
+	if(UnitHasVehicleUI('player')) then
+		cp = GetComboPoints('vehicle', 'target')
+	else
+		cp = GetComboPoints('player', 'target')
+	end
+
+	if(cp > 0) then
+		return cp
+	end
+end
+
+tagFunctions.creature = function(u)
+	return UnitCreatureFamily(u) or UnitCreatureType(u)
+end
+
+tagFunctions.curmana = function(unit)
+	return UnitPower(unit, SPELL_POWER_MANA)
+end
+
+tagFunctions.dead = function(u)
+	if(UnitIsDead(u)) then
+		return 'Dead'
+	elseif(UnitIsGhost(u)) then
+		return 'Ghost'
+	end
+end
+
+tagFunctions['deficit:name'] = function(u)
+	local missinghp = _TAGS.missinghp(u)
+	if(missinghp) then
+		return '-' .. missinghp
+	else
+		return _TAGS.name(u)
+	end
+end
+
+tagFunctions.difficulty = function(u)
+	if UnitCanAttack('player', u) then
+		local l = UnitLevel(u)
+		return Hex(GetQuestDifficultyColor((l > 0) and l or 999))
+	end
+end
+
+tagFunctions.group = function(unit)
+	local name, server = UnitName(unit)
+	if(server and server ~= '') then
+		name = format('%s-%s', name, server)
+	end
+
+	for i=1, GetNumRaidMembers() do
+		local raidName, _, group = GetRaidRosterInfo(i)
+		if(raidName == name) then
+			return group
+		end
+	end
+end
+
+tagFunctions.happiness = function(u)
+	if(UnitIsUnit(u, 'pet')) then
+		local happiness = GetPetHappiness()
+		if(happiness == 1) then
+			return ':<'
+		elseif(happiness == 2) then
+			return ':|'
+		elseif(happiness == 3) then
+			return ':D'
+		end
+	end
+end
+
+tagFunctions.leader = function(u)
+	if(UnitIsPartyLeader(u)) then
+		return 'L'
+	end
+end
+
+tagFunctions.leaderlong = function(u)
+	if(UnitIsPartyLeader(u)) then
+		return 'Leader'
+	end
+end
+
+tagFunctions.level = function(u)
+	local l = UnitLevel(u)
+	if(l > 0) then
+		return l
+	else
+		return '??'
+	end
+end
+
+tagFunctions.maxmana = function(unit)
+	return UnitPowerMax(unit, SPELL_POWER_MANA)
+end
+
+tagFunctions.missinghp = function(u)
+	local current = UnitHealthMax(u) - UnitHealth(u)
+	if(current > 0) then
+		return current
+	end
+end
+
+tagFunctions.missingpp = function(u)
+	local current = UnitPowerMax(u) - UnitPower(u)
+	if(current > 0) then
+		return current
+	end
+end
+
+tagFunctions.name = function(u, r)
+	return UnitName(r or u)
+end
+
+tagFunctions.offline = function(u)
+	if(not UnitIsConnected(u)) then
+		return 'Offline'
+	end
+end
+
+tagFunctions.perhp = function(u)
+	local m = UnitHealthMax(u)
+	if(m == 0) then
+		return 0
+	else
+		return floor(UnitHealth(u) / m * 100 + .5)
+	end
+end
+
+tagFunctions.perpp = function(u)
+	local m = UnitPowerMax(u)
+	if(m == 0) then
+		return 0
+	else
+		return floor(UnitPower(u) / m * 100 + .5)
+	end
+end
+
+tagFunctions.plus = function(u)
+	local c = UnitClassification(u)
+	if(c == 'elite' or c == 'rareelite') then
+		return '+'
+	end
+end
+
+tagFunctions.powercolor = function(u)
+	local pType, pToken, altR, altG, altB = UnitPowerType(u)
+	local t = _COLORS.power[pToken]
+
+	if not t then
+		return Hex(altR, altG, altB)
+	end
+
+	return Hex(t)
+end
+
+tagFunctions.pvp = function(u)
+	if(UnitIsPVP(u)) then
+		return 'PvP'
+	end
+end
+
+tagFunctions.raidcolor = function(u)
+	local _, x = UnitClass(u)
+	if(x) then
+		return Hex(_COLORS.class[x])
+	end
+end
+
+tagFunctions.rare = function(u)
+	local c = UnitClassification(u)
+	if(c == 'rare' or c == 'rareelite') then
+		return 'Rare'
+	end
+end
+
+tagFunctions.resting = function(u)
+	if(u == 'player' and IsResting()) then
+		return 'zzz'
+	end
+end
+
+tagFunctions.runes = function()
+	local amount = 0
+
+	for i = 1, 6 do
+		local _, _, ready = GetRuneCooldown(i)
+		if(ready) then
+			amount = amount + 1
+		end
+	end
+
+	return amount
+end
+
+tagFunctions.sex = function(u)
+	local s = UnitSex(u)
+	if(s == 2) then
+		return 'Male'
+	elseif(s == 3) then
+		return 'Female'
+	end
+end
+
+tagFunctions.shortclassification = function(u)
+	local c = UnitClassification(u)
+	if(c == 'rare') then
+		return 'R'
+	elseif(c == 'rareelite') then
+		return 'R+'
+	elseif(c == 'elite') then
+		return '+'
+	elseif(c == 'worldboss') then
+		return 'B'
+	end
+end
+
+tagFunctions.smartclass = function(u)
+	if(UnitIsPlayer(u)) then
+		return _TAGS.class(u)
+	end
+
+	return _TAGS.creature(u)
+end
+
+tagFunctions.smartlevel = function(u)
+	local c = UnitClassification(u)
+	if(c == 'worldboss') then
+		return 'Boss'
+	else
+		local plus = _TAGS.plus(u)
+		local level = _TAGS.level(u)
+		if(plus) then
+			return level .. plus
+		else
+			return level
+		end
+	end
+end
+
+tagFunctions.soulshards = function()
+	local num = GetItemCount(6265)
+	if(num > 0) then
+		return num
+	end
+end
+
+tagFunctions.status = function(u)
+	if(UnitIsDead(u)) then
+		return 'Dead'
+	elseif(UnitIsGhost(u)) then
+		return 'Ghost'
+	elseif(not UnitIsConnected(u)) then
+		return 'Offline'
+	else
+		return _TAGS.resting
+	end
+end
+
+tagFunctions.threat = function(u)
+	local s = UnitThreatSituation(u)
+	if(s == 1) then
+		return '++'
+	elseif(s == 2) then
+		return '--'
+	elseif(s == 3) then
+		return 'Aggro'
+	end
+end
+
+tagFunctions.threatcolor = function(u)
+	return Hex(GetThreatStatusColor(UnitThreatSituation(u) or 0))
+end
 
 _ENV._TAGS = tagFuncs
 
@@ -555,7 +544,7 @@ end)
 local timerFrames = {}
 local timerFontStrings = {}
 
-local function enableTimer(timer)
+local function EnableTimer(timer)
 	local frame = timerFrames[timer]
 	if(not frame) then
 		local total = timer
@@ -566,7 +555,7 @@ local function enableTimer(timer)
 			if total >= timer then
 				for fs in next, strings do
 					if not fs.parent.isForced then -- ElvUI needs this to prevent spam
-						if fs.parent:IsShown() and UnitExists(fs.parent.unit) then
+						if fs.parent:IsShown() and unitExists(fs.parent.unit) then
 							fs:UpdateTag()
 						end
 					end
@@ -584,7 +573,7 @@ local function enableTimer(timer)
 	end
 end
 
-local function disableTimer(timer)
+local function DisableTimer(timer)
 	local frame = timerFrames[timer]
 	if(frame) then
 		frame:Hide()
@@ -606,14 +595,17 @@ end
 
 -- ElvUI block
 local onUpdateDelay = {}
-local function escapeSequence(a) return format('|%s', a) end
-local function makeDeadTagFunc(bracket)
+local function EscapeSequence(a)
+	return format('|%s', a)
+end
+
+local function CreateDeadTagFunc(bracket)
 	return function()
 		return format('|cFFffffff%s|r', bracket)
 	end
 end
 
-local function makeTagFunc(tag, prefix, suffix)
+local function CreateTagFunc(tag, prefix, suffix)
 	return function(unit, realUnit, customArgs)
 		local str = tag(unit, realUnit, customArgs)
 		if str then
@@ -627,14 +619,14 @@ local tagStringFuncs = {}
 local bracketFuncs = {}
 local buffer = {}
 
-local function getTagName(tag)
-	local tagStart = tag:match('>+()') or 2
+local function GetTagName(tag)
+	local tagStart = tag:match('.*>()') or 2
 	local tagEnd = (tag:match('.-()<') or -1) - 1
 
 	return tag:sub(tagStart, tagEnd), tagStart, tagEnd
 end
 
-local function getTagFunc(tagstr)
+local function GetTagFunc(tagstr)
 	local func = tagStringFuncs[tagstr]
 	if not func then
 		local frmt, numTags = tagstr:gsub('%%', '%%%%'):gsub(_PATTERN, '%%s')
@@ -644,17 +636,17 @@ local function getTagFunc(tagstr)
 		for bracket in tagstr:gmatch(_PATTERN) do
 			local tagFunc = bracketFuncs[bracket] or tagFuncs[bracket:sub(2, -2)]
 			if not tagFunc then
-				local tagName, tagStart, tagEnd = getTagName(bracket)
+				local tagName, tagStart, tagEnd = GetTagName(bracket)
 
 				local tag = tagFuncs[tagName]
 				if tag then
 					tagStart, tagEnd = tagStart - 2, tagEnd + 2
-					tagFunc = makeTagFunc(tag, tagStart ~= 0 and bracket:sub(2, tagStart), tagEnd ~= 0 and bracket:sub(tagEnd, -2))
+					tagFunc = CreateTagFunc(tag, tagStart ~= 0 and bracket:sub(2, tagStart), tagEnd ~= 0 and bracket:sub(tagEnd, -2))
 					bracketFuncs[bracket] = tagFunc
 				end
 			end
 
-			tinsert(funcs, tagFunc or makeDeadTagFunc(bracket))
+			tinsert(funcs, tagFunc or CreateDeadTagFunc(bracket))
 		end
 
 		func = function(self)
@@ -681,8 +673,8 @@ local function getTagFunc(tagstr)
 	return func
 end
 
-local function registerEvent(event, fs)
-	if event then
+local function RegisterEvent(event, fs)
+	if(validateEvent(event)) then
 		if(not eventFontStrings[event]) then
 			eventFontStrings[event] = {}
 		end
@@ -693,18 +685,18 @@ local function registerEvent(event, fs)
 	end
 end
 
-local function registerEvents(fs, ts)
+local function RegisterEvents(fs, ts)
 	for tag in ts:gmatch(_PATTERN) do
-		local tagevents = tagEvents[getTagName(tag)]
+		local tagevents = tagEvents[GetTagName(tag)]
 		if(tagevents) then
 			for event in tagevents:gmatch('%S+') do
-				registerEvent(event, fs)
+				RegisterEvent(event, fs)
 			end
 		end
 	end
 end
 
-local function unregisterEvents(fs)
+local function UnregisterEvents(fs)
 	for event, strings in next, eventFontStrings do
 		strings[fs] = nil
 
@@ -714,46 +706,22 @@ local function unregisterEvents(fs)
 	end
 end
 
--- this bullshit is to fix texture strings not adjusting to its inherited alpha
--- it is a blizzard issue with how texture strings are rendered
-local alphaFix = CreateFrame('Frame')
-alphaFix.fontStrings = {}
-alphaFix:SetScript('OnUpdate', function()
-	local strs = alphaFix.fontStrings
-	if next(strs) then
-		for fs in next, strs do
-			strs[fs] = nil
-
-			local a = fs:GetAlpha()
-			fs:SetAlpha(0)
-			fs:SetAlpha(a)
-		end
-	else
-		alphaFix:Hide()
-	end
-end)
-
-local function fixAlpha(self)
-	alphaFix.fontStrings[self] = true
-	alphaFix:Show()
-end
-
-local function registerTimer(fs, timer)
+local function RegisterTimer(fs, timer)
 	if(not timerFontStrings[timer]) then
 		timerFontStrings[timer] = {}
 	end
 
 	timerFontStrings[timer][fs] = true
 
-	enableTimer(timer)
+	EnableTimer(timer)
 end
 
-local function unregisterTimer(fs)
+local function UnregisterTimer(fs)
 	for timer, strings in next, timerFontStrings do
 		strings[fs] = nil
 
 		if(not next(strings)) then
-			disableTimer(timer)
+			DisableTimer(timer)
 		end
 	end
 end
@@ -784,13 +752,7 @@ local function Tag(self, fs, ts, ...)
 	end
 
 	-- ElvUI
-	if not fs.__HookedAlphaFix then
-		hooksecurefunc(fs, 'SetText', fixAlpha)
-		hooksecurefunc(fs, 'SetFormattedText', fixAlpha)
-		fs.__HookedAlphaFix = true
-	end
-
-	ts = ts:gsub('||([TCRAtncra])', escapeSequence)
+	ts = ts:gsub('||([TCRAtncra])', EscapeSequence)
 
 	local customArgs = ts:match('{(.-)}%]')
 	if customArgs then
@@ -818,7 +780,7 @@ local function Tag(self, fs, ts, ...)
 
 	local containsOnUpdate
 	for tag in ts:gmatch(_PATTERN) do
-		tag = getTagName(tag)
+		tag = GetTagName(tag)
 
 		local delay = not tagEvents[tag] and onUpdateDelay[tag]
 		if delay then
@@ -828,7 +790,7 @@ local function Tag(self, fs, ts, ...)
 	-- end block
 
 	fs.parent = self
-	fs.UpdateTag = getTagFunc(ts)
+	fs.UpdateTag = GetTagFunc(ts)
 
 	if(self.__eventless or fs.frequentUpdates) or containsOnUpdate then -- ElvUI changed
 		local timer = 0.5
@@ -840,9 +802,9 @@ local function Tag(self, fs, ts, ...)
 		-- end block
 		end
 
-		registerTimer(fs, timer)
+		RegisterTimer(fs, timer)
 	else
-		registerEvents(fs, ts)
+		RegisterEvents(fs, ts)
 
 		if(...) then
 			if(not fs.extraUnits) then
@@ -868,8 +830,8 @@ Used to unregister a tag from a unit frame.
 local function Untag(self, fs)
 	if(not fs or not self.__tags) then return end
 
-	unregisterEvents(fs)
-	unregisterTimer(fs)
+	UnregisterEvents(fs)
+	UnregisterTimer(fs)
 
 	fs.UpdateTag = nil
 
@@ -877,7 +839,7 @@ local function Untag(self, fs)
 	self.__tags[fs] = nil
 end
 
-local function strip(tag)
+local function StripTag(tag)
 	-- remove prefix, custom args, and suffix
 	return tag:gsub("%[[^%[%]]*>", "["):gsub("<[^%[%]]*%]", "]") -- ElvUI uses old tag format
 end
@@ -896,18 +858,18 @@ oUF.Tags = {
 		tag = '%[' .. tag:gsub('[%^%$%(%)%%%.%*%+%-%?]', '%%%1') .. '%]'
 
 		for bracket in next, bracketFuncs do
-			if(strip(bracket):match(tag)) then
+			if(StripTag(bracket):match(tag)) then
 				bracketFuncs[bracket] = nil
 			end
 		end
 
 		for tagstr, func in next, tagStringFuncs do
-			if(strip(tagstr):match(tag)) then
+			if(StripTag(tagstr):match(tag)) then
 				tagStringFuncs[tagstr] = nil
 
 				for fs in next, taggedFontStrings do
 					if(fs.UpdateTag == func) then
-						fs.UpdateTag = getTagFunc(tagstr)
+						fs.UpdateTag = GetTagFunc(tagstr)
 
 						if(fs:IsVisible()) then
 							fs:UpdateTag()
@@ -924,11 +886,11 @@ oUF.Tags = {
 		tag = '%[' .. tag:gsub('[%^%$%(%)%%%.%*%+%-%?]', '%%%1') .. '%]'
 
 		for tagstr in next, tagStringFuncs do
-			if(strip(tagstr):match(tag)) then
+			if(StripTag(tagstr):match(tag)) then
 				for fs, ts in next, taggedFontStrings do
 					if(ts == tagstr) then
-						unregisterEvents(fs)
-						registerEvents(fs, tagstr)
+						UnregisterEvents(fs)
+						RegisterEvents(fs, tagstr)
 					end
 				end
 			end
