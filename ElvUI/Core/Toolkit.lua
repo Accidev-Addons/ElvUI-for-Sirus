@@ -37,7 +37,33 @@ local StripTexturesBlizzFrames = {
 	'ScrollFrameBorder',
 }
 
--- 8.2 restricted frame check
+local SetTexCoords
+do
+	local left, right, top, bottom = unpack(E.TexCoords)
+
+	SetTexCoords = function(frame)
+		frame:SetTexCoord(left, right, top, bottom)
+	end
+
+	function E:GetTexCoords()
+		return left, right, top, bottom
+	end
+
+	function E:UpdateTexCoords()
+		local m = 0.04 * (E.db.general.cropIcon or 2)
+		for i, v in next, E.TexCoords do
+			local value = (i % 2 == 0) and (v - m) or (v + m)
+
+			E.TexCoords[i] = value
+
+			if i == 1 then left = value
+			elseif i == 2 then right = value
+			elseif i == 3 then top = value
+			elseif i == 4 then bottom = value end
+		end
+	end
+end
+
 function E:SetPointsRestricted(frame)
 	if frame and not pcall(frame.GetPoint, frame) then
 		return true
@@ -613,6 +639,7 @@ local API = {
 	StyleButton = StyleButton,
 	OffsetFrameLevel = OffsetFrameLevel,
 	CreateCloseButton = CreateCloseButton,
+	SetTexCoords = SetTexCoords,
 	GetDebugName = GetDebugName,
 	GetChild = GetChild,
 	SetSwipeColor = SetSwipeColor,
