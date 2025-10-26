@@ -318,15 +318,14 @@ function A:UpdateTempEnchant(button, index, expiration)
 	if expiration then
 		button.texture:SetTexture(GetInventoryItemTexture('player', index))
 
-		local quality = GetInventoryItemQuality('player', index)
+		local quality = A.db.colorEnchants and GetInventoryItemQuality('player', index)
 		local r, g, b = E:GetItemQualityColor(quality and quality > 1 and quality)
 
 		button:SetBackdropBorderColor(r, g, b)
 		button.statusBar.backdrop:SetBackdropBorderColor(r, g, b)
 
 		local remaining = (expiration * 0.001) or 0
-		A:SetAuraTime(button, remaining + GetTime(),
-			(remaining <= 3600 and remaining > 1800) and 3600 or (remaining <= 1800 and remaining > 600) and 1800 or 600)
+		A:SetAuraTime(button, remaining + GetTime(), (remaining <= 3600 and remaining > 1800) and 3600 or (remaining <= 1800 and remaining > 600) and 1800 or 600)
 	else
 		A:ClearAuraTime(button)
 	end
