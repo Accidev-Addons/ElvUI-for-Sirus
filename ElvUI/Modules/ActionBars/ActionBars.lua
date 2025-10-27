@@ -1090,7 +1090,6 @@ end
 function AB:SetButtonDesaturation(button, duration)
 	if AB.db.desaturateOnCooldown and (duration and duration > 1.5) then
 		button.icon:SetDesaturated(true)
-
 		AB:LAB_CooldownDone(button)
 	else
 		button.icon:SetDesaturated(false)
@@ -1168,8 +1167,6 @@ function AB:RegisterMacro(addon)
 end
 
 function AB:Initialize()
-	AB.db = E.db.actionbar
-
 	_G.BINDING_HEADER_ELVUI = E.title
 
 	for _, barNumber in pairs({2, 7, 8, 9, 10}) do
