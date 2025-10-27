@@ -76,8 +76,8 @@ local validateEvent = Private.validateEvent
 local _G = _G
 local CreateFrame = CreateFrame
 local format, tinsert = format, tinsert
-local rawset, select, wipe = rawset, select, wipe
-local setfenv, getfenv, gsub, max = setfenv, getfenv, gsub, max
+local rawset, wipe = rawset, wipe
+local setfenv, getfenv, max = setfenv, getfenv, max
 local next, type, pcall, unpack = next, type, pcall, unpack
 local error, assert, loadstring = error, assert, loadstring
 -- end block
@@ -456,6 +456,9 @@ local vars = setmetatable({}, {
 
 _ENV._VARS = vars
 
+-- list of spells to allow in UNIT_AURA
+local tagSpells = {}
+
 local tagEvents = {
 	['affix']               = 'UNIT_CLASSIFICATION_CHANGED',
 	['classification']		= 'UNIT_CLASSIFICATION_CHANGED',
@@ -507,77 +510,46 @@ local unitlessEvents = {
 	RUNE_POWER_UPDATE = true,
 }
 
-local stringsToUpdate = {}
-local eventFontStrings = {}
-local eventFrame = CreateFrame('Frame')
-eventFrame:SetScript('OnEvent', function(_, event, unit)
-	local strings = eventFontStrings[event]
-	if(strings) then
-		for fs in next, strings do
-			if not fs.parent.isForced then -- ElvUI needs this to prevent spam
-				if(not stringsToUpdate[fs] and fs:IsVisible() and (unitlessEvents[event] or fs.parent.unit == unit or (fs.extraUnits and fs.extraUnits[unit]))) then
-					stringsToUpdate[fs] = true
-				end
-			end
-		end
-	end
-end)
-
-local eventTimer = 0
-local eventTimerThreshold = 0.1
-
-eventFrame:SetScript('OnUpdate', function(_, elapsed)
-	eventTimer = eventTimer + elapsed
-	if(eventTimer >= eventTimerThreshold) then
-		for fs in next, stringsToUpdate do
-			if(fs:IsVisible()) then
+local timerFrames = {}
+local timerFontStrings = {}
+local function UpdateTimer(frame, elapsed)
+	local total = frame.total
+	if total >= frame.timer then
+		for fs, parent in next, frame.strings do -- isForced prevents spam in ElvUI
+			if not parent.isForced and parent:IsShown() and unitExists(parent.unit) then
 				fs:UpdateTag()
 			end
 		end
 
-		wipe(stringsToUpdate)
-
-		eventTimer = 0
+		total = 0
 	end
-end)
 
-local timerFrames = {}
-local timerFontStrings = {}
+	frame.total = total + elapsed
+end
 
 local function EnableTimer(timer)
 	local frame = timerFrames[timer]
-	if(not frame) then
-		local total = timer
-		local strings = timerFontStrings[timer]
+	if frame then
+		frame.total = timer
 
+		frame:Show()
+	else
 		frame = CreateFrame('Frame')
-		frame:SetScript('OnUpdate', function(_, elapsed)
-			if total >= timer then
-				for fs in next, strings do
-					if not fs.parent.isForced then -- ElvUI needs this to prevent spam
-						if fs.parent:IsShown() and unitExists(fs.parent.unit) then
-							fs:UpdateTag()
-						end
-					end
-				end
+		frame.strings = timerFontStrings[timer]
+		frame.timer = timer
+		frame.total = timer
 
-				total = 0
-			end
-
-			total = total + elapsed
-		end)
+		frame:SetScript('OnUpdate', UpdateTimer)
 
 		timerFrames[timer] = frame
-	else
-		frame:Show()
 	end
 end
 
 local function DisableTimer(timer)
 	local frame = timerFrames[timer]
-	if(frame) then
-		frame:Hide()
-	end
+	if not frame then return end
+
+	frame:Hide()
 end
 
 --[[ Tags: frame:UpdateTags()
@@ -585,11 +557,12 @@ Used to update all tags on a frame.
 
 * self - the unit frame from which to update the tags
 --]]
+
 local function Update(self)
-	if(self.__tags) then
-		for fs in next, self.__tags do
-			fs:UpdateTag()
-		end
+	if not self.__tags then return end
+
+	for fs in next, self.__tags do
+		fs:UpdateTag()
 	end
 end
 
@@ -617,7 +590,7 @@ end
 
 local tagStringFuncs = {}
 local bracketFuncs = {}
-local buffer = {}
+local tagBuffer = {}
 
 local function GetTagName(tag)
 	local tagStart = tag:match('.*>()') or 2
@@ -632,7 +605,6 @@ local function GetTagFunc(tagstr)
 		local frmt, numTags = tagstr:gsub('%%', '%%%%'):gsub(_PATTERN, '%%s')
 		local funcs = {}
 
-		-- ElvUI changed
 		for bracket in tagstr:gmatch(_PATTERN) do
 			local tagFunc = bracketFuncs[bracket] or tagFuncs[bracket:sub(2, -2)]
 			if not tagFunc then
@@ -659,74 +631,205 @@ local function GetTagFunc(tagstr)
 			_ENV._COLORS = parent.colors
 
 			for i, fnc in next, funcs do
-				buffer[i] = fnc(unit, realUnit, customArgs) or ''
+				tagBuffer[i] = fnc(unit, realUnit, customArgs) or ''
 			end
 
 			-- we do 1 to num because buffer is shared by all tags and can hold several unneeded vars.
-			self:SetFormattedText(frmt, unpack(buffer, 1, numTags))
+			self:SetFormattedText(frmt, unpack(tagBuffer, 1, numTags))
 		end
 
 		tagStringFuncs[tagstr] = func
-		-- end block
 	end
 
 	return func
 end
 
-local function RegisterEvent(event, fs)
-	if(validateEvent(event)) then
-		if(not eventFontStrings[event]) then
-			eventFontStrings[event] = {}
-		end
-
-		eventFontStrings[event][fs] = true
-
-		eventFrame:RegisterEvent(event)
+local tempStrings = {}
+local eventHandlers = {}
+local eventAuraCache = {}
+local eventExtraUnits = {}
+local eventWaiters = {}
+local eventTimerThreshold = 0.1
+local function verifyAura(frame, event, unit, auraInstanceID, aura)
+	if aura and tagSpells[aura.spellId] then
+		eventAuraCache[auraInstanceID] = aura
+		return true -- added or updated
+	elseif eventAuraCache[auraInstanceID] then
+		eventAuraCache[auraInstanceID] = nil
+		return true -- removed
 	end
 end
 
-local function RegisterEvents(fs, ts)
+local function ShouldUpdateTag(frame, event, unit)
+	if not frame:IsShown() or frame.isForced then return end -- isForced prevents spam in ElvUI
+
+	if unitlessEvents[event] then
+		return true
+	elseif unitExists(unit) then
+		if frame.unit == unit then
+			return true
+		else
+			local allowExtra = eventExtraUnits[frame]
+			return allowExtra and allowExtra[unit]
+		end
+	end
+end
+
+local function ProcessStrings(strs)
+	if not strs then return end
+
+	for fs in next, strs do
+		tempStrings[fs] = true
+	end
+end
+
+local function UpdateStrings(strs)
+	if not strs then return end
+
+	for fs in next, strs do
+		if fs:IsVisible() then
+			fs:UpdateTag()
+		end
+	end
+end
+
+-- Define WaiterHandler first
+local function WaiterHandler(handler)
+	local waiter = eventWaiters[handler]
+	if waiter then
+		waiter:Hide() -- stop the OnUpdate
+		waiter.elapsed = 0 -- reset for reuse
+	end
+
+	wipe(tempStrings)
+
+	for event in next, handler.eventHappened do
+		ProcessStrings(handler.eventStrings[event])
+
+		handler.eventHappened[event] = nil
+	end
+
+	UpdateStrings(tempStrings)
+
+	eventWaiters[handler] = nil
+end
+
+local function WaitTimer(handler, delay)
+	local frame = CreateFrame('Frame')
+	frame.elapsed = 0
+	frame.delay = delay
+	frame.handler = handler
+
+	frame:SetScript('OnUpdate', function(self, elapsed)
+		self.elapsed = self.elapsed + elapsed
+		if self.elapsed >= self.delay then
+			self:Hide()
+			WaiterHandler(self.handler)
+		end
+	end)
+
+	return frame
+end
+
+local function HandlerEvent(handler, event, unit, updateInfo)
+	handler.eventHappened[event] = true -- so we know what events fired
+
+	local waiter = eventWaiters[handler]
+	if waiter then
+		-- Reset the timer if already waiting
+		waiter.elapsed = 0
+		return
+	end
+
+	-- we only want to show tags on validated units
+	if not ShouldUpdateTag(handler.frame, event, unit) then return end
+
+	-- we only want to let auras trigger an update when they are allowed
+	if event == 'UNIT_AURA' and oUF:ShouldSkipAuraUpdate(handler.frame, event, unit, updateInfo, verifyAura) then return end
+
+	-- Create and start the waiter frame
+	waiter = WaitTimer(handler, eventTimerThreshold)
+	waiter:Show()
+
+	eventWaiters[handler] = waiter
+end
+
+local function GenerateWaiter(handler)
+	return function() WaiterHandler(handler) end
+end
+
+local function RegisterEvent(frame, event, fs)
+	if not validateEvent(event) then return end
+
+	if not eventHandlers[frame] then
+		local handler = CreateFrame('Frame')
+
+		handler.frame = frame
+		handler.eventStrings = {}
+		handler.eventHappened = {}
+		handler.WaiterHandler = GenerateWaiter(handler)
+		handler:SetScript('OnEvent', HandlerEvent)
+
+		eventHandlers[frame] = handler
+	end
+
+	local handler = eventHandlers[frame]
+	if handler then
+		if not handler.eventStrings[event] then
+			handler.eventStrings[event] = {}
+
+			handler:RegisterEvent(event)
+		end
+
+		handler.eventStrings[event][fs] = true
+	end
+end
+
+local function RegisterEvents(frame, fs, ts)
 	for tag in ts:gmatch(_PATTERN) do
 		local tagevents = tagEvents[GetTagName(tag)]
-		if(tagevents) then
+		if tagevents then
 			for event in tagevents:gmatch('%S+') do
-				RegisterEvent(event, fs)
+				RegisterEvent(frame, event, fs)
 			end
 		end
 	end
 end
 
-local function UnregisterEvents(fs)
-	for event, strings in next, eventFontStrings do
+local function UnregisterEvents(frame, fs)
+	local handler = eventHandlers[frame]
+	if not handler then return end
+
+	for event, strings in next, handler.eventStrings do
 		strings[fs] = nil
 
-		if(not next(strings)) then
-			eventFrame:UnregisterEvent(event)
+		if not next(strings) then
+			handler:UnregisterEvent(event)
+
+			handler.eventStrings[event] = nil
 		end
 	end
 end
 
-local function RegisterTimer(fs, timer)
-	if(not timerFontStrings[timer]) then
+local function RegisterTimer(frame, fs, timer)
+	if not timerFontStrings[timer] then
 		timerFontStrings[timer] = {}
 	end
 
-	timerFontStrings[timer][fs] = true
+	timerFontStrings[timer][fs] = frame
 
 	EnableTimer(timer)
 end
 
-local function UnregisterTimer(fs)
+local function UnregisterTimer(frame, fs)
 	for timer, strings in next, timerFontStrings do
 		strings[fs] = nil
 
-		if(not next(strings)) then
+		if not next(strings) then
 			DisableTimer(timer)
 		end
 	end
 end
-
-local taggedFontStrings = {}
 
 --[[ Tags: frame:Tag(fs, tagstr, ...)
 Used to register a tag on a unit frame.
@@ -736,13 +839,15 @@ Used to register a tag on a unit frame.
 * ts     - the tag string (string)
 * ...    - additional optional unitID(s) the tag should update for
 --]]
-local function Tag(self, fs, ts, ...)
+
+local taggedFontStrings = {}
+local function Tag(self, fs, ts, arg1, ...)
 	if(not fs or not ts) then return end
 
 	if(not self.__tags) then
 		self.__tags = {}
-		self.__mousetags = {} -- ElvUI
-		self.__customargs = {} -- ElvUI
+		self.__mousetags = {}
+		self.__customargs = {}
 
 		tinsert(self.__elements, Update)
 	elseif(self.__tags[fs]) then
@@ -751,7 +856,6 @@ local function Tag(self, fs, ts, ...)
 		self:Untag(fs)
 	end
 
-	-- ElvUI
 	ts = ts:gsub('||([TCRAtncra])', EscapeSequence)
 
 	local customArgs = ts:match('{(.-)}%]')
@@ -787,32 +891,30 @@ local function Tag(self, fs, ts, ...)
 			containsOnUpdate = delay
 		end
 	end
-	-- end block
 
 	fs.parent = self
 	fs.UpdateTag = GetTagFunc(ts)
 
-	if(self.__eventless or fs.frequentUpdates) or containsOnUpdate then -- ElvUI changed
+	if(self.__eventless or fs.frequentUpdates) or containsOnUpdate then
 		local timer = 0.5
 		if(type(fs.frequentUpdates) == 'number') then
 			timer = fs.frequentUpdates
-		-- ElvUI added check
 		elseif containsOnUpdate then
 			timer = containsOnUpdate
-		-- end block
 		end
 
-		RegisterTimer(fs, timer)
+		RegisterTimer(self, fs, timer)
 	else
-		RegisterEvents(fs, ts)
+		RegisterEvents(self, fs, ts)
 
-		if(...) then
-			if(not fs.extraUnits) then
-				fs.extraUnits = {}
+		if arg1 then
+			if not eventExtraUnits[self] then
+				eventExtraUnits[self] = {}
 			end
 
-			for index = 1, select('#', ...) do
-				fs.extraUnits[select(index, ...)] = true
+			local allowExtra = eventExtraUnits[self]
+			for _, extraUnit in next, { arg1, ... } do
+				allowExtra[extraUnit] = true
 			end
 		end
 	end
@@ -827,20 +929,21 @@ Used to unregister a tag from a unit frame.
 * self - the unit frame from which to unregister the tag
 * fs   - the font string holding the tag (FontString)
 --]]
+
 local function Untag(self, fs)
 	if(not fs or not self.__tags) then return end
 
-	UnregisterEvents(fs)
-	UnregisterTimer(fs)
+	UnregisterEvents(self, fs)
+	UnregisterTimer(self, fs)
 
 	fs.UpdateTag = nil
 
+	eventExtraUnits[self] = nil
 	taggedFontStrings[fs] = nil
 	self.__tags[fs] = nil
 end
 
-local function StripTag(tag)
-	-- remove prefix, custom args, and suffix
+local function StripTag(tag) -- remove prefix, custom args, and suffix
 	return tag:gsub("%[[^%[%]]*>", "["):gsub("<[^%[%]]*%]", "]") -- ElvUI uses old tag format
 end
 
@@ -848,30 +951,31 @@ oUF.Tags = {
 	Env = _ENV,
 	Methods = tagFuncs,
 	Events = tagEvents,
+	Spells = tagSpells,
 	SharedEvents = unitlessEvents,
-	OnUpdateThrottle = onUpdateDelay, -- ElvUI
+	OnUpdateThrottle = onUpdateDelay,
 	Vars = vars,
 	RefreshMethods = function(_, tag)
-		if(not tag) then return end
+		if not tag then return end
 
-		-- if a tag's name contains magic chars, there's a chance that string.match will fail to find the match.
+		-- if a tag's name contains magic chars, there's a chance that string.match will fail to find the match
 		tag = '%[' .. tag:gsub('[%^%$%(%)%%%.%*%+%-%?]', '%%%1') .. '%]'
 
 		for bracket in next, bracketFuncs do
-			if(StripTag(bracket):match(tag)) then
+			if StripTag(bracket):match(tag) then
 				bracketFuncs[bracket] = nil
 			end
 		end
 
 		for tagstr, func in next, tagStringFuncs do
-			if(StripTag(tagstr):match(tag)) then
+			if StripTag(tagstr):match(tag) then
 				tagStringFuncs[tagstr] = nil
 
 				for fs in next, taggedFontStrings do
-					if(fs.UpdateTag == func) then
+					if fs.UpdateTag == func then
 						fs.UpdateTag = GetTagFunc(tagstr)
 
-						if(fs:IsVisible()) then
+						if fs:IsVisible() then
 							fs:UpdateTag()
 						end
 					end
@@ -879,29 +983,28 @@ oUF.Tags = {
 			end
 		end
 	end,
-	RefreshEvents = function(_, tag)
-		if(not tag) then return end
+	RefreshEvents = function(self, tag)
+		if not tag then return end
 
-		-- If a tag's name contains magic chars, there's a chance that string.match will fail to find the match.
+		-- if a tag's name contains magic chars, there's a chance that string.match will fail to find the match
 		tag = '%[' .. tag:gsub('[%^%$%(%)%%%.%*%+%-%?]', '%%%1') .. '%]'
 
 		for tagstr in next, tagStringFuncs do
-			if(StripTag(tagstr):match(tag)) then
+			if StripTag(tagstr):match(tag) then
 				for fs, ts in next, taggedFontStrings do
-					if(ts == tagstr) then
-						UnregisterEvents(fs)
-						RegisterEvents(fs, tagstr)
+					if ts == tagstr then
+						UnregisterEvents(self, fs)
+						RegisterEvents(self, fs, tagstr)
 					end
 				end
 			end
 		end
 	end,
 	SetEventUpdateTimer = function(_, timer)
-		if(not timer) then return end
-		if(type(timer) ~= 'number') then return end
+		if not timer or type(timer) ~= 'number' then return end
 
 		eventTimerThreshold = max(0.05, timer)
-	end,
+	end
 }
 
 oUF:RegisterMetaFunction('Tag', Tag)

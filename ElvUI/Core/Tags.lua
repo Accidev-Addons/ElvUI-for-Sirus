@@ -824,54 +824,27 @@ do
 	end)
 end
 
-do
-	local GroupUnits = {}
-	local frame = CreateFrame('Frame')
-	frame:RegisterEvent('PARTY_MEMBERS_CHANGED RAID_ROSTER_UPDATE')
-	frame:SetScript('OnEvent', function()
-		wipe(GroupUnits)
+for _, var in ipairs({4,8,10,15,20,25,30,35,40}) do
+	E:AddTag(format('nearbyplayers:%s', var), 0.25, function(unit)
+		local inRange = 0
 
-		local groupType, groupSize
-		if IsInRaid() then
-			groupType = 'raid'
-			groupSize = GetNumRaidMembers()
-		elseif IsInGroup() then
-			groupType = 'party'
-			groupSize = GetNumPartyMembers()
-		else
-			groupType = 'solo'
-			groupSize = 1
-		end
-
-		for index = 1, groupSize do
-			local groupUnit = groupType..index
-			if not UnitIsUnit(groupUnit, 'player') then
-				GroupUnits[groupUnit] = true
-			end
-		end
-	end)
-
-	for _, var in ipairs({4,8,10,15,20,25,30,35,40}) do
-		E:AddTag(format('nearbyplayers:%s', var), 0.25, function(realUnit)
-			local inRange = 0
-
-			if UnitIsConnected(realUnit) then
-				local unit = E:GetGroupUnit(realUnit) or realUnit
-				for groupUnit in pairs(GroupUnits) do
-					if UnitIsConnected(groupUnit) and not UnitIsUnit(unit, groupUnit) then
-						local distance = E:GetDistance(unit, groupUnit)
+		if UnitIsConnected(unit) then
+			for _, units in next, E.GroupUnitsByRole do
+				for _, unitToken in next, units do
+					if UnitIsConnected(unitToken) and not UnitIsUnit(unit, unitToken) then
+						local distance = E:GetDistance(unit, unitToken)
 						if distance and distance <= var then
 							inRange = inRange + 1
 						end
 					end
 				end
 			end
+		end
 
-			if inRange > 0 then
-				return inRange
-			end
-		end)
-	end
+		if inRange > 0 then
+			return inRange
+		end
+	end)
 end
 
 do
@@ -1019,6 +992,9 @@ end
 
 do
 	local highestVersion = E.version
+	local iconBlue = E:TextureString(E.Media.ChatLogos.ElvBlue,':13:25')
+	local iconRed = E:TextureString(E.Media.ChatLogos.ElvRed,':13:25')
+
 	E:AddTag('ElvUI-Users', 20, function(unit)
 		if E.UserList and next(E.UserList) then
 			local name, realm = UnitName(unit)
@@ -1029,7 +1005,8 @@ do
 					if highestVersion < userVersion then
 						highestVersion = userVersion
 					end
-					return (userVersion < highestVersion) and '|cffFF3333E|r' or '|cff3366ffE|r'
+
+					return (userVersion < highestVersion) and iconRed or iconBlue
 				end
 			end
 		end
@@ -1183,6 +1160,7 @@ E.TagFunctions = {
 	UnitName = Tags.Env.UnitName,
 	Abbrev = Tags.Env.Abbrev,
 	NameHealthColor = Tags.Env.NameHealthColor,
+	GetClassPower = Tags.Env.GetClassPower,
 	GetTitleNPC = Tags.Env.GetTitleNPC,
 	GetQuestData = Tags.Env.GetQuestData
 }

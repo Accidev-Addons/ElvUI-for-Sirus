@@ -85,6 +85,21 @@ local _, ns = ...
 local oUF = ns.oUF
 local Private = oUF.Private
 
+local unitSelectionType = Private.unitSelectionType
+
+local gsub, unpack = gsub, unpack
+
+local GetPetHappiness = GetPetHappiness
+local UnitClass = UnitClass
+local UnitHealth = UnitHealth
+local UnitHealthMax = UnitHealthMax
+local UnitIsConnected = UnitIsConnected
+local UnitIsPlayer = UnitIsPlayer
+local UnitIsUnit = UnitIsUnit
+local UnitPlayerControlled = UnitPlayerControlled
+local UnitReaction = UnitReaction
+local UnitThreatSituation = UnitThreatSituation
+
 local function UpdateColor(self, event, unit)
 	if(not unit or self.unit ~= unit) then return end
 	local element = self.Health
