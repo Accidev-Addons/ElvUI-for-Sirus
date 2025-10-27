@@ -1447,7 +1447,7 @@ function E:LoadStaticPopups()
 			end
 
 			if popup.itemFrameIconTexture then
-				popup.itemFrameIconTexture:SetTexCoord(unpack(E.TexCoords))
+				popup.itemFrameIconTexture:SetTexCoords()
 				popup.itemFrameIconTexture:SetInside()
 			end
 

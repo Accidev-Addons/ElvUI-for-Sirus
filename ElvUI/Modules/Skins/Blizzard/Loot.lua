@@ -178,7 +178,7 @@ S:AddCallback("Skin_LootRoll", function()
 		iconFrame:StyleButton()
 
 		icon:SetInside()
-		icon:SetTexCoord(unpack(E.TexCoords))
+		icon:SetTexCoords()
 
 		statusBar:StripTextures()
 		statusBar:CreateBackdrop("Default")

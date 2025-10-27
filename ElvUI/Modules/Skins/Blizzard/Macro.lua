@@ -30,7 +30,7 @@ S:AddCallbackForAddon("Blizzard_MacroUI", "Skin_Blizzard_MacroUI", function()
 	MacroFrameSelectedMacroButton:GetNormalTexture():SetTexture(nil)
 	MacroFrameSelectedMacroButton:SetTemplate()
 
-	MacroFrameSelectedMacroButtonIcon:SetTexCoord(unpack(E.TexCoords))
+	MacroFrameSelectedMacroButtonIcon:SetTexCoords()
 	MacroFrameSelectedMacroButtonIcon:SetInside()
 
 	MacroFrameTextBackground:StripTextures()
@@ -70,7 +70,7 @@ S:AddCallbackForAddon("Blizzard_MacroUI", "Skin_Blizzard_MacroUI", function()
 			button:SetTemplate(nil, true)
 			button:StyleButton(nil, true)
 
-			buttonIcon:SetTexCoord(unpack(E.TexCoords))
+			buttonIcon:SetTexCoords()
 			buttonIcon:SetInside()
 		end
 	end

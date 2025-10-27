@@ -92,7 +92,7 @@ S:AddCallbackForAddon("Blizzard_TradeSkillUI", "Skin_Blizzard_TradeSkillUI", fun
 		icon.backdrop:Point("TOPLEFT", icon, -1, 1)
 		icon.backdrop:Point("BOTTOMRIGHT", icon, 1, -1)
 
-		icon:SetTexCoord(unpack(E.TexCoords))
+		icon:SetTexCoords()
 		icon:SetDrawLayer("OVERLAY")
 		icon:Size(E.PixelMode and 38 or 32)
 		icon:Point("TOPLEFT", E.PixelMode and 1 or 4, -(E.PixelMode and 1 or 4))
@@ -178,7 +178,7 @@ S:AddCallbackForAddon("Blizzard_TradeSkillUI", "Skin_Blizzard_TradeSkillUI", fun
 	hooksecurefunc("TradeSkillFrame_SetSelection", function(id)
 		if TradeSkillSkillIcon:GetNormalTexture() then
 			TradeSkillSkillIcon:SetAlpha(1)
-			TradeSkillSkillIcon:GetNormalTexture():SetTexCoord(unpack(E.TexCoords))
+			TradeSkillSkillIcon:GetNormalTexture():SetTexCoords()
 			TradeSkillSkillIcon:GetNormalTexture():SetInside()
 		else
 			TradeSkillSkillIcon:SetAlpha(0)

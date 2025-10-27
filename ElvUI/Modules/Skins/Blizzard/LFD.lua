@@ -93,7 +93,7 @@ S:AddCallback("Skin_LFD", function()
 		frame:CreateBackdrop("Transparent")
 		frame.backdrop:SetOutside(icon)
 
-		icon:SetTexCoord(unpack(E.TexCoords))
+		icon:SetTexCoords()
 		icon:SetDrawLayer("BORDER")
 		icon:SetParent(frame.backdrop)
 
@@ -208,7 +208,7 @@ S:AddCallback("Skin_LFD", function()
 		button:Size(28)
 		button:SetTemplate("Default")
 		button.texture:SetInside()
-		button.texture:SetTexCoord(unpack(E.TexCoords))
+		button.texture:SetTexCoords()
 		button:DisableDrawLayer("OVERLAY")
 
 		button.isSkinned = true

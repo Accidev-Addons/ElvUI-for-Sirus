@@ -49,7 +49,7 @@ S:AddCallback("Skin_Bags", function()
 			item:StyleButton()
 
 			icon:SetInside()
-			icon:SetTexCoord(unpack(E.TexCoords))
+			icon:SetTexCoords()
 
 			questIcon:SetTexture(E.Media.Textures.BagQuestIcon)
 			questIcon.SetTexture = E.noop
@@ -69,7 +69,7 @@ S:AddCallback("Skin_Bags", function()
 		token:CreateBackdrop("Default")
 		token.backdrop:SetOutside(token.icon)
 
-		token.icon:SetTexCoord(unpack(E.TexCoords))
+		token.icon:SetTexCoords()
 		token.icon:Point("LEFT", token.count, "RIGHT", 2, 0)
 		token.icon:Size(16)
 	end
@@ -85,7 +85,7 @@ S:AddCallback("Skin_Bags", function()
 			portraitButton.hover:SetAllPoints()
 
 			frame.BagIcon = portraitButton:CreateTexture()
-			frame.BagIcon:SetTexCoord(unpack(E.TexCoords))
+			frame.BagIcon:SetTexCoords()
 			frame.BagIcon:SetAllPoints()
 		end
 
@@ -181,7 +181,7 @@ S:AddCallback("Skin_Bags", function()
 		button:StyleButton()
 
 		icon:SetInside()
-		icon:SetTexCoord(unpack(E.TexCoords))
+		icon:SetTexCoords()
 
 		quest:SetTexture(E.Media.Textures.BagQuestIcon)
 		quest.SetTexture = E.noop
@@ -207,7 +207,7 @@ S:AddCallback("Skin_Bags", function()
 		button:StyleButton()
 
 		icon:SetInside()
-		icon:SetTexCoord(unpack(E.TexCoords))
+		icon:SetTexCoords()
 
 		highlight:SetInside()
 		highlight:SetTexture(unpack(E.media.rgbvaluecolor), 0.3)

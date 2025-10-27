@@ -153,7 +153,7 @@ S:AddCallbackForAddon("Blizzard_AuctionUI", "Skin_Blizzard_AuctionUI", function(
 			itemButton:Point("TOPLEFT", 0, -1)
 			itemButton:Size(34)
 
-			itemTexture:SetTexCoord(unpack(E.TexCoords))
+			itemTexture:SetTexCoords()
 			itemTexture:SetInside()
 
 			button.highlight = highlight
@@ -378,7 +378,7 @@ S:AddCallbackForAddon("Blizzard_AuctionUI", "Skin_Blizzard_AuctionUI", function(
 		local normalTexture = self:GetNormalTexture()
 
 		if event == "NEW_AUCTION_UPDATE" and normalTexture then
-			normalTexture:SetTexCoord(unpack(E.TexCoords))
+			normalTexture:SetTexCoords()
 			normalTexture:SetInside()
 
 			local _, _, _, quality = GetAuctionSellItemInfo()
@@ -464,7 +464,7 @@ S:AddCallbackForAddon("Blizzard_AuctionUI", "Skin_Blizzard_AuctionUI", function(
 	AuctionProgressBarIcon:CreateBackdrop("Default")
 	AuctionProgressBarIcon:Size(38)
 	AuctionProgressBarIcon:Point("RIGHT", AuctionProgressBar, "LEFT", -9, 0)
-	AuctionProgressBarIcon:SetTexCoord(unpack(E.TexCoords))
+	AuctionProgressBarIcon:SetTexCoords()
 
 	-- Localization specific adjustments
 	local locale = GetLocale()

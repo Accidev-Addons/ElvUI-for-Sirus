@@ -1232,7 +1232,7 @@ function S:ReplaceIconString(text)
 end
 
 function S:HandleIcon(icon, backdrop)
-	icon:SetTexCoord(unpack(E.TexCoords))
+	icon:SetTexCoords()
 
 	if backdrop and not icon.backdrop then
 		icon:CreateBackdrop()
@@ -1251,7 +1251,7 @@ function S:HandleItemButton(b, setInside)
 	b:StyleButton()
 
 	if icon then
-		icon:SetTexCoord(unpack(E.TexCoords))
+		icon:SetTexCoords()
 
 		if setInside then
 			icon:SetInside(b)
@@ -1434,7 +1434,7 @@ function S:HandleIconSelectionFrame(frame, numIcons, buttonNameTemplate, frameNa
 		button:SetTemplate('Default')
 		button:StyleButton(nil, true)
 		icon:SetInside()
-		icon:SetTexCoord(unpack(E.TexCoords))
+		icon:SetTexCoords()
 	end
 end
 

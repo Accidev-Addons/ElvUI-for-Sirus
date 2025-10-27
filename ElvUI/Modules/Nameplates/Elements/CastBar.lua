@@ -321,7 +321,7 @@ function NP:Construct_CastBar(parent)
 	frame.Icon = CreateFrame("Frame", nil, frame)
 	frame.Icon.texture = frame.Icon:CreateTexture(nil, "BORDER")
 	frame.Icon.texture:SetAllPoints()
-	frame.Icon.texture:SetTexCoord(unpack(E.TexCoords))
+	frame.Icon.texture:SetTexCoords()
 	NP:StyleFrame(frame.Icon)
 
 	frame.Time = frame:CreateFontString(nil, "OVERLAY")

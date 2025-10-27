@@ -75,7 +75,7 @@ S:AddCallback("Skin_WatchFrame", function()
 				normal:SetAlpha(0)
 
 				icon:SetInside()
-				icon:SetTexCoord(unpack(E.TexCoords))
+				icon:SetTexCoords()
 
 				E:RegisterCooldown(cooldown)
 

@@ -57,7 +57,7 @@ function NP:Construct_IconFrame(frame)
 
 	iconFrame.texture = iconFrame:CreateTexture()
 	iconFrame.texture:SetAllPoints()
-	iconFrame.texture:SetTexCoord(unpack(E.TexCoords))
+	iconFrame.texture:SetTexCoords()
 
 	return iconFrame
 end

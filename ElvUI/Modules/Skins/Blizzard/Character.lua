@@ -53,7 +53,7 @@ local function HandleCompanionsPerPage()
 
 		if button.creatureID then
 			local iconNormal = button:GetNormalTexture()
-			iconNormal:SetTexCoord(unpack(E.TexCoords))
+			iconNormal:SetTexCoords()
 			iconNormal:SetInside()
 		end
 	end
@@ -172,7 +172,7 @@ local function UpdateCurrencySkins()
 			if button.itemID == 43308 and E.myfaction then
 				button.icon:SetTexCoord(0.06325, 0.59375, 0.03125, 0.57375)
 			else
-				button.icon:SetTexCoord(unpack(E.TexCoords))
+				button.icon:SetTexCoords()
 			end
 
 			button.icon:Size(17)
@@ -392,7 +392,7 @@ S:AddCallback('Skin_Character', function()
 			button:StyleButton()
 
 			button.icon:SetInside()
-			button.icon:SetTexCoord(unpack(E.TexCoords))
+			button.icon:SetTexCoords()
 
 			E:RegisterCooldown(button.cooldown)
 		end
@@ -422,7 +422,7 @@ S:AddCallback('Skin_Character', function()
 		button:StyleButton(nil, true)
 
 		button.icon:SetInside()
-		button.icon:SetTexCoord(unpack(E.TexCoords))
+		button.icon:SetTexCoords()
 	end
 
 	S:HandleButton(_G.GearManagerDialogDeleteSet)
@@ -459,7 +459,7 @@ S:AddCallback('Skin_Character', function()
 		button:StyleButton(true, true)
 
 		button.icon:SetInside()
-		button.icon:SetTexCoord(unpack(E.TexCoords))
+		button.icon:SetTexCoords()
 
 		if i > 1 then
 			local lastPos = (i - 1) / _G.NUM_GEARSET_ICONS_PER_ROW

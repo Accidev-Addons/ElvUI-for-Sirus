@@ -73,7 +73,7 @@ S:AddCallbackForAddon("Blizzard_GuildBankUI", "Skin_Blizzard_GuildBankUI", funct
 		button:GetCheckedTexture():SetInside()
 
 		texture:SetInside()
-		texture:SetTexCoord(unpack(E.TexCoords))
+		texture:SetTexCoords()
 		texture:SetDrawLayer("ARTWORK")
 	end
 
@@ -89,7 +89,7 @@ S:AddCallbackForAddon("Blizzard_GuildBankUI", "Skin_Blizzard_GuildBankUI", funct
 			button:SetTemplate('Transparent')
 
 			icon:SetInside()
-			icon:SetTexCoord(unpack(E.TexCoords))
+			icon:SetTexCoords()
 		end
 	end
 

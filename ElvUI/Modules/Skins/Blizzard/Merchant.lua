@@ -62,7 +62,7 @@ S:AddCallback("Skin_Merchant", function()
 		itemButton:Size(40)
 		itemButton:Point("TOPLEFT", 4, -4)
 
-		icon:SetTexCoord(unpack(E.TexCoords))
+		icon:SetTexCoords()
 		icon:SetInside()
 
 		name:Point("LEFT", slot, "RIGHT", -4, 5)
@@ -81,7 +81,7 @@ S:AddCallback("Skin_Merchant", function()
 				currencyIcon.backdrop:OffsetFrameLevel(nil, currencyItem)
 				currencyIcon.backdrop:SetOutside(currencyIcon)
 
-				currencyIcon:SetTexCoord(unpack(E.TexCoords))
+				currencyIcon:SetTexCoords()
 				currencyIcon:SetParent(currencyIcon.backdrop)
 			end
 		end

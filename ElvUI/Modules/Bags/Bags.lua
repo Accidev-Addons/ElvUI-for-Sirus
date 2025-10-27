@@ -1305,7 +1305,7 @@ function B:ConstructContainerHolder(f, bagID, isBank, name, index)
 	end
 
 	holder.icon = holder:CreateTexture(nil, 'ARTWORK')
-	holder.icon:SetTexCoord(unpack(E.TexCoords))
+	holder.icon:SetTexCoords()
 	holder.icon:SetTexture(bagID == KEYRING_CONTAINER and [[Interface\ICONS\INV_Misc_Key_03]] or E.Media.Textures.Backpack)
 	holder.icon:SetInside()
 
@@ -1719,7 +1719,7 @@ function B:ConstructContainerFrame(name, isBank)
 
 			local icon = (currency.icon or currency.Icon)
 			icon:SetInside()
-			icon:SetTexCoord(unpack(E.TexCoords))
+			icon:SetTexCoords()
 			icon:SetDrawLayer('ARTWORK', 7)
 
 			currency.text = currency:CreateFontString(nil, 'OVERLAY')
@@ -1800,7 +1800,7 @@ function B:ConstructContainerButton(f, bagID, slotID)
 		slot.keyringTexture:SetAlpha(0.5)
 		slot.keyringTexture:SetInside(slot)
 		slot.keyringTexture:SetTexture([[Interface\ContainerFrame\KeyRing-Bag-Icon]])
-		slot.keyringTexture:SetTexCoord(unpack(E.TexCoords))
+		slot.keyringTexture:SetTexCoords()
 		slot.keyringTexture:SetDesaturated(true)
 	end
 
@@ -1820,7 +1820,7 @@ function B:ConstructContainerButton(f, bagID, slotID)
 
 	slot.icon = _G[slotName..'IconTexture']
 	slot.icon:SetInside()
-	slot.icon:SetTexCoord(unpack(E.TexCoords))
+	slot.icon:SetTexCoords()
 
 	slot.itemLevel = slot:CreateFontString(nil, 'ARTWORK', nil, 1)
 	slot.itemLevel:Point(B.db.itemLevelPosition, B.db.itemLevelxOffset, B.db.itemLevelyOffset)

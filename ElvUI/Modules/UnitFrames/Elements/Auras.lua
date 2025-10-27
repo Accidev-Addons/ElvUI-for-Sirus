@@ -96,7 +96,7 @@ function UF:UpdateAuraSettings(auras, button)
 		button.count:FontTemplate(LSM:Fetch("font", button.db.countFont), button.db.countFontSize, button.db.countFontOutline)
 	end
 	if button.icon then
-		button.icon:SetTexCoord(unpack(E.TexCoords))
+		button.icon:SetTexCoords()
 	end
 
 	button:Size((auras and auras.size) or 30)

@@ -46,7 +46,7 @@ S:AddCallback('Skin_Spellbook', function()
 
 		button:CreateBackdrop('Default', true)
 
-		icon:SetTexCoord(unpack(E.TexCoords))
+		icon:SetTexCoords()
 
 		E:RegisterCooldown(cooldown)
 	end
@@ -66,7 +66,7 @@ S:AddCallback('Skin_Spellbook', function()
 		tab:SetTemplate('Default', true)
 
 		tab:GetNormalTexture():SetInside()
-		tab:GetNormalTexture():SetTexCoord(unpack(E.TexCoords))
+		tab:GetNormalTexture():SetTexCoords()
 	end
 
 	_G.SpellBookSkillLineTab1:Point('TOPLEFT', '$parent', 'TOPRIGHT', -33, -46)

@@ -62,7 +62,7 @@ S:AddCallback("Skin_Mail", function()
 		button:StyleButton()
 		button.hover:SetAllPoints()
 
-		icon:SetTexCoord(unpack(E.TexCoords))
+		icon:SetTexCoords()
 		icon:SetInside(button.backdrop)
 	end
 
@@ -148,7 +148,7 @@ S:AddCallback("Skin_Mail", function()
 					button:SetBackdropBorderColor(unpack(E.media.bordercolor))
 				end
 
-				icon:SetTexCoord(unpack(E.TexCoords))
+				icon:SetTexCoords()
 				icon:SetInside()
 			else
 				button:SetBackdropBorderColor(unpack(E.media.bordercolor))
@@ -218,7 +218,7 @@ S:AddCallback("Skin_Mail", function()
 		button:StyleButton()
 
 		if icon then
-			icon:SetTexCoord(unpack(E.TexCoords))
+			icon:SetTexCoords()
 			icon:SetDrawLayer("ARTWORK")
 			icon:SetInside()
 
@@ -283,7 +283,7 @@ S:AddCallback("Skin_Mail", function()
 	OpenMailLetterButton:SetTemplate("Default", true)
 	OpenMailLetterButton:StyleButton()
 
-	OpenMailLetterButtonIconTexture:SetTexCoord(unpack(E.TexCoords))
+	OpenMailLetterButtonIconTexture:SetTexCoords()
 	OpenMailLetterButtonIconTexture:SetDrawLayer("ARTWORK")
 	OpenMailLetterButtonIconTexture:SetInside()
 
@@ -293,7 +293,7 @@ S:AddCallback("Skin_Mail", function()
 	OpenMailMoneyButton:SetTemplate("Default", true)
 	OpenMailMoneyButton:StyleButton()
 
-	OpenMailMoneyButtonIconTexture:SetTexCoord(unpack(E.TexCoords))
+	OpenMailMoneyButtonIconTexture:SetTexCoords()
 	OpenMailMoneyButtonIconTexture:SetDrawLayer("ARTWORK")
 	OpenMailMoneyButtonIconTexture:SetInside()
 

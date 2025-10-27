@@ -21,7 +21,7 @@ S:AddCallbackForAddon("Blizzard_TimeManager", "Skin_Blizzard_TimeManager", funct
 	TimeManagerStopwatchCheck:StyleButton(nil, true)
 
 	TimeManagerStopwatchCheck:GetNormalTexture():SetInside()
-	TimeManagerStopwatchCheck:GetNormalTexture():SetTexCoord(unpack(E.TexCoords))
+	TimeManagerStopwatchCheck:GetNormalTexture():SetTexCoords()
 
 	S:HandleDropDownBox(TimeManagerAlarmHourDropDown, 80)
 	S:HandleDropDownBox(TimeManagerAlarmMinuteDropDown, 80)

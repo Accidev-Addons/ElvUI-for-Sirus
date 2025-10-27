@@ -1114,6 +1114,7 @@ function E:LoadAPI()
 	E:RegisterEvent('UI_SCALE_CHANGED', 'PixelScaleChanged')
 
 	E:SetupGameMenu()
+	E:UpdateTexCoords() -- update cropIcon texCoords
 	E:PopulateSpecInfo()
 
 	E:CompatibleTooltip(E.ScanTooltip)

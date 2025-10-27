@@ -65,7 +65,7 @@ S:AddCallback("Skin_Friends", function()
 	-- Friends List Frame
 	for i = 1, FRIENDS_FRIENDS_TO_DISPLAY do
 		_G["FriendsFrameFriendsScrollFrameButton"..i.."SummonButton"]:StyleButton()
-		_G["FriendsFrameFriendsScrollFrameButton"..i.."SummonButtonIcon"]:SetTexCoord(unpack(E.TexCoords))
+		_G["FriendsFrameFriendsScrollFrameButton"..i.."SummonButtonIcon"]:SetTexCoords()
 		_G["FriendsFrameFriendsScrollFrameButton"..i.."SummonButtonNormalTexture"]:SetAlpha(0)
 	end
 

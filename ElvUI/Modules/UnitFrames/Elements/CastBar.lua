@@ -141,7 +141,7 @@ function UF:Configure_Castbar(frame)
 		--Icon
 		if db.castbar.icon then
 			castbar.Icon = castbar.ButtonIcon
-			castbar.Icon:SetTexCoord(unpack(E.TexCoords))
+			castbar.Icon:SetTexCoords()
 
 			if not db.castbar.iconAttached then
 				castbar.Icon.bg:Size(db.castbar.iconSize)

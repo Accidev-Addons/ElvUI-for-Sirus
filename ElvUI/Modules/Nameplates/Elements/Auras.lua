@@ -346,7 +346,7 @@ function NP:Construct_AuraIcon(parent, index)
 	button.bg:SetPoint("BOTTOMRIGHT", button:GetStatusBarTexture(), "TOPRIGHT")
 
 	button.icon = button:CreateTexture(nil, "BORDER")
-	button.icon:SetTexCoord(unpack(E.TexCoords))
+	button.icon:SetTexCoords()
 	button.icon:SetAllPoints()
 
 	button.count = button:CreateFontString(nil, "OVERLAY")

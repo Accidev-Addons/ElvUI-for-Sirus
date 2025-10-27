@@ -79,7 +79,7 @@ S:AddCallback('Skin_Misc', function()
 			end
 		end)
 
-		itemFrameTexture:SetTexCoord(unpack(E.TexCoords))
+		itemFrameTexture:SetTexCoords()
 		itemFrameTexture:SetInside()
 
 		itemFrameNormal:SetAlpha(0)

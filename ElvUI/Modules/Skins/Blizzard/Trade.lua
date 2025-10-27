@@ -45,14 +45,14 @@ S:AddCallback("Skin_Trade", function()
 		playerButton:SetTemplate("Default", true)
 
 		playerButtonIcon:SetInside()
-		playerButtonIcon:SetTexCoord(unpack(E.TexCoords))
+		playerButtonIcon:SetTexCoords()
 
 		recipientButton:StripTextures()
 		recipientButton:StyleButton()
 		recipientButton:SetTemplate("Default", true)
 
 		recipientButtonIcon:SetInside()
-		recipientButtonIcon:SetTexCoord(unpack(E.TexCoords))
+		recipientButtonIcon:SetTexCoords()
 
 		playerButton.bg = CreateFrame("Frame", nil, playerButton)
 		playerButton.bg:SetTemplate("Default")

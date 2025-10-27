@@ -47,7 +47,7 @@ function UF:Configure_RaidDebuffs(frame)
 		rdebuffs:Size(db.rdebuffs.size)
 		rdebuffs:Point("BOTTOM", frame, "BOTTOM", db.rdebuffs.xOffset, db.rdebuffs.yOffset + frame.SPACING)
 
-		rdebuffs.icon:SetTexCoord(unpack(E.TexCoords))
+		rdebuffs.icon:SetTexCoords()
 
 		rdebuffs.count:FontTemplate(rdebuffsFont, db.rdebuffs.fontSize, db.rdebuffs.fontOutline)
 		rdebuffs.count:ClearAllPoints()

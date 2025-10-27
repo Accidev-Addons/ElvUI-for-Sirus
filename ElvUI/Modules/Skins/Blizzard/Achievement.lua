@@ -27,7 +27,7 @@ local function skinAchievement(achievement, biggerIcon)
 	achievement.icon:Point("TOPLEFT", biggerIcon and 8 or 6, biggerIcon and -7 or -6)
 	achievement.icon.bling:SetTexture()
 	achievement.icon.frame:SetTexture()
-	achievement.icon.texture:SetTexCoord(unpack(E.TexCoords))
+	achievement.icon.texture:SetTexCoords()
 	achievement.icon.texture:SetInside()
 
 	if achievement.highlight then
@@ -462,7 +462,7 @@ S:AddCallbackForAddon("Blizzard_AchievementUI", "Skin_Blizzard_AchievementUI", f
 				metaCriteria:Height(21)
 				metaCriteria:StyleButton()
 				metaCriteria.border:Kill()
-				metaCriteria.icon:SetTexCoord(unpack(E.TexCoords))
+				metaCriteria.icon:SetTexCoords()
 				metaCriteria.icon:Point("TOPLEFT", 2, -2)
 				metaCriteria.label:Point("LEFT", 26, 0)
 
@@ -519,7 +519,7 @@ S:AddCallbackForAddon("Blizzard_AchievementUI", "Skin_Blizzard_AchievementUI", f
 				end
 				mini.SetPoint = E.noop
 
-				icon:SetTexCoord(unpack(E.TexCoords))
+				icon:SetTexCoords()
 				icon:SetInside()
 
 				points:Point("BOTTOMRIGHT", -8, -15)

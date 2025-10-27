@@ -90,7 +90,7 @@ S:AddCallbackForAddon("Blizzard_Calendar", "Skin_Blizzard_Calendar", function()
 	local eventTextureSetTexCoord = function(self, left, right, top, bottom)
 		if not self._blocked and left == 0 and right == 1 and top == 0 and bottom == 1 then
 			self._blocked = true
-			self:SetTexCoord(unpack(E.TexCoords))
+			self:SetTexCoords()
 			self._blocked = nil
 		end
 	end
@@ -174,7 +174,7 @@ S:AddCallbackForAddon("Blizzard_Calendar", "Skin_Blizzard_Calendar", function()
 
 	CalendarCreateEventIcon:CreateBackdrop()
 	CalendarCreateEventIcon:Point("TOPLEFT", 14, -26)
-	CalendarCreateEventIcon:SetTexCoord(unpack(E.TexCoords))
+	CalendarCreateEventIcon:SetTexCoords()
 	CalendarCreateEventIcon.SetTexCoord = E.noop
 
 	CalendarCreateEventTitleEdit:Size(160, 18)
@@ -335,7 +335,7 @@ S:AddCallbackForAddon("Blizzard_Calendar", "Skin_Blizzard_Calendar", function()
 	S:HandleButton(CalendarViewEventDeclineButton)
 
 	CalendarViewEventIcon:CreateBackdrop()
-	CalendarViewEventIcon:SetTexCoord(unpack(E.TexCoords))
+	CalendarViewEventIcon:SetTexCoords()
 	CalendarViewEventIcon.SetTexCoord = E.noop
 
 	CalendarViewEventDescriptionContainer:Size(294, 68)

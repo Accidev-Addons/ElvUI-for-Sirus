@@ -134,7 +134,7 @@ Tags.Env.GetClassPower = function(unit)
 	end
 
 	-- try special powers or combo points
-	local barType = not r and ClassPowers[unitClass]
+	local barType = ClassPowers[unitClass]
 	if barType then
 		local dk = unitClass == 'DEATHKNIGHT'
 		Min = (dk and 0) or UnitPower(unit, barType)

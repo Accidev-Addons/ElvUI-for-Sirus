@@ -76,7 +76,7 @@ S:AddCallbackForAddon("Blizzard_TalentUI", "Skin_Blizzard_TalentUI", function()
 			talent:StyleButton()
 
 			icon:SetInside()
-			icon:SetTexCoord(unpack(E.TexCoords))
+			icon:SetTexCoords()
 			icon:SetDrawLayer("ARTWORK")
 
 			rank:SetFont(E.LSM:Fetch("font", E.db.general.font), 12, "OUTLINE")
@@ -95,7 +95,7 @@ S:AddCallbackForAddon("Blizzard_TalentUI", "Skin_Blizzard_TalentUI", function()
 		tab:StyleButton(nil, true)
 
 		tab:GetNormalTexture():SetInside()
-		tab:GetNormalTexture():SetTexCoord(unpack(E.TexCoords))
+		tab:GetNormalTexture():SetTexCoords()
 	end
 
 	PlayerTalentFrameStatusFrame:Point("TOPLEFT", 57, -40)

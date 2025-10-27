@@ -95,7 +95,7 @@ S:AddCallbackForAddon("Blizzard_TrainerUI", "Skin_Blizzard_TrainerUI", function(
 		local skillIcon = ClassTrainerSkillIcon:GetNormalTexture()
 		if skillIcon then
 			skillIcon:SetInside()
-			skillIcon:SetTexCoord(unpack(E.TexCoords))
+			skillIcon:SetTexCoords()
 
 			ClassTrainerSkillIcon:SetTemplate("Default")
 		end

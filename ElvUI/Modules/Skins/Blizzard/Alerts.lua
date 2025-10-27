@@ -34,7 +34,7 @@ S:AddCallback("Skin_Alerts", function()
 
 			icon.texture:ClearAllPoints()
 			icon.texture:Point("LEFT", frame, 13, 0)
-			icon.texture:SetTexCoord(unpack(E.TexCoords))
+			icon.texture:SetTexCoords()
 
 			icon:CreateBackdrop("Default")
 			icon.backdrop:SetOutside(icon.texture)
@@ -62,7 +62,7 @@ S:AddCallback("Skin_Alerts", function()
 	frame.dungeonTexture:ClearAllPoints()
 	frame.dungeonTexture:Point("LEFT", 13, 0)
 	frame.dungeonTexture:Size(42)
-	frame.dungeonTexture:SetTexCoord(unpack(E.TexCoords))
+	frame.dungeonTexture:SetTexCoords()
 
 	frame.dungeonTexture.backdrop = CreateFrame("Frame", "$parentDungeonTextureBackground", frame)
 	frame.dungeonTexture.backdrop:SetTemplate("Default")

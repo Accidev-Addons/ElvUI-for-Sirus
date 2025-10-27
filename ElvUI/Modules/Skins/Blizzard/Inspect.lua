@@ -66,7 +66,7 @@ S:AddCallbackForAddon("Blizzard_InspectUI", "Skin_Blizzard_InspectUI", function(
 
 		frame:StyleButton()
 
-		icon:SetTexCoord(unpack(E.TexCoords))
+		icon:SetTexCoords()
 		icon:SetInside()
 	end
 
@@ -147,7 +147,7 @@ S:AddCallbackForAddon("Blizzard_InspectUI", "Skin_Blizzard_InspectUI", function(
 			talent:StyleButton()
 
 			icon:SetInside()
-			icon:SetTexCoord(unpack(E.TexCoords))
+			icon:SetTexCoords()
 			icon:SetDrawLayer("ARTWORK")
 
 			rank:SetFont(E.LSM:Fetch("font", E.db.general.font), 12, "OUTLINE")

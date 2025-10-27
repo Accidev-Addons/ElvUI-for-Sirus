@@ -89,7 +89,7 @@ function B:SkinBag(bag)
 
 	icon:SetInside()
 	icon:SetTexture((not bag.oldTex or bag.oldTex == 1721259) and E.Media.Textures.Backpack or bag.oldTex)
-	icon:SetTexCoord(unpack(E.TexCoords))
+	icon:SetTexCoords()
 end
 
 function B:BagBar_UpdateVisibility()
