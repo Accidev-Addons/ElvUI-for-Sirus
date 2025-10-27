@@ -415,7 +415,7 @@ function DT:AssignPanelToDataText(dt, data, event, ...)
 						E:RegisterEventForObject(ev, data.objectEvent, dt.objectEventFunc)
 					end
 				elseif DT.UnitEvents[ev] then
-					pcall(dt.RegisterUnitEvent, dt, ev, 'player')
+					pcall(dt.RegisterEvent, dt, ev, 'player')
 				else
 					if ev == 'MODIFIER_STATE_CHANGED' then
 						dt.watchModKey = true
