@@ -52,6 +52,7 @@ local IsShiftKeyDown, IsControlKeyDown = IsShiftKeyDown, IsControlKeyDown
 local CloseBag, CloseBackpack, CloseBankFrame = CloseBag, CloseBackpack, CloseBankFrame
 
 local C_NewItems_IsNewItem = LC.C_NewItems.IsNewItem
+local C_NewItems_RemoveNewItem = LC.C_NewItems.RemoveNewItem
 
 local EditBox_HighlightText = EditBox_HighlightText
 local BankFrameItemButton_UpdateLocked = BankFrameItemButton_UpdateLocked
@@ -413,6 +414,9 @@ function B:NewItemGlowSlotSwitch(slot, show)
 			B:ShowItemGlow(bank or B.BagFrame, slot.newItemGlow)
 		else
 			slot.newItemGlow:Hide()
+
+			-- also clear them on blizzard's side
+			C_NewItems_RemoveNewItem(slot.BagID, slot.SlotID)
 		end
 	end
 end
