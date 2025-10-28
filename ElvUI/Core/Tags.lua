@@ -553,9 +553,8 @@ E:AddTag('incomingheals', 'UNIT_HEAL_PREDICTION', function(unit)
 	end
 end)
 
-E:AddTag('distance', 0.1, function(realUnit)
-	if UnitIsConnected(realUnit) and not UnitIsUnit(realUnit, 'player') then
-		local unit = E:GetGroupUnit(realUnit) or realUnit
+E:AddTag('distance', 0.1, function(unit)
+	if UnitIsConnected(unit) and not UnitIsUnit(unit, 'player') then
 		local distance = E:GetDistance('player', unit)
 		if distance then
 			return format('%.1f', distance)

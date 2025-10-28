@@ -30,13 +30,14 @@ A default texture will be applied if the widget is a Texture and doesn't have a 
 
 local _, ns = ...
 local oUF = ns.oUF
+local Private = oUF.Private
 
-local GetThreatStatusColor = GetThreatStatusColor
-local UnitExists = UnitExists
+local unitExists = Private.unitExists
+
 local UnitThreatSituation = UnitThreatSituation
 
 local function Update(self, event, unit)
-	if(not unit or self.unit ~= unit) then return end
+	if(unit ~= self.unit) then return end
 
 	local element = self.ThreatIndicator
 	--[[ Callback: ThreatIndicator:PreUpdate(unit)
@@ -52,8 +53,8 @@ local function Update(self, event, unit)
 
 	local status
 	-- BUG: Non-existent '*target' or '*pet' units cause UnitThreatSituation() errors
-	if(UnitExists(unit)) then
-		if(feedbackUnit and feedbackUnit ~= unit and UnitExists(feedbackUnit)) then
+	if(unitExists(unit)) then
+		if(feedbackUnit and feedbackUnit ~= unit and unitExists(feedbackUnit)) then
 			status = UnitThreatSituation(feedbackUnit, unit)
 		else
 			status = UnitThreatSituation(unit)
@@ -62,7 +63,8 @@ local function Update(self, event, unit)
 
 	local r, g, b
 	if(status and status > 0) then
-		r, g, b = GetThreatStatusColor(status)
+		local color = self.colors.threat[status]
+		r, g, b = color.r, color.g, color.b
 
 		if(element.SetVertexColor) then
 			element:SetVertexColor(r, g, b)
@@ -78,7 +80,7 @@ local function Update(self, event, unit)
 
 	* self   - the ThreatIndicator element
 	* unit   - the unit for which the update has been triggered (string)
-	* status - the unit's threat status (see [UnitThreatSituation](http://wowprogramming.com/docs/api/UnitThreatSituation))
+	* status - the unit's threat status (see [UnitThreatSituation](https://warcraft.wiki.gg/wiki/API_UnitThreatSituation))
 	* r      - the red color component based on the unit's threat status (number?)[0-1]
 	* g      - the green color component based on the unit's threat status (number?)[0-1]
 	* b      - the blue color component based on the unit's threat status (number?)[0-1]
@@ -113,8 +115,7 @@ local function Enable(self)
 		self:RegisterEvent('UNIT_THREAT_LIST_UPDATE', Path)
 
 		if(element:IsObjectType('Texture') and not element:GetTexture()) then
-			element:SetTexture([[Interface\Minimap\ObjectIcons]])
-			element:SetTexCoord(6/8, 7/8, 1/8, 2/8)
+			element:SetTexture([[Interface\RAIDFRAME\UI-RaidFrame-Threat]])
 		end
 
 		return true
