@@ -707,32 +707,27 @@ end
 function RU:OnEvent_RoleIcons(event)
 	RU:PositionSections()
 
-	-- if event ~= 'PLAYER_ENTERING_WORLD' then
+	if event ~= 'PLAYER_ENTERING_WORLD' then
 		wipe(roleCount)
 
-		local tankCount, healCount, damageCount = RU:GetRoleCount()
-		local unitRole = (tankCount > 0 and 'TANK') or (healCount > 0 and 'HEALER') or (damageCount > 0 and 'DAMAGER')
-
-		local isRaid = IsInRaid()
-		local unit = isRaid and 'raid' or 'party'
-		for i = 1, GetNumGroupMembers() do
-			local role = UnitGroupRolesAssigned(unit..i) or unitRole
-			if role and role ~= 'NONE' then
+		-- lets populate the counter
+		for _, role in next, E.GroupRoles do
+			if role ~= 'NONE' then
 				roleCount[role] = (roleCount[role] or 0) + 1
 			end
 		end
 
-		if RU:InGroup() and not isRaid then
-			local role = UnitGroupRolesAssigned('player') or unitRole
-			if role and role ~= 'NONE' then
-				roleCount[role] = (roleCount[role] or 0) + 1
-			end
+		-- we only need to add this when not in a raid
+		local myrole = IsInGroup() and not IsInRaid() and E.myrole
+		if myrole and myrole ~= 'NONE' then
+			roleCount[myrole] = (roleCount[myrole] or 0) + 1
 		end
 
+		-- update the text
 		for role, icon in next, _G.RaidUtilityRoleIcons.icons do
 			icon.count:SetText(roleCount[role] or 0)
 		end
-	-- end
+	end
 end
 
 function RU:SendMessageCount(message)
@@ -750,7 +745,7 @@ end
 function RU:DoCountdown(duration)
     if countdownInProgress then return end
 
-	local target = GetRaidTargetIndex("target")
+	local target = GetRaidTargetIndex('target')
     local count = duration
     local function countdown()
         if count > 0 then
@@ -780,14 +775,14 @@ function RU:GetRoleCount()
     local isRaid = (numMembers > 0) and IsInRaid()
 
     local function checkRole(unit)
-        if GetPartyAssignment("MAINTANK", unit) then
+        if GetPartyAssignment('MAINTANK', unit) then
             tanks = tanks + 1
-        elseif GetPartyAssignment("MAINASSIST", unit) then
+        elseif GetPartyAssignment('MAINASSIST', unit) then
             tanks = tanks + 1  -- Often, main assist is a second tank
         else
             -- Check if it's a healer class
             local _, class = UnitClass(unit)
-            if class == "PRIEST" or class == "DRUID" or class == "SHAMAN" or class == "PALADIN" then
+            if class == 'PRIEST' or class == 'DRUID' or class == 'SHAMAN' or class == 'PALADIN' then
                 healers = healers + 1
             else
                 damage = damage + 1
@@ -797,13 +792,13 @@ function RU:GetRoleCount()
 
     if isRaid then
         for i = 1, numMembers do
-            checkRole("raid"..i)
+            checkRole('raid'..i)
         end
     else
         for i = 1, numMembers do
-            checkRole("party"..i)
+            checkRole('party'..i)
         end
-        checkRole("player")  -- Don't forget to check the player in a party
+        checkRole('player')  -- Don't forget to check the player in a party
     end
 
     return tanks, healers, damage

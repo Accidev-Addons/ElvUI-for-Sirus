@@ -23,6 +23,7 @@ local GetNumQuestLeaderBoards = GetNumQuestLeaderBoards
 local GetQuestLogLeaderBoard = GetQuestLogLeaderBoard
 local GetItemInfo = GetItemInfo
 local GetNumPartyMembers = GetNumPartyMembers
+local GetPartyAssignment = GetPartyAssignment
 local HideUIPanel = HideUIPanel
 local InCombatLockdown = InCombatLockdown
 local GetActiveTalentGroup = GetActiveTalentGroup
@@ -45,8 +46,12 @@ local UnitInParty = UnitInParty
 local UnitInRaid = UnitInRaid
 local UnitIsUnit = UnitIsUnit
 local UnitAura = UnitAura
+local UnitGUID = UnitGUID
 
 local IsInRaid = LC.IsInRaid
+local IsInGroup = LC.IsInGroup
+local GetNumGroupMembers = LC.GetNumGroupMembers
+local GetNumSubgroupMembers = LC.GetNumSubgroupMembers
 
 local GetSpecialization = LC.GetSpecialization
 local GetSpecializationInfo = LC.GetSpecializationInfo
@@ -66,7 +71,15 @@ local GameMenuFrame = GameMenuFrame
 local UIErrorsFrame = UIErrorsFrame
 -- GLOBALS: ElvDB, ElvUI
 
-local DebuffTypeColor = DebuffTypeColor
+local DebuffColors = DebuffTypeColor
+
+E.GroupRoles = {}
+E.GroupUnitsByRole = {
+	TANK = {},
+	HEALER = {},
+	DAMAGER = {},
+	NONE = {}
+}
 
 E.SpecInfoBySpecClass = {} -- ['Protection Warrior'] = specInfo (table)
 E.SpecInfoBySpecID = {} -- [250] = specInfo (table)
@@ -562,7 +575,7 @@ function E:IsDispellableByMe(debuffType)
 end
 
 function E:UpdateDispelColor(debuffType, r, g, b)
-	local color = DebuffTypeColor[debuffType]
+	local color = DebuffColors[debuffType]
 	if color then
 		color.r, color.g, color.b = r, g, b
 	end
@@ -576,7 +589,7 @@ end
 function E:UpdateDispelColors()
 	local colors = E.db.general.debuffColors
 	for debuffType, db in next, colors do
-		local color = DebuffTypeColor[debuffType]
+		local color = DebuffColors[debuffType]
 		if color then
 			E:UpdateClassColor(db)
 			color.r, color.g, color.b = db.r, db.g, db.b
@@ -934,24 +947,6 @@ function E:XPIsLevelMax()
 	return E.mylevel >= MAX_PLAYER_LEVEL_TABLE[GetExpansionLevel()] or E:XPIsUserDisabled()
 end
 
-function E:GetGroupUnit(unit)
-	if UnitIsUnit(unit, 'player') then return end
-	if strfind(unit, 'party') or strfind(unit, 'raid') then
-		return unit
-	end
-
-	-- returns the unit as raid# or party# when grouped
-	if UnitInParty(unit) or UnitInRaid(unit) then
-		local isInRaid = IsInRaid()
-		for i = 1, GetNumPartyMembers() do
-			local groupUnit = (isInRaid and 'raid' or 'party')..i
-			if UnitIsUnit(unit, groupUnit) then
-				return groupUnit
-			end
-		end
-	end
-end
-
 function E:GetUnitBattlefieldFaction(unit)
 	local englishFaction, localizedFaction = UnitFactionGroup(unit)
 
@@ -1106,13 +1101,83 @@ function E:ScanTooltip_HyperlinkInfo(link)
 	return E.ScanTooltip:GetTooltipData()
 end
 
+function E:UnitTankedByGroup(unit)
+	for _, unitToken in next, E.GroupUnitsByRole.TANK do
+		if E:GetThreatSituation(unit, unitToken) == 3 then
+			return unitToken
+		end
+	end
+end
+
+function E:GetThreatSituation(unit, feedbackUnit)
+	if not unit or not E:UnitExists(unit) then return end
+
+	if feedbackUnit and feedbackUnit ~= unit and E:UnitExists(feedbackUnit) then
+		return UnitThreatSituation(feedbackUnit, unit)
+	else
+		return UnitThreatSituation(unit)
+	end
+end
+
+function E:PARTY_MEMBERS_CHANGED()
+	local isInGroup = IsInGroup()
+	E.IsInGroup = isInGroup
+
+	wipe(E.GroupRoles)
+
+	for _, units in next, E.GroupUnitsByRole do
+		wipe(units)
+	end
+
+	if E.IsInGroup then
+		local group = isInGroup and 'party'
+		for i = 1, GetNumSubgroupMembers() do
+			local unit = group..i
+			local guid = UnitGUID(unit)
+			local role = guid and ((GetPartyAssignment('MAINTANK', unit) and 'TANK' or 'NONE') or UnitGroupRolesAssigned(unit))
+			if role then
+				E.GroupRoles[guid] = role
+				E.GroupUnitsByRole[role][guid] = unit
+			end
+		end
+	end
+end
+
+function E:RAID_ROSTER_UPDATE()
+	local isInRaid = IsInRaid()
+	E.IsInGroup = isInRaid
+
+	wipe(E.GroupRoles)
+
+	for _, units in next, E.GroupUnitsByRole do
+		wipe(units)
+	end
+
+	if E.IsInGroup then
+		local group = isInRaid and 'raid'
+		for i = 1, GetNumGroupMembers() do
+			local unit = group..i
+			local guid = UnitGUID(unit)
+			local role = guid and ((GetPartyAssignment('MAINTANK', unit) and 'TANK' or 'NONE') or UnitGroupRolesAssigned(unit))
+			if role then
+				E.GroupRoles[guid] = role
+				E.GroupUnitsByRole[role][guid] = unit
+			end
+		end
+	end
+end
+
 function E:LoadAPI()
+	E:RegisterEvent('PARTY_MEMBERS_CHANGED')
+	E:RegisterEvent('RAID_ROSTER_UPDATE')
 	E:RegisterEvent('PLAYER_LEVEL_UP')
 	E:RegisterEvent('PLAYER_ENTERING_WORLD')
 	E:RegisterEvent('PLAYER_REGEN_ENABLED')
 	E:RegisterEvent('PLAYER_REGEN_DISABLED')
 	E:RegisterEvent('UI_SCALE_CHANGED', 'PixelScaleChanged')
 
+	E:PARTY_MEMBERS_CHANGED()
+	E:RAID_ROSTER_UPDATE()
 	E:SetupGameMenu()
 	E:UpdateTexCoords() -- update cropIcon texCoords
 	E:PopulateSpecInfo()
@@ -1135,16 +1200,4 @@ function E:LoadAPI()
 
 	E:RegisterEvent('UNIT_ENTERED_VEHICLE', 'EnterVehicleHideFrames')
 	E:RegisterEvent('UNIT_EXITED_VEHICLE', 'ExitVehicleShowFrames')
-
-	do -- setup cropIcon texCoords
-		local opt = E.db.general.cropIcon
-		local modifier = 0.04 * opt
-		for i, v in ipairs(E.TexCoords) do
-			if i % 2 == 0 then
-				E.TexCoords[i] = v - modifier
-			else
-				E.TexCoords[i] = v + modifier
-			end
-		end
-	end
 end

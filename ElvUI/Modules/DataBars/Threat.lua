@@ -49,10 +49,10 @@ end
 
 function DB:ThreatBar_Update()
 	local bar = DB.StatusBars.Threat
-	local petExists, hasGroup = UnitExists('pet'), IsInGroup()
+	local petExists = UnitExists('pet')
 	bar.showBar = false
 
-	if UnitAffectingCombat('player') and (petExists or hasGroup) then
+	if UnitAffectingCombat('player') and (petExists or E.IsInGroup) then
 		local _, status, percent = UnitDetailedThreatSituation('player', 'target')
 
 		if percent then
@@ -65,13 +65,10 @@ function DB:ThreatBar_Update()
 					_, _, bar.list.pet = UnitDetailedThreatSituation('pet', 'target')
 				end
 
-				if hasGroup then
-					local isInRaid = IsInRaid()
-					for i = 1, GetNumGroupMembers() do
-						local groupUnit = (isInRaid and 'raid' or 'party')..i
-						if UnitExists(groupUnit) and not UnitIsUnit(groupUnit, 'player') then
-							_, _, bar.list[groupUnit] = UnitDetailedThreatSituation(groupUnit, 'target')
-						end
+				for guid, role in next, E.GroupRoles do
+					local unit = E.GroupUnitsByRole[role][guid]
+					if unit and not UnitIsUnit(unit, 'player') then
+						_, _, bar.list[unit] = UnitDetailedThreatSituation(unit, 'target')
 					end
 				end
 
