@@ -148,27 +148,24 @@ AddCommand('CHILDLIST', '/childlist', function(arg)
 	end
 end)
 
-local FrameStackHighlight = CreateFrame("Frame", "FrameStackHighlight")
-FrameStackHighlight:SetFrameStrata("TOOLTIP")
-FrameStackHighlight.t = FrameStackHighlight:CreateTexture("$parentTexture", "BORDER")
+local FrameStackHighlight = CreateFrame('Frame', 'FrameStackHighlight')
+FrameStackHighlight:SetFrameStrata('TOOLTIP')
+FrameStackHighlight.t = FrameStackHighlight:CreateTexture('$parentTexture', 'BORDER')
 FrameStackHighlight.t:SetAllPoints()
 FrameStackHighlight.t:SetTexture(0, 1, 0, 0.5)
 
-local FrameStackHighlightHitRect = FrameStackHighlight:CreateTexture("$parentHitRectTexture", "ARTWORK")
+local FrameStackHighlightHitRect = FrameStackHighlight:CreateTexture('$parentHitRectTexture', 'ARTWORK')
 FrameStackHighlightHitRect:SetTexture(0, 0, 1, 0.5)
-FrameStackHighlightHitRect:SetBlendMode("ADD")
+FrameStackHighlightHitRect:SetBlendMode('ADD')
 
---[[
-hooksecurefunc("FrameStackTooltip_Toggle", function()
+hooksecurefunc('FrameStackTooltip_Toggle', function()
 	if not _G.FrameStackTooltip:IsVisible() then
 		FrameStackHighlight:Hide()
 	end
 end)
---]]
 
---[[
 local _timeSinceLast = 0
-_G.FrameStackTooltip:HookScript("OnUpdate", function(_, elapsed)
+_G.FrameStackTooltip:HookScript('OnUpdate', function(_, elapsed)
 	_timeSinceLast = _timeSinceLast - elapsed
 	if _timeSinceLast <= 0 then
 		_timeSinceLast = FRAMESTACK_UPDATE_TIME
@@ -176,16 +173,16 @@ _G.FrameStackTooltip:HookScript("OnUpdate", function(_, elapsed)
 
 		if highlightFrame and highlightFrame ~= WorldFrame then
 			FrameStackHighlight:ClearAllPoints()
-			FrameStackHighlight:SetPoint("BOTTOMLEFT", highlightFrame)
-			FrameStackHighlight:SetPoint("TOPRIGHT", highlightFrame)
+			FrameStackHighlight:SetPoint('BOTTOMLEFT', highlightFrame)
+			FrameStackHighlight:SetPoint('TOPRIGHT', highlightFrame)
 			FrameStackHighlight:Show()
 
 			local l, r, t, b = highlightFrame:GetHitRectInsets()
 			if l ~= 0 or r ~= 0 or t ~= 0 or b ~= 0 then
 				local scale = highlightFrame:GetEffectiveScale()
 				FrameStackHighlightHitRect:ClearAllPoints()
-				FrameStackHighlightHitRect:SetPoint("TOPLEFT", highlightFrame, l * scale, -t * scale)
-				FrameStackHighlightHitRect:SetPoint("BOTTOMRIGHT", highlightFrame, -r * scale, b * scale)
+				FrameStackHighlightHitRect:SetPoint('TOPLEFT', highlightFrame, l * scale, -t * scale)
+				FrameStackHighlightHitRect:SetPoint('BOTTOMRIGHT', highlightFrame, -r * scale, b * scale)
 				FrameStackHighlightHitRect:Show()
 			else
 				FrameStackHighlightHitRect:Hide()
@@ -195,4 +192,3 @@ _G.FrameStackTooltip:HookScript("OnUpdate", function(_, elapsed)
 		end
 	end
 end)
---]]
