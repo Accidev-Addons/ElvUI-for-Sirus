@@ -40,7 +40,7 @@ This UI will arrange your interface to be more flexible and practical.
 1. Download **[Latest Version](https://github.com/ElvUI-WotLK/ElvUI/releases/latest)**
 2. Unpack the Zip file
 3. Open the folder "ElvUI-(#.##)"
-4. Copy (or drag and drop) **ElvUI** and **ElvUI_OptionsUI** into your Wow-Directory\Interface\AddOns
+4. Copy (or drag and drop) **ElvUI** and **ElvUI_Options** into your Wow-Directory\Interface\AddOns
 5. Restart WoW
 
 ## Plugins:
