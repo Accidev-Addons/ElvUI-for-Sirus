@@ -1,6 +1,5 @@
 local E, L, V, P, G = unpack(ElvUI)
 local UF = E:GetModule("UnitFrames")
-local LSM = E.Libs.LSM
 local ElvUF = E.oUF
 
 local unpack = unpack
@@ -27,72 +26,66 @@ local INVERT_ANCHORPOINT = {
 local ticks = {}
 
 function UF:Construct_Castbar(frame, moverName)
-	local castbar = CreateFrame('StatusBar', '$parent_CastBar', frame)
+	local castbar = CreateFrame("StatusBar", nil, frame)
 	castbar:OffsetFrameLevel(30, frame.RaisedElementParent) --Make it appear above everything else
-
-	UF.statusbars[castbar] = 'castbar'
-	castbar.ModuleStatusBars = UF.statusbars -- not oUF
-
+	self.statusbars[castbar] = true
 	castbar.CustomDelayText = self.CustomCastDelayText
 	castbar.CustomTimeText = self.CustomTimeText
 	castbar.PostCastStart = self.PostCastStart
 	castbar.PostCastStop = self.PostCastStop
 	castbar.PostCastInterruptible = self.PostCastInterruptible
 	castbar.PostCastFail = UF.PostCastFail
-
 	castbar:SetClampedToScreen(true)
 	castbar:CreateBackdrop(nil, nil, nil, self.thinBorders, true)
 
-	castbar.Time = castbar:CreateFontString(nil, 'OVERLAY')
-	castbar.Time:Point('RIGHT', castbar, 'RIGHT', -4, 0)
+	castbar.Time = castbar:CreateFontString(nil, "OVERLAY")
+	self:Configure_FontString(castbar.Time)
+	castbar.Time:Point("RIGHT", castbar, "RIGHT", -4, 0)
 	castbar.Time:SetTextColor(0.84, 0.75, 0.65)
-	castbar.Time:SetJustifyH('RIGHT')
-	castbar.Time:SetWordWrap(false)
-	castbar.Time:FontTemplate()
+	castbar.Time:SetJustifyH("RIGHT")
 
-	castbar.Text = castbar:CreateFontString(nil, 'OVERLAY')
-	castbar.Text:Point('LEFT', castbar, 'LEFT', 4, 0)
-	castbar.Text:Point('RIGHT', castbar.Time, 'LEFT', -4, 0)
+	castbar.Text = castbar:CreateFontString(nil, "OVERLAY")
+	self:Configure_FontString(castbar.Text)
+	castbar.Text:Point("LEFT", castbar, "LEFT", 4, 0)
 	castbar.Text:SetTextColor(0.84, 0.75, 0.65)
-	castbar.Text:SetJustifyH('LEFT')
+	castbar.Text:SetJustifyH("LEFT")
 	castbar.Text:SetWordWrap(false)
-	castbar.Text:FontTemplate()
 
-	castbar.Spark_ = castbar:CreateTexture(nil, 'OVERLAY', nil, 3)
-	castbar.Spark_:SetTexture(E.media.blankTex)
-	castbar.Spark_:SetVertexColor(0.9, 0.9, 0.9, 0.6)
-	castbar.Spark_:SetBlendMode('ADD')
-	castbar.Spark_:Width(2)
+	castbar.Spark_ = castbar:CreateTexture(nil, "OVERLAY")
+	castbar.Spark_:SetTexture([[Interface\CastingBar\UI-CastingBar-Spark]])
+	castbar.Spark_:SetBlendMode("ADD")
+	castbar.Spark_:SetVertexColor(1, 1, 1)
+	castbar.Spark_:Size(20, 40)
 
 	--Set to castbar.SafeZone
-	castbar.LatencyTexture = castbar:CreateTexture(nil, 'OVERLAY', nil, 2)
+	castbar.LatencyTexture = castbar:CreateTexture(nil, "OVERLAY")
 	castbar.LatencyTexture:SetTexture(E.media.blankTex)
 	castbar.LatencyTexture:SetVertexColor(0.69, 0.31, 0.31, 0.75)
 
-	castbar.bg = castbar:CreateTexture(nil, 'BORDER')
-	castbar.bg:SetTexture(E.media.blankTex)
+	castbar.bg = castbar:CreateTexture(nil, "BORDER")
 	castbar.bg:SetAllPoints()
+	castbar.bg:SetTexture(E.media.blankTex)
 	castbar.bg:Show()
 
-	local button = CreateFrame('Frame', nil, castbar)
-	local holder = CreateFrame('Frame', nil, castbar)
-	button:SetTemplate(nil, nil, nil, nil, true)
+	local button = CreateFrame("Frame", nil, castbar)
+	local holder = CreateFrame("Frame", nil, castbar)
+	button:SetTemplate(nil, nil, nil, self.thinBorders, true)
 
 	castbar.Holder = holder
 	--these are placeholder so the mover can be created.. it will be changed.
-	castbar.Holder:Point('TOPLEFT', frame, 'BOTTOMLEFT', 0, -(UF.BORDER - UF.SPACING))
-	castbar:Point('BOTTOMLEFT', castbar.Holder, 'BOTTOMLEFT', UF.BORDER, UF.BORDER)
-	button:Point('RIGHT', castbar, 'LEFT', -UF.SPACING*3, 0)
+	castbar.Holder:Point("TOPLEFT", frame, "BOTTOMLEFT", 0, -(frame.BORDER - frame.SPACING))
+	castbar:Point("BOTTOMLEFT", castbar.Holder, "BOTTOMLEFT", frame.BORDER, frame.BORDER)
+	button:Point("RIGHT", castbar, "LEFT", -E.Spacing*3, 0)
 
 	if moverName then
 		local name = frame:GetName()
-		local configName = name:gsub('^ElvUF_', ''):lower()
-		print(moverName)
-		E:CreateMover(castbar.Holder, name..'CastbarMover', moverName, nil, -6, nil, 'ALL,SOLO', nil, 'unitframe,'..configName..',castbar')
+		local configName = string.lower(string.gsub(name, "^ElvUF_", ""))
+		E:CreateMover(castbar.Holder, name.."CastbarMover", moverName, nil, -6, nil, "ALL,SOLO", nil, "unitframe,"..configName..",castbar")
 	end
 
-	local icon = button:CreateTexture(nil, 'ARTWORK')
-	icon:SetInside(nil, UF.BORDER, UF.BORDER)
+	local icon = button:CreateTexture(nil, "ARTWORK")
+	local offset = frame.BORDER --use frame.BORDER since it may be different from E.Border due to forced thin borders
+	icon:SetInside(nil, offset, offset)
 	icon.bg = button
 
 	--Set to castbar.Icon
@@ -140,21 +133,6 @@ function UF:Configure_Castbar(frame)
 			castbar.SafeZone = nil
 			castbar.LatencyTexture:Hide()
 		end
-
-		--Font Options
-		-- local customFont = db.customTextFont
-		-- if customFont.enable then
-		-- 	castbar.Text:FontTemplate(LSM:Fetch('font', customFont.font), customFont.fontSize, customFont.fontStyle)
-		-- else
-		-- 	UF:Update_FontString(castbar.Text)
-		-- end
-
-		-- customFont = db.customTimeFont
-		-- if customFont.enable then
-		-- 	castbar.Time:FontTemplate(LSM:Fetch('font', customFont.font), customFont.fontSize, customFont.fontStyle)
-		-- else
-		-- 	UF:Update_FontString(castbar.Time)
-		-- end
 
 		--Icon
 		if db.castbar.icon then
