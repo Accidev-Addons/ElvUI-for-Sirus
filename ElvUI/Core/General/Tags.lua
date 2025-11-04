@@ -26,8 +26,6 @@ local GetTitleName = GetTitleName
 local GetUnitSpeed = GetUnitSpeed
 local HasPetUI = HasPetUI
 local IsInInstance = IsInInstance
-local IsInRaid = IsInRaid
-local QuestDifficultyColors = QuestDifficultyColors
 local UnitClassification = UnitClassification
 local UnitDetailedThreatSituation = UnitDetailedThreatSituation
 local UnitExists = UnitExists
@@ -61,14 +59,15 @@ local IsInGroup = LC.IsInGroup
 local IsInRaid = LC.IsInRaid
 
 local LEVEL = strlower(LEVEL)
+
 local PVP = PVP
 
 -- GLOBALS: Hex, _TAGS, _COLORS -- added by oUF
--- GLOBALS: UnitPower, UnitHealth, UnitName, UnitClass -- override during testing groups
+-- GLOBALS: UnitPower, UnitHealth, UnitName, UnitClass, UnitIsDead, UnitIsGhost, UnitIsDeadOrGhost, UnitIsConnected -- override during testing groups
 -- GLOBALS: GetTitleNPC, Abbrev, GetClassPower, GetQuestData, UnitEffectiveLevel, NameHealthColor -- custom ones we made
 
 local RefreshNewTags -- will turn true at EOF
-function E:AddTag(tagName, eventsOrSeconds, func, block)
+function E:AddTag(tagName, eventsOrSeconds, func, block, spells)
 	if block then return end -- easy killer for tags
 
 	if type(eventsOrSeconds) == 'number' then
@@ -77,7 +76,20 @@ function E:AddTag(tagName, eventsOrSeconds, func, block)
 		Tags.Events[tagName] = 'UNIT_HEALTH'
 	end
 
+	-- we need to trigger the newindex on oUF side to set the env
+	if Tags.Methods[tagName] then
+		Tags.Methods[tagName] = nil
+	end
+
+	-- when we set these the env will be from oUF
 	Tags.Methods[tagName] = func
+
+	-- if it uses UNIT_AURA we block spells unless allowed
+	if spells then
+		for spellID, allow in next, spells do
+			Tags.Spells[spellID] = allow
+		end
+	end
 
 	if RefreshNewTags then
 		Tags:RefreshEvents(tagName)
@@ -87,14 +99,22 @@ end
 
 function E:CallTag(tag, ...)
 	local func = ElvUF.Tags.Methods[tag]
-	if func then
-		return func(...)
-	end
+	if not func then return end
+
+	return func(...)
 end
 
 function E:TagUpdateRate(second)
 	Tags:SetEventUpdateTimer(second)
 end
+
+------------------------------------------------------------------------
+--	Tag Extra Events
+------------------------------------------------------------------------
+
+Tags.SharedEvents.PLAYER_GUILD_UPDATE = true
+Tags.SharedEvents.PLAYER_TALENT_UPDATE = true
+Tags.SharedEvents.QUEST_LOG_UPDATE = true
 
 ------------------------------------------------------------------------
 --	Tag Functions
@@ -104,21 +124,22 @@ Tags.Env.UnitLevel = function(unit)
 	return UnitLevel(unit)
 end
 
-local Abbrev = function(name)
-	local letters, lastWord = '', strmatch(name, '.+%s(.+)$')
+Tags.Env.Abbrev = function(name)
+	local letters, text = '', gsub(name, '%s<.+>$', '') -- clean titles
+	local lastWord = strmatch(text, '.+%s(.+)$')
 	if lastWord then
-		for word in gmatch(name, '.-%s') do
+		for word in gmatch(text, '.-%s') do
 			local firstLetter = utf8sub(gsub(word, '^[%s%p]*', ''), 1, 1)
 			if firstLetter ~= utf8lower(firstLetter) then
 				letters = format('%s%s. ', letters, firstLetter)
 			end
 		end
+
 		name = format('%s%s', letters, lastWord)
 	end
+
 	return name
 end
-
-Tags.Env.Abbrev = Abbrev
 
 local ClassPowers = {
 	DEATHKNIGHT	= SPELL_POWER_RUNES,
@@ -239,6 +260,20 @@ for textFormat in pairs(E.GetFormattedTextStyles) do
 	end
 
 	for textFormat, length in pairs({ veryshort = 5, short = 10, medium = 15, long = 20 }) do
+		E:AddTag(format('health:current:name-%s', textFormat), 'UNIT_HEALTH UNIT_MAXHEALTH UNIT_NAME_UPDATE', function(unit)
+			local status = not UnitIsFeignDeath(unit) and UnitIsDead(unit) and L["Dead"] or UnitIsGhost(unit) and L["Ghost"] or not UnitIsConnected(unit) and L["Offline"]
+			local cur, max = UnitHealth(unit), UnitHealthMax(unit)
+			local name = UnitName(unit)
+
+			if status then
+				return status
+			elseif cur ~= max then
+				return E:GetFormattedText('CURRENT', cur, max, nil, true)
+			elseif name then
+				return E:ShortenString(name, length)
+			end
+		end)
+
 		E:AddTag(format('health:deficit-percent:name-%s', textFormat), 'UNIT_HEALTH UNIT_MAXHEALTH UNIT_NAME_UPDATE', function(unit)
 			local cur, max = UnitHealth(unit), UnitHealthMax(unit)
 			local deficit = max - cur
@@ -1025,9 +1060,6 @@ do
 		WARLOCK		= '192:256:64:128',
 		PALADIN		= '0:64:128:192',
 		DEATHKNIGHT = '64:128:128:192',
-		MONK		= '128:192:128:192',
-		DEMONHUNTER = '192:256:128:192',
-		EVOKER		= '0:64:192:256',
 	}
 
 	E:AddTag('class:icon', 'PLAYER_TARGET_CHANGED', function(unit)
@@ -1420,6 +1452,13 @@ E.TagInfo = {
 		['threat:percent'] = { category = 'Threat', description = "Displays the current threat as a percent" },
 		['threat'] = { category = 'Threat', description = "Displays the current threat situation (Aggro is secure tanking, -- is losing threat and ++ is gaining threat)" },
 }
+
+--[[
+	tagName = Tag Name
+	category = Category that you want it to fall in
+	description = self explainitory
+	order = This is optional. It's used for sorting the tags by order and not by name. The +10 is not a rule. I reserve the first 10 slots.
+]]
 
 function E:AddTagInfo(tagName, category, description, order, hidden)
 	if type(order) == 'number' then order = order + 10 else order = nil end
