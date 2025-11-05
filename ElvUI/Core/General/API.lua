@@ -294,16 +294,16 @@ end
 local classData
 local function GetClassInfo(classID)
 		classData = {
-			[1] = "WARRIOR",
-			[2] = "PALADIN",
-			[3] = "HUNTER",
-			[4] = "ROGUE",
-			[5] = "PRIEST",
-			[6] = "DEATHKNIGHT",
-			[7] = "SHAMAN",
-			[8] = "MAGE",
-			[9] = "WARLOCK",
-			[10] = "DRUID",
+			[1] = 'WARRIOR',
+			[2] = 'PALADIN',
+			[3] = 'HUNTER',
+			[4] = 'ROGUE',
+			[5] = 'PRIEST',
+			[6] = 'DEATHKNIGHT',
+			[7] = 'SHAMAN',
+			[8] = 'MAGE',
+			[9] = 'WARLOCK',
+			[11] = 'DRUID',
 		}
 
 	local classInfo = classData[classID]
