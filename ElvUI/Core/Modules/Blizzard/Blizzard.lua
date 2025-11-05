@@ -151,8 +151,4 @@ function BL:Initialize()
 	end
 end
 
-local function InitializeCallback()
-	BL:Initialize()
-end
-
-E:RegisterModule(BL:GetName(), InitializeCallback)
+E:RegisterModule(BL:GetName())

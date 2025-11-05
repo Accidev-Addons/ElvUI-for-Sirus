@@ -450,6 +450,15 @@ do
 	end
 end
 
+do
+	function E:GetSpellInfo(spellID)
+		local info = spellID and GetSpellInfo(spellID)
+		if not info then return end
+
+		return info.name, nil, info.iconID, info.castTime, info.minRange, info.maxRange, info.spellID, info.originalIconID
+	end
+end
+
 do -- Spell renaming provided by BigWigs
 	function E:GetSpellRename(spellID)
 		if not spellID then return end

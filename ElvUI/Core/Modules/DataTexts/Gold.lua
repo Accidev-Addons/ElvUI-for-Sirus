@@ -144,7 +144,7 @@ local function Click(self, btn)
 			Spent = 0
 		end
 	else
-		B:ToggleAllBags()
+		_G.ToggleAllBags()
 	end
 end
 

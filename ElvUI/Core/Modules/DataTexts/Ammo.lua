@@ -157,7 +157,7 @@ local function OnClick(_, btn)
 				end
 			end
 		else
-			B:ToggleAllBags()
+			_G.ToggleAllBags()
 		end
 	end
 end

@@ -8,9 +8,6 @@ local CreateFrame = CreateFrame
 local GetTotemInfo = GetTotemInfo
 local MAX_TOTEMS = MAX_TOTEMS
 
-local priority = E.myclass == 'SHAMAN' and { [1]=1, [2]=2, [3]=4, [4]=3 } or TOTEM_PRIORITIES
-
-
 function TM:UpdateButton(button, totem)
 	if not (button and totem) then return end
 
@@ -30,6 +27,7 @@ function TM:UpdateButton(button, totem)
 end
 
 function TM:Update()
+	local priority = _G.TOTEM_PRIORITIES
 	for i = 1, MAX_TOTEMS do
 		TM:UpdateButton(TM.bar[priority[i]], _G['TotemFrameTotem'..i])
 	end
@@ -129,11 +127,7 @@ function TM:Initialize()
 	TM:RegisterEvent('PLAYER_ENTERING_WORLD', 'Update')
 	TM:RegisterEvent('ACTIVE_TALENT_GROUP_CHANGED', 'Update')
 
-	E:CreateMover(bar, 'TotemTrackerMover', L["Totem Tracker"], nil, nil, nil, nil, nil, 'general,totems')
+	E:CreateMover(bar, 'TotemTrackerMover', L["Totem Tracker"], nil, nil, nil, nil, nil, 'general,blizzardImprovements,totems')
 end
 
-local function InitializeCallback()
-	TM:Initialize()
-end
-
-E:RegisterModule(TM:GetName(), InitializeCallback)
+E:RegisterModule(TM:GetName())

@@ -5,9 +5,7 @@ local S = E:GetModule('Skins')
 local LSM = E.Libs.LSM
 local LC = E.Libs.Compat
 
---Lua functions
 local _G = _G
-local issecurevariable = issecurevariable
 local gsub, strfind, gmatch, format = gsub, strfind, gmatch, format
 local ipairs, sort, wipe, time, difftime = ipairs, sort, wipe, time, difftime
 local pairs, unpack, select, pcall, next, tonumber, type = pairs, unpack, select, pcall, next, tonumber, type
@@ -34,9 +32,6 @@ local PlaySound = PlaySound
 local PlaySoundFile = PlaySoundFile
 local ToggleFrame = ToggleFrame
 local UIParent = UIParent
-local UnitExists = UnitExists
-local UnitGroupRolesAssigned = UnitGroupRolesAssigned
-local UnitIsUnit = UnitIsUnit
 local UnitName = UnitName
 local hooksecurefunc = hooksecurefunc
 
@@ -99,24 +94,24 @@ local tabTexs = {
 }
 
 local historyTypes = { -- most of these events are set in FindURL_Events, this is mainly used to ignore types
-	CHAT_MSG_WHISPER = 'WHISPER',
-	CHAT_MSG_WHISPER_INFORM = 'WHISPER',
-	CHAT_MSG_BN_WHISPER = 'WHISPER',
-	CHAT_MSG_BN_WHISPER_INFORM = 'WHISPER',
-	CHAT_MSG_GUILD 	= 'GUILD',
-	CHAT_MSG_GUILD_ACHIEVEMENT = 'GUILD',
-	CHAT_MSG_OFFICER = 'OFFICER',
-	CHAT_MSG_PARTY = 'PARTY',
-	CHAT_MSG_PARTY_LEADER = 'PARTY',
-	CHAT_MSG_RAID = 'RAID',
-	CHAT_MSG_RAID_LEADER = 'RAID',
-	CHAT_MSG_RAID_WARNING = 'RAID',
-	CHAT_MSG_BATTLEGROUND = 'BATTLEGROUND',
-	CHAT_MSG_BATTLEGROUND_LEADER = 'BATTLEGROUND',
-	CHAT_MSG_CHANNEL = 'CHANNEL',
-	CHAT_MSG_SAY = 'SAY',
-	CHAT_MSG_YELL = 'YELL',
-	CHAT_MSG_EMOTE = 'EMOTE' -- this never worked, check it sometime.
+	CHAT_MSG_WHISPER 			= 'WHISPER',
+	CHAT_MSG_WHISPER_INFORM 	= 'WHISPER',
+	CHAT_MSG_BN_WHISPER 		= 'WHISPER',
+	CHAT_MSG_BN_WHISPER_INFORM 	= 'WHISPER',
+	CHAT_MSG_GUILD 				= 'GUILD',
+	CHAT_MSG_GUILD_ACHIEVEMENT 	= 'GUILD',
+	CHAT_MSG_PARTY 			= 'PARTY',
+	CHAT_MSG_PARTY_LEADER 	= 'PARTY',
+	CHAT_MSG_RAID 			= 'RAID',
+	CHAT_MSG_RAID_LEADER 	= 'RAID',
+	CHAT_MSG_RAID_WARNING 	= 'RAID',
+	CHAT_MSG_BATTLEGROUND 			= 'BATTLEGROUND',
+	CHAT_MSG_BATTLEGROUND_LEADER 	= 'BATTLEGROUND',
+	CHAT_MSG_CHANNEL 		= 'CHANNEL',
+	CHAT_MSG_SAY 			= 'SAY',
+	CHAT_MSG_YELL 			= 'YELL',
+	CHAT_MSG_OFFICER 		= 'OFFICER', -- only used for alerts, not in FindURL_Events as this is a protected channel
+	CHAT_MSG_EMOTE 			= 'EMOTE' -- this never worked, check it sometime.
 }
 
 local canChangeMessage = function(arg1, id)
@@ -309,25 +304,29 @@ function CH:GetSmileyReplacementText(msg)
 	return outstr
 end
 
-function CH:OpenChatMenu(frame, chatMenu)
-	chatMenu:ClearAllPoints()
+function CH:OpenChatMenu(chatMenu, buttonMenu)
+	if chatMenu then
+		chatMenu:ClearAllPoints()
 
-	ToggleFrame(chatMenu)
+		local point = E:GetScreenQuadrant(self)
+		if strfind(point, 'LEFT') then
+			chatMenu:SetPoint('BOTTOMLEFT', self, 'TOPRIGHT')
+		else
+			chatMenu:SetPoint('BOTTOMRIGHT', self, 'TOPLEFT')
+		end
 
-	PlaySound('igMainMenuOption')
-
-	local point = E:GetScreenQuadrant(frame)
-	if strfind(point, 'LEFT') then
-		chatMenu:SetPoint('BOTTOMLEFT', frame, 'TOPRIGHT')
-	else
-		chatMenu:SetPoint('BOTTOMRIGHT', frame, 'TOPLEFT')
+		ToggleFrame(chatMenu)
+	elseif buttonMenu then
+		buttonMenu:ClearAllPoints()
+		buttonMenu:SetPoint('TOPLEFT', _G.ChatFrame1.copyButton, 'TOPRIGHT')
+		buttonMenu:OpenMenu()
 	end
 end
 
 function CH:CopyButtonOnMouseUp(btn)
 	local chat = self:GetParent()
 	if btn == 'RightButton' and chat:GetID() == 1 then
-		CH:OpenChatMenu(self, _G.ChatMenu)
+		CH:OpenChatMenu(_G.ChatMenu, _G.ChatFrameMenuButton)
 	else
 		CH:CopyChat(chat)
 	end
@@ -1157,9 +1156,15 @@ function CH:Panels_ColorUpdate()
 end
 
 function CH:UpdateChatTabColors()
-	for _, name in ipairs(_G.CHAT_FRAMES) do
-		local tab = CH:GetTab(_G[name])
-		CH:FCFTab_UpdateColors(tab, tab.selected)
+	-- don't proceed when chat is disabled
+	if not E.private.chat.enable then return end
+
+	for _, frameName in ipairs(_G.CHAT_FRAMES) do
+		local chat = _G[frameName]
+		local tab = chat and CH:GetTab(chat)
+		if tab then
+			CH:FCFTab_UpdateColors(tab, tab.selected)
+		end
 	end
 end
 E.valueColorUpdateFuncs.Chat = CH.UpdateChatTabColors
@@ -1179,7 +1184,7 @@ function CH:ReplaceProtocol(arg1, arg2)
 	return (self == 'Houtfit') and str..arg2 or CH:PrintURL(str)
 end
 
-function CH:FindURL(_, msg, author, ...)
+function CH:FindURL(event, msg, author, ...)
 	if not CH.db.url then
 		msg = CH:CheckKeyword(msg, author)
 		msg = CH:GetSmileyReplacementText(msg)
@@ -3078,8 +3083,4 @@ function CH:Initialize()
 	CH:SetChatHeadOrientation('TOP')
 end
 
-local function InitializeCallback()
-	CH:Initialize()
-end
-
-E:RegisterModule(CH:GetName(), InitializeCallback)
+E:RegisterModule(CH:GetName())

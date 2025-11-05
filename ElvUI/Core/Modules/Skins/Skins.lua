@@ -1733,17 +1733,14 @@ function S:AddCallback(name, func, position) -- arg1: name is 'given name'
 	S:RegisterSkin('ElvUI', load or func, nil, nil, position)
 end
 
-local function errorhandler(err)
-	return _G.geterrorhandler()(err)
-end
-
 function S:RegisterSkin(addonName, func, forceLoad, bypass, position)
 	if bypass then
 		S.allowBypass[addonName] = true
 	end
 
 	if forceLoad then
-		xpcall(func, errorhandler)
+		E:CallLoadFunc(func)
+
 		S.addonsToLoad[addonName] = nil
 	elseif addonName == 'ElvUI' then
 		if position then
@@ -1768,7 +1765,7 @@ end
 
 function S:CallLoadedAddon(addonName, object)
 	for _, func in next, object do
-		xpcall(func, errorhandler)
+		E:CallLoadFunc(func)
 	end
 
 	S.addonsToLoad[addonName] = nil
@@ -1776,13 +1773,13 @@ end
 
 function S:Initialize()
 	S.Initialized = true
-	S.db = E.private.skins
 
 	S.uiPanelQueue = {}
 	S.hitRectQueue = {}
 
 	for index, func in next, S.nonAddonsToLoad do
-		xpcall(func, errorhandler)
+		E:CallLoadFunc(func)
+
 		S.nonAddonsToLoad[index] = nil
 	end
 
@@ -1794,7 +1791,7 @@ function S:Initialize()
 	end
 
 	-- Early Skin Handling (populated before ElvUI is loaded from the Ace3 file)
-	if E.private.skins.ace3Enable and S.EarlyAceWidgets then
+	if S.db.ace3Enable and S.EarlyAceWidgets then
 		for _, n in next, S.EarlyAceWidgets do
 			if n.SetLayout then
 				S:Ace3_RegisterAsContainer(n)
@@ -1807,7 +1804,7 @@ function S:Initialize()
 		end
 	end
 
-	if E.private.skins.libDropdown and S.EarlyDropdowns then
+	if S.db.libDropdown and S.EarlyDropdowns then
 		for _, n in next, S.EarlyDropdowns do
 			if n == 'LibDropDownMenu_List' then
 				S:SkinDropDownMenu(n, 15)
@@ -1821,8 +1818,4 @@ end
 -- Keep this outside, it's used for skinning addons before ElvUI load
 S:RegisterEvent('ADDON_LOADED')
 
-local function InitializeCallback()
-	S:Initialize()
-end
-
-E:RegisterModule(S:GetName(), InitializeCallback)
+E:RegisterModule(S:GetName())

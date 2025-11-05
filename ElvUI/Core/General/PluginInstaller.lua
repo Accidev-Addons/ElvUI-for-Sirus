@@ -546,8 +546,4 @@ function PI:Initialize()
 	PI:CreateFrame()
 end
 
-local function InitializeCallback()
-	PI:Initialize()
-end
-
-E:RegisterModule(PI:GetName(), InitializeCallback)
+E:RegisterModule(PI:GetName())

@@ -1340,25 +1340,25 @@ function UF:ToggleTransparentStatusBar(isTransparent, statusBar, backdropTex, ad
 end
 
 function UF:Initialize()
-	self.db = E.db.unitframe
-	self.thinBorders = self.db.thinBorders or E.PixelMode
+	UF.db = E.db.unitframe
+	UF.thinBorders = UF.db.thinBorders or E.PixelMode
 
 	UF.SPACING = (UF.thinBorders or E.twoPixelsPlease) and 0 or 1
 	UF.BORDER = (UF.thinBorders and not E.twoPixelsPlease) and 1 or 2
 
 	if E.private.unitframe.enable ~= true then return end
-	self.Initialized = true
+	UF.Initialized = true
 
 	local ElvUF_Parent = CreateFrame("Frame", "ElvUF_Parent", E.UIParent, "SecureHandlerStateTemplate")
 	ElvUF_Parent:SetFrameStrata("LOW")
 
-	self:UpdateColors()
+	UF:UpdateColors()
 	ElvUF:RegisterStyle("ElvUF", function(frame, unit)
-		self:Construct_UF(frame, unit)
+		UF:Construct_UF(frame, unit)
 	end)
 
-	self:LoadUnits()
-	self:RegisterEvent("PLAYER_ENTERING_WORLD")
+	UF:LoadUnits()
+	UF:RegisterEvent("PLAYER_ENTERING_WORLD")
 
 	for k in pairs(UnitPopupMenus) do
 		for x, y in pairs(UnitPopupMenus[k]) do
@@ -1399,10 +1399,10 @@ function UF:Initialize()
 	end
 
 	if E.private.unitframe.disabledBlizzardFrames.arena then
-		self:SecureHook("UnitFrameThreatIndicator_Initialize")
+		UF:SecureHook("UnitFrameThreatIndicator_Initialize")
 
 		if not IsAddOnLoaded("Blizzard_ArenaUI") then
-			self:RegisterEvent("ADDON_LOADED")
+			UF:RegisterEvent("ADDON_LOADED")
 		else
 			ElvUF:DisableBlizzard("arena")
 		end
@@ -1415,12 +1415,8 @@ function UF:Initialize()
 		ORD.MatchBySpellName = true
 	end
 
-	self:UpdateRangeCheckSpells()
-	self:RegisterEvent("LEARNED_SPELL_IN_TAB", "UpdateRangeCheckSpells")
+	UF:UpdateRangeCheckSpells()
+	UF:RegisterEvent("LEARNED_SPELL_IN_TAB", "UpdateRangeCheckSpells")
 end
 
-local function InitializeCallback()
-	UF:Initialize()
-end
-
-E:RegisterInitialModule(UF:GetName(), InitializeCallback)
+E:RegisterInitialModule(UF:GetName())

@@ -107,19 +107,19 @@ function D:ScriptErrorsFrame_UpdateButtons()
 end
 
 function D:ScriptErrorsFrame_OnError(_, keepHidden)
-	if keepHidden or self.MessagePrinted or not InCombatLockdown() or GetCVarBool("scriptErrors") ~= 1 then return end
+	if keepHidden or D.MessagePrinted or not InCombatLockdown() or GetCVarBool("scriptErrors") ~= 1 then return end
 
 	E:Print(L["|cFFE30000Lua error recieved. You can view the error message when you exit combat."])
-	self.MessagePrinted = true
+	D.MessagePrinted = true
 end
 
 function D:PLAYER_REGEN_ENABLED()
 	ScriptErrorsFrame:SetParent(UIParent)
-	self.MessagePrinted = nil
+	D.MessagePrinted = nil
 end
 
 function D:PLAYER_REGEN_DISABLED()
-	ScriptErrorsFrame:SetParent(self.HideFrame)
+	ScriptErrorsFrame:SetParent(D.HideFrame)
 end
 
 function D:TaintError(event, addonName, addonFunc)
@@ -134,26 +134,22 @@ function D:StaticPopup_Show(name)
 end
 
 function D:Initialize()
-	self.Initialized = true
-	self.HideFrame = CreateFrame("Frame")
-	self.HideFrame:Hide()
+	D.Initialized = true
+	D.HideFrame = CreateFrame("Frame")
+	D.HideFrame:Hide()
 
 	if not IsAddOnLoaded("Blizzard_DebugTools") then
 		LoadAddOn("Blizzard_DebugTools")
 	end
 
-	self:ModifyErrorFrame()
-	self:SecureHook("ScriptErrorsFrame_UpdateButtons")
-	self:SecureHook("ScriptErrorsFrame_OnError")
-	self:SecureHook("StaticPopup_Show")
-	self:RegisterEvent("PLAYER_REGEN_DISABLED")
-	self:RegisterEvent("PLAYER_REGEN_ENABLED")
-	self:RegisterEvent("ADDON_ACTION_BLOCKED", "TaintError")
-	self:RegisterEvent("ADDON_ACTION_FORBIDDEN", "TaintError")
+	D:ModifyErrorFrame()
+	D:SecureHook("ScriptErrorsFrame_UpdateButtons")
+	D:SecureHook("ScriptErrorsFrame_OnError")
+	D:SecureHook("StaticPopup_Show")
+	D:RegisterEvent("PLAYER_REGEN_DISABLED")
+	D:RegisterEvent("PLAYER_REGEN_ENABLED")
+	D:RegisterEvent("ADDON_ACTION_BLOCKED", "TaintError")
+	D:RegisterEvent("ADDON_ACTION_FORBIDDEN", "TaintError")
 end
 
-local function InitializeCallback()
-	D:Initialize()
-end
-
-E:RegisterModule(D:GetName(), InitializeCallback)
+E:RegisterModule(D:GetName())

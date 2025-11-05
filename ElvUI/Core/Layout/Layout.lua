@@ -418,8 +418,4 @@ function LO:CreateMinimapPanels()
 	DT:RegisterPanel(panel, E.db.datatexts.panels.MinimapPanel.numPoints, 'ANCHOR_BOTTOM', 0, -4)
 end
 
-local function InitializeCallback()
-	LO:Initialize()
-end
-
-E:RegisterModule(LO:GetName(), InitializeCallback)
+E:RegisterModule(LO:GetName())

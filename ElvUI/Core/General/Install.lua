@@ -903,13 +903,6 @@ function E:LayoutNormal()
 		E.db.general.autoTrackReputation = true
 			--temp
 			E.db.general.watchFrameHeight = 400
-		--Movers
-		for mover, position in next, E.LayoutMoverPositions.ALL do
-			E.db.movers[mover] = position
-			E:SaveMoverDefaultPosition(mover)
-		end
-		--Tooltip
-		E.db.movers.TooltipMover = nil --ensure that this mover gets completely reset.. yes E:ResetMover call above doesn't work.
 		--Nameplates
 		E.db.nameplates.colors.castNoInterruptColor = {r = 0.78, g=0.25, b=0.25}
 		E.db.nameplates.colors.reactions.good = {r = 0.30, g=0.67, b=0.29}
@@ -1033,49 +1026,43 @@ function E:LayoutNormal()
 		--Raid40
 		E.db.unitframe.units.raid40.enable = false
 		E.db.unitframe.units.raid40.rdebuffs.font = 'PT Sans Narrow'
+
+		--Private
+		E.private.bags.bagBar = false
+		E.private.general.chatBubbleName = false
+end
+
+function E:LayoutMovers(layout)
+	if not E.db.movers then
+		E.db.movers = {}
+	end
+
+	for mover, position in next, E.LayoutMoverPositions.ALL do
+		E.db.movers[mover] = position
+	end
+
+	local movers = E.LayoutMoverPositions[layout]
+	if movers then -- this can override any from ALL
+		for mover, position in next, movers do
+			E.db.movers[mover] = position
+		end
+	end
 end
 
 function E:SetupLayout(layout, noDataReset, noDisplayMsg)
 	if not noDataReset then
+		E.data:ResetProfile(nil, true) -- noChildren, noCallbacks
+		E:DBConversions()
+
 		E.db.layoutSet = layout
-		E.db.layoutSetting = layout
-
-		--Unitframes
-		E:CopyTable(E.db.unitframe.units, P.unitframe.units)
-
-		--Temp Enchants
-		E:CopyTable(E.db.auras.weapons, P.auras.weapons)
-
-		--Shared base layout, tweaks to individual layouts will be below
-		E:ResetMovers()
-
-		if not E.db.movers then
-			E.db.movers = {}
-		end
 
 		if layout == 'anniversary' then
 			E:LayoutAnniversary()
 		else
 			E:LayoutNormal()
-
-			--Movers
-			for mover, position in next, E.LayoutMoverPositions.ALL do
-				E.db.movers[mover] = position
-
-				E:SaveMoverDefaultPosition(mover)
-			end
 		end
 
-		--[[
-			Layout Tweaks will be handled below,
-			These are changes that deviate from the shared base layout.
-		]]
-		if E.LayoutMoverPositions[layout] then
-			for mover, position in next, E.LayoutMoverPositions[layout] do
-				E.db.movers[mover] = position
-				E:SaveMoverDefaultPosition(mover)
-			end
-		end
+		E:LayoutMovers(layout)
 	end
 
 	E:StaggeredUpdateAll()
@@ -1177,6 +1164,7 @@ end
 
 function E:SetPage(num)
 	CURRENT_PAGE = num
+
 	E:SetupReset()
 
 	_G.InstallStatus.anim.progress:SetChange(num)

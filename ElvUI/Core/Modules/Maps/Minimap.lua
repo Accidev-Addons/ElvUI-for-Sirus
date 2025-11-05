@@ -701,8 +701,4 @@ function M:Initialize()
 	M:UpdateSettings()
 end
 
-local function InitializeCallback()
-	M:Initialize()
-end
-
-E:RegisterModule(M:GetName(), InitializeCallback)
+E:RegisterModule(M:GetName())

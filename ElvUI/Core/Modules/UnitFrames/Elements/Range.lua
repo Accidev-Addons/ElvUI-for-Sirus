@@ -1,11 +1,10 @@
 local E, L, V, P, G = unpack(ElvUI)
-local UF = E:GetModule("UnitFrames")
+local UF = E:GetModule('UnitFrames')
 local SpellRange = E.Libs.SpellRange
 
---Lua functions
 local pairs, ipairs = pairs, ipairs
 local find = string.find
---WoW API / Variables
+
 local CheckInteractDistance = CheckInteractDistance
 local UnitCanAttack = UnitCanAttack
 local UnitInParty = UnitInParty
@@ -27,7 +26,7 @@ end
 function UF:UpdateRangeCheckSpells()
 	if not SRT[E.myclass] then SRT[E.myclass] = {} end
 
-	for tbl, spells in pairs(E.global.unitframe.spellRangeCheck[E.myclass]) do
+	for tbl, spells in pairs(E.global.unitframe.rangeCheck[E.myclass]) do
 		AddTable(tbl) --Create the table holding spells, even if it ends up being an empty table
 		for spellID in pairs(spells) do
 			local enabled = spells[spellID]
@@ -39,16 +38,16 @@ function UF:UpdateRangeCheckSpells()
 end
 
 local function getUnit(unit)
-	if not find(unit, "party") or not find(unit, "raid") then
+	if not find(unit, 'party') or not find(unit, 'raid') then
 		for i = 1, 4 do
-			if UnitIsUnit(unit, "party"..i) then
-				return "party"..i
+			if UnitIsUnit(unit, 'party'..i) then
+				return 'party'..i
 			end
 		end
 
 		for i = 1, 40 do
-			if UnitIsUnit(unit, "raid"..i) then
-				return "raid"..i
+			if UnitIsUnit(unit, 'raid'..i) then
+				return 'raid'..i
 			end
 		end
 	else
@@ -57,7 +56,7 @@ local function getUnit(unit)
 end
 
 local function friendlyIsInRange(unit)
-	if (not UnitIsUnit(unit, "player")) and (UnitInParty(unit) or UnitInRaid(unit)) then
+	if (not UnitIsUnit(unit, 'player')) and (UnitInParty(unit) or UnitInRaid(unit)) then
 		unit = getUnit(unit) -- swap the unit with `raid#` or `party#` when its NOT `player`, UnitIsUnit is true, and its not using `raid#` or `party#` already
 	end
 
@@ -157,14 +156,14 @@ function UF:UpdateRange(unit)
 
 	unit = unit or self.unit
 
-	if self.forceInRange or unit == "player" then
+	if self.forceInRange or unit == 'player' then
 		alpha = self.Fader.MaxAlpha
 	elseif self.forceNotInRange then
 		alpha = self.Fader.MinAlpha
 	elseif unit then
-		if UnitCanAttack("player", unit) then
+		if UnitCanAttack('player', unit) then
 			alpha = ((enemyIsInRange(unit) or enemyIsInLongRange(unit)) and self.Fader.MaxAlpha) or self.Fader.MinAlpha
-		elseif UnitIsUnit(unit, "pet") then
+		elseif UnitIsUnit(unit, 'pet') then
 			alpha = (petIsInRange(unit) and self.Fader.MaxAlpha) or self.Fader.MinAlpha
 		else
 			alpha = (UnitIsConnected(unit) and friendlyIsInRange(unit) and self.Fader.MaxAlpha) or self.Fader.MinAlpha

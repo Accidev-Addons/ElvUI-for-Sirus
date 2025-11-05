@@ -198,8 +198,4 @@ function DB:Initialize()
 	DB:RegisterEvent("PVP_TIMER_UPDATE", "HandleVisibility")
 end
 
-local function InitializeCallback()
-	DB:Initialize()
-end
-
-E:RegisterModule(DB:GetName(), InitializeCallback)
+E:RegisterModule(DB:GetName())

@@ -961,11 +961,12 @@ function E:UpdateStart(skipCallback, skipUpdateDB)
 end
 
 do
---[[ 	local function buffwatchConvert(spell)
-		if spell.sizeOffset then spell.sizeOffset = nil end
+	local function ConvertAurawatch(spell)
+		if spell.sizeOverride then spell.sizeOverride = nil end
+		if spell.size then spell.size = nil end
 
-		if not spell.sizeOverride then
-			spell.sizeOverride = 0
+		if not spell.sizeOffset then
+			spell.sizeOffset = 0
 		end
 
 		if spell.styleOverride then
@@ -974,7 +975,7 @@ do
 		elseif not spell.style then
 			spell.style = 'coloredIcon'
 		end
-	end ]]
+	end
 
 	local ttModSwap
 	do -- tooltip convert
@@ -1101,45 +1102,50 @@ do
 			end
 		end
 
-			-- Wipe some old variables off profiles
-			if E.global.uiScaleInformed then E.global.uiScaleInformed = nil end
-			if E.global.nameplatesResetInformed then E.global.nameplatesResetInformed = nil end
-			if E.global.userInformedNewChanges1 then E.global.userInformedNewChanges1 = nil end
+		-- Wipe some old variables off profiles
+		if E.global.uiScaleInformed then E.global.uiScaleInformed = nil end
+		if E.global.nameplatesResetInformed then E.global.nameplatesResetInformed = nil end
+		if E.global.userInformedNewChanges1 then E.global.userInformedNewChanges1 = nil end
 
-			-- cvar nameplate visibility stuff
-			if E.db.nameplates.units.FRIENDLY_NPC.showAlways ~= nil then
-				E.db.nameplates.visibility.friendly.npcs = E.db.nameplates.units.FRIENDLY_NPC.showAlways
-				E.db.nameplates.units.FRIENDLY_NPC.showAlways = nil
-			end
-			if E.db.nameplates.units.FRIENDLY_PLAYER.minions ~= nil then
-				E.db.nameplates.visibility.friendly.minions = E.db.nameplates.units.FRIENDLY_PLAYER.minions
-				E.db.nameplates.units.FRIENDLY_PLAYER.minions = nil
-			end
-			if E.db.nameplates.units.ENEMY_NPC.minors ~= nil then
-				E.db.nameplates.visibility.enemy.minus = E.db.nameplates.units.ENEMY_NPC.minors
-				E.db.nameplates.units.ENEMY_NPC.minors = nil
-			end
-			if E.db.nameplates.units.ENEMY_PLAYER.minions ~= nil or E.db.nameplates.units.ENEMY_NPC.minions ~= nil then
-				E.db.nameplates.visibility.enemy.minions = E.db.nameplates.units.ENEMY_PLAYER.minions or E.db.nameplates.units.ENEMY_NPC.minions
-				E.db.nameplates.units.ENEMY_PLAYER.minions = nil
-				E.db.nameplates.units.ENEMY_NPC.minions = nil
-			end
+		-- cvar nameplate visibility stuff
+		if E.db.nameplates.units.FRIENDLY_NPC.showAlways ~= nil then
+			E.db.nameplates.visibility.friendly.npcs = E.db.nameplates.units.FRIENDLY_NPC.showAlways
+			E.db.nameplates.units.FRIENDLY_NPC.showAlways = nil
+		end
+		if E.db.nameplates.units.FRIENDLY_PLAYER.minions ~= nil then
+			E.db.nameplates.visibility.friendly.minions = E.db.nameplates.units.FRIENDLY_PLAYER.minions
+			E.db.nameplates.units.FRIENDLY_PLAYER.minions = nil
+		end
+		if E.db.nameplates.units.ENEMY_NPC.minors ~= nil then
+			E.db.nameplates.visibility.enemy.minus = E.db.nameplates.units.ENEMY_NPC.minors
+			E.db.nameplates.units.ENEMY_NPC.minors = nil
+		end
+		if E.db.nameplates.units.ENEMY_PLAYER.minions ~= nil or E.db.nameplates.units.ENEMY_NPC.minions ~= nil then
+			E.db.nameplates.visibility.enemy.minions = E.db.nameplates.units.ENEMY_PLAYER.minions or E.db.nameplates.units.ENEMY_NPC.minions
+			E.db.nameplates.units.ENEMY_PLAYER.minions = nil
+			E.db.nameplates.units.ENEMY_NPC.minions = nil
+		end
 
 		-- removed override stuff from aurawatch
- 		-- for _, spells in pairs(E.global.unitframe.buffwatch) do
-		-- 	for _, spell in pairs(spells) do
-		-- 		buffwatchConvert(spell)
-		-- 	end
-		-- end
-		-- for _, spell in pairs(E.db.unitframe.filters.buffwatch) do
-		-- 	buffwatchConvert(spell)
-		-- end
+		if E.global.unitframe.buffwatch then
+			for _, spells in pairs(E.global.unitframe.buffwatch) do
+				for _, spell in pairs(spells) do
+					ConvertAurawatch(spell)
+				end
+			end
+		end
+
+		if E.db.unitframe.filters.buffwatch then
+			for _, spell in pairs(E.db.unitframe.filters.buffwatch) do
+				ConvertAurawatch(spell)
+			end
+		end
 
 		-- fix aurabars colors
 		local auraBarColors = E.global.unitframe.AuraBarColors
 		for spell, info in pairs(auraBarColors) do
 			if type(spell) == 'string' then
-				local spellID = select(7, GetSpellInfo(spell))
+				local _, _, _, _, _, _, spellID = E:GetSpellInfo(spell)
 				if spellID and not auraBarColors[spellID] then
 					auraBarColors[spellID] = info
 					auraBarColors[spell] = nil
@@ -1148,10 +1154,10 @@ do
 			end
 
 			if type(info) == 'boolean' then
-				auraBarColors[spell] = {color = {r = 1, g = 1, b = 1}, enable = info}
+				auraBarColors[spell] = { color = { r = 1, g = 1, b = 1 }, enable = info }
 			elseif type(info) == 'table' then
 				if info.r or info.g or info.b then
-					auraBarColors[spell] = {color = {r = info.r or 1, g = info.g or 1, b = info.b or 1}, enable = true}
+					auraBarColors[spell] = { color = { r = info.r or 1, g = info.g or 1, b = info.b or 1 }, enable = true }
 				elseif info.color then -- azil created a void hole, delete it -x-
 					if info.color.color then info.color.color = nil end
 					if info.color.enable then info.color.enable = nil end
@@ -1192,7 +1198,6 @@ do
 			end
 		end
 
-
 		for i = 1, 10 do
 			local bar = E.db.actionbar['bar'..i]
 			if bar.buttonsize then
@@ -1220,7 +1225,6 @@ do
 			E.db.actionbar.barPet.buttonSpacing = E.db.actionbar.barPet.buttonspacing
 			E.db.actionbar.barPet.buttonspacing = nil
 		end
-
 
 		-- Convert Pages
 		if E.db.actionbar.convertPages then
@@ -1293,6 +1297,18 @@ function E:DBConvertDev()
 	if not ElvCharacterDB.ConvertKeybindings then
 		E:ConvertActionBarKeybinds()
 		ElvCharacterDB.ConvertKeybindings = true
+	end
+
+	-- hide text -> hide name & hide time
+	for _, unit in ipairs({'player','target','focus','pet','boss','arena','party'}) do
+		local db = E.db.unitframe.units[unit].castbar
+		local previous = db.hidetext
+		if previous ~= nil then
+			db.hideName = previous
+			db.hideTime = previous
+
+			db.hidetext = nil
+		end
 	end
 end
 
@@ -1669,18 +1685,6 @@ do
 	end
 end
 
-function E:ResetAllUI()
-	E:ResetMovers()
-
-	if E.db.lowresolutionset then
-		E:SetupResolution(true)
-	end
-
-	if E.db.layoutSet then
-		E:SetupLayout(E.db.layoutSet, true)
-	end
-end
-
 function E:ResetUI(...)
 	if E:AlertCombat() then return end
 
@@ -1693,41 +1697,24 @@ function E:ResetUI(...)
 end
 
 do
-	local function errorhandler(err)
-		return _G.geterrorhandler()(err)
+	local function Errorhandler(err)
+		local handler = _G.geterrorhandler()
+		if handler then
+			return handler(err)
+		end
 	end
 
 	function E:CallLoadFunc(func, ...)
-		xpcall(func, errorhandler, ...)
+		xpcall(func, Errorhandler, ...)
 	end
 end
 
---TODO
--- function E:CallLoadedModule(obj, silent, object, index)
--- 	local name, func = obj.name, obj.func
-
--- 	local module = name and E:GetModule(name, silent)
--- 	if not module then return end
-
--- 	if func and type(func) == 'string' then
--- 		E:CallLoadFunc(module[func], module)
--- 	elseif func and type(func) == 'function' then
--- 		E:CallLoadFunc(func, module)
--- 	elseif module.Initialize then
--- 		E:CallLoadFunc(module.Initialize, module)
--- 	end
-
--- 	if object and index then
--- 		object[index] = nil
--- 	end
--- end
-
 function E:CallLoadedModule(obj, silent, object, index)
-	local name, func
-	if type(obj) == 'table' then name, func = unpack(obj) else name = obj end
-	local module = name and E:GetModule(name, silent)
+	local name, func = obj.name, obj.func
 
+	local module = name and E:GetModule(name, silent)
 	if not module then return end
+
 	if func and type(func) == 'string' then
 		E:CallLoadFunc(module[func], module)
 	elseif func and type(func) == 'function' then
@@ -1742,29 +1729,20 @@ function E:CallLoadedModule(obj, silent, object, index)
 end
 
 function E:RegisterInitialModule(name, func)
-	E.RegisteredInitialModules[#E.RegisteredInitialModules + 1] = (func and {name, func}) or name
+	E.RegisteredInitialModules[#E.RegisteredInitialModules + 1] = { name = name, func = func }
 end
 
---TODO
--- do
--- 	local loaded = {}
--- 	function E:RegisterModule(name, func)
--- 		if E.initialized then
--- 			loaded.name = name
--- 			loaded.func = func
+do
+	local loaded = {}
+	function E:RegisterModule(name, func)
+		if E.initialized then
+			loaded.name = name
+			loaded.func = func
 
--- 			E:CallLoadedModule(loaded)
--- 		else
--- 			E.RegisteredModules[#E.RegisteredModules + 1] = { name = name, func = func }
--- 		end
--- 	end
--- end
-
-function E:RegisterModule(name, func)
-	if E.initialized then
-		E:CallLoadedModule((func and {name, func}) or name)
-	else
-		E.RegisteredModules[#E.RegisteredModules + 1] = (func and {name, func}) or name
+			E:CallLoadedModule(loaded)
+		else
+			E.RegisteredModules[#E.RegisteredModules + 1] = { name = name, func = func }
+		end
 	end
 end
 
@@ -1819,6 +1797,8 @@ do
 				rawset(dest, k, v)
 			end
 		end
+
+		return dest
 	end
 
 	function E:RemoveDefaults(db, defaults)
@@ -1832,6 +1812,8 @@ do
 				db[k] = nil
 			end
 		end
+
+		return db
 	end
 end
 

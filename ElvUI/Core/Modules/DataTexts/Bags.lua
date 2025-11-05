@@ -50,7 +50,7 @@ local function OnEvent(self)
 end
 
 local function OnClick()
-	B:ToggleAllBags()
+	_G.ToggleAllBags()
 end
 
 local function OnEnter()

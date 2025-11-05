@@ -22,16 +22,17 @@ G.general = {
 		width = 1024,
 		height = 768
 	},
+	disableTutorialButtons = true
 }
 
 G.classtimer = {}
 
 G.chat = {
-	classColorMentionExcludedNames = {},
+	classColorMentionExcludedNames = {}
 }
 
 G.bags = {
-	ignoredItems = {},
+	ignoredItems = {}
 }
 
 G.datatexts = {
@@ -40,16 +41,18 @@ G.datatexts = {
 	settings = {
 		Agility = { Label = '', NoLabel = false },
 		Armor = { Label = '', NoLabel = false },
+		['Attack Power'] = { Label = '', NoLabel = false },
 		Avoidance = { Label = '', NoLabel = false, decimalLength = 1 },
 		Bags = { textFormat = 'USED_TOTAL', Label = '', NoLabel = false },
 		CallToArms = { Label = '', NoLabel = false },
 		Combat = { TimeFull = true, NoLabel = false },
 		CombatIndicator = { OutOfCombat = '', InCombat = '', OutOfCombatColor = {r = 0, g = 0.8, b = 0}, InCombatColor = {r = 0.8, g = 0, b = 0} },
-		Crit = { Label = '', NoLabel = false, decimalLength = 1 },
 		Currencies = { goldFormat = 'BLIZZARD', goldCoins = true, displayedCurrency = 'BACKPACK', displayStyle = 'ICON', tooltipData = {}, idEnable = {}, headers = true, maxCurrency = false },
-		Durability = { Label = '', NoLabel = false, percThreshold = 30 },
+		Crit = { Label = '', NoLabel = false, decimalLength = 1 },
+		Durability = { Label = '', NoLabel = false, percThreshold = 30, goldFormat = 'BLIZZARD', goldCoins = true },
 		DualSpecialization = { NoLabel = false },
 		ElvUI = { Label = '' },
+		['Equipment Sets'] = { Label = '', NoLabel = false, NoIcon = false },
 		Experience = { textFormat = 'CUR' },
 		Friends = {
 			Label = '', NoLabel = false,
@@ -78,7 +81,10 @@ G.datatexts = {
 		Versatility = { Label = '', NoLabel = false, decimalLength = 1 },
 		Dodge = { decimalLength = 1 },
 		Parry = { decimalLength = 1 },
-		Block = { decimalLength = 1 }
+		Block = { decimalLength = 1 },
+		['Mana Regen'] = { Label = '', NoLabel = false, decimalLength = 1 },
+		HealPower = { Label = '', NoLabel = false },
+		['Spell Hit'] = { Label = '', NoLabel = false, decimalLength = 0 }
 	},
 	newPanelInfo = {
 		growth = 'HORIZONTAL',
@@ -112,9 +118,19 @@ G.unitframe = {
 	buffwatch = {},
 	raidDebuffIndicator = {
 		instanceFilter = 'RaidDebuffs',
-		otherFilter = 'CCDebuffs',
+		otherFilter = 'CCDebuffs'
 	},
-	spellRangeCheck = {
+	newCustomText = {
+		text_format = '',
+		size = 10,
+		font = 'Homespun',
+		fontOutline = 'MONOCHROMEOUTLINE',
+		xOffset = 0,
+		yOffset = 0,
+		justifyH = 'CENTER',
+		attachTextTo = 'Health'
+	},
+	rangeCheck = {
 		PRIEST = {
 			enemySpells = {
 				[585] = true, -- Smite (30 yards)
@@ -262,106 +278,5 @@ G.unitframe = {
 }
 
 G.profileCopy = {
-	--Specific values
-	selected = 'Default',
-	movers = {},
-	--Modules
-	actionbar = {
-		general = true,
-		bar1 = true,
-		bar2 = true,
-		bar3 = true,
-		bar4 = true,
-		bar5 = true,
-		bar6 = true,
-		barPet = true,
-		stanceBar = true,
-		microbar = true,
-		cooldown = true
-	},
-	auras = {
-		general = true,
-		buffs = true,
-		debuffs = true,
-		cooldown = true
-	},
-	bags = {
-		general = true,
-		split = true,
-		vendorGrays = true,
-		bagBar = true,
-		cooldown = true
-	},
-	chat = {
-		general = true
-	},
-	cooldown = {
-		general = true,
-		fonts = true
-	},
-	databars = {
-		experience = true,
-		reputation = true
-	},
-	datatexts = {
-		general = true,
-		panels = true
-	},
-	general = {
-		general = true,
-		minimap = true,
-		threat = true,
-		totems = true,
-		itemLevel = true,
-	},
-	nameplates = {
-		general = true,
-		cooldown = true,
-		reactions = true,
-		threat = true,
-		units = {
-			PLAYER = true,
-			TARGET = true,
-			FRIENDLY_PLAYER = true,
-			ENEMY_PLAYER = true,
-			FRIENDLY_NPC = true,
-			ENEMY_NPC = true
-		}
-	},
-	tooltip = {
-		general = true,
-		visibility = true,
-		healthBar = true
-	},
-	unitframe = {
-		general = true,
-		cooldown = true,
-		colors = {
-			general = true,
-			power = true,
-			reaction = true,
-			healPrediction = true,
-			classResources = true,
-			frameGlow = true,
-			debuffHighlight = true
-		},
-		units = {
-			player = true,
-			target = true,
-			targettarget = true,
-			targettargettarget = true,
-			focus = true,
-			focustarget = true,
-			pet = true,
-			pettarget = true,
-			boss = true,
-			arena = true,
-			party = true,
-			raid = true,
-			raid40 = true,
-			raidpet = true,
-			tank = true,
-			assist = true
-		}
-	}
+	selected = 'Default'
 }

@@ -1235,8 +1235,4 @@ function AB:Initialize()
 	_G.LOCK_ACTIONBAR = (AB.db.lockActionBars == true and '1' or '0') -- Keep an eye on this, in case it taints
 end
 
-local function InitializeCallback()
-	AB:Initialize()
-end
-
-E:RegisterModule(AB:GetName(), InitializeCallback)
+E:RegisterModule(AB:GetName())

@@ -892,8 +892,4 @@ function RU:Initialize()
 	RU:RegisterEvent('PLAYER_ENTERING_WORLD', 'ToggleRaidUtil')
 end
 
-local function InitializeCallback()
-	RU:Initialize()
-end
-
-E:RegisterInitialModule(RU:GetName(), InitializeCallback)
+E:RegisterModule(RU:GetName())

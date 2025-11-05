@@ -858,7 +858,7 @@ function TT:Initialize()
 
 	_G.BNToastFrame:Point('TOPRIGHT', _G.MinimapCluster, 'BOTTOMRIGHT', 0, -10)
 	E:CreateMover(_G.BNToastFrame, 'BNETMover', L["BNet Frame"], nil, nil, PostBNToastMove)
-	self:SecureHook(_G.BNToastFrame, 'SetPoint', 'RepositionBNET')
+	TT:SecureHook(_G.BNToastFrame, 'SetPoint', 'RepositionBNET')
 
 	if not E.private.tooltip.enable then return end
 	TT.Initialized = true
@@ -913,8 +913,4 @@ function TT:Initialize()
 	TT:SecureHook(GameTooltip, 'SetBackpackToken')
 end
 
-local function InitializeCallback()
-	TT:Initialize()
-end
-
-E:RegisterModule(TT:GetName(), InitializeCallback)
+E:RegisterModule(TT:GetName())
