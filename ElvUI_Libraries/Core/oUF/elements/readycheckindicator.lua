@@ -157,8 +157,7 @@ local function Enable(self, unit)
 			anim.Alpha = animAlpha
 		end
 
-		animAlpha:SetFromAlpha(1)
-		animAlpha:SetToAlpha(0)
+		animAlpha:SetChange(-1)
 		animAlpha:SetDuration(element.fadeTime or 1.5)
 		animAlpha:SetStartDelay(element.finishedTime or 10)
 
