@@ -4,49 +4,47 @@ local LC = E.Libs.Compat
 local ElvUF = E.oUF
 
 local _G = _G
-local type, ipairs, pairs, unpack = type, ipairs, pairs, unpack
+local type, pairs, unpack = type, pairs, unpack
 local wipe, max, next, tinsert, date, time = wipe, max, next, tinsert, date, time
-local format, gsub, strfind, strlen, strmatch, tonumber, tostring = string.format, string.gsub, strfind, strlen, strmatch, tonumber, tostring
+local format, gsub, strlen, strmatch, tonumber, tostring = string.format, string.gsub, strlen, strmatch, tonumber, tostring
 local hooksecurefunc = hooksecurefunc
 
 local CopyTable = CopyTable
 local CreateFrame = CreateFrame
-local GetBattlefieldArenaFaction = GetBattlefieldArenaFaction
-local GetGameTime = GetGameTime
-local GetExpansionLevel = GetExpansionLevel
-local GetInstanceInfo = GetInstanceInfo
-local GetLootSlotInfo = GetLootSlotInfo
-local GetLootSlotLink = GetLootSlotLink
-local GetNumQuestLogEntries = GetNumQuestLogEntries
-local GetQuestLogTitle = GetQuestLogTitle
-local GetNumQuestLeaderBoards = GetNumQuestLeaderBoards
-local GetQuestLogLeaderBoard = GetQuestLogLeaderBoard
-local GetItemInfo = GetItemInfo
-local GetNumPartyMembers = GetNumPartyMembers
-local GetPartyAssignment = GetPartyAssignment
-local HideUIPanel = HideUIPanel
-local InCombatLockdown = InCombatLockdown
 local GetActiveTalentGroup = GetActiveTalentGroup
+local GetBattlefieldArenaFaction = GetBattlefieldArenaFaction
 local GetCVarBool = GetCVarBool
 local GetDungeonDifficulty = GetDungeonDifficulty
-local GetRaidDifficulty = GetRaidDifficulty
+local GetExpansionLevel = GetExpansionLevel
 local GetFunctionCPUUsage = GetFunctionCPUUsage
+local GetGameTime = GetGameTime
+local GetInstanceInfo = GetInstanceInfo
+local GetItemInfo = GetItemInfo
+local GetLootSlotInfo = GetLootSlotInfo
+local GetLootSlotLink = GetLootSlotLink
+local GetNumPartyMembers = GetNumPartyMembers
+local GetNumQuestLeaderBoards = GetNumQuestLeaderBoards
+local GetNumQuestLogEntries = GetNumQuestLogEntries
+local GetPartyAssignment = GetPartyAssignment
+local GetQuestLogLeaderBoard = GetQuestLogLeaderBoard
+local GetQuestLogTitle = GetQuestLogTitle
+local GetRaidDifficulty = GetRaidDifficulty
+local GetSpellInfo = GetSpellInfo
 local GetTalentTabInfo = GetTalentTabInfo
 local GetWatchedFactionInfo = GetWatchedFactionInfo
+local HideUIPanel = HideUIPanel
+local InCombatLockdown = InCombatLockdown
 local IsAddOnLoaded = IsAddOnLoaded
 local IsXPUserDisabled = IsXPUserDisabled
 local RequestBattlefieldScoreData = RequestBattlefieldScoreData
+local UIParent = UIParent
+local UnitAura = UnitAura
+local UnitFactionGroup = UnitFactionGroup
+local UnitGUID = UnitGUID
+local UnitGroupRolesAssigned = UnitGroupRolesAssigned
+local UnitHasVehicleUI = UnitHasVehicleUI
 local UnitInBattleground = UnitInBattleground
 local UnitIsPlayer = UnitIsPlayer
-local UnitFactionGroup = UnitFactionGroup
-local UnitGroupRolesAssigned = UnitGroupRolesAssigned
-local UIParent = UIParent
-local UnitHasVehicleUI = UnitHasVehicleUI
-local UnitInParty = UnitInParty
-local UnitInRaid = UnitInRaid
-local UnitIsUnit = UnitIsUnit
-local UnitAura = UnitAura
-local UnitGUID = UnitGUID
 
 local IsInRaid = LC.IsInRaid
 local IsInGroup = LC.IsInGroup
@@ -155,7 +153,6 @@ E.SpecName = { -- english locale
 }
 
 local questItemCache = {}
-
 function E:GetLootSlotInfo(slot)
     local isQuestItem, questID, isActive = false, nil, false
     local texture, item, count, quality, locked = GetLootSlotInfo(slot)
@@ -452,10 +449,11 @@ end
 
 do
 	function E:GetSpellInfo(spellID)
-		local info = spellID and GetSpellInfo(spellID)
+		local info = {}
+		info.name, _, info.iconID, info.castTime, info.minRange, info.maxRange, info.spellID, info.originalIconID = spellID and GetSpellInfo(spellID)
 		if not info then return end
 
-		return info.name, nil, info.iconID, info.castTime, info.minRange, info.maxRange, info.spellID, info.originalIconID
+		return info
 	end
 end
 
