@@ -538,8 +538,8 @@ end
 local getCondition
 do
 	local conditions = {
-		raid40 = '[@raid40,exists] show;',
-		raid = '[@raid,exists] show;',
+		raid40 = '[@raid26,exists] show;',
+		raid = '[@raid6,exists] show;',
 		party = '[group:party,nogroup:raid] show;',
 		solo = '[@player,exists,nogroup:party] show;',
 	}

@@ -782,7 +782,7 @@ function E:LayoutAnniversary()
 	E.db.unitframe.units.raid40.numGroups = 8
 	E.db.unitframe.units.raid40.raidicon.attachTo = 'TOPRIGHT'
 	E.db.unitframe.units.raid40.verticalSpacing = 4
-	E.db.unitframe.units.raid40.visibility = '[@raid40,exists] show;hide'
+	E.db.unitframe.units.raid40.visibility = '[@raid26,exists] show;hide'
 	E.db.unitframe.units.raid40.width = 83
 	E.db.unitframe.units.raid40.health.text_format = '[healthcolor][perhp]'
 	E.db.unitframe.units.target.aurabar.height = 16
@@ -1021,7 +1021,7 @@ function E:LayoutNormal()
 		E.db.unitframe.units.raid.rdebuffs.xOffset = 30
 		E.db.unitframe.units.raid.rdebuffs.yOffset = 25
 		E.db.unitframe.units.raid.resurrectIcon.attachTo = 'BOTTOMRIGHT'
-		E.db.unitframe.units.raid.visibility = '[@raid,noexists] hide;show'
+		E.db.unitframe.units.raid.visibility = '[@raid6,noexists] hide;show'
 		E.db.unitframe.units.raid.width = 92
 		--Raid40
 		E.db.unitframe.units.raid40.enable = false
