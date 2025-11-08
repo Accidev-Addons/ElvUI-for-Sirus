@@ -1,145 +1,244 @@
 local E, L, V, P, G = unpack(ElvUI)
 local UF = E:GetModule("UnitFrames")
-local _, ns = ...
-local ElvUF = ns.oUF
+local ElvUF = E.oUF
 
---Lua functions
-local _G = _G
-local setmetatable, getfenv, setfenv = setmetatable, getfenv, setfenv
-local type, unpack, select, pairs = type, unpack, select, pairs
-local min, random = math.min, math.random
-local find, format = string.find, string.format
---WoW API / Variables
-local UnitPower = UnitPower
-local UnitPowerMax = UnitPowerMax
-local UnitHealth = UnitHealth
-local UnitHealthMax = UnitHealthMax
+local _G, getfenv, setfenv = _G, getfenv, setfenv
+local setmetatable, rawget, rawset = setmetatable, rawget, rawset
+local type, pairs, min, random, strfind, next = type, pairs, min, random, strfind, next
+
 local UnitName = UnitName
+local UnitPower = UnitPower
 local UnitClass = UnitClass
+local UnitHealth = UnitHealth
+local UnitPowerMax = UnitPowerMax
+local UnitHealthMax = UnitHealthMax
+local UnitPowerType = UnitPowerType
 local InCombatLockdown = InCombatLockdown
 local UnregisterUnitWatch = UnregisterUnitWatch
 local RegisterUnitWatch = RegisterUnitWatch
 local RegisterStateDriver = RegisterStateDriver
-local LOCALIZED_CLASS_NAMES_MALE = LOCALIZED_CLASS_NAMES_MALE
-local CLASS_SORT_ORDER = CLASS_SORT_ORDER
-local MAX_RAID_MEMBERS = MAX_RAID_MEMBERS
 
-local attributeBlacklist = {["showRaid"] = true, ["showParty"] = true, ["showSolo"] = true}
+local CLASS_SORT_ORDER = CLASS_SORT_ORDER
+local NUM_CLASS_ORDER = #CLASS_SORT_ORDER
+local MAX_RAID_MEMBERS = MAX_RAID_MEMBERS
+local MAX_PARTY_MEMBERS = MAX_PARTY_MEMBERS
+
 local configEnv
 local originalEnvs = {}
 local overrideFuncs = {}
+UF.overrideTags = {} -- used so plugin tags can have randomization during testing groups
 
-local function createConfigEnv()
+local forceShown = {}
+local attributeBlacklist = {
+	showRaid = true,
+	showParty = true,
+	showSolo = true
+}
+
+local allowTags = {
+	dead = true,
+	ghost = true,
+	status = true,
+	resting = true,
+	offline = true,
+	healthcolor = true,
+	powercolor = true,
+	classcolor = true,
+	namecolor = true
+}
+
+local statusChanceDefault = 10
+local statusChance = {
+	UnitIsConnected = 15, -- less likely
+	UnitIsDeadOrGhost = 5 -- more likely
+}
+
+local Enum = {}
+Enum.PowerType = {
+	Mana       = 0,
+	Rage       = 1,
+	Focus      = 2,
+	Energy     = 3,
+	Happiness  = 4,
+	Rune       = 5,
+	RunicPower = 6,
+}
+
+local PowerType = Enum.PowerType
+local classPowers = {
+	[0] = PowerType.Mana,
+	[1] = PowerType.Rage,
+	[2] = PowerType.Focus,
+	[3] = PowerType.Energy
+}
+
+local function EnvUnit(arg1)
+	local frame = configEnv._FRAME -- yoink
+	if not frame then return arg1, true end
+
+	local cool = frame.oldUnit
+	local unit = frame.unit or arg1
+	if cool then -- everyone who is cool <3
+		return cool or unit
+	else -- someone that's okay, i guess
+		return unit, true
+	end
+end
+
+local function CreateStatusFunc(tag)
+	return function(arg1)
+		local unit, real = EnvUnit(arg1)
+		if real then
+			return _G[tag](unit)
+		end
+
+		local chance = random(1, statusChance[tag] or statusChanceDefault)
+		if tag == 'UnitIsConnected' then
+			return chance ~= 1
+		else
+			return chance == 1
+		end
+	end
+end
+
+local function CreateConfigEnv()
 	if configEnv then return end
 
-	configEnv = setmetatable({
-		UnitPower = function (unit, displayType)
-			if find(unit, "target") or find(unit, "focus") then
-				return UnitPower(unit, displayType)
-			end
-
-			return random(1, UnitPowerMax(unit, displayType) or 1)
-		end,
-		UnitHealth = function(unit)
-			if find(unit, "target") or find(unit, "focus") then
-				return UnitHealth(unit)
-			end
-
-			return random(1, UnitHealthMax(unit))
-		end,
-		UnitName = function(unit)
-			if find(unit, "target") or find(unit, "focus") then
-				return UnitName(unit)
-			end
-			if E.CreditsList then
-				local max = #E.CreditsList
-				return E.CreditsList[random(1, max)]
-			end
-			return "Test Name"
-		end,
-		UnitClass = function(unit)
-			if find(unit, "target") or find(unit, "focus") then
-				return UnitClass(unit)
-			end
-
-			local classToken = CLASS_SORT_ORDER[random(1, #(CLASS_SORT_ORDER))]
-			return LOCALIZED_CLASS_NAMES_MALE[classToken], classToken
-		end,
-		Hex = function(r, g, b)
-			if type(r) == "table" then
-				if r.r then r, g, b = r.r, r.g, r.b else r, g, b = unpack(r) end
-			end
-			return format("|cff%02x%02x%02x", r*255, g*255, b*255)
-		end,
+	UF.ConfigEnv = {
 		Env = ElvUF.Tags.Env,
 		_VARS = ElvUF.Tags.Vars,
 		_COLORS = ElvUF.colors,
 		ColorGradient = ElvUF.ColorGradient,
-	}, {
+		UnitPower = function(arg1, displayType)
+			local unit, real = EnvUnit(arg1)
+			if real then
+				return UnitPower(unit, displayType)
+			end
+
+			local maxPower = UnitPowerMax(unit, displayType) or 0
+			return random(1, (maxPower > 0 and maxPower) or 100)
+		end,
+		UnitPowerType = function(arg1)
+			local unit, real = EnvUnit(arg1)
+			if real then
+				return UnitPowerType(unit)
+			end
+
+			return classPowers[random(0, #classPowers)]
+		end,
+		UnitHealth = function(arg1)
+			local unit, real = EnvUnit(arg1)
+			if real then
+				return UnitHealth(unit)
+			end
+
+			local maxHealth = UnitHealthMax(unit) or 0
+			return random(1, (maxHealth > 0 and maxHealth) or 100)
+		end,
+		UnitName = function(arg1)
+			local unit, real = EnvUnit(arg1)
+			if real then
+				return UnitName(unit)
+			end
+
+			local cool = E.CreditsList
+			local people = cool and #cool
+			if people > 0 then
+				return cool[random(1, people)]
+			else
+				return UnitName(unit)
+			end
+		end,
+		UnitClass = function(arg1)
+			local unit, real = EnvUnit(arg1)
+			if real then
+				return UnitClass(unit)
+			end
+
+			local classToken = CLASS_SORT_ORDER[random(1, NUM_CLASS_ORDER)]
+			local localized = E:LocalizedClassName(classToken, unit)
+			return localized, classToken
+		end
+	}
+
+	for _, name in next, { 'IsResting', 'UnitIsDead', 'UnitIsGhost', 'UnitIsDeadOrGhost', 'UnitIsConnected' } do
+		UF.ConfigEnv[name] = CreateStatusFunc(name)
+	end
+
+	configEnv = setmetatable(UF.ConfigEnv, {
 		__index = function(obj, key)
 			local envValue = ElvUF.Tags.Env[key]
 			if envValue ~= nil then
 				return envValue
 			end
 
-			return obj[key]
+			return rawget(obj, key)
 		end,
-		__newindex = function(_, key, value)
-			_G[key] = value
+		__newindex = function(obj, key, value)
+			rawset(obj, key, value)
 		end,
 	})
 
-	overrideFuncs["namecolor"] = ElvUF.Tags.Methods["namecolor"]
-	overrideFuncs["name:veryshort"] = ElvUF.Tags.Methods["name:veryshort"]
-	overrideFuncs["name:short"] = ElvUF.Tags.Methods["name:short"]
-	overrideFuncs["name:medium"] = ElvUF.Tags.Methods["name:medium"]
-	overrideFuncs["name:long"] = ElvUF.Tags.Methods["name:long"]
+	for tag, func in next, ElvUF.Tags.Methods do
+		if allowTags[tag] or UF.overrideTags[tag] or (strfind(tag, '^name:') or strfind(tag, '^health:') or strfind(tag, '^power:')) then
+			overrideFuncs[tag] = func
+		end
+	end
+end
 
-	overrideFuncs["healthcolor"] = ElvUF.Tags.Methods["healthcolor"]
-	overrideFuncs["health:current"] = ElvUF.Tags.Methods["health:current"]
-	overrideFuncs["health:deficit"] = ElvUF.Tags.Methods["health:deficit"]
-	overrideFuncs["health:current-percent"] = ElvUF.Tags.Methods["health:current-percent"]
-	overrideFuncs["health:current-max"] = ElvUF.Tags.Methods["health:current-max"]
-	overrideFuncs["health:current-max-percent"] = ElvUF.Tags.Methods["health:current-max-percent"]
-	overrideFuncs["health:max"] = ElvUF.Tags.Methods["health:max"]
-	overrideFuncs["health:percent"] = ElvUF.Tags.Methods["health:percent"]
+local function WhoIsAwesome(awesome)
+	if not configEnv then
+		CreateConfigEnv()
+	end
 
-	overrideFuncs["powercolor"] = ElvUF.Tags.Methods["powercolor"]
-	overrideFuncs["power:current"] = ElvUF.Tags.Methods["power:current"]
-	overrideFuncs["power:deficit"] = ElvUF.Tags.Methods["power:deficit"]
-	overrideFuncs["power:current-percent"] = ElvUF.Tags.Methods["power:current-percent"]
-	overrideFuncs["power:current-max"] = ElvUF.Tags.Methods["power:current-max"]
-	overrideFuncs["power:current-max-percent"] = ElvUF.Tags.Methods["power:current-max-percent"]
-	overrideFuncs["power:max"] = ElvUF.Tags.Methods["power:max"]
-	overrideFuncs["power:percent"] = ElvUF.Tags.Methods["power:percent"]
+	if awesome then
+		for _, func in pairs(overrideFuncs) do
+			if type(func) == 'function' then
+				if not originalEnvs[func] then
+					originalEnvs[func] = getfenv(func)
+					setfenv(func, configEnv)
+				end
+			end
+		end
+	else
+		for func, env in pairs(originalEnvs) do
+			setfenv(func, env)
+			originalEnvs[func] = nil
+		end
+	end
 end
 
 function UF:ForceShow(frame)
 	if InCombatLockdown() then return end
-
 	if not frame.isForced then
-		frame.oldUnit = frame.unit
-		frame.unit = "player"
 		frame.isForced = true
-		frame.oldOnUpdate = frame:GetScript("OnUpdate")
+		frame.forceShowAuras = true
+
+		frame.unit = 'player'
+		frame.oldUnit = frame.unit
 	end
 
-	frame:SetScript("OnUpdate", nil)
-	frame.forceShowAuras = true
+	if not next(forceShown) then
+		WhoIsAwesome(true)
+	end
+	forceShown[frame] = true
+
+	frame:EnableMouse(false)
+	frame:Show()
+
 	UnregisterUnitWatch(frame)
 	RegisterUnitWatch(frame, true)
 
-	frame:Show()
-	if frame:IsVisible() and frame.Update then
+	if frame.Update then
 		frame:Update()
 	end
 
-	if _G[frame:GetName().."Target"] then
-		self:ForceShow(_G[frame:GetName().."Target"])
+	if _G[frame:GetName()..'Target'] then
+		self:ForceShow(_G[frame:GetName()..'Target'])
 	end
 
-	if _G[frame:GetName().."Pet"] then
-		self:ForceShow(_G[frame:GetName().."Pet"])
+	if _G[frame:GetName()..'Pet'] then
+		self:ForceShow(_G[frame:GetName()..'Pet'])
 	end
 end
 
@@ -147,130 +246,155 @@ function UF:UnforceShow(frame)
 	if InCombatLockdown() then return end
 	if not frame.isForced then return end
 
-	frame.forceShowAuras = nil
+	forceShown[frame] = nil
+	if not next(forceShown) then
+		WhoIsAwesome(false)
+	end
+
 	frame.isForced = nil
+	frame.forceShowAuras = nil
+
+	if frame.oldUnit ~= nil then
+		frame.unit = frame.oldUnit
+		frame.oldUnit = nil
+	end
+
+	frame:EnableMouse(true)
 
 	-- Ask the SecureStateDriver to show/hide the frame for us
 	UnregisterUnitWatch(frame)
 	RegisterUnitWatch(frame)
 
-	if frame.oldOnUpdate then
-		frame:SetScript("OnUpdate", frame.oldOnUpdate)
-		frame.oldOnUpdate = nil
+	if _G[frame:GetName()..'Target'] then
+		self:UnforceShow(_G[frame:GetName()..'Target'])
 	end
 
-	frame.unit = frame.oldUnit or frame.unit
-	-- If we're visible force an update so everything is properly in a
-	-- non-config mode state
-	if frame:IsVisible() and frame.Update then
+	if _G[frame:GetName()..'Pet'] then
+		self:UnforceShow(_G[frame:GetName()..'Pet'])
+	end
+
+	if frame.Update then
 		frame:Update()
 	end
+end
 
-	if _G[frame:GetName().."Target"] then
-		self:UnforceShow(_G[frame:GetName().."Target"])
+do
+	local allowHidePlayer = {
+		party = true,
+		raid1 = true,
+		raid2 = true,
+		raid3 = true
+	}
+
+	local function ForceShow(frame, index, length)
+		frame:SetID(index)
+
+		if not length or (index % length) > 0 then
+			UF:ForceShow(frame)
+		end
 	end
 
-	if _G[frame:GetName().."Pet"] then
-		self:UnforceShow(_G[frame:GetName().."Pet"])
+	function UF:ShowChildUnits(header)
+		header.isForced = true
+
+		local length -- Limit number of players shown, if Display Player option is disabled
+		if not UF.isForcedHidePlayer and not header.db.showPlayer and allowHidePlayer[header.groupName] then
+			UF.isForcedHidePlayer = true
+			length = MAX_PARTY_MEMBERS + 1
+		end
+
+		header:ExecuteForChildren(nil, ForceShow, length)
+	end
+
+	local function UnforceShow(frame)
+		UF:UnforceShow(frame)
+	end
+
+	function UF:UnshowChildUnits(header)
+		header.isForced = nil
+		UF.isForcedHidePlayer = nil
+
+		header:ExecuteForChildren(nil, UnforceShow)
 	end
 end
 
-function UF:ShowChildUnits(header, ...)
-	header.isForced = true
-
-	for i = 1, select("#", ...) do
-		local frame = select(i, ...)
-		frame:RegisterForClicks(nil)
-		frame:SetID(i)
-		self:ForceShow(frame)
-	end
-end
-
-function UF:UnshowChildUnits(header, ...)
-	header.isForced = nil
-
-	for i = 1, select("#", ...) do
-		local frame = select(i, ...)
-		frame:RegisterForClicks(self.db.targetOnMouseDown and "AnyDown" or "AnyUp")
-		self:UnforceShow(frame)
-	end
-end
-
-local function OnAttributeChanged(self)
-	if not self:GetParent().forceShow and not self.forceShow then return end
-	if not self:IsShown() then return end
+local function OnAttributeChanged(self, attr)
+	if not self:IsShown() or (not self:GetParent().forceShow and not self.forceShow) then return end
 
 	local db = self.db or self:GetParent().db
-	local maxUnits = MAX_RAID_MEMBERS
+	local tankAssist = self.groupName == 'tank' or self.groupName == 'assist'
+	local index = tankAssist and -1 or not db.raidWideSorting and -4 or -(min((db.numGroups or 1) * ((db.groupsPerRowCol or 1) * 5), MAX_RAID_MEMBERS) + 1)
+	if self:GetAttribute('startingIndex') ~= index then
+		self:SetAttribute('startingIndex', index)
+		UF:ShowChildUnits(self)
+	elseif tankAssist then -- for showing target frames
+		if attr == 'startingindex' then
+			self.waitForTarget = db.targetsGroup.enable or nil
+		elseif self.waitForTarget and attr == 'statehidden' then
+			UF:ShowChildUnits(self)
+			self.waitForTarget = nil
+		end
+	end
+end
 
-	local startingIndex = db.raidWideSorting and -(min(db.numGroups * (db.groupsPerRowCol * 5), maxUnits) + 1) or -4
-	if self:GetAttribute("startingIndex") ~= startingIndex then
-		self:SetAttribute("startingIndex", startingIndex)
-		UF:ShowChildUnits(self, self:GetChildren())
+function UF:HeaderForceShow(header, group, configMode)
+	if group:IsShown() then
+		group.forceShow = header.forceShow
+		group.forceShowAuras = header.forceShowAuras
+
+		if not group.hasOnAttributeChanged then
+			group:HookScript('OnAttributeChanged', OnAttributeChanged)
+			group.hasOnAttributeChanged = true
+		end
+
+		if configMode then
+			for key in pairs(attributeBlacklist) do
+				group:SetAttribute(key, nil)
+			end
+
+			OnAttributeChanged(group)
+
+			group:Update()
+		else
+			for key in pairs(attributeBlacklist) do
+				group:SetAttribute(key, true)
+			end
+
+			UF:UnshowChildUnits(group)
+			group:SetAttribute('startingIndex', 1)
+
+			group:Update()
+		end
 	end
 end
 
 function UF:HeaderConfig(header, configMode)
 	if InCombatLockdown() then return end
 
-	createConfigEnv()
 	header.forceShow = configMode
 	header.forceShowAuras = configMode
 	header.isForced = configMode
 
 	if configMode then
-		for _, func in pairs(overrideFuncs) do
-			if type(func) == "function" then
-				if not originalEnvs[func] then
-					originalEnvs[func] = getfenv(func)
-					setfenv(func, configEnv)
-				end
-			end
-		end
-
-		RegisterStateDriver(header, "visibility", "show")
+		RegisterStateDriver(header, 'visibility', 'show')
 	else
-		for func, env in pairs(originalEnvs) do
-			setfenv(func, env)
-			originalEnvs[func] = nil
-		end
+		RegisterStateDriver(header, 'visibility', header.db.visibility)
 
-		RegisterStateDriver(header, "visibility", header.db.visibility)
-
-		if header:GetScript("OnEvent") then
-			header:GetScript("OnEvent")(header, "PLAYER_ENTERING_WORLD")
+		local onEvent = header:GetScript('OnEvent')
+		if onEvent then
+			onEvent(header, 'PLAYER_ENTERING_WORLD')
 		end
 	end
 
-	for i = 1, #header.groups do
-		local group = header.groups[i]
-
-		if group:IsShown() then
-			group.forceShow = header.forceShow
-			group.forceShowAuras = header.forceShowAuras
-			group:HookScript("OnAttributeChanged", OnAttributeChanged)
-			if configMode then
-				for key in pairs(attributeBlacklist) do
-					group:SetAttribute(key, nil)
-				end
-
-				OnAttributeChanged(group)
-
-				group:Update()
-			else
-				group:SetAttribute("showSolo", true)
-				group:SetAttribute("showParty", true)
-				group:SetAttribute("showRaid", group.groupName ~= "party" and true or false)
-
-				UF:UnshowChildUnits(group, group:GetChildren())
-				group:SetAttribute("startingIndex", 1)
-
-				group:Update()
-			end
+	if header.groups then
+		for i = 1, #header.groups do
+			UF:HeaderForceShow(header, header.groups[i], configMode)
 		end
-	end
 
-	UF.headerFunctions[header.groupName]:AdjustVisibility(header)
+		UF.headerFunctions[header.groupName]:AdjustVisibility(header)
+	else -- used to show tank/assist
+		UF:HeaderForceShow(header, header, configMode)
+	end
 end
 
 function UF:PLAYER_REGEN_DISABLED()

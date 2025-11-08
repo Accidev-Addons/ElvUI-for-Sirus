@@ -726,11 +726,26 @@ function UF.groupPrototype:AdjustVisibility(frame)
 --	end
 end
 
-function UF.headerPrototype:ClearChildPoints()
-	for i = 1, self:GetNumChildren() do
-		local child = select(i, self:GetChildren())
-		child:ClearAllPoints()
+function UF.headerPrototype:ExecuteForChildren(method, func, ...)
+	local i = 1
+	local child = self:GetAttribute('child'..i)
+	while child do
+		if func then
+			func(child, i, ...)
+		else
+			local methodFunc = method and child[method]
+			if methodFunc then
+				methodFunc(child, ...)
+			end
+		end
+
+		i = i + 1
+		child = self:GetAttribute('child'..i)
 	end
+end
+
+function UF.headerPrototype:ClearChildPoints()
+	self:ExecuteForChildren('ClearAllPoints')
 end
 
 function UF.headerPrototype:Update()
