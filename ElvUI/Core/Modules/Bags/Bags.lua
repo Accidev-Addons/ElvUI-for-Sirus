@@ -2450,7 +2450,7 @@ function B:AutoToggleFunction()
 	if B.db.autoToggle[option] and not B.AutoToggleClose[self] then
 		B:OpenBags()
 	else
-		B:CloseBags()
+		B:CloseAllBags()
 	end
 end
 
