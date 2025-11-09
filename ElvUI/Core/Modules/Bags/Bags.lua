@@ -2190,7 +2190,7 @@ function B:CloseBank()
 		B.BankFrame:Hide()
 	end
 
-	if B:CloseBags() then
+	if B:CloseAllBags() then
 		B:CloseSound() -- the bags werent open but we should play the sound
 	end
 end
