@@ -44,6 +44,7 @@ local toggles = {
 	tradeskill = L["TRADESKILLS"],
 	trainer = L["Trainer Frame"],
 	tutorials = L["Tutorials"],
+	watchframe = L["Watch Frame"],
 	worldState = L["World State"],
 	worldmap = L["WORLD_MAP"],
 	arena = L["Arena"],
