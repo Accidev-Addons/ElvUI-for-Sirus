@@ -303,11 +303,11 @@ end
 function E:GetUnitSpecInfo(unit)
 	if not UnitIsPlayer(unit) then return end
 
-	E.ScanTooltip:SetOwner(UIParent, 'ANCHOR_NONE')
+	E.ScanTooltip:SetOwner(WorldFrame, 'ANCHOR_NONE')
 	E.ScanTooltip:SetUnit(unit)
-	E.ScanTooltip:Show()
 
 	local _, specLine = TT:GetLevelLine(E.ScanTooltip, 1, true)
+
 	local specText = specLine and specLine.leftText
 	if specText then
 		return E.SpecInfoBySpecClass[specText]
@@ -337,7 +337,6 @@ function E:PopulateSpecInfo()
 
 				for x = 3, 1, -1 do
 					local _, name, desc, icon, _, role = GetSpecializationInfo(id, x)
-					print(name, desc, icon, role)
 					if name then
 						if x == 1 then -- SpecInfoBySpecID
 							data.name = name

@@ -787,11 +787,9 @@ end
 function oUF:GetSpellInfo(spellID)
 	local info = {}
 	info.name, _, info.iconID, info.castTime, info.minRange, info.maxRange, info.spellID, info.originalIconID = spellID and GetSpellInfo(spellID)
-	if not info then return end
 
 	return info
 end
-
 
 oUF.version = _VERSION
 --[[ oUF.objects
