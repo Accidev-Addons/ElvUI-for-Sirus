@@ -2223,6 +2223,8 @@ do
 	local GetLocale = GetLocale
 	local GetCVar = GetCVar
 
+	local MAX_PLAYER_LEVEL_TABLE = MAX_PLAYER_LEVEL_TABLE
+
 	local SHORTDATE = "%2$d/%1$02d/%3$02d"
 	local SHORTDATENOYEAR = "%2$d/%1$02d"
 	local SHORTDATENOYEAR_EU = "%1$d/%2$d"
@@ -2368,12 +2370,6 @@ do
 		return dateTable
 	end
 
-	local function GetMaxPlayerLevel()
-		local playerMaxLevel = MAX_PLAYER_LEVEL_TABLE[GetAccountExpansionLevel()]
-
-		return playerMaxLevel
-	end
-
 	local function GetDifficultyInfo(id)
 		local difficulties = {
 			[1] = { name = PLAYER_DIFFICULTY1, groupType = "party", isHeroic = false, toggleDifficultyID = 2 },
@@ -2393,13 +2389,78 @@ do
 		end
 	end
 
+	local oldGetLootSlotInfo = GetLootSlotInfo
+	local questItemCache = {}
+	local function GetLootSlotInfo(slot)
+		local isQuestItem, questID, isActive = false, nil, false
+		local texture, item, count, quality, locked = oldGetLootSlotInfo(slot)
+		local link = GetLootSlotLink(slot)
+		if link then
+			local name, _, _, _, _, itemType, itemSubType = GetItemInfo(link)
+			if itemType == 'Quest' or itemSubType == 'Quest' then
+				isQuestItem = true
+
+				if not questItemCache[name] then
+					for i = 1, GetNumQuestLogEntries() do
+						local _, _, _, _, isHeader, _, _, _, questId = GetQuestLogTitle(i)
+						if not isHeader then
+							for j = 1, GetNumQuestLeaderBoards(i) do
+								local text = GetQuestLogLeaderBoard(j, i)
+								local nameText = strmatch(text, '(.+):')
+								if name == nameText then
+									questItemCache[name] = {
+										questID = questId,
+										isActive = true
+									}
+									break
+								end
+							end
+						end
+						if questItemCache[name] then break end
+					end
+				end
+
+				questID, isActive = questItemCache[name] and questItemCache[name].questID, questItemCache[name] and questItemCache[name].isActive
+			end
+		end
+
+		return texture, item, count, quality, locked, isQuestItem, questID, isActive
+	end
+
+	-- Function to clear the quest item cache when quests change
+	local function clearQuestItemCache()
+		wipe(questItemCache)
+	end
+
+	-- Register events to clear the cache
+	local frame = CreateFrame('Frame')
+	frame:RegisterEvent('QUEST_ACCEPTED')
+	frame:RegisterEvent('QUEST_REMOVED')
+	frame:RegisterEvent('QUEST_TURNED_IN')
+	frame:SetScript('OnEvent', clearQuestItemCache)
+
+	local function GetMaxPlayerLevel()
+		return MAX_PLAYER_LEVEL_TABLE[GetAccountExpansionLevel()]
+	end
+
+	local function GetEffectivePlayerMaxLevel()
+		return MAX_PLAYER_LEVEL_TABLE[GetExpansionLevel()]
+	end
+
+	local function IsLevelAtEffectiveMaxLevel(level)
+		return level >= GetEffectivePlayerMaxLevel()
+	end
+
 	lib.FormatShortDate = FormatShortDate
 	lib.GetPhysicalScreenSize = GetPhysicalScreenSize
 	lib.GetAverageItemLevel = GetAverageItemLevel
 	lib.GetItemLevelColor = GetItemLevelColor
 	lib.GetCurrentCalendarTime = GetCurrentCalendarTime
-	lib.GetMaxPlayerLevel = GetMaxPlayerLevel
 	lib.GetDifficultyInfo = GetDifficultyInfo
+	lib.GetLootSlotInfo = GetLootSlotInfo
+	lib.GetMaxPlayerLevel = GetMaxPlayerLevel
+	lib.GetEffectivePlayerMaxLevel = GetEffectivePlayerMaxLevel
+	lib.IsLevelAtEffectiveMaxLevel = IsLevelAtEffectiveMaxLevel
 end
 
 -------------------------------------------------------------------------------
@@ -2513,8 +2574,11 @@ local mixins = {
 	"GetAverageItemLevel",
 	"GetItemLevelColor",
 	"GetCurrentCalendarTime",
+	"GetDifficultyInfo",
+	"GetLootSlotInfo",
 	"GetMaxPlayerLevel",
-	"GetDifficultyInfo"
+	"GetEffectivePlayerMaxLevel",
+	"IsLevelAtEffectiveMaxLevel",
 }
 
 function lib:Embed(target)

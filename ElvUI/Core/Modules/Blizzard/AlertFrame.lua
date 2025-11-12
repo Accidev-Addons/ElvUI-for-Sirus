@@ -1,6 +1,6 @@
 local E, L = unpack(ElvUI)
 local BL = E:GetModule('Blizzard')
-local Misc = E:GetModule('Misc')
+local M = E:GetModule('Misc')
 
 local _G = _G
 local CreateFrame = CreateFrame
@@ -23,7 +23,7 @@ function E:PostAlertMove()
 	AlertFrameMover:SetFormattedText('%s %s', AlertFrameMover.textString, growUp and '(Grow Up)' or '(Grow Down)')
 
 	AlertFrame:ClearAllPoints()
-	AlertFrame:SetAllPoints((E.private.general.lootRoll and Misc:UpdateLootRollAnchors(POSITION)) or _G.AlertFrameHolder)
+	AlertFrame:SetAllPoints((E.private.general.lootRoll and M:UpdateLootRollAnchors(POSITION)) or _G.AlertFrameHolder)
 end
 
 function BL:AchievementAlertFrame_FixAnchors()

@@ -1,7 +1,11 @@
+------------------------------------------------------------------------
+-- Collection of functions that can be used in multiple places
+------------------------------------------------------------------------
+
 local E, L, V, P, G = unpack(ElvUI)
 local TT = E:GetModule('Tooltip')
-local LC = E.Libs.Compat
 local ElvUF = E.oUF
+local LC = E.Libs.Compat
 
 local _G = _G
 local type, pairs, unpack = type, pairs, unpack
@@ -19,8 +23,9 @@ local GetExpansionLevel = GetExpansionLevel
 local GetFunctionCPUUsage = GetFunctionCPUUsage
 local GetGameTime = GetGameTime
 local GetInstanceInfo = GetInstanceInfo
+local GetNumGroupMembers = LC.GetNumGroupMembers
+local GetNumSubgroupMembers = LC.GetNumSubgroupMembers
 local GetItemInfo = GetItemInfo
-local GetLootSlotInfo = GetLootSlotInfo
 local GetLootSlotLink = GetLootSlotLink
 local GetNumPartyMembers = GetNumPartyMembers
 local GetNumQuestLeaderBoards = GetNumQuestLeaderBoards
@@ -34,6 +39,9 @@ local GetTalentTabInfo = GetTalentTabInfo
 local GetWatchedFactionInfo = GetWatchedFactionInfo
 local HideUIPanel = HideUIPanel
 local InCombatLockdown = InCombatLockdown
+local IsInGroup = LC.IsInGroup
+local IsInRaid = LC.IsInRaid
+local IsLevelAtEffectiveMaxLevel = LC.IsLevelAtEffectiveMaxLevel
 local IsAddOnLoaded = IsAddOnLoaded
 local IsXPUserDisabled = IsXPUserDisabled
 local RequestBattlefieldScoreData = RequestBattlefieldScoreData
@@ -45,11 +53,6 @@ local UnitGroupRolesAssigned = UnitGroupRolesAssigned
 local UnitHasVehicleUI = UnitHasVehicleUI
 local UnitInBattleground = UnitInBattleground
 local UnitIsPlayer = UnitIsPlayer
-
-local IsInRaid = LC.IsInRaid
-local IsInGroup = LC.IsInGroup
-local GetNumGroupMembers = LC.GetNumGroupMembers
-local GetNumSubgroupMembers = LC.GetNumSubgroupMembers
 
 local GetSpecialization = LC.GetSpecialization
 local GetSpecializationInfo = LC.GetSpecializationInfo
@@ -151,55 +154,6 @@ E.SpecName = { -- english locale
 	[72]	= 'Fury',
 	[73]	= 'Protection',
 }
-
-local questItemCache = {}
-function E:GetLootSlotInfo(slot)
-    local isQuestItem, questID, isActive = false, nil, false
-    local texture, item, count, quality, locked = GetLootSlotInfo(slot)
-    local link = GetLootSlotLink(slot)
-    if link then
-        local name, _, _, _, _, itemType, itemSubType = GetItemInfo(link)
-        if itemType == 'Quest' or itemSubType == 'Quest' then
-            isQuestItem = true
-
-            if not questItemCache[name] then
-                for i = 1, GetNumQuestLogEntries() do
-                    local _, _, _, _, isHeader, _, _, _, questId = GetQuestLogTitle(i)
-                    if not isHeader then
-                        for j = 1, GetNumQuestLeaderBoards(i) do
-							local text = GetQuestLogLeaderBoard(j, i)
-							local nameText = strmatch(text, '(.+):')
-                            if name == nameText then
-                                questItemCache[name] = {
-									questID = questId,
-									isActive = true
-								}
-                                break
-                            end
-                        end
-                    end
-                    if questItemCache[name] then break end
-                end
-            end
-
-            questID, isActive = questItemCache[name] and questItemCache[name].questID, questItemCache[name] and questItemCache[name].isActive
-        end
-    end
-
-    return texture, item, count, quality, locked, isQuestItem, questID, isActive
-end
-
--- Function to clear the quest item cache when quests change
-local function ClearQuestItemCache()
-    wipe(questItemCache)
-end
-
--- Register events to clear the cache
-local frame = CreateFrame('Frame')
-frame:RegisterEvent('QUEST_ACCEPTED')
-frame:RegisterEvent('QUEST_REMOVED')
-frame:RegisterEvent('QUEST_TURNED_IN')
-frame:SetScript('OnEvent', ClearQuestItemCache)
 
 function E:RemoveExtraSpaces(str)
 	return gsub(str, '     +', '    ')	--Replace all instances of 5+ spaces with only 4 spaces.
@@ -946,12 +900,8 @@ do
 	end
 end
 
-function E:XPIsUserDisabled()
-	return IsXPUserDisabled()
-end
-
 function E:XPIsLevelMax()
-	return E.mylevel >= MAX_PLAYER_LEVEL_TABLE[GetExpansionLevel()] or E:XPIsUserDisabled()
+	return IsLevelAtEffectiveMaxLevel(E.mylevel) or IsXPUserDisabled()
 end
 
 function E:GetUnitBattlefieldFaction(unit)
@@ -992,11 +942,11 @@ function E:PositionGameMenuButton()
 			GameMenuButtonLogout:ClearAllPoints()
 			GameMenuButtonLogout:Point('TOPLEFT', button, 'BOTTOMLEFT', 0, offY)
 		end
-	end
 
-	if not gameMenuFrameIsShown then
-		GameMenuFrame:Height(GameMenuFrame:GetHeight() + GameMenuButtonLogout:GetHeight() - 4)
-		gameMenuFrameIsShown = true
+		if not gameMenuFrameIsShown then
+			GameMenuFrame:Height(GameMenuFrame:GetHeight() + GameMenuButtonLogout:GetHeight() - 4)
+			gameMenuFrameIsShown = true
+		end
 	end
 end
 

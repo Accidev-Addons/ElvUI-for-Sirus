@@ -230,12 +230,12 @@ blizz.objectiveFrameGroup.args.objectiveFrameAutoHideInKeystone = ACH:Toggle(L["
 blizz.objectiveFrameGroup.args.objectiveFrameHeight = ACH:Range(L["Objective Frame Height"], L["Height of the objective tracker. Increase size to be able to see more objectives."], 3, { min = 400, max = ceil(E.screenHeight), step = 1 }, nil, nil, function(info, value) E.db.general[info[#info]] = value BL:ObjectiveTracker_SetHeight() end)
 blizz.objectiveFrameGroup.inline = true
 
-blizz.raidControl = ACH:Group(L["RAID_CONTROL"], nil, 10, nil, function(info) return E.db.general.raidUtility[info[#info]] end, function(info, value) E.db.general.raidUtility[info[#info]] = value RU:TargetIcons_Update() end)
+blizz.raidControl = ACH:Group(L["RAID_CONTROL"], nil, 30, nil, function(info) return E.db.general.raidUtility[info[#info]] end, function(info, value) E.db.general.raidUtility[info[#info]] = value RU:TargetIcons_Update() end)
 blizz.raidControl.args.raidUtility = ACH:Toggle(L["Enable"], L["Enables the ElvUI Raid Control panel."], 1, nil, nil, nil, function(info) return E.private.general[info[#info]] end, function(info, value) E.private.general[info[#info]] = value E.ShowPopup = true end)
 blizz.raidControl.args.showTooltip = ACH:Toggle(L["Tooltip"], L["Display Tooltip on Raid Markers."], 2, nil, nil, nil, function(info) return E.db.general.raidUtility[info[#info]] end, function(info, value) E.db.general.raidUtility[info[#info]] = value end)
 blizz.raidControl.inline = true
 
-blizz.lootRollGroup = ACH:Group(L["Loot Roll"], nil, 3, nil, function(info) return E.db.general.lootRoll[info[#info]] end, function(info, value) E.db.general.lootRoll[info[#info]] = value M:UpdateLootRollFrames() end)
+blizz.lootRollGroup = ACH:Group(L["Loot Roll"], nil, 40, nil, function(info) return E.db.general.lootRoll[info[#info]] end, function(info, value) E.db.general.lootRoll[info[#info]] = value M:UpdateLootRollFrames() end)
 blizz.lootRollGroup.args.lootRoll = ACH:Toggle(L["Enable"], L["Enable/Disable the loot roll frame."], 0, nil, nil, nil, function(info) return E.private.general[info[#info]] end, function(info, value) E.private.general[info[#info]] = value; E.ShowPopup = true end)
 blizz.lootRollGroup.args.qualityName = ACH:Toggle(L["Quality Name"], nil, 1)
 blizz.lootRollGroup.args.qualityItemLevel = ACH:Toggle(L["Quality Itemlevel"], nil, 2)
@@ -246,7 +246,7 @@ blizz.lootRollGroup.args.width = ACH:Range(L["Width"], nil, 6, { min = 50, max =
 blizz.lootRollGroup.args.height = ACH:Range(L["Height"], nil, 7, { min = 5, max = 100, step = 1 })
 blizz.lootRollGroup.args.buttonSize = ACH:Range(L["Button Size"], nil, 8, { min = 14, max = 34, step = 1 })
 blizz.lootRollGroup.args.statusBarColor = ACH:Color(L["StatusBar Color"], nil, 10, nil, nil, function(info) local c, d = E.db.general.lootRoll[info[#info]], P.general.lootRoll[info[#info]] return c.r, c.g, c.b, 1, d.r, d.g, d.b, 1 end, function(info, r, g, b) local c = E.db.general.lootRoll[info[#info]] c.r, c.g, c.b = r, g, b end, nil, function() return E.db.general.lootRoll.qualityStatusBar end)
-blizz.lootRollGroup.args.spacing = ACH:Range(L["Spacing"], nil, 11, { min = 0, max = 20, step = 1 }, nil, nil, function(info, value) E.db.general.lootRoll[info[#info]] = value M:UpdateLootRollFrames() _G.AlertFrame:UpdateAnchors() end)
+blizz.lootRollGroup.args.spacing = ACH:Range(L["Spacing"], nil, 11, { min = 0, max = 20, step = 1 }, nil, nil, function(info, value) E.db.general.lootRoll[info[#info]] = value M:UpdateLootRollFrames() _G.AlertFrame_FixAnchors() end)
 blizz.lootRollGroup.args.style = ACH:Select(L["Style"], nil, 12, { halfbar = L["Half Bar"], fullbar = L["Full Bar"] })
 blizz.lootRollGroup.args.statusBarTexture = ACH:SharedMediaStatusbar(L["Texture"], L["The texture that will be used mainly for statusbars."], 13)
 blizz.lootRollGroup.args.leftButtons = ACH:Toggle(L["Left Buttons"], nil, 14)

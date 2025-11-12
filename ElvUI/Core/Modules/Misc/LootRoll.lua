@@ -375,8 +375,10 @@ function M:START_LOOT_ROLL(event, rollID, rollTime)
 
 	local itemLink = GetLootRollItemLink(rollID)
 	local _, _, _, itemLevel, _, itemType, itemSubType, _, itemEquipLoc = GetItemInfo(itemLink)
-	local db, color = E.db.general.lootRoll, ITEM_QUALITY_COLORS[quality]
 	local bindType = B:GetBindTypeText(itemLink)
+
+	local db = E.db.general.lootRoll
+	local r, g, b = E:GetItemQualityColor(quality)
 
 	wipe(bar.rolls)
 
@@ -406,13 +408,13 @@ function M:START_LOOT_ROLL(event, rollID, rollTime)
 	bar.name:SetText(name)
 
 	if db.qualityName then
-		bar.name:SetTextColor(color.r, color.g, color.b)
+		bar.name:SetTextColor(r, g, b)
 	else
 		bar.name:SetTextColor(1, 1, 1)
 	end
 
 	if db.qualityItemLevel then
-		bar.button.ilvl:SetTextColor(color.r, color.g, color.b)
+		bar.button.ilvl:SetTextColor(r, g, b)
 	else
 		bar.button.ilvl:SetTextColor(1, 1, 1)
 	end
@@ -422,8 +424,8 @@ function M:START_LOOT_ROLL(event, rollID, rollTime)
 	bar.bind:SetText(B.BindText[bindType] or '')
 
 	if db.qualityStatusBar then
-		bar.status:SetStatusBarColor(color.r, color.g, color.b, .7)
-		bar.status.spark:SetVertexColor(color.r, color.g, color.b, .9)
+		bar.status:SetStatusBarColor(r, g, b, .7)
+		bar.status.spark:SetVertexColor(r, g, b, .9)
 	else
 		local c = db.statusBarColor
 		bar.status:SetStatusBarColor(c.r, c.g, c.b, .7)
@@ -431,10 +433,10 @@ function M:START_LOOT_ROLL(event, rollID, rollTime)
 	end
 
 	if db.qualityStatusBarBackdrop then
-		bar.status.backdrop:SetBackdropColor(color.r, color.g, color.b, db.backdropAlpha or 0.1)
+		bar.status.backdrop:SetBackdropColor(r, g, b, .1)
 	else
-		local r, g, b = unpack(E.media.backdropfadecolor)
-		bar.status.backdrop:SetBackdropColor(r, g, b, db.backdropAlpha or 0.1)
+		local br, bg, bb = unpack(E.media.backdropfadecolor)
+		bar.status.backdrop:SetBackdropColor(br, bg, bb, .1)
 	end
 
 	bar.status.elapsed = 1

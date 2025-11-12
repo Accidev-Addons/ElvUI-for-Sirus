@@ -98,7 +98,6 @@ V.skins = {
 		lfd = true,
 		lfr = true,
 		loot = true,
-		lootRoll = true,
 		macro = true,
 		mail = true,
 		merchant = true,
