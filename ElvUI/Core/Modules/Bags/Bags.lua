@@ -1404,9 +1404,10 @@ function B:CoverButton_ClickBank()
 end
 
 function B:BagsButton_ClickBank()
-	local frame = self:GetParent():GetParent()
-	ToggleFrame(frame.ContainerHolder)
-	PlaySound(852) --IG_MAINMENU_OPTION
+	B:ClickSound()
+
+	local f = self:GetParent():GetParent()
+	ToggleFrame(f.ContainerHolder)
 end
 
 function B:BagsButton_ClickBag()
@@ -2056,9 +2057,7 @@ function B:OpenBags()
 		B:BagBar_UpdateDesaturated()
 	end
 
-	if E.Retail then
-		B:UpdateTokensIfVisible()
-	end
+	B:UpdateTokensIfVisible()
 
 	B:OpenSound()
 
