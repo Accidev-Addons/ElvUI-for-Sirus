@@ -159,16 +159,6 @@ function E:RemoveExtraSpaces(str)
 	return gsub(str, '     +', '    ')	--Replace all instances of 5+ spaces with only 4 spaces.
 end
 
--- the secure header is different on retail because of evokers
--- if both are registered on non-retail, it will fire on down and up
-function E:RegisterClicks(frame)
-	if E.Retail then
-		frame:RegisterForClicks('AnyDown', 'AnyUp')
-	else
-		frame:RegisterForClicks('AnyUp')
-	end
-end
-
 function E:GetCurrencyIDFromLink(link)
 	return link and tonumber(strmatch(link, 'currency:(%d+)'))
 end
