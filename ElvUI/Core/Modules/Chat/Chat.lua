@@ -309,11 +309,11 @@ function CH:OpenChatMenu(chatMenu, buttonMenu)
 	if chatMenu then
 		chatMenu:ClearAllPoints()
 
-		local point = E:GetScreenQuadrant(self)
+		local point = E:GetScreenQuadrant(this)
 		if strfind(point, 'LEFT') then
-			chatMenu:SetPoint('BOTTOMLEFT', self, 'TOPRIGHT')
+			chatMenu:SetPoint('BOTTOMLEFT', this, 'TOPRIGHT')
 		else
-			chatMenu:SetPoint('BOTTOMRIGHT', self, 'TOPLEFT')
+			chatMenu:SetPoint('BOTTOMRIGHT', this, 'TOPLEFT')
 		end
 
 		ToggleFrame(chatMenu)
