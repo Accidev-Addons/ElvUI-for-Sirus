@@ -1534,11 +1534,10 @@ function CH:MessageFormatter(frame, info, chatType, chatGroup, chatTarget, chann
 	end
 
 	-- ElvUI: data from populated guid info
-	local nameWithRealm, realm
+	local realm
 	local data = CH:GetPlayerInfoByGUID(arg12)
 	if data then
 		realm = data.realm
-		nameWithRealm = data.nameWithRealm
 	end
 
 	local playerLink
@@ -1555,7 +1554,7 @@ function CH:MessageFormatter(frame, info, chatType, chatGroup, chatTarget, chann
 		playerLinkDisplayText = format('[%s]', coloredName)
 	end
 
-	local playerName, lineID, bnetIDAccount = (nameWithRealm ~= arg2 and nameWithRealm) or arg2, arg11, arg13
+	local playerName, lineID, bnetIDAccount = arg2, arg11, arg13
 	if chatType == 'BN_WHISPER' or chatType == 'BN_WHISPER_INFORM' or chatType == 'BN_CONVERSATION' then
 		playerLink = GetBNPlayerLink(playerName, playerLinkDisplayText, bnetIDAccount, lineID, chatGroup, chatTarget)
 	else
