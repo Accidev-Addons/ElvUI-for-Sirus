@@ -18,6 +18,7 @@ local GMChatFrame_IsGM = GMChatFrame_IsGM
 local GetCVar = GetCVar
 local GetChannelName = GetChannelName
 local GetCursorPosition = GetCursorPosition
+local GetDefaultLanguage = GetDefaultLanguage
 local GetGuildRosterMOTD = GetGuildRosterMOTD
 local GetMouseFocus = GetMouseFocus
 local GetPlayerInfoByGUID = GetPlayerInfoByGUID
@@ -1536,23 +1537,24 @@ function CH:MessageFormatter(frame, info, chatType, chatGroup, chatTarget, chann
 	local data = CH:GetPlayerInfoByGUID(arg12)
 	if data then
 		realm = data.realm
-		-- nameWithRealm = data.nameWithRealm
+		nameWithRealm = data.nameWithRealm
 	end
 
 	local playerLink
 	local playerLinkDisplayText = coloredName
-	local relevantDefaultLanguage = frame.defaultLanguage
+	local defaultLanguage = GetDefaultLanguage('player')
+	local relevantDefaultLanguage = frame.defaultLanguage or defaultLanguage
 	if chatType == 'SAY' or chatType == 'YELL' then
-		relevantDefaultLanguage = frame.alternativeDefaultLanguage
+		relevantDefaultLanguage = frame.alternativeDefaultLanguage or defaultLanguage
 	end
-	local usingDifferentLanguage = (arg3 ~= '') and (arg3 ~= relevantDefaultLanguage)
-	local usingEmote = (chatType == 'EMOTE') or (chatType == 'TEXT_EMOTE')
 
+	local usingEmote = (chatType == 'EMOTE') or (chatType == 'TEXT_EMOTE')
+	local usingDifferentLanguage = (arg3 ~= '') and (arg3 ~= relevantDefaultLanguage)
 	if usingDifferentLanguage or not usingEmote then
 		playerLinkDisplayText = format('[%s]', coloredName)
 	end
 
-	local playerName, lineID, bnetIDAccount = arg2, arg11, arg13
+	local playerName, lineID, bnetIDAccount = (nameWithRealm ~= arg2 and nameWithRealm) or arg2, arg11, arg13
 	if chatType == 'BN_WHISPER' or chatType == 'BN_WHISPER_INFORM' or chatType == 'BN_CONVERSATION' then
 		playerLink = GetBNPlayerLink(playerName, playerLinkDisplayText, bnetIDAccount, lineID, chatGroup, chatTarget)
 	else
