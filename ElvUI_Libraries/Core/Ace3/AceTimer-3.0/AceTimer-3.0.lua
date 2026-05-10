@@ -2,7 +2,8 @@
 -- AceTimer supports one-shot timers and repeating timers. All timers are stored in an efficient
 -- data structure that allows easy dispatching and fast rescheduling. Timers can be registered
 -- or canceled at any time, even from within a running timer, without conflict or large overhead.\\
--- AceTimer is currently limited to firing timers at a frequency of 0.01s.
+-- AceTimer is currently limited to firing timers at a frequency of 0.01s as this is what the WoW timer API
+-- restricts us to.
 --
 -- All `:Schedule` functions will return a handle to the current timer, which you will need to store if you
 -- need to cancel the timer you just registered.
@@ -16,7 +17,7 @@
 -- @name AceTimer-3.0
 -- @release $Id$
 
-local MAJOR, MINOR = "AceTimer-3.0", 1017 -- Bump minor on changes
+local MAJOR, MINOR = "AceTimer-3.0", 1018 -- Bump minor on changes
 local AceTimer, oldminor = LibStub:NewLibrary(MAJOR, MINOR)
 
 if not AceTimer then return end -- No upgrade needed
@@ -31,7 +32,8 @@ local type, unpack, next, error, select = type, unpack, next, error, select
 local GetTime = GetTime
 
 --[[
-	 xpcall safecall implementation
+	xpcall safecall implementation
+	Required for 3.3.5a as C_Timer.After is not available.
 ]]
 local xpcall = xpcall
 
@@ -76,7 +78,7 @@ end
 
 local function new(self, loop, func, delay, ...)
 	if delay < 0.01 then
-		delay = 0.01 -- Restrict to the lowest time
+		delay = 0.01 -- Restrict to the lowest time that the OnUpdate API allows us
 	end
 
 	local timer = {
@@ -97,7 +99,7 @@ end
 
 --- Schedule a new one-shot timer.
 -- The timer will fire once in `delay` seconds, unless canceled before.
--- @param callback Callback function for the timer pulse (funcref or method name).
+-- @param func Callback function for the timer pulse (funcref or method name).
 -- @param delay Delay for the timer, in seconds.
 -- @param ... An optional, unlimited amount of arguments to pass to the callback function.
 -- @usage
@@ -126,7 +128,7 @@ end
 
 --- Schedule a repeating timer.
 -- The timer will fire every `delay` seconds, until canceled.
--- @param callback Callback function for the timer pulse (funcref or method name).
+-- @param func Callback function for the timer pulse (funcref or method name).
 -- @param delay Delay for the timer, in seconds.
 -- @param ... An optional, unlimited amount of arguments to pass to the callback function.
 -- @usage
@@ -191,7 +193,7 @@ end
 function AceTimer:TimeLeft(id)
 	local timer = activeTimers[id]
 	if not timer then
-		return
+		return 0  -- Match retail behavior: return 0 for invalid/expired timers
 	else
 		return timer.ends - GetTime()
 	end
@@ -201,7 +203,7 @@ end
 -- ---------------------------------------------------------------------
 -- Upgrading
 
--- Upgrade from old hash-bucket based timers to C_Timer.After timers.
+-- Upgrade from old hash-bucket based timers to OnUpdate timers.
 if oldminor and oldminor < 10 then
 	-- disable old timer logic
 	AceTimer.frame:SetScript("OnUpdate", nil)
@@ -228,7 +230,8 @@ if oldminor and oldminor < 10 then
 	AceTimer.hash = nil
 	AceTimer.debug = nil
 elseif oldminor and oldminor < 17 then
-	-- Upgrade from old animation based timers to C_Timer.After timers.
+	-- Upgrade from old animation based timers to OnUpdate timers.
+	-- Note: we intentionally keep AceTimer.frame alive here; 3.3.5a has no C_Timer.After.
 	AceTimer.inactiveTimers = nil
 	local oldTimers = AceTimer.activeTimers
 	-- Clear old timer table and update upvalue
@@ -295,6 +298,11 @@ for addon in next, AceTimer.embeds do
 	AceTimer:Embed(addon)
 end
 
+-- ---------------------------------------------------------------------
+-- OnUpdate dispatcher
+-- 3.3.5a does not have C_Timer.After, so we drive all timers from a
+-- single frame OnUpdate, compensating each repeating timer's delay to
+-- maintain a consistent average fire rate regardless of framerate.
 AceTimer.frame:SetScript("OnUpdate", function(self, elapsed)
 	for _, timer in next, activeTimers do
 		if not timer.cancelled then
