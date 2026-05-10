@@ -2272,12 +2272,13 @@ function CH:SaveChatHistory(event, ...)
 	end
 
 	if CH.db.throttleInterval ~= 0 and (event == 'CHAT_MSG_SAY' or event == 'CHAT_MSG_YELL' or event == 'CHAT_MSG_CHANNEL') then
-		local message, author = ...
+		local message, author, language = ...
+		local throttleMessage = (language and language ~= '') and (message..language) or message
 		local when = time()
 
-		CH:ChatThrottleHandler(author, message, when)
+		CH:ChatThrottleHandler(author, throttleMessage, when)
 
-		if CH:ChatThrottleBlockFlag(author, message, when) then
+		if CH:ChatThrottleBlockFlag(author, throttleMessage, when) then
 			return
 		end
 	end
