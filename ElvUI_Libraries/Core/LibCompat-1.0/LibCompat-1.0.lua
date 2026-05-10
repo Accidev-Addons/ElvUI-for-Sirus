@@ -1457,6 +1457,7 @@ do
 
 	local INVENTORY, STACK_UI
 	local MIN, MAX = 0, 4
+	local Query
 
 	local function GetSlotInfo(containerIndex, slotIndex)
 		local container = INVENTORY[containerIndex]
@@ -1466,50 +1467,40 @@ do
 	local function Bag(event, containerIndex)
 		if containerIndex >= MIN and containerIndex <= MAX then
 			if event == "BAG_CLOSED" then
-				INVENTORY[containerIndex] = false
+				INVENTORY[containerIndex] = nil
 			else
 				local size = GetContainerNumSlots(containerIndex)
-				local container = INVENTORY[containerIndex]
-				local START, END
+				if size > 0 then
+					local container = INVENTORY[containerIndex]
 
-				if not container then
-					container = {}
-					INVENTORY[containerIndex] = container
-					START = 1
-				elseif size ~= container.size or not container[size] then
-					if size > container.size then
-						START = container.size
-					else
-						START = size
-						END = container.size
+					if not container then
+						-- HACK: The default backpack may not fire.
+						if containerIndex ~= 0 and not INVENTORY[0] then
+							Query(event, 0)
+						end
+
+						container = {}
+						INVENTORY[containerIndex] = container
+
+						local time = GetTime()
+						for i = 1, size do
+							container[i] = {[3] = time}
+						end
 					end
+
+					return container
 				end
-
-				if START then
-					local time = GetTime()
-					for i = START, (END or size) do
-						container[i] = (START == 1 or END) and {[3] = time} or nil
-					end
-				end
-
-				container.size = size
-
-				return container
 			end
 		end
 	end
 
-	local function Query(event, containerIndex)
-		local container = INVENTORY[containerIndex]
-
-		if event then
-			container = Bag(event, containerIndex)
-		end
+	function Query(event, containerIndex)
+		local container = event and Bag(event, containerIndex) or INVENTORY[containerIndex]
 
 		if container then
 			local time = event and GetTime()
 
-			for slotIndex = 1, container.size do
+			for slotIndex = 1, #container do
 				local slot = container[slotIndex]
 
 				if slot then
@@ -1520,12 +1511,12 @@ do
 						if stackCurrent ~= stack then
 							local buffer = slot[3]
 
-							if (buffer and (time - buffer) > .5) then -- Latency?
+							if buffer and (time - buffer) > .5 then -- Latency?
 								buffer = nil
 								slot[3] = nil
 							end
 
-							if (event == "CONSTRUCT" or buffer or (stackCurrent or -1) < (stack or 0)) then
+							if event == "CONSTRUCT" or buffer or (stackCurrent or -1) < (stack or 0) then
 								if not (buffer and stack == 9998 and not stackCurrent) then
 									slot[1] = stackCurrent
 									slot[2] = nil
@@ -1607,10 +1598,7 @@ do
 		elseif event == "BAG_CLOSED" then
 			Bag(event, ...)
 		else
-			local containerIndex, newItems = ...
-			if not newItems then
-				Query(event, containerIndex)
-			end
+			Query(event, ...)
 		end
 	end
 
