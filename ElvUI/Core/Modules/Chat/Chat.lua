@@ -1522,10 +1522,11 @@ function CH:MessageFormatter(frame, info, chatType, chatGroup, chatTarget, chann
 	end
 
 	--Remove groups of many spaces
-	arg1 = string.gsub(arg1, "     +", "    ")
+	arg1 = E:RemoveExtraSpaces(arg1) -- Replace all instances of 5+ spaces with only 4 spaces
 
 	-- Search for icon links and replace them with texture links.
-	arg1 = CH:ChatFrame_ReplaceIconAndGroupExpressions(arg1, arg12) -- If arg17 is true, don't convert to raid icons
+	 -- If arg12 is true, don't convert to raid icons
+	arg1 = CH:ChatFrame_ReplaceIconAndGroupExpressions(arg1, arg12)
 
 	-- ElvUI: Get class colored name for BattleNet friend
 	if chatType == 'BN_WHISPER' or chatType == 'BN_WHISPER_INFORM' then
