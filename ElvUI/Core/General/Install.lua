@@ -1,15 +1,11 @@
 local E, L, V, P, G = unpack(ElvUI)
-local NP = E:GetModule('NamePlates')
 local UF = E:GetModule('UnitFrames')
-local DT = E:GetModule('DataTexts')
 local CH = E:GetModule('Chat')
 local S = E:GetModule('Skins')
 
 local _G = _G
 local next = next
 local unpack = unpack
-local format = format
-local strsub = strsub
 local tinsert = tinsert
 
 local ReloadUI = ReloadUI
@@ -24,7 +20,7 @@ local FCF_OpenNewWindow = FCF_OpenNewWindow
 local FCF_ResetChatWindows = FCF_ResetChatWindows
 local FCF_SetChatWindowFontSize = FCF_SetChatWindowFontSize
 local FCF_SavePositionAndDimensions = FCF_SavePositionAndDimensions
-local SetChatColorNameByClass = SetChatColorNameByClass
+local ToggleChatColorNamesByClassGroup = ToggleChatColorNamesByClassGroup
 local ChatFrame_AddChannel = ChatFrame_AddChannel
 local ChatFrame_RemoveChannel = ChatFrame_RemoveChannel
 local ChatFrame_AddMessageGroup = ChatFrame_AddMessageGroup
@@ -38,21 +34,6 @@ local GUILD_EVENT_LOG = GUILD_EVENT_LOG
 local CURRENT_PAGE = 0
 local MAX_PAGE = 9
 
-local PLAYER_NAME = format("%s-%s", E.myname, E:ShortenRealm(E.myrealm))
-local ELV_TOONS = {
-	-- ["CharacterName-Server"] = true, -- Example
-}
-
-local function ToggleChatColorNamesByClassGroup(checked, group)
-	local info = _G.ChatTypeGroup[group]
-	if info then
-		for _, value in next, info do
-			SetChatColorNameByClass(strsub(value, 10), checked)
-		end
-	else
-		SetChatColorNameByClass(group, checked)
-	end
-end
 
 function E:SetupChat(noDisplayMsg)
 	local chats = _G.CHAT_FRAMES
@@ -91,7 +72,7 @@ function E:SetupChat(noDisplayMsg)
 	end
 
 	-- keys taken from `ChatTypeGroup` which weren't added above to ChatFrame1
-	chatGroup = { 'COMBAT_XP_GAIN', 'COMBAT_HONOR_GAIN', 'COMBAT_FACTION_CHANGE', 'COMBAT_GUILD_XP_GAIN', 'SKILL', 'LOOT', 'CURRENCY', 'MONEY' }
+	chatGroup = { 'COMBAT_XP_GAIN', 'COMBAT_HONOR_GAIN', 'COMBAT_FACTION_CHANGE', 'SKILL', 'LOOT', 'MONEY' }
 	ChatFrame_RemoveAllMessageGroups(rightChat)
 	for _, v in next, chatGroup do
 		ChatFrame_AddMessageGroup(rightChat, v)
@@ -127,10 +108,6 @@ function E:SetupChat(noDisplayMsg)
 		_G.LeftChatToggleButton:Click()
 	end
 
-	if ELV_TOONS[PLAYER_NAME] then
-		E:SetCVar('scriptErrors', 1)
-	end
-
 	if _G.InstallStepComplete and not noDisplayMsg then
 		_G.InstallStepComplete.message = L["Chat Set"]
 		_G.InstallStepComplete:Show()
@@ -140,6 +117,10 @@ end
 function E:SetupCVars(noDisplayMsg)
 	E:SetCVar('mapQuestDifficulty', 1)
 	E:SetCVar('ShowClassColorInNameplate', 1)
+	E:SetCVar('UnitNameEnemyTotemName', 1)
+	E:SetCVar('UnitNameFriendlyTotemName', 1)
+	E:SetCVar('nameplateShowEnemyTotems', 1)
+	E:SetCVar('nameplateShowFriendlyTotems', 1)
 	E:SetCVar('screenshotQuality', 10)
 	E:SetCVar('chatMouseScroll', 1)
 	E:SetCVar('chatStyle', 'classic')
@@ -371,11 +352,8 @@ function E:LayoutAnniversary()
 	E.db.bags.junkDesaturate = true
 	E.db.bags.junkIcon = true
 	E.db.bags.moneyFormat = 'CONDENSED'
-	E.db.bags.scrapIcon = true
 	E.db.bags.showBindType = true
 	E.db.bags.sortInverted = false
-	E.db.bags.split.bag5 = true
-	E.db.bags.split.player = true
 	E.db.bags.transparent = true
 	E.db.bags.vendorGrays.enable = true
 	E.db.chat.chatHistory = false
@@ -395,15 +373,12 @@ function E:LayoutAnniversary()
 	E.db.chat.panelWidth = 427
 	E.db.chat.panelWidthRight = 288
 	E.db.chat.separateSizes = true
-	E.db.chat.socialQueueMessages = true
 	E.db.chat.tabFont = 'Expressway'
 	E.db.chat.tabFontOutline = 'OUTLINE'
 	E.db.chat.tabSelector = 'BOX1'
 	E.db.chat.tabSelectorColor = { r = 0.09, g = 0.51, b = 0.82 }
 	E.db.chat.timeStampFormat = "%I:%M %p "
 	E.db.chat.timeStampLocalTime = true
-	E.db.chat.useBTagName = true
-	E.db.cooldown.hideBlizzard = true
 	E.db.databars.experience.font = 'Expressway'
 	E.db.databars.experience.height = 12
 	E.db.databars.experience.width = 317
@@ -424,7 +399,7 @@ function E:LayoutAnniversary()
 	E.db.datatexts.panels.LeftChatDataPanel[2] = 'Guild'
 	E.db.datatexts.panels.LeftChatDataPanel[3] = 'System'
 	E.db.datatexts.panels.LeftChatDataPanel.battleground = false
-	E.db.datatexts.panels.MinimapPanel[1] = 'DurabilityItemLevel'
+	E.db.datatexts.panels.MinimapPanel[1] = 'Durability'
 	E.db.datatexts.panels.MinimapPanel[2] = 'Gold'
 	E.db.datatexts.panels.MinimapPanel.enable = false
 	E.db.datatexts.panels.MinimapPanel.panelTransparency = true
@@ -444,23 +419,15 @@ function E:LayoutAnniversary()
 	E.db.general.itemLevel.itemLevelFont = 'Expressway'
 	E.db.general.itemLevel.totalLevelFont = 'Expressway'
 	E.db.general.loginmessage = false
-	E.db.general.lootRoll.statusBarTexture = 'Clean'
+	E.db.general.lootRoll.statusBarTexture = 'ElvUI Norm'
 	E.db.general.minimap.clusterBackdrop = false
 	E.db.general.minimap.clusterDisable = false
-	E.db.general.minimap.icons.calendar.position = 'TOPLEFT'
-	E.db.general.minimap.icons.calendar.scale = 0.65
-	E.db.general.minimap.icons.difficulty.xOffset = 5
-	E.db.general.minimap.icons.difficulty.yOffset = -5
-	E.db.general.minimap.icons.mail.position = 'BOTTOMLEFT'
-	E.db.general.minimap.icons.mail.xOffset = 0
-	E.db.general.minimap.icons.mail.yOffset = -5
 	E.db.general.minimap.locationFontSize = 10
 	E.db.general.minimap.resetZoom.enable = true
 	E.db.general.minimap.resetZoom.time = 5
 	E.db.general.minimap.size = 226
 	E.db.general.objectiveFrameHeight = 750
 	E.db.general.resurrectSound = true
-	E.db.general.talkingHeadFrameScale = 1
 	E.db.general.totems.growthDirection = 'HORIZONTAL'
 	E.db.general.totems.size = 36
 	E.db.general.vehicleSeatIndicatorSize = 76
@@ -489,7 +456,6 @@ function E:LayoutAnniversary()
 	E.db.nameplates.units.ENEMY_NPC.debuffs.yOffset = 27
 	E.db.nameplates.units.ENEMY_NPC.health.height = 6
 	E.db.nameplates.units.ENEMY_NPC.health.text.enable = false
-	E.db.nameplates.units.ENEMY_NPC.health.text.format = ""
 	E.db.nameplates.units.ENEMY_NPC.health.text.position = 'TOPRIGHT'
 	E.db.nameplates.units.ENEMY_NPC.health.text.yOffset = -9
 	E.db.nameplates.units.ENEMY_NPC.level.yOffset = -9
@@ -517,7 +483,6 @@ function E:LayoutAnniversary()
 	E.db.nameplates.units.ENEMY_PLAYER.debuffs.yOffset = 42
 	E.db.nameplates.units.ENEMY_PLAYER.health.height = 6
 	E.db.nameplates.units.ENEMY_PLAYER.health.text.enable = false
-	E.db.nameplates.units.ENEMY_PLAYER.health.text.format = ""
 	E.db.nameplates.units.ENEMY_PLAYER.health.text.position = 'TOPRIGHT'
 	E.db.nameplates.units.ENEMY_PLAYER.health.text.yOffset = -9
 	E.db.nameplates.units.ENEMY_PLAYER.level.format = '[difficultycolor][level][shortclassification]'
@@ -550,12 +515,10 @@ function E:LayoutAnniversary()
 	E.db.nameplates.units.FRIENDLY_PLAYER.debuffs.yOffset = 42
 	E.db.nameplates.units.FRIENDLY_PLAYER.health.height = 6
 	E.db.nameplates.units.FRIENDLY_PLAYER.health.text.enable = false
-	E.db.nameplates.units.FRIENDLY_PLAYER.health.text.format = ""
 	E.db.nameplates.units.FRIENDLY_PLAYER.health.text.position = 'TOPRIGHT'
 	E.db.nameplates.units.FRIENDLY_PLAYER.health.text.yOffset = -9
 	E.db.nameplates.units.FRIENDLY_PLAYER.level.format = '[difficultycolor][level][shortclassification]'
 	E.db.nameplates.units.FRIENDLY_PLAYER.level.yOffset = -9
-	E.db.nameplates.units.FRIENDLY_PLAYER.markHealers = false
 	E.db.nameplates.units.FRIENDLY_PLAYER.markTanks = false
 	E.db.nameplates.units.FRIENDLY_PLAYER.name.fontSize = 12
 	E.db.nameplates.units.FRIENDLY_PLAYER.name.format = '[spec:icon] [name]'
@@ -874,13 +837,7 @@ function E:LayoutNormal()
 		E.db.bags.bagWidth = 474
 		E.db.bags.bankSize = 42
 		E.db.bags.bankWidth = 474
-		E.db.bags.itemLevelCustomColorEnable = true
-		E.db.bags.split.bag1 = true
-		E.db.bags.split.bag2 = true
-		E.db.bags.split.bag3 = true
-		E.db.bags.split.bag4 = true
-		E.db.bags.split.bagSpacing = 7
-		E.db.bags.split.player = true
+		E.db.bags.itemLevelCustomColorEnable = false
 		--Chat
 		E.db.chat.fontSize = 10
 		E.db.chat.separateSizes = false
@@ -901,8 +858,6 @@ function E:LayoutNormal()
 		E.db.general.totems.size = 50
 		E.db.general.totems.spacing = 8
 		E.db.general.autoTrackReputation = true
-			--temp
-			E.db.general.watchFrameHeight = 400
 		--Nameplates
 		E.db.nameplates.colors.castNoInterruptColor = {r = 0.78, g=0.25, b=0.25}
 		E.db.nameplates.colors.reactions.good = {r = 0.30, g=0.67, b=0.29}
@@ -1344,7 +1299,7 @@ function E:SetPage(num)
 		f.Desc2:SetText(L["Please click the button below so you can setup variables and ReloadUI."])
 
 		InstallOption1Button:Show()
-		InstallOption1Button:SetScript('OnClick', function() E:StaticPopup_Show('ELVUI_EDITBOX', nil, nil, 'https://discord.gg/UXSc7nt') end)
+		InstallOption1Button:SetScript('OnClick', function() E:StaticPopup_Show('ELVUI_EDITBOX', nil, nil, 'https://discord.gg/wRPF8CCpNV') end)
 		InstallOption1Button:SetText(L["Discord"])
 		InstallOption2Button:Show()
 		InstallOption2Button:SetScript('OnClick', function() E:SetupComplete(true) end)

@@ -2,6 +2,7 @@ local E, _, V, P, G = unpack(ElvUI)
 local C, L = unpack(E.Config)
 local WM = E:GetModule('WorldMap')
 local MM = E:GetModule('Minimap')
+local MBG = E:GetModule('MinimapButtonGrabber')
 local ACH = E.Libs.ACH
 
 local _G = _G
@@ -26,19 +27,18 @@ local Maps = ACH:Group(L["Maps"], nil, 2, 'tab')
 E.Options.args.maps = Maps
 
 Maps.args.worldMap = ACH:Group(L["WORLD_MAP"], nil, 1, 'tab')
-Maps.args.worldMap.args.enable = ACH:Toggle(L["Enable"], L["Enable/Disable the World Map Enhancements."], 0, nil, nil, nil, function() return E.private.general.worldMap end, function(_, value) E.private.general.worldMap = value E.ShowPopup = true end)
+Maps.args.worldMap.args.enable = ACH:Toggle(L["Enable"], L["Enable/Disable the World Map Enhancements."], 0, nil, nil, nil, function() return E.private.worldmap.enable end, function(_, value) E.private.worldmap.enable = value E.ShowPopup = true end)
 
-Maps.args.worldMap.args.generalGroup = ACH:Group(L["General"], nil, 1, nil, function(info) return E.global.general[info[#info]] end, function(info, value) E.global.general[info[#info]] = value end, function() return not E.private.general.worldMap end)
+Maps.args.worldMap.args.generalGroup = ACH:Group(L["General"], nil, 1, nil, function(info) return E.global.general[info[#info]] end, function(info, value) E.global.general[info[#info]] = value end, function() return not E.private.worldmap.enable end)
 Maps.args.worldMap.args.generalGroup.inline = true
 Maps.args.worldMap.args.generalGroup.args.smallerWorldMap = ACH:Toggle(L["Smaller World Map"], L["Make the world map smaller."], 1, nil, nil, nil, nil, function(_, value) E.global.general.smallerWorldMap = value; E.ShowPopup = true end)
-Maps.args.worldMap.args.generalGroup.args.smallerWorldMapScale = ACH:Range(L["Smaller World Map Scale"], nil, 2, { min = .5, max = .9, step = .01, isPercent = true }, nil, nil, function(_, value) E.global.general.smallerWorldMapScale = value; E.ShowPopup = true end)
 
 Maps.args.worldMap.args.generalGroup.args.spacer1 = ACH:Spacer(3)
-Maps.args.worldMap.args.generalGroup.args.fadeMapWhenMoving = ACH:Toggle(L["MAP_FADE_TEXT"], nil, 4)
-Maps.args.worldMap.args.generalGroup.args.mapAlphaWhenMoving = ACH:Range(L["Map Opacity When Moving"], nil, 5, { min = 0, max = 1, step = .01, isPercent = true }, nil, nil, function(_, value) E.global.general.mapAlphaWhenMoving = value; E.WorldMap.UpdateMapFade(_G.WorldMapFrame, E.global.general.mapAlphaWhenMoving, 1.0, E.global.general.fadeMapDuration, E.noop); end) -- we use E.noop to force the update of the minValue here
-Maps.args.worldMap.args.generalGroup.args.fadeMapDuration = ACH:Range(L["Fade Duration"], nil, 6, { min = 0, max = 1, step = .01, isPercent = true }, nil, nil, function(_, value) E.global.general.fadeMapDuration = value; E.WorldMap.UpdateMapFade(_G.WorldMapFrame, E.global.general.mapAlphaWhenMoving, 1.0, E.global.general.fadeMapDuration, E.noop); end) -- we use E.noop to force the update of the minValue here
+Maps.args.worldMap.args.generalGroup.args.fadeMapWhenMoving = ACH:Toggle(L["MAP_FADE_TEXT"], nil, 4, nil, nil, nil, nil, function(_, value) E.global.general.fadeMapWhenMoving = value; E.WorldMap.UpdateMapAlpha() end)
+Maps.args.worldMap.args.generalGroup.args.mapAlphaWhenMoving = ACH:Range(L["Map Opacity When Moving"], nil, 5, { min = 0, max = 1, step = .01, isPercent = true }, nil, nil, function(_, value) E.global.general.mapAlphaWhenMoving = value; E.WorldMap:UpdateMapFade(_G.WorldMapFrame, E.global.general.mapAlphaWhenMoving, 1.0, E.global.general.fadeMapDuration) end, function() return not E.global.general.fadeMapWhenMoving end)
+Maps.args.worldMap.args.generalGroup.args.fadeMapDuration = ACH:Range(L["Fade Duration"], nil, 6, { min = 0, max = 1, step = .01, isPercent = true }, nil, nil, function(_, value) E.global.general.fadeMapDuration = value; E.WorldMap:UpdateMapFade(_G.WorldMapFrame, E.global.general.mapAlphaWhenMoving, 1.0, E.global.general.fadeMapDuration) end, function() return not E.global.general.fadeMapWhenMoving end)
 
-Maps.args.worldMap.args.coordinatesGroup = ACH:Group(L["World Map Coordinates"], nil, 3, nil, function(info) return E.global.general.WorldMapCoordinates[info[#info]] end, function(info, value) E.global.general.WorldMapCoordinates[info[#info]] = value; WM:PositionCoords() end, function() return not E.private.general.worldMap end)
+Maps.args.worldMap.args.coordinatesGroup = ACH:Group(L["World Map Coordinates"], nil, 3, nil, function(info) return E.global.general.WorldMapCoordinates[info[#info]] end, function(info, value) E.global.general.WorldMapCoordinates[info[#info]] = value; WM:PositionCoords() end, function() return not E.private.worldmap.enable end)
 Maps.args.worldMap.args.coordinatesGroup.inline = true
 Maps.args.worldMap.args.coordinatesGroup.args.enable = ACH:Toggle(L["Enable"], L["Puts coordinates on the world map."], 1, nil, nil, nil, nil, function(_, value) E.global.general.WorldMapCoordinates.enable = value; E.ShowPopup = true end)
 Maps.args.worldMap.args.coordinatesGroup.args.position = ACH:Select(L["Position"], nil, 3, buttonPositions, nil, nil, nil, nil, function() return not E.global.general.WorldMapCoordinates.enable end)
@@ -77,12 +77,6 @@ Maps.args.minimap.args.cluster.args.timeTextGroup.args.timeFontOutline = ACH:Fon
 Maps.args.minimap.args.cluster.args.timeTextGroup.inline = true
 
 Maps.args.minimap.args.icons = ACH:Group(L["Buttons"], nil, 50, nil, function(info) return E.db.general.minimap.icons[info[#info - 1]][info[#info]] end, function(info, value) E.db.general.minimap.icons[info[#info - 1]][info[#info]] = value; MM:UpdateSettings() end)
-Maps.args.minimap.args.icons.args.lfgEye = ACH:Group(L["LFG Queue"], nil, 2)
-Maps.args.minimap.args.icons.args.lfgEye.args.position = ACH:Select(L["Position"], nil, 1, buttonPositions)
-Maps.args.minimap.args.icons.args.lfgEye.args.scale = ACH:Range(L["Scale"], nil, 2, buttonScale)
-Maps.args.minimap.args.icons.args.lfgEye.args.xOffset = ACH:Range(L["X-Offset"], nil, 3, buttonOffsets)
-Maps.args.minimap.args.icons.args.lfgEye.args.yOffset = ACH:Range(L["Y-Offset"], nil, 4, buttonOffsets)
-
 Maps.args.minimap.args.icons.args.tracking = ACH:Group(L["Tracking"], nil, 3, nil, nil, nil, function() return not E.db.general.minimap.clusterDisable end)
 Maps.args.minimap.args.icons.args.tracking.args.hideTracking = ACH:Toggle(L["Hide"], nil, 1, nil, nil, nil, function() return E.private.general.minimap.hideTracking end, function(_, value) E.private.general.minimap.hideTracking = value; MM:UpdateSettings() end)
 Maps.args.minimap.args.icons.args.tracking.args.spacer = ACH:Spacer(2, "full")
@@ -126,3 +120,12 @@ Maps.args.minimap.args.icons.args.difficulty.args.position = ACH:Select(L["Posit
 Maps.args.minimap.args.icons.args.difficulty.args.scale = ACH:Range(L["Scale"], nil, 2, buttonScale)
 Maps.args.minimap.args.icons.args.difficulty.args.xOffset = ACH:Range(L["X-Offset"], nil, 3, buttonOffsets)
 Maps.args.minimap.args.icons.args.difficulty.args.yOffset = ACH:Range(L["Y-Offset"], nil, 4, buttonOffsets)
+
+Maps.args.minimap.args.buttonGrabber = ACH:Group(L["Minimap Button Grabber"], nil, 45, nil, function(info) return E.private.general.minimapButtonGrabber[info[#info]] end, function(info, value) E.private.general.minimapButtonGrabber[info[#info]] = value; if MBG and MBG.UpdateSettings then MBG:UpdateSettings() end end, function() return not E.private.general.minimap.enable end)
+Maps.args.minimap.args.buttonGrabber.args.enable = ACH:Toggle(L["Enable"], nil, 1, nil, nil, nil, function() return E.private.general.minimapButtonGrabber.enable end, function(_, value) E.private.general.minimapButtonGrabber.enable = value; E.ShowPopup = true end)
+Maps.args.minimap.args.buttonGrabber.args.spacer = ACH:Spacer(2, 'full')
+Maps.args.minimap.args.buttonGrabber.args.mouseover = ACH:Toggle(L["Show On Mouseover"], L["Hide the grabber button until you mouse over the minimap."], 3, nil, nil, nil, nil, nil, function() return not E.private.general.minimapButtonGrabber.enable end)
+Maps.args.minimap.args.buttonGrabber.args.showNames = ACH:Toggle(L["Show Addon Names"], L["Show addon names in the list. When disabled, only icons are shown."], 4, nil, nil, nil, nil, nil, function() return not E.private.general.minimapButtonGrabber.enable end)
+Maps.args.minimap.args.buttonGrabber.args.position = ACH:Select(L["Position"], nil, 5, buttonPositions, nil, nil, nil, nil, function() return not E.private.general.minimapButtonGrabber.enable end)
+Maps.args.minimap.args.buttonGrabber.args.xOffset = ACH:Range(L["X-Offset"], nil, 6, buttonOffsets, nil, nil, nil, function() return not E.private.general.minimapButtonGrabber.enable end)
+Maps.args.minimap.args.buttonGrabber.args.yOffset = ACH:Range(L["Y-Offset"], nil, 7, buttonOffsets, nil, nil, nil, function() return not E.private.general.minimapButtonGrabber.enable end)

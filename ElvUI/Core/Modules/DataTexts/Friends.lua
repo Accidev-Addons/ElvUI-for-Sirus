@@ -2,7 +2,7 @@ local E, L, V, P, G = unpack(ElvUI)
 local DT = E:GetModule('DataTexts')
 
 local _G = _G
-local ipairs = ipairs
+local ipairs, select, type = ipairs, select, type
 local sort, next, wipe = sort, next, wipe
 local format, gsub, strfind, strjoin = format, gsub, strfind, strjoin
 
@@ -21,6 +21,8 @@ local UnitInRaid = UnitInRaid
 local GetNumFriends = GetNumFriends
 local GetFriendInfo = GetFriendInfo
 local InviteUnit = InviteUnit
+local GetGuildCharacterCategory = GetGuildCharacterCategory
+local GetSpellInfo = GetSpellInfo
 
 local menuList = {
 	{ text = _G.OPTIONS_MENU, isTitle = true, notCheckable=true},
@@ -51,7 +53,7 @@ end
 
 local levelNameString = '|cff%02x%02x%02x%d|r |cff%02x%02x%02x%s|r'
 local levelNameClassString = '|cff%02x%02x%02x%d|r %s%s%s'
-local characterFriend = _G.CHARACTER_FRIEND
+local levelNameClassCategoryString = '|T%s:16:16:0:0:64:64:4:60:4:60|t |cff%02x%02x%02x%d|r %s%s%s'
 local totalOnlineString = strjoin('', _G.FRIENDS_LIST_ONLINE, ': %s/%s')
 local tthead = {r=0.4, g=0.78, b=1}
 local activezone, inactivezone = {r=0.3, g=1.0, b=0.3}, {r=0.65, g=0.65, b=0.65}
@@ -78,6 +80,16 @@ local function SortAlphabeticName(a, b)
 	end
 end
 
+local function GetCategoryIcon(name)
+	if not (name and GetGuildCharacterCategory) then return end
+
+	local categoryID = GetGuildCharacterCategory(name)
+	if not (categoryID and categoryID ~= 0) then return end
+
+	local icon = select(3, GetSpellInfo(categoryID))
+	return type(icon) == 'string' and icon or nil
+end
+
 
 
 local function BuildFriendTable(total)
@@ -87,12 +99,14 @@ local function BuildFriendTable(total)
 
 	for i = 1, total do
 		info.name, info.level, info.className, info.area, info.connected, info.status, info.notes = GetFriendInfo(i)
-		info.afk = strfind(info.status, _G.AFK) and true or false
-		info.dnd = strfind(info.status, _G.DND) and true or false
 		if info and info.connected then
+			info.afk = strfind(info.status or '', _G.AFK) and true or false
+			info.dnd = strfind(info.status or '', _G.DND) and true or false
+
 			local className = E:UnlocalizedClassName(info.className) or ''
 			local status = (info.afk and statusTable.AFK) or (info.dnd and statusTable.DND) or ''
-			friendTable[i] = {
+			-- keep the array dense, table.sort chokes on the holes offline friends leave behind
+			friendTable[#friendTable + 1] = {
 				name = info.name,			--1
 				level = info.level,			--2
 				class = className,			--3
@@ -100,6 +114,7 @@ local function BuildFriendTable(total)
 				online = info.connected,	--5
 				status = status,			--6
 				notes = info.notes,			--7
+				categoryIcon = GetCategoryIcon(info.name),
 			}
 		end
 	end
@@ -146,20 +161,8 @@ local function Click(self, btn)
 	end
 end
 
-local lastTooltipXLineHeader
-local function TooltipAddXLine(X, header, ...)
-	X = (X == true and 'AddDoubleLine') or 'AddLine'
-	if lastTooltipXLineHeader ~= header then
-		DT.tooltip[X](DT.tooltip, ' ')
-		DT.tooltip[X](DT.tooltip, header)
-		lastTooltipXLineHeader = header
-	end
-	DT.tooltip[X](DT.tooltip, ...)
-end
-
 local function OnEnter()
 	DT.tooltip:ClearLines()
-	lastTooltipXLineHeader = nil
 
 	local numberOfFriends, onlineFriends = GetNumFriends()
 
@@ -173,6 +176,7 @@ local function OnEnter()
 	end
 
 	local zonec, classc, levelc
+	local addedSpacer
 
 	DT.tooltip:AddDoubleLine(L["Friends List"], format(totalOnlineString, onlineFriends, numberOfFriends),tthead.r,tthead.g,tthead.b,tthead.r,tthead.g,tthead.b)
 	if onlineFriends > 0 then
@@ -189,7 +193,19 @@ local function OnEnter()
 					classc, levelc = E:ClassColor(info.class), GetQuestDifficultyColor(info.level)
 					if not classc then classc = levelc end
 
-					TooltipAddXLine(true, characterFriend, format(levelNameClassString,levelc.r*255,levelc.g*255,levelc.b*255,info.level,info.name,inGroup(info.name),info.status),info.zone,classc.r,classc.g,classc.b,zonec.r,zonec.g,zonec.b)
+					local nameString
+					if info.categoryIcon then
+						nameString = format(levelNameClassCategoryString,info.categoryIcon,levelc.r*255,levelc.g*255,levelc.b*255,info.level,info.name,inGroup(info.name),info.status)
+					else
+						nameString = format(levelNameClassString,levelc.r*255,levelc.g*255,levelc.b*255,info.level,info.name,inGroup(info.name),info.status)
+					end
+
+					if not addedSpacer then
+						DT.tooltip:AddLine(' ')
+						addedSpacer = true
+					end
+
+					DT.tooltip:AddDoubleLine(nameString,info.zone,classc.r,classc.g,classc.b,zonec.r,zonec.g,zonec.b)
 				end
 			end
 		end

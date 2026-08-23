@@ -33,7 +33,7 @@ function UF:Construct_PlayerFrame(frame)
 			frame.Runes = self:Construct_DeathKnightResourceBar(frame)
 			frame.ClassBar = "Runes"
 		elseif E.myclass == "DRUID" then
-			frame.AdditionalPower = self:Construct_AdditionalPowerBar(frame, nil, UF.UpdateClassBar)
+			frame.AdditionalPower = self:Construct_AdditionalPowerBar(frame)
 			frame.ClassBar = "AdditionalPower"
 		end
 	end

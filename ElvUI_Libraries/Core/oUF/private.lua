@@ -101,6 +101,10 @@ function Private.xpcall(func, ...)
 end
 
 function Private.validateEvent(event)
+	if C_EventUtils and C_EventUtils.IsEventValid then
+		return C_EventUtils.IsEventValid(event)
+	end
+
 	local isOK = xpcall(function()
 		validator:RegisterEvent(event)
 	end, Private.nierror)

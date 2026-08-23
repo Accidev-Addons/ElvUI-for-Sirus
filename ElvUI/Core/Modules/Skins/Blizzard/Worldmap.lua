@@ -60,9 +60,9 @@ S:AddCallback("Skin_WorldMap", function()
 	WorldMapQuestHighlightBar:SetTexture(E.Media.Textures.Highlight)
 	WorldMapQuestHighlightBar:SetAlpha(0.35)
 
-	S:HandleScrollBar(WorldMapQuestScrollFrameScrollBar)
-	S:HandleScrollBar(WorldMapQuestDetailScrollFrameScrollBar)
-	S:HandleScrollBar(WorldMapQuestRewardScrollFrameScrollBar)
+	S:HandleSirusScrollBar(WorldMapQuestScrollFrameScrollBar)
+	S:HandleSirusScrollBar(WorldMapQuestDetailScrollFrameScrollBar)
+	S:HandleSirusScrollBar(WorldMapQuestRewardScrollFrameScrollBar)
 
 	WorldMapQuestScrollFrameScrollBar:Point("TOPLEFT", WorldMapQuestScrollFrame, "TOPRIGHT", 5, -19)
 	WorldMapQuestScrollFrameScrollBar:Point("BOTTOMLEFT", WorldMapQuestScrollFrame, "BOTTOMRIGHT", 5, 20)

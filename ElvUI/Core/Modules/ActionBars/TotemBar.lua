@@ -14,7 +14,7 @@ local Masque = E.Masque
 local MasqueGroup = Masque and Masque:Group('ElvUI', 'Totem Bar')
 
 local bar = CreateFrame('Frame', 'ElvUI_TotemBar', E.UIParent, 'SecureHandlerStateTemplate')
-bar:SetFrameStrata('LOW')
+bar:SetFrameStrata('MEDIUM')
 
 local SLOT_BORDER_COLORS = {
 	summon					= {r = 0, g = 0, b = 0},
@@ -58,12 +58,15 @@ function AB:MultiCastActionButton_Update(button)
 end
 
 function AB:MultiCastSummonSpellButton_Update(summonButton)
-	local buttonSpacing = AB.db.totemBar.spacing
+	if InCombatLockdown() then
+		AB.NeedsPositionAndSizeTotemBar = true
+		AB:RegisterEvent('PLAYER_REGEN_ENABLED')
+		return
+	end
 
-	-- reposition the first slot to the summon button
 	local slot1 = _G.MultiCastSlotButton1
 	slot1:ClearAllPoints()
-	slot1:Point('LEFT', summonButton, 'RIGHT', buttonSpacing, 0)
+	slot1:Point('LEFT', summonButton, 'RIGHT', AB.db.totemBar.spacing, 0)
 end
 
 function AB:StyleTotemSlotButton(button, slot)
@@ -227,15 +230,8 @@ function AB:PositionAndSizeTotemBar()
 	local mainWidth = (buttonWidth * (2 + numActiveSlots)) + (buttonSpacing * (2 + numActiveSlots - 1))
 	bar:Width(mainWidth)
 	barFrame:Width(mainWidth)
-	bar:Height(buttonHeight + 2)
-	barFrame:Height(buttonHeight + 2)
-
-	local _, barFrameAnchor = barFrame:GetPoint()
-	if barFrameAnchor ~= bar then
-		barFrame:SetPoint('TOP', bar)
-		barFrame:SetPoint('BOTTOMLEFT', bar)
-		barFrame:SetPoint('BOTTOM', barFrameAnchor)
-	end -- this is Simpy voodoo, dont change it
+	bar:Height(buttonHeight)
+	barFrame:Height(buttonHeight)
 
 	bar.mouseover = AB.db.totemBar.mouseover
 
@@ -283,17 +279,21 @@ function AB:UpdateTotemBindings()
 	local font = LSM:Fetch('font', AB.db.totemBar.font)
 	local size, outline = AB.db.totemBar.fontSize, AB.db.totemBar.fontOutline
 
-	_G.MultiCastSummonSpellButtonHotKey:FontTemplate(font, size, outline)
-	_G.MultiCastSummonSpellButtonHotKey:SetTextColor(1, 1, 1)
-	AB:FixKeybindText(_G.MultiCastSummonSpellButton)
+	local summon = _G.MultiCastSummonSpellButton
+	local summonHotKey = summon.HotKey or _G.MultiCastSummonSpellButtonHotKey
+	summonHotKey:FontTemplate(font, size, outline)
+	summonHotKey:SetTextColor(1, 1, 1)
+	AB:FixKeybindText(summon)
 
-	_G.MultiCastRecallSpellButtonHotKey:FontTemplate(font, size, outline)
-	_G.MultiCastRecallSpellButtonHotKey:SetTextColor(1, 1, 1)
-	AB:FixKeybindText(_G.MultiCastRecallSpellButton)
+	local recall = _G.MultiCastRecallSpellButton
+	local recallHotKey = recall.HotKey or _G.MultiCastRecallSpellButtonHotKey
+	recallHotKey:FontTemplate(font, size, outline)
+	recallHotKey:SetTextColor(1, 1, 1)
+	AB:FixKeybindText(recall)
 
 	for i = 1, 12 do
 		local button = _G['MultiCastActionButton'..i]
-		local hotkey = _G['MultiCastActionButton'..i..'HotKey']
+		local hotkey = button.HotKey or _G['MultiCastActionButton'..i..'HotKey']
 		hotkey:FontTemplate(font, size, outline)
 		hotkey:SetTextColor(1, 1, 1)
 		AB:FixKeybindText(button)
@@ -304,15 +304,15 @@ function AB:MultiCastRecallSpellButton_Update(button)
 	if InCombatLockdown() then
 		AB.NeedsRecallButtonUpdate = true
 		AB:RegisterEvent('PLAYER_REGEN_ENABLED')
-	else
-		if not button then button = _G.MultiCastRecallSpellButton end -- if we call it with no button, assume it's this one
-		if button and button:GetID() then
-			if self.hooks.MultiCastRecallSpellButton_Update then
-				self.hooks.MultiCastRecallSpellButton_Update(button)
-			else -- not hooked yet, call it straight (can taint)
-				_G.MultiCastRecallSpellButton_Update(button)
-			end
-		end
+		return
+	end
+
+	if not button then button = _G.MultiCastRecallSpellButton end
+
+	local activeSlots = _G.MultiCastActionBarFrame.numActiveSlots
+	if button and activeSlots and activeSlots > 0 then
+		button:ClearAllPoints()
+		button:Point('LEFT', _G['MultiCastSlotButton'..activeSlots], 'RIGHT', AB.db.totemBar.spacing, 0)
 	end
 end
 
@@ -325,7 +325,11 @@ function AB:MultiCastFlyoutFrameStyle(button, rotate)
 	button.normalTexture:SetSize(16, 16)
 	button.normalTexture:SetTexture(E.Media.Textures.ArrowUp)
 	button.normalTexture:SetTexCoord(0, 1, 0, 1)
-	button.normalTexture.SetTexCoord = E.noop
+	hooksecurefunc(button.normalTexture, 'SetTexCoord', function(texture, left, right, top, bottom)
+		if left ~= 0 or right ~= 1 or top ~= 0 or bottom ~= 1 then
+			texture:SetTexCoord(0, 1, 0, 1)
+		end
+	end)
 
 	button:HookScript('OnEnter', AB.TotemBar_OnEnter)
 	button:HookScript('OnLeave', AB.TotemBar_OnLeave)
@@ -351,6 +355,43 @@ function AB:CreateTotemBar()
 	barFrame:SetScript('OnHide', nil)
 	barFrame:SetParent(bar)
 
+	function AB:ReanchorTotemBar()
+		local frame = _G.MultiCastActionBarFrame
+
+		if InCombatLockdown() then
+			AB.NeedsTotemBarReanchor = true
+			AB:RegisterEvent('PLAYER_REGEN_ENABLED')
+			return
+		end
+
+		AB.NeedsTotemBarReanchor = nil
+
+		if frame:GetParent() ~= bar then
+			frame:SetParent(bar)
+		end
+
+		if frame.ClearAllPointsBase then
+			frame:ClearAllPointsBase()
+			frame:SetPointBase('BOTTOMLEFT', bar, 'BOTTOMLEFT', 0, 0)
+		else
+			frame:ClearAllPoints()
+			frame:SetPoint('BOTTOMLEFT', bar, 'BOTTOMLEFT', 0, 0)
+		end
+	end
+
+	AB:ReanchorTotemBar()
+
+	hooksecurefunc(barFrame, 'SetParent', function(_, parent)
+		if parent ~= bar then
+			AB:ReanchorTotemBar()
+		end
+	end)
+	hooksecurefunc(barFrame, 'SetPoint', function(_, _, anchor)
+		if anchor ~= bar then
+			AB:ReanchorTotemBar()
+		end
+	end)
+
 	AB:MultiCastFlyoutFrameStyle(_G.MultiCastFlyoutFrameCloseButton, true)
 	AB:MultiCastFlyoutFrameStyle(_G.MultiCastFlyoutFrameOpenButton)
 
@@ -364,8 +405,7 @@ function AB:CreateTotemBar()
 	for i = 1, 12 do
 		local name = 'MultiCastActionButton'..i
 		local button = _G[name]
-		local hotkey = _G[name.."HotKey"]
-		button.cooldown = _G[name.."Cooldown"]
+		local hotkey = button.HotKey or _G[name..'HotKey']
 
 		if isShaman then
 			button:SetAttribute("type2", "destroytotem")
@@ -374,17 +414,21 @@ function AB:CreateTotemBar()
 
 		AB:SkinMultiCastButton(button, true, MasqueGroup and E.private.actionbar.masque.actionbars)
 
-		hotkey.SetVertexColor = E.noop
-		button.commandName = button.buttonType .. button.buttonIndex -- hotkey support
+		hooksecurefunc(hotkey, 'SetVertexColor', function(hk, r, g, b)
+			if r ~= 1 or g ~= 1 or b ~= 1 then
+				hk:SetVertexColor(1, 1, 1)
+			end
+		end)
+		button.keyBoundTarget = button.buttonType .. button.buttonIndex
 	end
 
 	local summonButton = _G.MultiCastSummonSpellButton
 	AB:SkinMultiCastButton(summonButton)
-	summonButton.commandName = summonButton.buttonType..'1' -- hotkey support
+	summonButton.keyBoundTarget = summonButton.buttonType..'1'
 
 	local spellButton = _G.MultiCastRecallSpellButton
 	AB:SkinMultiCastButton(spellButton)
-	spellButton.commandName = spellButton.buttonType..'1' -- hotkey support
+	spellButton.keyBoundTarget = spellButton.buttonType..'1'
 
 	for button in next, bar.buttons do
 		button:HookScript('OnEnter', AB.TotemButton_OnEnter)
@@ -403,8 +447,7 @@ function AB:CreateTotemBar()
 
 	AB:UpdateTotemBindings()
 
-	AB:RawHook('MultiCastRecallSpellButton_Update', 'MultiCastRecallSpellButton_Update', true)
-
+	AB:SecureHook('MultiCastRecallSpellButton_Update')
 	AB:SecureHook('MultiCastSummonSpellButton_Update')
 	AB:SecureHook('MultiCastFlyoutFrameOpenButton_Show')
 	AB:SecureHook('MultiCastActionButton_Update')

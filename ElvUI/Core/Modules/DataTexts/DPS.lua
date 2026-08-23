@@ -1,8 +1,7 @@
 local E, L, V, P, G = unpack(ElvUI)
 local DT = E:GetModule('DataTexts')
 
-local time, max, strjoin = time, max, strjoin
-local CombatLogGetCurrentEventInfo = CombatLogGetCurrentEventInfo
+local time, strjoin = time, strjoin
 local UnitGUID = UnitGUID
 
 local lastSegment, petGUID = 0
@@ -44,21 +43,13 @@ local function OnEvent(self, event, ...)
 	elseif event == 'COMBAT_LOG_EVENT_UNFILTERED' then
 		local timestamp, Event, sourceGUID, _, _, _, _, _, arg9, _, _, arg12 = ...
 		if not events[Event] then return end
+		if sourceGUID ~= E.myguid and sourceGUID ~= petGUID then return end
 
-		-- only use events from the player
-		local overKill
-
-		if sourceGUID == E.myguid or sourceGUID == petGUID then
-			if timeStamp == 0 then timeStamp = timestamp end
-			lastSegment = timeStamp
-			combatTime = timestamp - timeStamp
-			if Event == 'SWING_DAMAGE' then
-				lastDMGAmount = arg9
-			else
-				lastDMGAmount = arg12
-			end
-			DMGTotal = DMGTotal + lastDMGAmount
-		end
+		if timeStamp == 0 then timeStamp = timestamp end
+		lastSegment = timeStamp
+		combatTime = timestamp - timeStamp
+		lastDMGAmount = (Event == 'SWING_DAMAGE' and arg9) or arg12
+		DMGTotal = DMGTotal + lastDMGAmount
 	end
 
 	GetDPS(self)

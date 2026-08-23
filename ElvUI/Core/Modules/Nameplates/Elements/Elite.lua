@@ -1,6 +1,8 @@
 local E, L, V, P, G = unpack(ElvUI)
 local NP = E:GetModule("NamePlates")
 
+local UnitClassification = UnitClassification
+
 --Lua functions
 --WoW API / Variables
 
@@ -10,7 +12,9 @@ function NP:Update_Elite(frame)
 
 	local icon = frame.Elite
 	if db.enable then
-		local elite, boss = frame.EliteIcon:IsShown(), frame.BossIcon:IsShown()
+		local classification = frame.unit and UnitClassification(frame.unit)
+		local elite = classification == "elite" or classification == "rareelite"
+		local boss = classification == "worldboss"
 
 		if boss then
 			icon:SetTexCoord(0, 0.15, 0.62, 0.94)

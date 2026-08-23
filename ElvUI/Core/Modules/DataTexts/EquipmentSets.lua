@@ -18,7 +18,7 @@ local hexColor = ''
 local function OnEnter()
 	DT.tooltip:ClearLines()
 
-	DT.tooltip:AddLine('Equipment Sets')
+	DT.tooltip:AddLine(L["Equipment Sets"])
 	DT.tooltip:AddLine(' ')
 
 	for _, set in pairs(eqSets) do
@@ -46,7 +46,7 @@ local function OnEvent(self, event)
 		local isEquipped = true
 
 		for slot, itemID in pairs(items) do
-            if itemID then
+            if itemID and itemID > 1 then
                 local equippedItemID = GetInventoryItemID('player', slot)
 				equippedItemID = equippedItemID == nil and 0 or equippedItemID
                 if equippedItemID ~= itemID then
@@ -67,9 +67,9 @@ local function OnEvent(self, event)
 
 	local set = eqSets[activeSetIndex]
 	if not activeSetIndex then
-		self.text:SetText('No Set Equipped')
+		self.text:SetText(L["No Set Equipped"])
 	elseif set then
-		self.text:SetFormattedText('Set: %s%s|r |T%s:16:16:0:0:64:64:4:60:4:60|t', hexColor, set.name, set.iconFileID)
+		self.text:SetFormattedText('%s %s%s|r |T%s:16:16:0:0:64:64:4:60:4:60|t', L["Set:"], hexColor, set.name, set.iconFileID)
 	end
 end
 
@@ -77,4 +77,4 @@ local function ApplySettings(_, hex)
 	hexColor = hex
 end
 
-DT:RegisterDatatext('Equipment Sets', nil, { 'EQUIPMENT_SETS_CHANGED', 'PLAYER_EQUIPMENT_CHANGED', 'EQUIPMENT_SWAP_FINISHED' }, OnEvent, nil, OnClick, OnEnter, nil, nil, nil, ApplySettings)
+DT:RegisterDatatext('Equipment Sets', nil, { 'EQUIPMENT_SETS_CHANGED', 'PLAYER_EQUIPMENT_CHANGED', 'EQUIPMENT_SWAP_FINISHED' }, OnEvent, nil, OnClick, OnEnter, nil, L["Equipment Sets"], nil, ApplySettings)

@@ -135,9 +135,9 @@ function PI:SetPage(PageNum, PrevPage)
 		for i = 1, #f.side.Lines do
 			local line, color = f.side.Lines[i]
 			if i == f.CurrentPage then
-				color = f.StepTitlesColorSelected or {.09,.52,.82}
+				color = f.StepTitlesColorSelected or titleSelectedColor
 			else
-				color = f.StepTitlesColor or {1,1,1}
+				color = f.StepTitlesColor or titleColor
 			end
 
 			line.text:SetText(f.StepTitles[i])
@@ -180,7 +180,7 @@ function PI:CreateStepComplete()
 	imsg.firstShow = false
 
 	imsg.bg = imsg:CreateTexture(nil, "BACKGROUND")
-	imsg.bg:SetTexture([[Interface\AddOns\ElvUI\media\textures\LevelUpTex]])
+	imsg.bg:SetTexture([[Interface\AddOns\ElvUI\Core\Media\Textures\LevelUpTex]])
 	imsg.bg:Point("BOTTOM")
 	imsg.bg:Size(326, 103)
 	imsg.bg:SetTexCoord(0.00195313, 0.63867188, 0.03710938, 0.23828125)
@@ -188,14 +188,14 @@ function PI:CreateStepComplete()
 
 	imsg.lineTop = imsg:CreateTexture(nil, "BACKGROUND")
 	imsg.lineTop:SetDrawLayer("BACKGROUND", 2)
-	imsg.lineTop:SetTexture([[Interface\AddOns\ElvUI\media\textures\LevelUpTex]])
+	imsg.lineTop:SetTexture([[Interface\AddOns\ElvUI\Core\Media\Textures\LevelUpTex]])
 	imsg.lineTop:Point("TOP")
 	imsg.lineTop:Size(418, 7)
 	imsg.lineTop:SetTexCoord(0.00195313, 0.81835938, 0.01953125, 0.03320313)
 
 	imsg.lineBottom = imsg:CreateTexture(nil, "BACKGROUND")
 	imsg.lineBottom:SetDrawLayer("BACKGROUND", 2)
-	imsg.lineBottom:SetTexture([[Interface\AddOns\ElvUI\media\textures\LevelUpTex]])
+	imsg.lineBottom:SetTexture([[Interface\AddOns\ElvUI\Core\Media\Textures\LevelUpTex]])
 	imsg.lineBottom:Point("BOTTOM")
 	imsg.lineBottom:Size(418, 7)
 	imsg.lineBottom:SetTexCoord(0.00195313, 0.81835938, 0.01953125, 0.03320313)

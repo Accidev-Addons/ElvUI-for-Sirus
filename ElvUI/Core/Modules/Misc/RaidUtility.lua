@@ -1,7 +1,6 @@
 local E, L, V, P, G = unpack(ElvUI)
 local RU = E:GetModule('RaidUtility')
 local S = E:GetModule('Skins')
-local LC = E.Libs.Compat
 
 local _G = _G
 local unpack, next, mod, floor = unpack, next, mod, floor
@@ -32,11 +31,10 @@ local UnitClass = UnitClass
 local UnitExists = UnitExists
 local UnitName = UnitName
 
-local IsInGroup = LC.IsInGroup
-local IsInRaid = LC.IsInRaid
-local GetNumGroupMembers = LC.GetNumGroupMembers
-local UnitIsGroupLeader = LC.UnitIsGroupLeader
-local UnitIsGroupAssistant = LC.UnitIsGroupAssistant
+local IsInGroup = IsInGroup
+local IsInRaid = IsInRaid
+local GetNumGroupMembers = GetNumGroupMembers
+local IsRaidLeader, IsPartyLeader, IsRaidOfficer = IsRaidLeader, IsPartyLeader, IsRaidOfficer
 
 local PRIEST_COLOR = RAID_CLASS_COLORS.PRIEST
 local NUM_RAID_GROUPS = NUM_RAID_GROUPS
@@ -46,7 +44,6 @@ local BUTTON_HEIGHT = 20
 local TARGET_SIZE = 22
 
 local countdownInProgress = false
-local countdownTimer = nil
 
 local groupMenuList = {
 	{ text = _G.DUNGEON_DIFFICULTY, isTitle = true, notCheckable = true },
@@ -72,8 +69,7 @@ local roleIcons = {
 	DAMAGER = E:TextureString(E.Media.Textures.DPS, ':15:15')
 }
 
-local openMenu = {}
-local raidMarkers = {}
+local openMenu
 local roleRoster = {}
 local roleCount = {}
 local roles = {
@@ -117,32 +113,17 @@ function RU:SetEnabled(button, enabled, isLeader)
 	end
 end
 
-function RU:CleanButton(button)
-	button.BottomLeft:SetAlpha(0)
-	button.BottomRight:SetAlpha(0)
-	button.BottomMiddle:SetAlpha(0)
-	button.TopMiddle:SetAlpha(0)
-	button.TopLeft:SetAlpha(0)
-	button.TopRight:SetAlpha(0)
-	button.MiddleLeft:SetAlpha(0)
-	button.MiddleRight:SetAlpha(0)
-	button.MiddleMiddle:SetAlpha(0)
-
-	button:SetHighlightTexture(E.ClearTexture)
-	button:SetDisabledTexture(E.ClearTexture)
-end
-
 function RU:NotInPVP()
 	local _, instanceType = GetInstanceInfo()
 	return instanceType ~= 'pvp' and instanceType ~= 'arena'
 end
 
 function RU:IsLeader()
-	return UnitIsGroupLeader('player') and RU:NotInPVP()
+	return (IsInRaid() and IsRaidLeader() or IsPartyLeader()) and RU:NotInPVP()
 end
 
 function RU:HasPermission()
-	return (UnitIsGroupLeader('player') or UnitIsGroupAssistant('player')) and RU:NotInPVP()
+	return (IsInRaid() and (IsRaidLeader() or IsRaidOfficer()) or IsPartyLeader()) and RU:NotInPVP()
 end
 
 function RU:InGroup()
@@ -220,45 +201,6 @@ function RU:CreateDropdown(name, parent, template, width, point, relativeto, poi
     self:OnSelect_DungeonDifficulty(dropdown, text)
 
     return dropdown
-end
-
-function RU:CreateCheckBox(name, parent, template, size, point, relativeto, point2, xOfs, yOfs, label, events, eventFunc, clickFunc)
-	local checkbox = type(name) == 'table' and name
-	local box = checkbox or CreateFrame('CheckButton', name, parent, template)
-	box:Size(size)
-	box.label = label or ''
-
-	if events then
-		box:UnregisterAllEvents()
-
-		for _, event in next, events do
-			box:RegisterEvent(event)
-		end
-	end
-
-	box:SetScript('OnEvent', eventFunc)
-	box:SetScript('OnClick', clickFunc)
-
-	if not box.IsSkinned then
-		S:HandleCheckBox(box)
-	end
-
-	if box.Text then
-		box.Text:Point('LEFT', box, 'RIGHT', 2, 0)
-		box.Text:SetText(box.label)
-	end
-
-	if not box:GetPoint() then
-		box:Point(point, relativeto, point2, xOfs, yOfs)
-	end
-
-	if eventFunc then
-		eventFunc(box)
-	end
-
-	RU.CheckBoxes[name] = box
-
-	return box
 end
 
 -- Function to create buttons in this module
@@ -391,8 +333,6 @@ function RU:CreateTargetIcons()
 		button:Size(TARGET_SIZE)
 		button.keys = {}
 
-		raidMarkers[id] = button
-
 		if i == 1 then
 			button:SetPoint('TOPLEFT', TargetIcons, 6, -3)
 		else
@@ -439,6 +379,11 @@ function RU:ToggleRaidUtil(event)
 
 	if event == 'PLAYER_REGEN_ENABLED' then
 		RU:UnregisterEvent('PLAYER_REGEN_ENABLED', 'ToggleRaidUtil')
+
+		if RU.positionPending then
+			RU.positionPending = nil
+			RU:PositionSections()
+		end
 	elseif RU.updateMedia and event == 'PLAYER_ENTERING_WORLD' then
 		RU:UpdateMedia()
 		RU.updateMedia = nil
@@ -623,7 +568,9 @@ end
 
 function RU:RoleIcons_AddPartyUnit(unit, iconRole)
 	local name = UnitExists(unit) and UnitName(unit)
-	local unitRole = name and UnitGroupRolesAssigned(unit)
+	if not name then return end
+	local isTank, isHealer, isDamage = UnitGroupRolesAssigned(unit)
+	local unitRole = (isTank and 'TANK') or (isHealer and 'HEALER') or (isDamage and 'DAMAGER')
 	if unitRole == iconRole then
 		local _, unitClass = UnitClass(unit)
 		RU:RoleIcons_AddNames(roleRoster[0], name, unitClass)
@@ -647,8 +594,8 @@ function RU:OnEnter_Role()
 	for i = 1, GetNumGroupMembers() do
 		if isRaid then
 			local name, _, group, _, _, unitClass = GetRaidRosterInfo(i)
-			local tankCount, healCount, damageCount = RU:GetRoleCount()
-			local unitRole = (tankCount > 0 and 'TANK') or (healCount > 0 and 'HEALER') or (damageCount > 0 and 'DAMAGER')
+			local isTank, isHealer, isDamage = UnitGroupRolesAssigned('raid'..i)
+			local unitRole = (isTank and 'TANK') or (isHealer and 'HEALER') or (isDamage and 'DAMAGER')
 
 			if name and unitRole == iconRole then
 				RU:RoleIcons_AddNames(roleRoster[group], name, unitClass)
@@ -697,6 +644,12 @@ function RU:ReanchorSection(section, bottom, target)
 end
 
 function RU:PositionSections()
+	if InCombatLockdown() then
+		RU.positionPending = true
+		RU:RegisterEvent('PLAYER_REGEN_ENABLED', 'ToggleRaidUtil')
+		return
+	end
+
 	local point = E:GetScreenQuadrant(ShowButton)
 	local bottom = point and strfind(point, 'BOTTOM')
 
@@ -731,19 +684,21 @@ function RU:OnEvent_RoleIcons(event)
 end
 
 function RU:SendMessageCount(message)
-	local message = type(message) == 'number' and tostring(message) or L[message]
+	message = type(message) == 'number' and tostring(message) or L[message]
 
 	if IsInRaid() then
 		SendChatMessage(message, 'RAID_WARNING')
 	elseif RU:InGroup() then
 		SendChatMessage(message, 'PARTY')
 	else
-		E:GetRoleCount(message)
+		E:Print(message)
 	end
 end
 
 function RU:DoCountdown(duration)
     if countdownInProgress then return end
+
+	countdownInProgress = true
 
 	local target = GetRaidTargetIndex('target')
     local count = duration
@@ -757,12 +712,11 @@ function RU:DoCountdown(duration)
 				RU:SendMessageCount(count)
 			end
             count = count - 1
-            countdownTimer = E:ScheduleTimer(countdown, 1)
+            E:ScheduleTimer(countdown, 1)
         else
 			RU:SendMessageCount(L["Pulling!"])
 
             countdownInProgress = false
-            countdownTimer = nil
         end
     end
 
@@ -811,7 +765,6 @@ function RU:Initialize()
 	RU.updateMedia = true -- update fonts and textures on entering world once, used to set the custom media from a plugin
 
 	RU.Buttons = {}
-	RU.CheckBoxes = {}
 
 	local RaidUtilityPanel = CreateFrame('Frame', 'RaidUtilityPanel', E.UIParent, 'SecureHandlerBaseTemplate')
 	RaidUtilityPanel:SetScript('OnMouseUp', RU.OnClick_RaidUtilityPanel)
@@ -821,7 +774,6 @@ function RU:Initialize()
 	RaidUtilityPanel:SetFrameLevel(3)
 	RaidUtilityPanel.toggled = false
 	RaidUtilityPanel:SetFrameStrata('HIGH')
-	E.FrameLocks.RaidUtilityPanel = true
 
 	RU:CreateUtilButton(ShowButton, nil, nil, 136, BUTTON_HEIGHT, 'TOP', E.UIParent, 'TOP', -400, E.Border, _G.RAID_CONTROL, nil, nil, nil, RU.OnClick_ShowButton)
 	SecureHandlerSetFrameRef(ShowButton, 'RaidUtilityPanel', RaidUtilityPanel)
@@ -848,7 +800,6 @@ function RU:Initialize()
 	]=], E:Scale(1), E:Scale(30), 0))
 	ShowButton:SetScript('OnDragStart', RU.DragStart_ShowButton)
 	ShowButton:SetScript('OnDragStop', RU.DragStop_ShowButton)
-	E.FrameLocks.RaidUtility_ShowButton = true
 
 	RU:CreateTargetIcons()
 
@@ -875,7 +826,6 @@ function RU:Initialize()
 	RU:FixSecureClicks(MainAssistButton)
 
 	local RaidCountdownButton = RU:CreateUtilButton('RaidUtility_CountdownButton', RaidUtilityPanel, nil, BUTTON_WIDTH * 0.5, BUTTON_HEIGHT, 'TOPLEFT', MainTankButton, 'BOTTOMLEFT', 0, -5, L["Countdown"], nil, buttonEvents, RU.OnEvent_RaidCountdownButton, RU.OnClick_RaidCountdownButton)
-	RaidCountdownButton:SetScript('OnClick', RU.OnClick_CountdownButton)
 
 	RU:CreateUtilButton('RaidUtility_ModeControl', RaidUtilityPanel, nil, BUTTON_WIDTH * 0.5, BUTTON_HEIGHT, 'TOPLEFT', RaidCountdownButton, 'TOPRIGHT', 5, 0, _G.CONVERT_TO_RAID, nil, buttonEvents, RU.OnEvent_ModeControl, RU.OnClick_ModeControl)
 

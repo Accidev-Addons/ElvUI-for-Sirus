@@ -216,10 +216,6 @@ function UF:PostUpdatePowerColor()
 
 		if not self.colorClass then
 			self:SetStatusBarColor(color[1], color[2], color[3])
-
-			if self.BG then
-				UF:UpdateBackdropTextureColor(self.BG, color[1], color[2], color[3])
-			end
 		end
 	end
 end

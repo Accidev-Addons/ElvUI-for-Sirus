@@ -9,7 +9,7 @@ Dependencies: LibStub, CallbackHandler-1.0
 License: LGPL v2.1
 ]]
 
-local MAJOR, MINOR = "LibSharedMedia-3.0", 3030002 -- 3.3.5 / increase manually on changes
+local MAJOR, MINOR = "LibSharedMedia-3.0", 3040003 -- 3.3.5 / increase manually on changes
 local lib = LibStub:NewLibrary(MAJOR, MINOR)
 
 if not lib then return end
@@ -18,6 +18,7 @@ local _G = getfenv(0)
 
 local pairs		= _G.pairs
 local type		= _G.type
+local next		= _G.next
 
 local band			= _G.bit.band
 local table_sort	= _G.table.sort
@@ -151,6 +152,8 @@ if not lib.MediaTable.sound then lib.MediaTable.sound = {} end
 lib.MediaTable.sound["None"]								= [[Interface\Quiet.ogg]] -- Relies on the fact that PlaySound[File] doesn't error on these values.
 lib.DefaultMedia.sound = "None"
 
+local mediaListUnsorted = {}
+
 local function rebuildMediaList(mediatype)
 	local mtable = mediaTable[mediatype]
 	if not mtable then return end
@@ -163,6 +166,7 @@ local function rebuildMediaList(mediatype)
 		mlist[i] = k
 	end
 	table_sort(mlist)
+	mediaListUnsorted[mediatype] = nil
 end
 
 function lib:Register(mediatype, key, data, langmask)
@@ -189,14 +193,22 @@ function lib:Register(mediatype, key, data, langmask)
 	if mtable[key] then return false end
 
 	mtable[key] = data
-	rebuildMediaList(mediatype)
+
+	local mlist = mediaList[mediatype]
+	if mlist then
+		mlist[#mlist + 1] = key
+		mediaListUnsorted[mediatype] = true
+	else
+		rebuildMediaList(mediatype)
+	end
+
 	self.callbacks:Fire("LibSharedMedia_Registered", mediatype, key)
 	return true
 end
 
 function lib:Fetch(mediatype, key, noDefault)
 	local mtt = mediaTable[mediatype]
-	local overridekey = overrideMedia[mediatype]
+	local overridekey = next(overrideMedia) and overrideMedia[mediatype]
 	local result = mtt and ((overridekey and mtt[overridekey] or mtt[key]) or (not noDefault and defaultMedia[mediatype] and mtt[defaultMedia[mediatype]])) or nil
 	return result ~= "" and result or nil
 end
@@ -215,6 +227,9 @@ function lib:List(mediatype)
 	end
 	if not mediaList[mediatype] then
 		rebuildMediaList(mediatype)
+	elseif mediaListUnsorted[mediatype] then
+		table_sort(mediaList[mediatype])
+		mediaListUnsorted[mediatype] = nil
 	end
 	return mediaList[mediatype]
 end

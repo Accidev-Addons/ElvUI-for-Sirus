@@ -1,7 +1,6 @@
 local E, L, V, P, G = unpack(ElvUI)
 local M = E:GetModule("Misc")
 local B = E:GetModule("Bags")
-local LC = E.Libs.Compat
 
 local _G = _G
 local next = next
@@ -26,9 +25,7 @@ local GetQuestItemInfo = GetQuestItemInfo
 local GetNumGuildMembers = GetNumGuildMembers
 local GetRaidRosterInfo = GetRaidRosterInfo
 local GetRepairAllCost = GetRepairAllCost
-local HasLFGRestrictions = HasLFGRestrictions
 local InCombatLockdown = InCombatLockdown
-local IsActiveBattlefieldArena = IsActiveBattlefieldArena
 local IsAddOnLoaded = IsAddOnLoaded
 local IsShiftKeyDown = IsShiftKeyDown
 local LeaveParty = LeaveParty
@@ -47,10 +44,10 @@ local GetFactionInfo = GetFactionInfo
 local ExpandAllFactionHeaders = ExpandAllFactionHeaders
 local SetWatchedFactionIndex = SetWatchedFactionIndex
 
-local IsInGroup = LC.IsInGroup
-local IsInRaid = LC.IsInRaid
-local GetNumGroupMembers = LC.GetNumGroupMembers
-local UnitIsGroupLeader = LC.UnitIsGroupLeader
+local IsInGroup = IsInGroup
+local IsInRaid = IsInRaid
+local GetNumGroupMembers = GetNumGroupMembers
+local IsRaidLeader, IsPartyLeader = IsRaidLeader, IsPartyLeader
 
 local ERR_GUILD_NOT_ENOUGH_MONEY = ERR_GUILD_NOT_ENOUGH_MONEY
 local ERR_NOT_ENOUGH_MONEY = ERR_NOT_ENOUGH_MONEY
@@ -87,34 +84,24 @@ do
 		local announce = spellName and (destGUID ~= E.myguid) and (sourceGUID == E.myguid or sourceGUID == UnitGUID('pet')) and strmatch(event, '_INTERRUPT')
 		if not announce then return end -- No announce-able interrupt from player or pet, exit.
 
-		local inRaid, inPartyLFG = IsInRaid(), HasLFGRestrictions()
+		local inRaid = IsInRaid()
 
 		--Skirmish/non-rated arenas need to use INSTANCE_CHAT but IsPartyLFG() returns 'false'
 		local _, instanceType = GetInstanceInfo()
 		if instanceType == 'arena' then
-			local isArena, isRegistered = IsActiveBattlefieldArena()
-			if isArena or not isRegistered then
-				inPartyLFG = true
-			end
-
 			inRaid = false --IsInRaid() returns true for arenas and they should not be considered a raid
 		end
 
-		local name, msg = destName or UNKNOWN
-		if E.locale == 'msMX' or E.locale == 'esES' or E.locale == 'ptBR' then -- name goes after
-			msg = format(INTERRUPT_MSG, spellID, spellName, name) or format(INTERRUPT_MSG, spellName, name)
-		else
-			msg = format(INTERRUPT_MSG, name, spellID, spellName) or format(INTERRUPT_MSG, name, spellName)
-		end
-
+		local name = destName or UNKNOWN
+		local msg = format(INTERRUPT_MSG, name, spellID, spellName)
 
 		local channel = E.db.general.interruptAnnounce
 		if channel == 'PARTY' then
-			SendChatMessage(msg, inPartyLFG and 'INSTANCE_CHAT' or 'PARTY')
+			SendChatMessage(msg, 'PARTY')
 		elseif channel == 'RAID' then
-			SendChatMessage(msg, inPartyLFG and 'INSTANCE_CHAT' or (inRaid and 'RAID' or 'PARTY'))
+			SendChatMessage(msg, inRaid and 'RAID' or 'PARTY')
 		elseif channel == 'RAID_ONLY' and inRaid then
-			SendChatMessage(msg, inPartyLFG and 'INSTANCE_CHAT' or 'RAID')
+			SendChatMessage(msg, 'RAID')
 		elseif channel == 'SAY' and instanceType ~= 'none' then
 			SendChatMessage(msg, 'SAY')
 		elseif channel == 'YELL' and instanceType ~= 'none' then
@@ -187,7 +174,6 @@ end
 
 function M:MERCHANT_CLOSED()
 	M:UnregisterEvent('UI_ERROR_MESSAGE')
-	M:UnregisterEvent('UPDATE_INVENTORY_DURABILITY')
 	M:UnregisterEvent('MERCHANT_CLOSED')
 end
 
@@ -221,7 +207,7 @@ function M:DisbandRaidGroup()
 				end
 			end
 		end
-	elseif not myIndex and UnitIsGroupLeader('player') then
+	elseif not myIndex and (IsInRaid() and IsRaidLeader() or IsPartyLeader()) then
 		for i = MAX_PARTY_MEMBERS, 1, -1 do
 			local name = UnitName('party'..i)
 			if name then
@@ -242,9 +228,10 @@ function M:PVPMessageEnhancement(_, msg)
 end
 
 function M:AutoInvite(_, leaderName)
-	if not E.db.general.autoAcceptInvite then return end
+	if not E.db.general.autoAcceptInvite or not leaderName then return end
 
-	if _G.MiniMapLFGFrame:IsShown() then return end
+	local queueButton = M:GetQueueStatusButton()
+	if queueButton and queueButton:IsShown() then return end
 	if IsInGroup() or IsInRaid() then return end
 
 	local numFriends = GetNumFriends()
@@ -282,7 +269,22 @@ end
 
 function M:ADDON_LOADED(_, addon)
 	if addon == 'Blizzard_InspectUI' then
-		M:SetupInspectPageInfo()
+		if M.worldEntered then
+			M:SetupInspectPageInfo()
+		else
+			M.pendingInspectSetup = true
+		end
+	end
+end
+
+function M:PLAYER_ENTERING_WORLD()
+	M.worldEntered = true
+
+	M:DelayTutorialFrames()
+
+	if M.pendingInspectSetup then
+		M.pendingInspectSetup = nil
+		E:Delay(0.1, M.SetupInspectPageInfo, M)
 	end
 end
 
@@ -319,6 +321,51 @@ function M:QUEST_COMPLETE()
 	end
 end
 
+function M:HideTutorialFrames()
+	local enabled = E.db.general.hideTutorialFrames
+	local pointer = _G.NPE_TutorialPointerFrame
+
+	if pointer then
+		if enabled and not M.TutorialPointerMethods then
+			M.TutorialPointerMethods = { Show = pointer.Show, Hide = pointer.Hide }
+			pointer.Show = E.noop
+			pointer.Hide = E.noop
+		elseif not enabled and M.TutorialPointerMethods then
+			pointer.Show = M.TutorialPointerMethods.Show
+			pointer.Hide = M.TutorialPointerMethods.Hide
+			M.TutorialPointerMethods = nil
+		end
+	end
+
+	if not enabled then return end
+
+	local helpTip = _G.HelpTip
+	if helpTip and helpTip.ForceHideAll then
+		helpTip:ForceHideAll()
+	end
+
+	local splash = _G.BattlePassSplashFrame
+	if splash and splash.IsShown and splash.Hide then
+		if splash:IsShown() then
+			splash:Hide()
+		end
+
+		if not M.BattlePassSplashHooked then
+			M.BattlePassSplashHooked = true
+
+			hooksecurefunc(splash, 'Show', function(frame)
+				if E.db.general.hideTutorialFrames then
+					frame:Hide()
+				end
+			end)
+		end
+	end
+end
+
+function M:DelayTutorialFrames()
+	E:Delay(2, M.HideTutorialFrames, M)
+end
+
 function M:Initialize()
 	M.Initialized = true
 
@@ -328,6 +375,7 @@ function M:Initialize()
 	M:LoadLoot()
 	M:ToggleItemLevelInfo(true)
 	M:ZoneTextToggle()
+	M:LoadQueueStatus()
 
 	M:RegisterEvent('MERCHANT_SHOW')
 	M:RegisterEvent('RESURRECT_REQUEST')
@@ -337,10 +385,12 @@ function M:Initialize()
 	M:RegisterEvent('CHAT_MSG_BG_SYSTEM_ALLIANCE', 'PVPMessageEnhancement')
 	M:RegisterEvent('CHAT_MSG_BG_SYSTEM_NEUTRAL', 'PVPMessageEnhancement')
 	M:RegisterEvent('PARTY_INVITE_REQUEST', 'AutoInvite')
-	M:RegisterEvent('RAID_ROSTER_UPDATE', 'AutoInvite')
 	M:RegisterEvent('COMBAT_TEXT_UPDATE')
 	M:RegisterEvent('QUEST_COMPLETE')
 	M:RegisterEvent('ADDON_LOADED')
+	M:RegisterEvent('PLAYER_ENTERING_WORLD')
+
+	M:DelayTutorialFrames()
 
 	for _, addon in next, { 'Blizzard_InspectUI' } do
 		if IsAddOnLoaded(addon) then
@@ -357,7 +407,9 @@ function M:Initialize()
 		MostValue.Icon = MostValue:CreateTexture(nil, 'OVERLAY')
 		MostValue.Icon:SetAllPoints(MostValue)
 		MostValue.Icon:SetTexture(E.Media.Textures.Coins)
-		MostValue.Icon:SetTexCoord(0.33, 0.66, 0.022, 0.66)
+		if not pcall(MostValue.Icon.SetTexCoord, MostValue.Icon, 0.33, 0.66, 0.022, 0.66) then
+			E:Delay(1, function() MostValue.Icon:SetTexCoord(0.33, 0.66, 0.022, 0.66) end)
+		end
 
 		M.QuestRewardGoldIconFrame = MostValue
 

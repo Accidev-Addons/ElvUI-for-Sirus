@@ -13,10 +13,7 @@ local UnitAura = UnitAura
 
 local addon = {}
 ns.oUF_RaidDebuffs = addon
-oUF_RaidDebuffs = ns.oUF_RaidDebuffs
-if not _G.oUF_RaidDebuffs then
-	_G.oUF_RaidDebuffs = addon
-end
+_G.oUF_RaidDebuffs = addon
 
 local debuff_data = {}
 addon.DebuffData = debuff_data
@@ -108,7 +105,7 @@ end
 
 local specChecked
 local function CheckSpec(self, event, levels)
-	if event == "CHARACTER_POINTS_CHANGED" and levels > 0 then return end
+	if event == "CHARACTER_POINTS_CHANGED" and (tonumber(levels) or 0) > 0 then return end
 
 	if not event then
 		if specChecked then return end
@@ -239,8 +236,8 @@ local function Update(self, event, unit)
 			--we couldn't dispell if the unit its charmed, or its not friendly
 			if addon.ShowDispellableDebuff and (element.showDispellableDebuff ~= false) and debuffType then
 				if addon.FilterDispellableDebuff then
-					DispellPriority[debuffType] = (DispellPriority[debuffType] or 0) + addon.priority --Make Dispell buffs on top of Boss Debuffs
-					priority = DispellFilter[debuffType] and DispellPriority[debuffType] or 0
+					--Make Dispell buffs on top of Boss Debuffs
+					priority = DispellFilter[debuffType] and ((DispellPriority[debuffType] or 0) + addon.priority) or 0
 
 					if priority == 0 then
 						debuffType = nil
@@ -279,12 +276,6 @@ local function Update(self, event, unit)
 	end
 
 	UpdateDebuff(self, _name, _icon, _count, _dtype, _duration, _endTime, _spellId, _stackThreshold)
-
-	--Reset the DispellPriority
-	DispellPriority["Magic"] = 4
-	DispellPriority["Curse"] = 3
-	DispellPriority["Disease"] = 2
-	DispellPriority["Poison"] = 1
 end
 
 local function Enable(self)

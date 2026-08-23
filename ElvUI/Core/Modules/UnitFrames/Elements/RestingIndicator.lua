@@ -11,7 +11,9 @@ local RestingTextures = {
 }
 
 function UF:Construct_RestingIndicator(frame)
-	return frame.RaisedElementParent.TextureParent:CreateTexture(nil, "OVERLAY")
+	local iconParent = CreateFrame("Frame", nil, frame)
+	iconParent:OffsetFrameLevel(20, frame.RaisedElementParent)
+	return iconParent:CreateTexture(nil, "OVERLAY")
 end
 
 function UF:Configure_RestingIndicator(frame)

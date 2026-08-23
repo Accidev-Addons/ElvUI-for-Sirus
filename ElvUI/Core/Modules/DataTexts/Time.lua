@@ -1,16 +1,18 @@
 local E, L, V, P, G = unpack(ElvUI)
 local DT = E:GetModule('DataTexts')
-local LC = E.Libs.Compat
 
 local _G = _G
 local next, unpack = next, unpack
 local format, strjoin = format, strjoin
 local wipe, sort, tinsert = wipe, sort, tinsert
-local utf8sub = string.utf8sub
+local utf8sub = utf8.sub
 
 local ToggleFrame = ToggleFrame
 local GetNumSavedInstances = GetNumSavedInstances
 local GetSavedInstanceInfo = GetSavedInstanceInfo
+local GetSavedInstanceInfoEx = _G.GetSavedInstanceInfoEx
+local EJ_GetInstanceInfo = _G.EJ_GetInstanceInfo
+local GetInstanceIDByMapID = _G.C_EncounterJournal and _G.C_EncounterJournal.GetInstanceIDByMapID
 local RequestRaidInfo = RequestRaidInfo
 local SecondsToTime = SecondsToTime
 local IsInInstance = IsInInstance
@@ -24,7 +26,6 @@ local WINTERGRASP_IN_PROGRESS = WINTERGRASP_IN_PROGRESS
 local APM = { _G.TIMEMANAGER_PM, _G.TIMEMANAGER_AM }
 local lockoutColorExtended = { r = 0.3, g = 1, b = 0.3 }
 local lockoutColorNormal = { r = .8, g = .8, b = .8 }
-local lockoutInfoFormat = '%s%s %s |cffaaaaaa(%s, %s/%s)'
 local lockoutInfoFormatNoEnc = '%s%s %s |cffaaaaaa(%s)'
 local formatBattleGroundInfo = '%s: '
 local enteredFrame = false
@@ -75,7 +76,31 @@ local function OnLeave()
 end
 
 local lfgIcon = [[Interface\LFGFrame\LFGIcon-]]
+local unknownIcon = [[|TInterface\Icons\INV_Misc_QuestionMark:20:20:0:0:64:64:4:60:4:60|t ]]
 local instanceIconByName = {}
+local instanceIconByMapID = {}
+
+local function GetInstanceIcon(index, name)
+	if GetSavedInstanceInfoEx and GetInstanceIDByMapID and EJ_GetInstanceInfo then
+		local mapID = GetSavedInstanceInfoEx(index)
+		if type(mapID) == 'number' then
+			local icon = instanceIconByMapID[mapID]
+			if icon == nil then
+				local instanceID = GetInstanceIDByMapID(mapID)
+				local smallImage = instanceID and select(6, EJ_GetInstanceInfo(instanceID))
+				icon = (smallImage and smallImage ~= '' and smallImage) or false
+				instanceIconByMapID[mapID] = icon
+			end
+
+			if icon then
+				return icon
+			end
+		end
+	end
+
+	return instanceIconByName[name]
+end
+
 local function GetInstanceImages(...)
 	local numTextures = select('#', ...) / 4
 
@@ -89,10 +114,9 @@ local function GetInstanceImages(...)
 	end
 end
 
-local krcntw = E.locale == 'koKR' or E.locale == 'zhCN' or E.locale == 'zhTW'
 local difficultyTag = { -- RNormal, Heroic
-	(krcntw and _G.PLAYER_DIFFICULTY1) or utf8sub(_G.PLAYER_DIFFICULTY1, 1, 1),	-- N
-	(krcntw and _G.PLAYER_DIFFICULTY2) or utf8sub(_G.PLAYER_DIFFICULTY2, 1, 1),	-- H
+	utf8sub(_G.PLAYER_DIFFICULTY1, 1, 1),	-- N
+	utf8sub(_G.PLAYER_DIFFICULTY2, 1, 1),	-- H
 }
 
 local function sortFunc(a,b) return a[1] < b[1] end
@@ -114,7 +138,6 @@ local function OnEnter()
 		collectedInstanceImages = true
 	end
 
-	local addedHeader = false
 	local startTime = _G.GetWintergraspWaitTime()
 	local _, instanceType = IsInInstance()
 
@@ -127,11 +150,7 @@ local function OnEnter()
 	end
 
 	if _G.WintergraspTimer.canQueue and startTime ~= 0 then
-		if not addedHeader then
-			DT.tooltip:AddLine(VOICE_CHAT_BATTLEGROUND)
-			addedHeader = true
-		end
-
+		DT.tooltip:AddLine(VOICE_CHAT_BATTLEGROUND)
 		DT.tooltip:AddDoubleLine(format(formatBattleGroundInfo, L["Wintergrasp"]), startTime, 1, 1, 1, lockoutColorNormal.r, lockoutColorNormal.g, lockoutColorNormal.b)
 	end
 
@@ -145,8 +164,9 @@ local function OnEnter()
 			local isDungeon = difficulty == 2
 			if isRaid or isDungeon then
 				local sortName = name..difficulty
-				local difficultyLetter = difficultyTag[difficulty]
-				local buttonImg = instanceIconByName[name] and format('|T%s:20:20:0:0:96:96:0:64:0:64|t ', instanceIconByName[name]) or ''
+				local difficultyLetter = difficultyTag[difficulty] or ''
+				local icon = GetInstanceIcon(i, name)
+				local buttonImg = icon and format('|T%s:20:20:0:0:96:96:0:64:0:64|t ', icon) or unknownIcon
 
 				tinsert(lockedInstances[isRaid and 'raids' or 'dungeons'], { sortName, difficultyLetter, buttonImg, info })
 			end
@@ -180,14 +200,10 @@ local function OnEnter()
 
 		for _, info in next, lockedInstances.dungeons do
 			local difficultyLetter, buttonImg = info[2], info[3]
-			local name, _, reset, _, _, extended, _, _, maxPlayers, _, numEncounters, encounterProgress = unpack(info[4])
+			local name, _, reset, _, _, extended, _, _, maxPlayers = unpack(info[4])
 
 			local lockoutColor = extended and lockoutColorExtended or lockoutColorNormal
-			if numEncounters and numEncounters > 0 and (encounterProgress and encounterProgress > 0) then
-				DT.tooltip:AddDoubleLine(format(lockoutInfoFormat, buttonImg, maxPlayers, difficultyLetter, name, encounterProgress, numEncounters), ToTime(reset), 1, 1, 1, lockoutColor.r, lockoutColor.g, lockoutColor.b)
-			else
-				DT.tooltip:AddDoubleLine(format(lockoutInfoFormatNoEnc, buttonImg, maxPlayers, difficultyLetter, name), ToTime(reset), 1, 1, 1, lockoutColor.r, lockoutColor.g, lockoutColor.b)
-			end
+			DT.tooltip:AddDoubleLine(format(lockoutInfoFormatNoEnc, buttonImg, maxPlayers, difficultyLetter, name), ToTime(reset), 1, 1, 1, lockoutColor.r, lockoutColor.g, lockoutColor.b)
 		end
 	end
 
@@ -206,7 +222,7 @@ local function OnEnter()
 end
 
 local function OnEvent(self, event)
-	if event == 'LOADING_SCREEN_ENABLED' and enteredFrame then
+	if event == 'PLAYER_LEAVING_WORLD' and enteredFrame then
 		OnLeave()
 	elseif event == 'UPDATE_INSTANCE_INFO' and enteredFrame then
 		OnEnter(self)
@@ -249,4 +265,4 @@ local function ApplySettings(self, hex)
 	OnUpdate(self, 20000)
 end
 
-DT:RegisterDatatext('Time', nil, { 'UPDATE_INSTANCE_INFO', 'LOADING_SCREEN_ENABLED' }, OnEvent, OnUpdate, OnClick, OnEnter, OnLeave, nil, nil, ApplySettings)
+DT:RegisterDatatext('Time', nil, { 'UPDATE_INSTANCE_INFO', 'PLAYER_LEAVING_WORLD' }, OnEvent, OnUpdate, OnClick, OnEnter, OnLeave, L["Time"], nil, ApplySettings)

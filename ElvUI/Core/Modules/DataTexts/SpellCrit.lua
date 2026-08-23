@@ -6,7 +6,7 @@ local min = min
 local strjoin = strjoin
 local GetSpellCritChance = GetSpellCritChance
 
-local MAX_SPELL_SCHOOLS = MAX_SPELL_SCHOOLS or 7
+local MAX_SPELL_SCHOOLS = MAX_SPELL_SCHOOLS
 local CRIT_ABBR = CRIT_ABBR
 
 local displayString, db = ''
@@ -48,4 +48,4 @@ local function ApplySettings(self, hex)
 	displayString = strjoin('', '%s: ', hex, '%.2f%%|r')
 end
 
-DT:RegisterDatatext('Spell Crit Chance', L["Enhancements"], { 'UNIT_STATS', 'UNIT_AURA', 'PLAYER_DAMAGE_DONE_MODS' }, OnEvent, nil, nil, OnEnter, nil, nil, nil, ApplySettings)
+DT:RegisterDatatext('Spell Crit Chance', L["Enhancements"], { 'UNIT_STATS', 'UNIT_AURA', 'PLAYER_DAMAGE_DONE_MODS' }, OnEvent, nil, nil, OnEnter, nil, L["Spell Crit Chance"], nil, ApplySettings)

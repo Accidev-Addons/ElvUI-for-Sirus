@@ -1,12 +1,11 @@
 local E, L, V, P, G = unpack(ElvUI)
 local DB = E:GetModule("DataBars")
-local LC = E.Libs.Compat
 
 local _G = _G
 local format = format
 local HasPetUI = HasPetUI
 local UnitLevel = UnitLevel
-local IsLevelAtEffectiveMaxLevel = LC.IsLevelAtEffectiveMaxLevel
+local IsLevelAtEffectiveMaxLevel = IsLevelAtEffectiveMaxLevel
 local GetPetExperience = GetPetExperience
 local GameTooltip = GameTooltip
 
@@ -69,8 +68,6 @@ function DB:PetExperienceBar_OnEnter()
 	GameTooltip:Show()
 end
 
-function DB:PetExperienceBar_OnClick() end
-
 function DB:PetExperienceBar_Toggle()
 	local bar = DB.StatusBars.PetExperience
 	bar.db = DB.db.petExperience
@@ -87,7 +84,7 @@ function DB:PetExperienceBar_Toggle()
 end
 
 function DB:PetExperienceBar()
-	local PetExperience = DB:CreateBar('ElvUI_PetExperienceBar', 'PetExperience', DB.PetExperienceBar_Update, DB.PetExperienceBar_OnEnter, DB.PetExperienceBar_OnClick, {'LEFT', _G.LeftChatPanel, 'RIGHT', -E.Border + E.Spacing * 3, 0})
+	local PetExperience = DB:CreateBar('ElvUI_PetExperienceBar', 'PetExperience', DB.PetExperienceBar_Update, DB.PetExperienceBar_OnEnter, nil, {'LEFT', _G.LeftChatPanel, 'RIGHT', -E.Border + E.Spacing * 3, 0})
 	DB:CreateBarBubbles(PetExperience)
 
 	PetExperience.ShouldHide = function()

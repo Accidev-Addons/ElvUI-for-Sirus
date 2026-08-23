@@ -53,8 +53,6 @@ local function ApplySettings(self, hex)
 	end
 
 	displayString = strjoin('', db.NoLabel and '' or '%s', hex, '%.'..db.decimalLength..'f%%|r')
-
-	OnEvent(self)
 end
 
 DT:RegisterDatatext('Crit', L["Enhancements"], { 'UNIT_STATS', 'UNIT_AURA', 'PLAYER_DAMAGE_DONE_MODS'}, OnEvent, nil, nil, OnEnter, nil, MELEE_CRIT_CHANCE, nil, ApplySettings)

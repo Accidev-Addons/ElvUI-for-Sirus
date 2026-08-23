@@ -9,7 +9,7 @@ local B = E:GetModule('Bags')
 local _G = _G
 local pairs, type, unpack, assert = pairs, type, unpack, assert
 local tremove, tContains, tinsert, wipe = tremove, tContains, tinsert, wipe
-local format, error, ipairs, ceil = format, error, ipairs, ceil
+local format, ipairs, ceil = format, ipairs, ceil
 
 local CreateFrame = CreateFrame
 local DeleteCursorItem = DeleteCursorItem
@@ -146,13 +146,13 @@ E.PopupDialogs.TUKUI_ELVUI_INCOMPATIBLE = {
 	text = L["Oh lord, you have got ElvUI and Tukui both enabled at the same time. Select an addon to disable."],
 	OnAccept = function()
 		for addon in next, E.Status_Addons do
-			DisableAddOn(addon, E.myguid)
+			DisableAddOn(addon, E.myname)
 		end
 
 		ReloadUI()
 	end,
 	OnCancel = function()
-		DisableAddOn('Tukui', E.myguid)
+		DisableAddOn('Tukui', E.myname)
 		ReloadUI()
 	end,
 	button1 = 'ElvUI',
@@ -202,38 +202,11 @@ E.PopupDialogs.CONFIG_RL = {
 	hideOnEscape = false,
 }
 
-E.PopupDialogs.GLOBAL_RL = {
-	text = L["One or more of the changes you have made will effect all characters using this addon. You will have to reload the user interface to see the changes you have made."],
-	button1 = ACCEPT,
-	button2 = CANCEL,
-	OnAccept = ReloadUI,
-	whileDead = 1,
-	hideOnEscape = false,
-}
-
 E.PopupDialogs.PRIVATE_RL = {
 	text = L["A setting you have changed will change an option for this character only. This setting that you have changed will be uneffected by changing user profiles. Changing this setting requires that you reload your User Interface."],
 	button1 = ACCEPT,
 	button2 = CANCEL,
 	OnAccept = ReloadUI,
-	whileDead = 1,
-	hideOnEscape = false,
-}
-
-E.PopupDialogs.RESET_ALL_FILTERS = {
-	text = L["Accepting this will reset all filters to default. Are you sure?"],
-	button1 = ACCEPT,
-	button2 = CANCEL,
-	OnAccept = function()
-		UF:ResetFilters()
-
-		if E:Config_GetWindow() then
-			E:RefreshGUI()
-		end
-
-		UF:Update_AllFrames()
-		NP:ConfigureAll()
-	end,
 	whileDead = 1,
 	hideOnEscape = false,
 }
@@ -278,6 +251,17 @@ E.PopupDialogs.RESET_NP_AF = {
 	hideOnEscape = false,
 }
 
+E.PopupDialogs.RESET_UF_AF = {
+	text = L["Accepting this will reset your Filter Priority lists for all auras on UnitFrames. Are you sure?"],
+	button1 = ACCEPT,
+	button2 = CANCEL,
+	OnAccept = function()
+		UF:ResetAuraPriority()
+	end,
+	whileDead = 1,
+	hideOnEscape = false,
+}
+
 E.PopupDialogs.BUY_BANK_SLOT = {
 	text = CONFIRM_BUY_BANK_SLOT,
 	button1 = YES,
@@ -292,12 +276,6 @@ E.PopupDialogs.BUY_BANK_SLOT = {
 
 E.PopupDialogs.CANNOT_BUY_BANK_SLOT = {
 	text = L["Can't buy anymore slots!"],
-	button1 = ACCEPT,
-	whileDead = 1,
-}
-
-E.PopupDialogs.NO_BANK_BAGS = {
-	text = L["You must purchase a bank slot first!"],
 	button1 = ACCEPT,
 	whileDead = 1,
 }
@@ -318,13 +296,6 @@ E.PopupDialogs.DISBAND_RAID = {
 	button2 = CANCEL,
 	OnAccept = function() M:DisbandRaidGroup() end,
 	whileDead = 1,
-}
-
-E.PopupDialogs.CONFIRM_LOOT_DISTRIBUTION = {
-	text = CONFIRM_LOOT_DISTRIBUTION,
-	button1 = YES,
-	button2 = NO,
-	hideOnEscape = 1,
 }
 
 E.PopupDialogs.RESET_PROFILE_PROMPT = {
@@ -414,8 +385,14 @@ E.PopupDialogs.PICKUP_MONEY = {
 	end,
 	EditBoxOnEnterPressed = function(self)
 		local parent = self:GetParent():GetParent()
-		PickupPlayerMoney(_G[parent:GetName()..'MoneyInputFrame'])
-		parent:Hide();
+		local moneyInput = MoneyInputFrame_GetCopper(_G[parent:GetName()..'MoneyInputFrame'])
+		if moneyInput > GetMoney() then
+			UIErrorsFrame:AddMessage(ERR_NOT_ENOUGH_MONEY, 1.0, 0.1, 0.1, 1.0)
+		else
+			PickupPlayerMoney(moneyInput)
+		end
+
+		parent:Hide()
 	end,
 	hasMoneyInputFrame = 1,
 	timeout = 0,
@@ -516,14 +493,6 @@ end
 function E:StaticPopupSpecial_Hide(frame)
 	frame:Hide()
 	E:StaticPopup_CollapseTable()
-end
-
-function E:StaticPopupSpecial_Toggle(frame)
-	if frame:IsShown() then
-		E:StaticPopupSpecial_Hide(frame)
-	else
-		E:StaticPopupSpecial_Show(frame)
-	end
 end
 
 --Used to figure out if we can resize a frame
@@ -795,9 +764,7 @@ function E:StaticPopup_Resize(dialog, which)
 	local maxWidthSoFar = dialog.maxWidthSoFar or 0
 	local width = 320
 
-	if dialog.numButtons == 4 then
-		width = 574
-	elseif dialog.numButtons == 3 then
+	if dialog.numButtons == 3 then
 		width = 440
 	elseif info.showAlert or info.showAlertGear or info.closeButton then
 		width = 420 -- Widen
@@ -1075,7 +1042,6 @@ function E:StaticPopup_Show(which, text_arg1, text_arg2, data, insertedFrame)
 	local button1 = _G[dialogName..'Button1']
 	local button2 = _G[dialogName..'Button2']
 	local button3 = _G[dialogName..'Button3']
-	local button4 = _G[dialogName..'Button4']
 
 	-- Show or hide the alert icon
 	local alertIcon = dialog.alertIcon or _G[dialogName..'AlertIcon']
@@ -1124,7 +1090,6 @@ function E:StaticPopup_Show(which, text_arg1, text_arg2, data, insertedFrame)
 		tinsert(tempButtonLocs, button1)
 		tinsert(tempButtonLocs, button2)
 		tinsert(tempButtonLocs, button3)
-		tinsert(tempButtonLocs, button4)
 
 		for i = #tempButtonLocs, 1, -1 do
 			local tempButtonLoc = tempButtonLocs[i]
@@ -1146,9 +1111,7 @@ function E:StaticPopup_Show(which, text_arg1, text_arg2, data, insertedFrame)
 		local numButtons = #tempButtonLocs
 		dialog.numButtons = numButtons
 
-		if numButtons == 4 then
-			tempButtonLocs[1]:Point('BOTTOMRIGHT', dialog, 'BOTTOM', -139, 16);
-		elseif numButtons == 3 then
+		if numButtons == 3 then
 			tempButtonLocs[1]:Point('BOTTOMRIGHT', dialog, 'BOTTOM', -72, 16)
 		elseif numButtons == 2 then
 			tempButtonLocs[1]:Point('BOTTOMRIGHT', dialog, 'BOTTOM', -6, 16)
@@ -1225,60 +1188,6 @@ function E:StaticPopup_CheckButtonOnClick()
 	end
 end
 
--- Static popup secure buttons
-local SecureButtons = {}
-local SecureOnEnter = function(s) s.text:SetTextColor(1, 1, 1) end
-local SecureOnLeave = function(s) s.text:SetTextColor(1, 0.2, 0.2) end
-function E:StaticPopup_CreateSecureButton(popup, button, text, attributes)
-	local btn = CreateFrame('Button', nil, popup, 'SecureActionButtonTemplate')
-	btn:RegisterForClicks('AnyUp', 'AnyDown')
-	btn:SetAllPoints(button)
-	btn:Size(button:GetSize())
-	btn:HookScript('OnEnter', SecureOnEnter)
-	btn:HookScript('OnLeave', SecureOnLeave)
-	S:HandleButton(btn)
-
-	for key, value in next, attributes do
-		btn:SetAttribute(key, value)
-	end
-
-	local txt = btn:CreateFontString(nil, 'OVERLAY')
-	txt:Point('CENTER', 0, 1)
-	txt:FontTemplate(nil, nil, 'SHADOW')
-	txt:SetJustifyH('CENTER')
-	txt:SetText(text)
-
-	btn.text = txt
-	btn:SetFontString(txt)
-	btn:SetTemplate(nil, true)
-
-	SecureOnLeave(btn)
-
-	return btn
-end
-
-function E:StaticPopup_GetAllSecureButtons()
-	return SecureButtons
-end
-
-function E:StaticPopup_GetSecureButton(which)
-	return SecureButtons[which]
-end
-
-function E:StaticPopup_PositionSecureButton(popup, popupButton, secureButton)
-	secureButton:SetParent(popup)
-	secureButton:SetAllPoints(popupButton)
-	secureButton:Size(popupButton:GetSize())
-end
-
-function E:StaticPopup_SetSecureButton(which, btn)
-	if SecureButtons[which] then
-		error('A secure StaticPopup Button called `'..which..'` already exists.')
-	end
-
-	SecureButtons[which] = btn
-end
-
 function E:StaticPopup_HandleButton(button)
 	if not button then return end
 
@@ -1311,6 +1220,7 @@ function E:StaticPopup_OnLoad(popup)
 	popup.moneyFrame = E:StaticPopup_GetElement(popup, 'MoneyFrame')
 	popup.moneyInputFrame = E:StaticPopup_GetElement(popup, 'MoneyInputFrame')
 	popup.closeButton = E:StaticPopup_GetElement(popup, 'CloseButton')
+	popup.checkButton = E:StaticPopup_GetElement(popup, 'CheckButton')
 
 	local i = 1
 	local button = E:StaticPopup_GetElement(popup, 'Button'..i)
@@ -1380,24 +1290,31 @@ function E:LoadStaticPopups()
 
 		if not popup.checkButton then
 			popup.checkButton = CreateFrame('CheckButton', name..'CheckButton', popup, 'UICheckButtonTemplate')
-			popup.checkButton:SetScript('OnClick', E.StaticPopup_CheckButtonOnClick)
-			popup.checkButton:Size(24)
+		end
 
-			if not E.OtherAddons.Tukui then
-				S:HandleCheckBox(popup.checkButton)
-			end
+		popup.checkButton:SetScript('OnClick', E.StaticPopup_CheckButtonOnClick)
+		popup.checkButton:Size(24)
 
-			popup.checkButtonText = _G[name..'CheckButtonText']
+		if not E.OtherAddons.Tukui then
+			S:HandleCheckBox(popup.checkButton)
+		end
 
-			if popup.checkButtonText then
-				popup.checkButtonText:Point('LEFT', popup.checkButton, 'RIGHT', 4, 1)
-				popup.checkButtonText:FontTemplate(nil, nil, 'SHADOW')
-				popup.checkButtonText:SetTextColor(1,0.17,0.26)
-			end
+		popup.checkButtonText = popup.checkButton.ButtonText or popup.checkButton.Text or _G[name..'CheckButtonText']
+
+		if popup.checkButtonText then
+			popup.checkButtonText:ClearAllPoints()
+			popup.checkButtonText:Point('LEFT', popup.checkButton, 'RIGHT', 4, 1)
+			popup.checkButtonText:FontTemplate(nil, nil, 'SHADOW')
+			popup.checkButtonText:SetTextColor(1,0.17,0.26)
 		end
 
 		if popup.Border then
 			popup.Border:StripTextures()
+		end
+
+		-- df ui arena replay block, shown by default with placeholder text
+		if popup.ReplayInfoFrame then
+			popup.ReplayInfoFrame:Hide()
 		end
 
 		local extraButton = popup.extraButton

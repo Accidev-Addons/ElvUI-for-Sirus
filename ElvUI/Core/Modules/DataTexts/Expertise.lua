@@ -8,10 +8,7 @@ local GetExpertise = GetExpertise
 local GetCombatRating = GetCombatRating
 local GetCombatRatingBonus = GetCombatRatingBonus
 local GetExpertisePercent = GetExpertisePercent
-local GetInventoryItemLink = GetInventoryItemLink
-local GetInventorySlotInfo = GetInventorySlotInfo
-local GetSpellInfo = GetSpellInfo
-local IsUsableSpell = IsUsableSpell
+local OffhandHasWeapon = OffhandHasWeapon
 
 local CR_EXPERTISE_TOOLTIP = CR_EXPERTISE_TOOLTIP
 local STAT_EXPERTISE = STAT_EXPERTISE
@@ -22,16 +19,7 @@ local expertisePercent, offhandExpertisePercent = 0, 0
 local expertiseRating, expertiseBonusRating = 0, 0
 local expertise, offhandExpertise = 0, 0
 
-local function IsDualWielding()
-	local mainHandLink = GetInventoryItemLink('player', GetInventorySlotInfo('MAINHANDSLOT'))
-	local offHandLink = GetInventoryItemLink('player', GetInventorySlotInfo('SECONDARYHANDSLOT'))
-
-	if IsUsableSpell(GetSpellInfo(674)) and (mainHandLink and offHandLink) then
-		return true
-	else
-		return false
-	end
-end
+local IsDualWielding = OffhandHasWeapon
 
 local function OnEvent(self)
 	expertise, offhandExpertise = GetExpertise()

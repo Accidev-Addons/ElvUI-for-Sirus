@@ -5,6 +5,7 @@ local B = E:GetModule('Bags')
 local select, wipe = select, wipe
 local format, strjoin = format, strjoin
 
+local C_Item_GetItemInfo = C_Item.GetItemInfo
 local GetAuctionItemSubClasses = GetAuctionItemSubClasses
 local GetItemInfo = GetItemInfo
 local GetItemCount = GetItemCount
@@ -22,8 +23,7 @@ local INVSLOT_AMMO = INVSLOT_AMMO
 local NOT_APPLICABLE = NOT_APPLICABLE
 local CURRENTLY_EQUIPPED = CURRENTLY_EQUIPPED
 
-local QUIVER = select(1, GetAuctionItemSubClasses(8))
-local POUCH = select(2, GetAuctionItemSubClasses(8))
+local ItemClass_Quiver = 11
 local SOULBAG = select(2, GetAuctionItemSubClasses(3))
 
 local iconString = '|T%s:24:24:0:0:64:64:4:55:4:55|t'
@@ -45,6 +45,10 @@ local function OnEvent(self, event, ...)
 		end
 
 		self:UnregisterEvent('GET_ITEM_INFO_RECEIVED')
+
+		if self.UnregisterCustomEvent then
+			pcall(self.UnregisterCustomEvent, self, 'GET_ITEM_INFO_RECEIVED')
+		end
 	end
 
 	if E.myclass == 'WARLOCK' then
@@ -82,16 +86,19 @@ local function OnEvent(self, event, ...)
 
 	if not name then
 		waitingItemID = itemID
-		self:RegisterEvent('GET_ITEM_INFO_RECEIVED')
+
+		if self.RegisterCustomEvent and not self:IsEventRegistered('GET_ITEM_INFO_RECEIVED') then
+			pcall(self.RegisterCustomEvent, self, 'GET_ITEM_INFO_RECEIVED')
+		end
 	end
 end
 
 local itemCount = {}
-local totalItemCount = 0
 local function OnEnter()
 	DT.tooltip:ClearLines()
 
 	if E.myclass == 'HUNTER' or E.myclass == 'ROGUE' or E.myclass == 'WARRIOR' then
+		local totalItemCount = 0
 		wipe(itemCount)
 		DT.tooltip:AddLine(INVTYPE_AMMO)
 
@@ -99,10 +106,9 @@ local function OnEnter()
 			for slotIndex = 1, GetContainerNumSlots(containerIndex) do
 				local info = B:GetContainerItemInfo(containerIndex, slotIndex)
 				if info and info.itemID and not itemCount[info.itemID] then
-					local name, _, quality, _, _, _, _, _, equipLoc, texture = GetItemInfo(info.hyperlink)
 					local count = GetItemCount(info.itemID)
-					if equipLoc == 'INVTYPE_AMMO' or equipLoc == 'INVTYPE_THROWN' then
-						DT.tooltip:AddDoubleLine(strjoin('', format(iconString, texture), ' ', name), count, E:GetItemQualityColor(quality))
+					if info.itemEquipLoc == 'INVTYPE_AMMO' or info.itemEquipLoc == 'INVTYPE_THROWN' then
+						DT.tooltip:AddDoubleLine(strjoin('', format(iconString, info.iconFileID), ' ', info.name), count, E:GetItemQualityColor(info.quality))
 						itemCount[info.itemID] = count
 						totalItemCount = totalItemCount + 1
 					end
@@ -130,8 +136,8 @@ local function OnEnter()
 	for i = 1, NUM_BAG_SLOTS do
 		local itemID = GetInventoryItemID('player', ContainerIDToInventoryID(i))
 		if itemID then
-			local name, _, quality, _, _, itemType, itemSubType, _, _, texture = GetItemInfo(itemID)
-			if (itemSubType == QUIVER or itemSubType == POUCH or itemSubType == SOULBAG) or (itemType == 'Container' and (itemSubType == QUIVER or itemSubType == POUCH or itemSubType == SOULBAG)) then
+			local name, _, quality, _, _, _, itemSubType, _, _, texture, _, _, classID = C_Item_GetItemInfo(itemID)
+			if classID == ItemClass_Quiver or itemSubType == SOULBAG then
 				local free, total = GetContainerNumFreeSlots(i), GetContainerNumSlots(i)
 				local used = total - free
 
@@ -150,8 +156,8 @@ local function OnClick(_, btn)
 			for i = 1, NUM_BAG_SLOTS do
 				local itemID = GetInventoryItemID('player', ContainerIDToInventoryID(i))
 				if itemID then
-					local itemType, itemSubType = select(6, GetItemInfo(itemID))
-					if (itemSubType == QUIVER or itemSubType == POUCH or itemSubType == SOULBAG) or (itemType == 'Container' and (itemSubType == QUIVER or itemSubType == POUCH or itemSubType == SOULBAG)) then
+					local _, _, _, _, _, _, itemSubType, _, _, _, _, _, classID = C_Item_GetItemInfo(itemID)
+					if classID == ItemClass_Quiver or itemSubType == SOULBAG then
 						_G.ToggleBag(i)
 					end
 				end

@@ -2,11 +2,10 @@ local E, L, V, P, G = unpack(ElvUI)
 local DB = E:GetModule("DataBars")
 local LSM = E.Libs.LSM
 
-local unpack, select = unpack, select
+local unpack = unpack
 local pairs, ipairs = pairs, ipairs
 
 local CreateFrame = CreateFrame
-local GetInstanceInfo = GetInstanceInfo
 local UnitAffectingCombat = UnitAffectingCombat
 
 local function SetStatusBarTexture(bar, texture)
@@ -50,7 +49,6 @@ function DB:CreateBar(name, key, updateFunc, onEnter, onClick, points)
 	bar.holder = holder
 	bar.Update = updateFunc
 
-	E.FrameLocks[holder] = true
 	DB.StatusBars[key] = bar
 
 	return bar
@@ -144,8 +142,7 @@ function DB:SetVisibility(bar)
 		bar:SetShown(bar.showBar)
 		bar.holder:SetShown(bar.showBar)
 	elseif bar.db.enable then
-		local hideBar = (bar == DB.StatusBars.Threat or bar.db.hideInCombat) and UnitAffectingCombat("player")
-		or (bar.db.hideOutsidePvP and (select(2, GetInstanceInfo()) ~= "pvp"))
+		local hideBar = (bar.db.hideInCombat and UnitAffectingCombat("player"))
 		or (bar.ShouldHide and bar:ShouldHide())
 
 		bar:SetShown(not hideBar)
@@ -166,6 +163,7 @@ function DB:ToggleAll()
 	DB:ExperienceBar_Toggle()
 	DB:ReputationBar_Toggle()
 	DB:ThreatBar_Toggle()
+	DB:HonorBar_Toggle()
 
 	if E.myclass == "HUNTER" then
 		DB:PetExperienceBar_Toggle()
@@ -176,6 +174,7 @@ function DB:CreateAll()
 	DB:ExperienceBar()
 	DB:ReputationBar()
 	DB:ThreatBar()
+	DB:HonorBar()
 
 	if E.myclass == "HUNTER" then
 		DB:PetExperienceBar()
@@ -195,7 +194,6 @@ function DB:Initialize()
 	DB:RegisterEvent("PLAYER_ENTERING_WORLD", "HandleVisibility")
 	DB:RegisterEvent("PLAYER_REGEN_DISABLED", "HandleVisibility")
 	DB:RegisterEvent("PLAYER_REGEN_ENABLED", "HandleVisibility")
-	DB:RegisterEvent("PVP_TIMER_UPDATE", "HandleVisibility")
 end
 
 E:RegisterModule(DB:GetName())

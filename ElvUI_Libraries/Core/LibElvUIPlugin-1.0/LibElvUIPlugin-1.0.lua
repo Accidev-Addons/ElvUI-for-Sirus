@@ -44,7 +44,7 @@ local IsInInstance = IsInInstance
 local SendAddonMessage = SendAddonMessage
 local UNKNOWN = UNKNOWN
 
-lib.prefix = "ElvUIPluginVC"
+lib.prefix = "ElvUIPluginVC9"
 lib.plugins = {}
 lib.groupSize = 0
 lib.index = 0

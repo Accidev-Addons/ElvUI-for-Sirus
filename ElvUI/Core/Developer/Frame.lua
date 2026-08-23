@@ -13,11 +13,8 @@ local UIParentLoadAddOn = UIParentLoadAddOn
 -- GLOBALS: ElvUI_CPU, ElvUI
 
 local function GetName(frame, text)
-	if frame.GetName then
-		return frame:GetName()
-	else
-		return text or 'nil'
-	end
+	local name = frame.GetName and frame:GetName()
+	return name or text or 'nil'
 end
 
 local function IsTrue(value)

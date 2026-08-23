@@ -2,13 +2,14 @@ local E, L, V, P, G = unpack(ElvUI)
 local DT = E:GetModule('DataTexts')
 
 local format, strjoin, abs = format, strjoin, abs
+local select = select
 
 local GetBlockChance = GetBlockChance
 local GetBonusBarOffset = GetBonusBarOffset
 local GetDodgeChance = GetDodgeChance
 local GetInventoryItemID = GetInventoryItemID
 local GetInventorySlotInfo = GetInventorySlotInfo
-local GetItemInfo = GetItemInfo
+local GetItemInfoInstant = GetItemInfoInstant
 local GetParryChance = GetParryChance
 local UnitLevel = UnitLevel
 local UnitExists = UnitExists
@@ -17,21 +18,20 @@ local UnitDefense = UnitDefense
 local BOSS = BOSS
 local BLOCK_CHANCE = BLOCK_CHANCE
 local DODGE_CHANCE = DODGE_CHANCE
-local MISS_CHANCE = MISS_CHANCE
+local MISS_CHANCE = MISS
 local PARRY_CHANCE = PARRY_CHANCE
 local DEFENSE  = DEFENSE
 
 local displayString, targetlv, playerlv, db
 local basemisschance, misschance, baseDef, armorDef, leveldifference, dodge, parry, block, unhittable
-local AVD_DECAY_RATE, chanceString = .2, '%.2f%%'	--According to Light's Club discord, avoidance decay should be 0.2% per level per avoidance (thus 102.4 for +3 crush cap)
+local AVD_DECAY_RATE, chanceString = .2, '%.2f%%'
 
 local function IsWearingShield()
 	local slotID = GetInventorySlotInfo('SecondaryHandSlot')
 	local itemID = GetInventoryItemID('player', slotID)
 
 	if itemID then
-		local _, _, _, _, _, _, _, _, itemEquipLoc = GetItemInfo(itemID)
-		return itemEquipLoc == 'INVTYPE_SHIELD'
+		return select(4, GetItemInfoInstant(itemID)) == 'INVTYPE_SHIELD'
 	end
 end
 
@@ -51,7 +51,7 @@ local function OnEvent(self)
 	end
 	if not UnitExists('target') then --If there's no target, we'll assume we're talking about a lvl +3 boss. You can click yourself to see against your level.
 		leveldifference = 3
-		targetlv = 73
+		targetlv = -1
 	end
 	if leveldifference >= 0 then
 		dodge = (GetDodgeChance() - leveldifference * AVD_DECAY_RATE)

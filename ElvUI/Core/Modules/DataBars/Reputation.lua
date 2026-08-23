@@ -30,7 +30,9 @@ local function GetValues(currentStanding, currentReactionThreshold, nextReaction
 	end
 end
 
-function DB:ReputationBar_Update()
+function DB:ReputationBar_Update(event, messagetype)
+	if event == 'COMBAT_TEXT_UPDATE' and messagetype ~= 'FACTION' then return end
+
 	local bar = DB.StatusBars.Reputation
 	DB:SetVisibility(bar)
 

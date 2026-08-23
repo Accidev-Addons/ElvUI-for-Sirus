@@ -1,9 +1,7 @@
 local E, L, V, P, G = unpack(ElvUI)
 local S = E:GetModule("Skins")
 
---Lua functions
 local format, split = string.format, string.split
---WoW API / Variables
 local FauxScrollFrame_GetOffset = FauxScrollFrame_GetOffset
 local GetBattlefieldScore = GetBattlefieldScore
 local IsActiveBattlefieldArena = IsActiveBattlefieldArena
@@ -23,7 +21,7 @@ S:AddCallback("Skin_WorldStateScore", function()
 	S:HandleCloseButton(WorldStateScoreFrameCloseButton, WorldStateScoreFrame.backdrop)
 
 	WorldStateScoreScrollFrame:StripTextures()
-	S:HandleScrollBar(WorldStateScoreScrollFrameScrollBar)
+	S:HandleSirusScrollBar(WorldStateScoreScrollFrameScrollBar)
 
 	WorldStateScoreFrameKB:StyleButton()
 	WorldStateScoreFrameDeaths:StyleButton()
@@ -32,15 +30,16 @@ S:AddCallback("Skin_WorldStateScore", function()
 	WorldStateScoreFrameHealingDone:StyleButton()
 	WorldStateScoreFrameHonorGained:StyleButton()
 	WorldStateScoreFrameName:StyleButton()
-	WorldStateScoreFrameClass:StyleButton()
 	WorldStateScoreFrameTeam:StyleButton()
---	WorldStateScoreFrameRatingChange:StyleButton()
 
 	S:HandleButton(WorldStateScoreFrameLeaveButton)
 
 	for i = 1, 3 do
 		S:HandleTab(_G["WorldStateScoreFrameTab"..i])
-		_G["WorldStateScoreFrameTab"..i.."Text"]:Point("CENTER", 0, 2)
+		local tabText = _G["WorldStateScoreFrameTab"..i.."Text"]
+		if tabText then
+			tabText:Point("CENTER", 0, 2)
+		end
 	end
 
 	WorldStateScoreFrameTab2:Point("LEFT", WorldStateScoreFrameTab1, "RIGHT", -15, 0)
@@ -50,7 +49,10 @@ S:AddCallback("Skin_WorldStateScore", function()
 	WorldStateScoreScrollFrameScrollBar:Point("BOTTOMLEFT", WorldStateScoreScrollFrame, "BOTTOMRIGHT", 8, 38)
 
 	for i = 1, 5 do
-		_G["WorldStateScoreColumn"..i]:StyleButton()
+		local column = _G["WorldStateScoreColumn"..i]
+		if column then
+			column:StyleButton()
+		end
 	end
 
 	local myName = format("> %s <", E.myname)

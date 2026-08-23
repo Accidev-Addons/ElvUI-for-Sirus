@@ -4,20 +4,16 @@ local LSM = E.Libs.LSM
 
 --Lua functions
 --WoW API / Variables
+local UnitPlayerControlled = UnitPlayerControlled
+local UnitIsTapped = UnitIsTapped
+local UnitIsTappedByPlayer = UnitIsTappedByPlayer
+local UnitIsTappedByAllThreatList = UnitIsTappedByAllThreatList
 
-function NP:Update_HealthOnValueChanged()
-	local frame = self:GetParent().UnitFrame
-	if not frame.UnitType then return end -- Bugs
-
-	NP:Update_Health(frame)
-	NP:Update_HealthColor(frame)
-	NP:Update_Glow(frame)
-	NP:StyleFilterUpdate(frame, "UNIT_HEALTH")
+local function IsTapDenied(unit)
+	return not UnitPlayerControlled(unit) and UnitIsTapped(unit) and not UnitIsTappedByPlayer(unit) and not UnitIsTappedByAllThreatList(unit)
 end
 
-function NP:Update_HealthColor(frame)
-	if not frame.Health:IsShown() then return end
-
+function NP:GetHealthColor(frame)
 	local r, g, b
 	local scale = 1
 
@@ -31,7 +27,7 @@ function NP:Update_HealthColor(frame)
 		local status = frame.ThreatStatus
 		if status then
 			if status == 3 then
-				if E.Role == "Tank" then
+				if E.myrole == "TANK" then
 					r, g, b = db.threat.goodColor.r, db.threat.goodColor.g, db.threat.goodColor.b
 					scale = NP.db.threat.goodScale
 				else
@@ -39,21 +35,19 @@ function NP:Update_HealthColor(frame)
 					scale = NP.db.threat.badScale
 				end
 			elseif status == 2 then
-				if E.Role == "Tank" then
+				if E.myrole == "TANK" then
 					r, g, b = db.threat.badTransition.r, db.threat.badTransition.g, db.threat.badTransition.b
 				else
 					r, g, b = db.threat.goodTransition.r, db.threat.goodTransition.g, db.threat.goodTransition.b
 				end
-				scale = 1
 			elseif status == 1 then
-				if E.Role == "Tank" then
+				if E.myrole == "TANK" then
 					r, g, b = db.threat.goodTransition.r, db.threat.goodTransition.g, db.threat.goodTransition.b
 				else
 					r, g, b = db.threat.badTransition.r, db.threat.badTransition.g, db.threat.badTransition.b
 				end
-				scale = 1
 			else
-				if E.Role == "Tank" then
+				if E.myrole == "TANK" then
 					r, g, b = db.threat.badColor.r, db.threat.badColor.g, db.threat.badColor.b
 					scale = self.db.threat.badScale
 				else
@@ -78,6 +72,19 @@ function NP:Update_HealthColor(frame)
 			end
 		end
 	end
+
+	if frame.unit and IsTapDenied(frame.unit) then
+		local tapped = self.db.colors.tapped
+		r, g, b = tapped.r, tapped.g, tapped.b
+	end
+
+	return r, g, b, scale
+end
+
+function NP:Update_HealthColor(frame)
+	if not frame.Health:IsShown() then return end
+
+	local r, g, b, scale = NP:GetHealthColor(frame)
 
 	if r ~= frame.Health.r or g ~= frame.Health.g or b ~= frame.Health.b then
 		if not frame.HealthColorChanged then
@@ -104,8 +111,7 @@ end
 function NP:Update_Health(frame)
 	if not frame.Health:IsShown() then return end
 
-	local health = frame.oldHealthBar:GetValue()
-	local _, maxHealth = frame.oldHealthBar:GetMinMaxValues()
+	local health, maxHealth = NP:GetHealth(frame)
 	frame.Health:SetMinMaxValues(0, maxHealth)
 
 	if frame.HealthValueChangeCallbacks then
@@ -118,8 +124,10 @@ function NP:Update_Health(frame)
 	frame.FlashTexture:Point("TOPRIGHT", frame.Health:GetStatusBarTexture(), "TOPRIGHT") --idk why this fixes this
 
 	if self.db.units[frame.UnitType].health.text.enable then
-		frame.Health.Text:SetText(E:GetFormattedText(self.db.units[frame.UnitType].health.text.format, health, maxHealth))
+		frame.Health.Text:SetText(E:GetFormattedText(self.db.units[frame.UnitType].health.text.format, health, maxHealth, nil, true))
 	end
+
+	frame.polledHealth, frame.polledMaxHealth = health, maxHealth
 end
 
 function NP:RegisterHealthBarCallbacks(frame, valueChangeCB, colorChangeCB)
@@ -143,16 +151,19 @@ function NP:Update_HealthBar(frame)
 end
 
 function NP:Configure_HealthBarScale(frame, scale, noPlayAnimation)
+	local width = E:Scale(self.db.units[frame.UnitType].health.width * scale, frame.Health)
+	local height = E:Scale(self.db.units[frame.UnitType].health.height * scale, frame.Health)
+
 	if noPlayAnimation then
-		frame.Health:SetWidth(self.db.units[frame.UnitType].health.width * scale)
-		frame.Health:SetHeight(self.db.units[frame.UnitType].health.height * scale)
+		frame.Health:SetWidth(width)
+		frame.Health:SetHeight(height)
 	else
 		if frame.Health.scale:IsPlaying() then
 			frame.Health.scale:Stop()
 		end
 
-		frame.Health.scale.width:SetChange(self.db.units[frame.UnitType].health.width * scale)
-		frame.Health.scale.height:SetChange(self.db.units[frame.UnitType].health.height * scale)
+		frame.Health.scale.width:SetChange(width)
+		frame.Health.scale.height:SetChange(height)
 		frame.Health.scale:Play()
 	end
 end
@@ -170,10 +181,11 @@ function NP:Configure_HealthBar(frame, configuring)
 
 		E:SetSmoothing(healthBar, self.db.smoothbars)
 
+		healthBar.Text:FontTemplate(LSM:Fetch("font", db.text.font), db.text.fontSize, db.text.fontOutline)
+
 		if db.text.enable then
 			healthBar.Text:ClearAllPoints()
 			healthBar.Text:Point(E.InversePoints[db.text.position], db.text.parent == "Nameplate" and frame or frame[db.text.parent], db.text.position, db.text.xOffset, db.text.yOffset)
-			healthBar.Text:FontTemplate(LSM:Fetch("font", db.text.font), db.text.fontSize, db.text.fontOutline)
 			healthBar.Text:Show()
 		else
 			healthBar.Text:Hide()
@@ -184,6 +196,8 @@ end
 local function HealthBar_OnSizeChanged(self, width)
 	local health = self:GetValue()
 	local _, maxHealth = self:GetMinMaxValues()
+	if not maxHealth or maxHealth == 0 then return end
+
 	self:GetStatusBarTexture():SetPoint("TOPRIGHT", -(width * ((maxHealth - health) / maxHealth)), 0)
 end
 

@@ -25,6 +25,7 @@ local StripTexturesBlizzFrames = {
 	'border',
 	'Border',
 	'BorderFrame',
+	'NineSlice',
 	'bottomInset',
 	'BottomInset',
 	'bgLeft',
@@ -42,7 +43,10 @@ do
 	local left, right, top, bottom = unpack(E.TexCoords)
 
 	SetTexCoords = function(frame)
-		frame:SetTexCoord(left, right, top, bottom)
+		if not pcall(frame.SetTexCoord, frame, left, right, top, bottom) and not frame.retryTexCoord then
+			frame.retryTexCoord = true
+			E:Delay(1, SetTexCoords, frame)
+		end
 	end
 
 	function E:GetTexCoords()
@@ -51,51 +55,16 @@ do
 
 	function E:UpdateTexCoords()
 		local m = 0.04 * (E.db.general.cropIcon or 2)
-		for i, v in next, E.TexCoords do
-			local value = (i % 2 == 0) and (v - m) or (v + m)
 
-			E.TexCoords[i] = value
+		left, right, top, bottom = m, 1 - m, m, 1 - m
 
-			if i == 1 then left = value
-			elseif i == 2 then right = value
-			elseif i == 3 then top = value
-			elseif i == 4 then bottom = value end
-		end
+		E.TexCoords[1], E.TexCoords[2], E.TexCoords[3], E.TexCoords[4] = left, right, top, bottom
 	end
 end
 
 function E:SetPointsRestricted(frame)
 	if frame and not pcall(frame.GetPoint, frame) then
 		return true
-	end
-end
-
-function E:SafeGetPoint(frame)
-	if frame and frame.GetPoint and not E:SetPointsRestricted(frame) then
-		return frame:GetPoint()
-	end
-end
-
-local function WatchPixelSnap(frame, snap)
-	if frame and frame.PixelSnapDisabled and snap then
-		frame.PixelSnapDisabled = nil
-	end
-end
-
-local function DisablePixelSnap(frame)
-	if frame and not frame.PixelSnapDisabled then
-		if frame.SetSnapToPixelGrid then
-			frame:SetSnapToPixelGrid(false)
-			frame:SetTexelSnappingBias(0)
-		elseif frame.GetStatusBarTexture then
-			local texture = frame:GetStatusBarTexture()
-			if type(texture) == 'table' and texture.SetSnapToPixelGrid then
-				texture:SetSnapToPixelGrid(false)
-				texture:SetTexelSnappingBias(0)
-			end
-		end
-
-		frame.PixelSnapDisabled = true
 	end
 end
 
@@ -163,16 +132,16 @@ local function GetChild(frame, child, index, debug)
 end
 
 local function Size(frame, width, height, ...)
-	local w = E:Scale(width)
-	frame:SetSize(w, (height and E:Scale(height)) or w, ...)
+	local w = E:Scale(width, frame)
+	frame:SetSize(w, (height and E:Scale(height, frame)) or w, ...)
 end
 
 local function Width(frame, width, ...)
-	frame:SetWidth(E:Scale(width), ...)
+	frame:SetWidth(E:Scale(width, frame), ...)
 end
 
 local function Height(frame, height, ...)
-	frame:SetHeight(E:Scale(height), ...)
+	frame:SetHeight(E:Scale(height, frame), ...)
 end
 
 local function OffsetFrameLevel(frame, offset, secondary)
@@ -185,10 +154,10 @@ end
 local function Point(obj, arg1, arg2, arg3, arg4, arg5, ...)
 	if not arg2 then arg2 = obj:GetParent() end
 
-	if type(arg2)=='number' then arg2 = E:Scale(arg2) end
-	if type(arg3)=='number' then arg3 = E:Scale(arg3) end
-	if type(arg4)=='number' then arg4 = E:Scale(arg4) end
-	if type(arg5)=='number' then arg5 = E:Scale(arg5) end
+	if type(arg2)=='number' then arg2 = E:Scale(arg2, obj) end
+	if type(arg3)=='number' then arg3 = E:Scale(arg3, obj) end
+	if type(arg4)=='number' then arg4 = E:Scale(arg4, obj) end
+	if type(arg5)=='number' then arg5 = E:Scale(arg5, obj) end
 
 	obj:SetPoint(arg1, arg2, arg3, arg4, arg5, ...)
 end
@@ -217,8 +186,8 @@ local function NudgePoint(obj, xAxis, yAxis, noScale, pointValue, clearPoints)
 	if not xAxis then xAxis = 0 end
 	if not yAxis then yAxis = 0 end
 
-	local x = (noScale and xAxis) or E:Scale(xAxis)
-	local y = (noScale and yAxis) or E:Scale(yAxis)
+	local x = (noScale and xAxis) or E:Scale(xAxis, obj)
+	local y = (noScale and yAxis) or E:Scale(yAxis, obj)
 
 	local point, relativeTo, relativePoint, xOfs, yOfs = GrabPoint(obj, pointValue)
 
@@ -230,8 +199,8 @@ local function NudgePoint(obj, xAxis, yAxis, noScale, pointValue, clearPoints)
 end
 
 local function PointXY(obj, xOffset, yOffset, noScale, pointValue, clearPoints)
-	local x = xOffset and ((noScale and xOffset) or E:Scale(xOffset))
-	local y = yOffset and ((noScale and yOffset) or E:Scale(yOffset))
+	local x = xOffset and ((noScale and xOffset) or E:Scale(xOffset, obj))
+	local y = yOffset and ((noScale and yOffset) or E:Scale(yOffset, obj))
 
 	local point, relativeTo, relativePoint, xOfs, yOfs = GrabPoint(obj, pointValue)
 
@@ -247,14 +216,13 @@ local function SetOutside(obj, anchor, xOffset, yOffset, anchor2, noScale)
 
 	if not xOffset then xOffset = E.Border end
 	if not yOffset then yOffset = E.Border end
-	local x = (noScale and xOffset) or E:Scale(xOffset)
-	local y = (noScale and yOffset) or E:Scale(yOffset)
+	local x = (noScale and xOffset) or E:Scale(xOffset, obj)
+	local y = (noScale and yOffset) or E:Scale(yOffset, obj)
 
 	if E:SetPointsRestricted(obj) or obj:GetPoint() then
 		obj:ClearAllPoints()
 	end
 
-	DisablePixelSnap(obj)
 	obj:SetPoint('TOPLEFT', anchor, 'TOPLEFT', -x, y)
 	obj:SetPoint('BOTTOMRIGHT', anchor2 or anchor, 'BOTTOMRIGHT', x, -y)
 end
@@ -264,14 +232,13 @@ local function SetInside(obj, anchor, xOffset, yOffset, anchor2, noScale)
 
 	if not xOffset then xOffset = E.Border end
 	if not yOffset then yOffset = E.Border end
-	local x = (noScale and xOffset) or E:Scale(xOffset)
-	local y = (noScale and yOffset) or E:Scale(yOffset)
+	local x = (noScale and xOffset) or E:Scale(xOffset, obj)
+	local y = (noScale and yOffset) or E:Scale(yOffset, obj)
 
 	if E:SetPointsRestricted(obj) or obj:GetPoint() then
 		obj:ClearAllPoints()
 	end
 
-	DisablePixelSnap(obj)
 	obj:SetPoint('TOPLEFT', anchor, 'TOPLEFT', x, -y)
 	obj:SetPoint('BOTTOMRIGHT', anchor2 or anchor, 'BOTTOMRIGHT', -x, y)
 end
@@ -294,11 +261,16 @@ end
 
 local function GetDesaturation(frame)
     local r, g, b, a = frame:GetVertexColor()
-    return (r == .6 and g == .6 and b == .6 and a == .8) and 1 or 0
+    return r == .6 and g == .6 and b == .6 and a == .8
 end
 
 local function SetTemplate(frame, template, glossTex, ignoreUpdates, forcePixelMode, isUnitFrameElement, isNamePlateElement, noScale)
 	GetTemplate(template, isUnitFrameElement)
+
+	local keepr, keepg, keepb, keepa
+	if frame.ignoreBorderColors and not frame.forcedBorderColors then
+		keepr, keepg, keepb, keepa = frame:GetBackdropBorderColor()
+	end
 
 	frame.template = template or 'Default'
 	frame.glossTex = glossTex
@@ -307,21 +279,15 @@ local function SetTemplate(frame, template, glossTex, ignoreUpdates, forcePixelM
 	frame.isUnitFrameElement = isUnitFrameElement
 	frame.isNamePlateElement = isNamePlateElement
 
-	if not frame.SetBackdrop then
-		if frame.OnSizeChanged then
-			frame:HookScript('OnSizeChanged', frame.OnBackdropSizeChanged)
-		end
-	end
-
 	if template == 'NoBackdrop' then
 		frame:SetBackdrop(nil)
 	else
-		local edgeSize = E.twoPixelsPlease and 2 or 1
+		local edgeSize = 1
 
 		frame:SetBackdrop({
 			edgeFile = E.media.blankTex,
 			bgFile = glossTex and (type(glossTex) == 'string' and glossTex or E.media.glossTex) or E.media.blankTex,
-			edgeSize = noScale and edgeSize or E:Scale(edgeSize)
+			edgeSize = noScale and edgeSize or E:PixelSize(edgeSize, frame)
 		})
 
 		if frame.callbackBackdropColor then
@@ -335,7 +301,7 @@ local function SetTemplate(frame, template, glossTex, ignoreUpdates, forcePixelM
 		if (notPixelMode or notThinBorders) and not forcePixelMode then
 			local backdrop = {
 				edgeFile = E.media.blankTex,
-				edgeSize = noScale and 1 or E:Scale(1)
+				edgeSize = noScale and 1 or E:PixelSize(1, frame)
 			}
 
 			local level = frame:GetFrameLevel()
@@ -361,6 +327,8 @@ local function SetTemplate(frame, template, glossTex, ignoreUpdates, forcePixelM
 
 	if frame.forcedBorderColors then
 		borderr, borderg, borderb, bordera = unpack(frame.forcedBorderColors)
+	elseif keepr then
+		borderr, borderg, borderb, bordera = keepr, keepg, keepb, keepa
 	end
 
 	frame:SetBackdropBorderColor(borderr, borderg, borderb, bordera)
@@ -389,7 +357,7 @@ local function CreateBackdrop(frame, template, glossTex, ignoreUpdates, forcePix
 		end
 	else
 		if forcePixelMode then
-			backdrop:SetOutside(frame, E.twoPixelsPlease and 2 or 1, E.twoPixelsPlease and 2 or 1, nil, noScale)
+			backdrop:SetOutside(frame, 1, 1, nil, noScale)
 		else
 			local border = (isUnitFrameElement and UF.BORDER) or (isNamePlateElement and NP.BORDER)
 			backdrop:SetOutside(frame, border, border, nil, noScale)
@@ -486,6 +454,10 @@ local function StripTexts(object, kill, zero)
 	StripType(STRIP_FONT, object, kill, zero)
 end
 
+local function ValidFontSize(size)
+	return type(size) == 'number' and size == size and size >= 0.1
+end
+
 local function FontTemplate(fs, font, size, style, skip)
 	if not skip then -- ignore updates from UpdateFontTemplates
 		fs.font, fs.fontSize, fs.fontStyle = font, size, style
@@ -493,7 +465,11 @@ local function FontTemplate(fs, font, size, style, skip)
 
 	-- grab values from profile before conversion
 	if not style then style = E.db.general.fontStyle or P.general.fontStyle end
-	if not size or size == 0 then size = E.db.general.fontSize or P.general.fontSize end
+	-- 3.3.5a SetFont errors out on 0/negative/NaN and renders nothing on sub-pixel sizes
+	if not ValidFontSize(size) then
+		local profileSize = E.db.general.fontSize
+		size = (ValidFontSize(profileSize) and profileSize) or P.general.fontSize
+	end
 	if style == 'NONE' then style = '' end -- none isnt a real style
 
 	local shadow = strsub(style, 0, 6) == 'SHADOW'
@@ -584,19 +560,20 @@ local function GetSwipe(self)
 	return self._swipeTex
 end
 
+local function SwipeOnUpdate(self)
+	if (GetTime() - self._cdStart) >= self._cdDuration then
+		self._swipeTex:Hide()
+		self:SetScript('OnUpdate', nil)
+	end
+end
+
 local function OnCooldownSet(self, start, duration)
 	local swipe = self._swipeTex
 	self._cdStart, self._cdDuration = start, duration
 
 	if swipe and start and duration and duration > 0.1 then
 		swipe:Show()
-		self:SetScript('OnUpdate', function(self, elapsed)
-			local cooldown = GetTime() - self._cdStart
-			if cooldown >= self._cdDuration then
-				self._swipeTex:Hide()
-				self:SetScript('OnUpdate', nil)
-			end
-		end)
+		self:SetScript('OnUpdate', SwipeOnUpdate)
 	elseif swipe and not start then
 		swipe:Hide()
 		self:SetScript('OnUpdate', nil)
@@ -651,17 +628,6 @@ local function addapi(object)
 		if not object[method] then
 			mk[method] = func
 		end
-	end
-
-	if not object.DisabledPixelSnap and (mk.SetSnapToPixelGrid or mk.SetStatusBarTexture or mk.SetVertexColor or mk.CreateTexture or mk.SetTexCoord or mk.SetTexture) then
-		if mk.SetSnapToPixelGrid then hooksecurefunc(mk, 'SetSnapToPixelGrid', WatchPixelSnap) end
-		if mk.SetStatusBarTexture then hooksecurefunc(mk, 'SetStatusBarTexture', DisablePixelSnap) end
-		if mk.SetVertexColor then hooksecurefunc(mk, 'SetVertexColor', DisablePixelSnap) end
-		if mk.CreateTexture then hooksecurefunc(mk, 'CreateTexture', DisablePixelSnap) end
-		if mk.SetTexCoord then hooksecurefunc(mk, 'SetTexCoord', DisablePixelSnap) end
-		if mk.SetTexture then hooksecurefunc(mk, 'SetTexture', DisablePixelSnap) end
-
-		mk.DisabledPixelSnap = true
 	end
 end
 

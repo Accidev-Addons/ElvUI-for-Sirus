@@ -13,11 +13,10 @@ local GetShapeshiftFormInfo = GetShapeshiftFormInfo
 local GetSpellTexture = GetSpellTexture
 local InCombatLockdown = InCombatLockdown
 local RegisterStateDriver = RegisterStateDriver
-local NUM_SHAPESHIFT_SLOTS = NUM_SHAPESHIFT_SLOTS or 10
+local NUM_SHAPESHIFT_SLOTS = NUM_SHAPESHIFT_SLOTS
 
 local Masque = E.Masque
 local MasqueGroup = Masque and Masque:Group('ElvUI', 'Stance Bar')
-local WispSplode = [[Interface\Icons\Spell_Nature_WispSplode]]
 local bar = CreateFrame('Frame', 'ElvUI_StanceBar', E.UIParent, 'SecureHandlerStateTemplate')
 bar.buttons = {}
 
@@ -28,13 +27,11 @@ function AB:UPDATE_SHAPESHIFT_COOLDOWN()
 		if i <= numForms then
 			cooldown = _G['ElvUI_StanceBarButton'..i..'Cooldown']
 			start, duration, active = GetShapeshiftFormCooldown(i)
-			if (active and active ~= 0) and start > 0 and duration > 0 then
-				CooldownFrame_SetTimer(cooldown, start, duration, active)
-			end
+			CooldownFrame_SetTimer(cooldown, start, duration, active)
 		end
 	end
 
-	AB:StyleShapeShift('UPDATE_SHAPESHIFT_COOLDOWN')
+	AB:StyleShapeShift()
 end
 
 function AB:StyleShapeShift()
@@ -52,15 +49,18 @@ function AB:StyleShapeShift()
 			break
 		else
 			local texture, spellName, isActive, isCastable = GetShapeshiftFormInfo(i)
-			icon:SetTexture(((darken or not isActive) and spellName and GetSpellTexture(spellName)) or WispSplode)
+			if darken and spellName then
+				texture = GetSpellTexture(spellName) or texture
+			end
+			icon:SetTexture(texture)
 			icon:SetInside()
 
 			if not button.useMasque then
 				cooldown:SetAlpha(texture and 1 or 0)
 
 				if isActive then
-					-- button:GetCheckedTexture():SetTexture(1, 1, 1, 0.3)
-					button:SetChecked(numForms == 1 and darken)
+					button:SetChecked(numForms == 1 or not darken)
+					button.checked:SetAlpha(1)
 					button.checked:SetTexture(1, 1, 1, 0.3)
 				elseif numForms == 1 or stance == 0 then
 					button:SetChecked(false)
@@ -198,7 +198,7 @@ function AB:AdjustMaxStanceButtons(event)
 			AB:HookScript(bar.buttons[i], 'OnLeave', 'Button_OnLeave')
 		end
 
-		local blizz = _G[format('StanceButton%d', i)]
+		local blizz = _G[format('ShapeshiftButton%d', i)]
 		if blizz and blizz.commandName then
 			bar.buttons[i].commandName = blizz.commandName
 		end

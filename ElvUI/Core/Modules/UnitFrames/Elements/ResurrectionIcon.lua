@@ -5,8 +5,11 @@ local UF = E:GetModule("UnitFrames")
 --WoW API / Variables
 
 function UF:Construct_ResurrectionIcon(frame)
-	local tex = frame.RaisedElementParent.TextureParent:CreateTexture(nil, "OVERLAY")
-	tex:SetTexture([[Interface\AddOns\ElvUI\media\textures\RaidIconRez]])
+	local holder = CreateFrame("Frame", nil, frame.RaisedElementParent)
+	holder:OffsetFrameLevel(20, frame.RaisedElementParent)
+
+	local tex = holder:CreateTexture(nil, "OVERLAY")
+	tex:SetTexture([[Interface\AddOns\ElvUI\Core\Media\Textures\RaidIconRez]])
 	tex:Point("CENTER", frame.Health, "CENTER")
 	tex:Size(30)
 	tex:Hide()

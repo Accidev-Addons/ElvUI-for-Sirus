@@ -4,34 +4,26 @@
 local E, L, V, P, G = unpack(ElvUI)
 
 local _G = _G
-local random, next = random, next
+local next = next
 local unpack, strsub = unpack, strsub
 
---[[ just to test the number thing
-	local t = UIParent:CreateFontString(nil, "OVERLAY", "GameTooltipText")
-	t:SetText(0)
-	t:Point("CENTER")
-	t:FontTemplate(nil, 20)
-	E:SetUpAnimGroup(t, "Number", 10, 5)
+local function CreateRotator(obj, layer, texture)
+	local region = obj:CreateTexture(nil, layer)
+	region:SetTexture(texture)
+	region:SetPoint("CENTER")
 
-	local b = CreateFrame("BUTTON", nil, UIParent)
-	b:Point("CENTER", 0, -100)
-	b:SetTemplate()
-	b:Size(40, 30)
-	b:EnableMouse(true)
-	b:SetScript("OnClick", function()
-		if t:GetText() == 10 then
-			t.NumberAnim:SetChange(0)
-			t.NumberAnimGroup:Play()
-		else
-			t.NumberAnim:SetChange(10)
-			t.NumberAnimGroup:Play()
-		end
-	end)
-]]
+	local anim = region:CreateAnimationGroup()
+	anim:SetLooping("REPEAT")
+	region.Anim = anim
 
-E.AnimShake = {{-9,7,-7,12}, {-5,9,-9,5}, {-5,7,-7,5}, {-9,9,-9,9}, {-5,7,-7,5}, {-9,7,-9,5}}
-E.AnimShakeH = {-5,5,-2,5,-2,5}
+	local rotation = anim:CreateAnimation("Rotation")
+	rotation:SetDuration(1)
+	rotation:SetDegrees(-360)
+	anim.Rotation = rotation
+
+	return region
+end
+
 E.AnimMoveOut = function(out1) out1.parent:Hide() end
 E.AnimElastic = {
 	function(anim) anim:Stop() anim.elastic[2]:Play() end,
@@ -42,11 +34,6 @@ E.AnimElastic = {
 
 function E:FlashLoopFinished(requested)
 	if not requested then self:Play() end
-end
-
-function E:RandomAnimShake(index)
-	local p1, p2, p3, p4 = unpack(E.AnimShake[index])
-	return random(p1, p2), random(p3, p4)
 end
 
 function E:SetUpAnimGroup(obj, animType, ...)
@@ -68,31 +55,6 @@ function E:SetUpAnimGroup(obj, animType, ...)
 		if animType == "FlashLoop" then
 			obj.anim:SetScript("OnFinished", E.FlashLoopFinished)
 		end
-	elseif shortType == "Shake" then
-		local shake = obj:CreateAnimationGroup(animType)
-		shake:SetLooping("REPEAT")
-		shake.path = shake:CreateAnimation("Path")
-
-		if animType == "Shake" then
-			shake.path:SetDuration(0.7)
-			obj.shake = shake
-		elseif animType == "ShakeH" then
-			shake.path:SetDuration(2)
-			obj.shakeh = shake
-		end
-
-		for i = 1, 6 do
-			local point = shake.path:CreateControlPoint()
-			point:SetOrder(i)
-
-			if animType == "Shake" then
-				point:SetOffset(E:RandomAnimShake(i))
-			else
-				point:SetOffset(E.AnimShakeH[i], 0)
-			end
-
-			shake.path[i] = point
-		end
 	elseif animType == "Elastic" then
 		local width, height, duration, loop = ...
 		local elastic = _G.CreateAnimationGroup(obj)
@@ -109,13 +71,6 @@ function E:SetUpAnimGroup(obj, animType, ...)
 
 			elastic[i] = anim
 		end
-	elseif animType == "Number" then
-		local endingNumber, duration = ...
-		obj.NumberAnimGroup = _G.CreateAnimationGroup(obj)
-		obj.NumberAnim = obj.NumberAnimGroup:CreateAnimation("number")
-		obj.NumberAnim:SetChange(endingNumber)
-		obj.NumberAnim:SetEasing("in-circular")
-		obj.NumberAnim:SetDuration(duration)
 	elseif animType == "Spinner" then
 		if not obj.Spinner then
 			local spinner = obj:CreateTexture()
@@ -126,35 +81,11 @@ function E:SetUpAnimGroup(obj, animType, ...)
 		end
 
 		if not obj.Circle then
-			local circle = obj:CreateTexture(nil, "BORDER")
-			circle:SetTexture(E.Media.Textures.StreamCircle)
-			circle:SetPoint("CENTER")
-			obj.Circle = circle
-
-			local anim = circle:CreateAnimationGroup()
-			anim:SetLooping("REPEAT")
-			circle.Anim = anim
-
-			local rotation = anim:CreateAnimation("Rotation")
-			rotation:SetDuration(1)
-			rotation:SetDegrees(-360)
-			anim.Rotation = rotation
+			obj.Circle = CreateRotator(obj, "BORDER", E.Media.Textures.StreamCircle)
 		end
 
 		if not obj.Spark then
-			local spark = obj:CreateTexture(nil, "OVERLAY")
-			spark:SetTexture(E.Media.Textures.StreamSpark)
-			spark:SetPoint("CENTER")
-			obj.Spark = spark
-
-			local anim = spark:CreateAnimationGroup()
-			anim:SetLooping("REPEAT")
-			spark.Anim = anim
-
-			local rotation = anim:CreateAnimation("Rotation")
-			rotation:SetDuration(1)
-			rotation:SetDegrees(-360)
-			anim.Rotation = rotation
+			obj.Spark = CreateRotator(obj, "OVERLAY", E.Media.Textures.StreamSpark)
 		end
 	else
 		local x, y, duration, customName = ...
@@ -199,34 +130,6 @@ function E:StopElasticize(obj)
 	if obj.elastic then
 		obj.elastic[1]:Stop(true)
 		obj.elastic[3]:Stop(true)
-	end
-end
-
-function E:Shake(obj)
-	if not obj.shake then
-		E:SetUpAnimGroup(obj, "Shake")
-	end
-
-	obj.shake:Play()
-end
-
-function E:StopShake(obj)
-	if obj.shake then
-		obj.shake:Finish()
-	end
-end
-
-function E:ShakeHorizontal(obj)
-	if not obj.shakeh then
-		E:SetUpAnimGroup(obj, "ShakeH")
-	end
-
-	obj.shakeh:Play()
-end
-
-function E:StopShakeHorizontal(obj)
-	if obj.shakeh then
-		obj.shakeh:Finish()
 	end
 end
 
@@ -282,24 +185,6 @@ function E:StopSpinner(obj)
 	end
 end
 
-function E:SlideIn(obj, customName)
-	local anim = obj[customName or "anim"]
-	if not anim then return end
-
-	anim.out1:Stop() -- out1 OnFinish will call Hide, see SlideOut
-	anim:Play()
-	obj:Show() -- Show is likely a secure var
-end
-
-function E:SlideOut(obj, customName)
-	local anim = obj[customName or "anim"]
-	if not anim then return end
-
-	anim:Finish()
-	anim:Stop()
-	anim.out1:Play() -- triggers AnimMoveOut which calls Hide (likely secure var) on obj
-end
-
 local FADEFRAMES, FADEMANAGER = {}, CreateFrame("FRAME")
 FADEMANAGER.delay = 0.05
 
@@ -310,19 +195,21 @@ function E:UIFrameFade_OnUpdate(elapsed)
 		FADEMANAGER.timer = 0
 
 		for frame, info in next, FADEFRAMES do
+			local timeToFade = info.timeToFade
+
 			-- Reset the timer if there isn't one, this is just an internal counter
 			if frame:IsVisible() then
 				info.fadeTimer = (info.fadeTimer or 0) + (elapsed + FADEMANAGER.delay)
 			else
-				info.fadeTimer = info.timeToFade + 1
+				info.fadeTimer = (timeToFade or 0) + 1
 			end
 
 			-- If the fadeTimer is less then the desired fade time then set the alpha otherwise hold the fade state, call the finished function, or just finish the fade
-			if info.fadeTimer < info.timeToFade then
+			if timeToFade and timeToFade > 0 and info.fadeTimer < timeToFade then
 				if info.mode == "IN" then
-					frame:SetAlpha((info.fadeTimer / info.timeToFade) * info.diffAlpha + info.startAlpha)
+					frame:SetAlpha((info.fadeTimer / timeToFade) * info.diffAlpha + info.startAlpha)
 				else
-					frame:SetAlpha(((info.timeToFade - info.fadeTimer) / info.timeToFade) * info.diffAlpha + info.endAlpha)
+					frame:SetAlpha(((timeToFade - info.fadeTimer) / timeToFade) * info.diffAlpha + info.endAlpha)
 				end
 			else
 				frame:SetAlpha(info.endAlpha)
@@ -384,8 +271,7 @@ function E:UIFrameFade(frame, info)
 	end
 end
 
--- Convenience function to do a simple fade in
-function E:UIFrameFadeIn(frame, timeToFade, startAlpha, endAlpha)
+local function SimpleFade(frame, mode, timeToFade, startAlpha, endAlpha)
 	if not frame then return end
 
 	if frame.FadeObject then
@@ -394,32 +280,21 @@ function E:UIFrameFadeIn(frame, timeToFade, startAlpha, endAlpha)
 		frame.FadeObject = {}
 	end
 
-	frame.FadeObject.mode = "IN"
+	frame.FadeObject.mode = mode
 	frame.FadeObject.timeToFade = timeToFade
 	frame.FadeObject.startAlpha = startAlpha
 	frame.FadeObject.endAlpha = endAlpha
-	frame.FadeObject.diffAlpha = endAlpha - startAlpha
+	frame.FadeObject.diffAlpha = (mode == "IN" and endAlpha - startAlpha) or startAlpha - endAlpha
 
 	E:UIFrameFade(frame, frame.FadeObject)
 end
 
--- Convenience function to do a simple fade out
+function E:UIFrameFadeIn(frame, timeToFade, startAlpha, endAlpha)
+	SimpleFade(frame, "IN", timeToFade, startAlpha, endAlpha)
+end
+
 function E:UIFrameFadeOut(frame, timeToFade, startAlpha, endAlpha)
-	if not frame then return end
-
-	if frame.FadeObject then
-		frame.FadeObject.fadeTimer = nil
-	else
-		frame.FadeObject = {}
-	end
-
-	frame.FadeObject.mode = "OUT"
-	frame.FadeObject.timeToFade = timeToFade
-	frame.FadeObject.startAlpha = startAlpha
-	frame.FadeObject.endAlpha = endAlpha
-	frame.FadeObject.diffAlpha = startAlpha - endAlpha
-
-	E:UIFrameFade(frame, frame.FadeObject)
+	SimpleFade(frame, "OUT", timeToFade, startAlpha, endAlpha)
 end
 
 function E:UIFrameFadeRemoveFrame(frame)

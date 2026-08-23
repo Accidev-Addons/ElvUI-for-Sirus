@@ -47,6 +47,7 @@ C.Values = {
 	MAX_BOSS_FRAMES = 4,
 	NUM_CLASSES = NUM_CLASSES,
 	FontFlags = ACH.FontValues,
+	FontSorting = ACH.FontSorting,
 	FontSize = { min = 8, max = 24, step = 1 },
 	Roman = { 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII', 'XIII', 'XIV', 'XV', 'XVI', 'XVII', 'XVIII', 'XIX', 'XX' }, -- 1 to 20
 	AllPositions = { LEFT = 'LEFT', RIGHT = 'RIGHT', TOP = 'TOP', BOTTOM = 'BOTTOM', CENTER = 'CENTER' },
@@ -269,13 +270,13 @@ end
 E.Options.args.info = ACH:Group(L["Information"], nil, 4, 'tab')
 
 E.Options.args.info.args.debug = ACH:Execute(L["Debug"], L["DEBUG_DESC"], 1, function() local state = next(ElvDB.DisabledAddOns) E:LuaError(state and 'off' or 'on') end, nil, nil, 120)
-E.Options.args.info.args.colors = ACH:Execute(L["Color Picker"], nil, 2, function() _G.ColorPickerFrame:Show() _G.ColorPickerFrame:SetFrameStrata('FULLSCREEN_DIALOG') _G.ColorPickerFrame:SetClampedToScreen(true) _G.ColorPickerFrame:Raise() end, nil, nil, 120)
+E.Options.args.info.args.colors = ACH:Execute(L["Color Picker"], nil, 2, function() local picker = _G.ColorPickerFrame picker.func = E.noop picker.swatchFunc = E.noop picker.opacityFunc = E.noop picker.cancelFunc = E.noop picker.hasOpacity = nil picker:Show() picker:SetFrameStrata('FULLSCREEN_DIALOG') picker:SetClampedToScreen(true) picker:Raise() end, nil, nil, 120)
 
 E.Options.args.info.args.main = ACH:Group(L["ELVUI_DESC"], nil, 5)
 E.Options.args.info.args.main.inline = true
 
 for index, data in next, {
-	{ key = 'discord',		name = L["Discord"],				url = 'https://discord.gg/UXSc7nt' },
+	{ key = 'discord',		name = L["Discord"],				url = 'https://discord.gg/wRPF8CCpNV' },
 	{ key = 'issues',		name = L["Ticket Tracker"],			url = 'https://github.com/ElvUI-WotLK/ElvUI/issues' },
 	{ key = 'wiki',			name = L["Wiki"],					url = 'https://github.com/ElvUI-WotLK/ElvUI/wiki' },
 	{ key = 'master',		name = L["Master Version"],			url = 'https://github.com/ElvUI-WotLK/ElvUI/archive/refs/heads/master.zip' },
@@ -338,7 +339,11 @@ E.Options.args.profiles.args.private.args.choose.confirm = function(info, value)
 end
 
 E.Options.args.profiles.args.private.args.copyfrom.confirm = function(info, value)
-	return format(L["Copy settings from %s. This will overwrite %s profile.\n\n Are you sure?"], value, info.handler:GetCurrentProfile())
+	if info[#info-1] == 'private' then
+		return format(L["Copy settings from %s. This will overwrite %s profile.\n\n Are you sure?"], value, info.handler:GetCurrentProfile())
+	else
+		return false
+	end
 end
 
 do -- Import and Export
@@ -352,7 +357,7 @@ do -- Import and Export
 			return E:ProfileTableToPluginFormat(profileData, profileType)
 		else
 			local decodedText = (profileData and E:TableToLuaString(profileData)) or nil
-			return D:CreateProfileExport(decodedText, profileType, profileKey)
+			return D:CreateProfileExport(profileType, profileKey, decodedText)
 		end
 	end
 
@@ -546,6 +551,7 @@ do -- Module Copy
 		config.args.stanceBar.name = L["Stance Bar"]
 		config.args.microbar.name = L["Micro Bar"]
 		config.args.vehicleExitButton.name = L["Vehicle Exit"]
+		config.args.totemBar.name = L["Totem Bar"]
 
 		return config
 	end
@@ -579,6 +585,9 @@ do -- Module Copy
 		config.args.bagBar.name = L["Bag Bar"]
 		config.args.split.name = L["Split"]
 		config.args.vendorGrays.name = L["Vendor Grays"]
+		config.args.autoToggle.name = L["Auto Toggle"]
+		config.args.shownBags.name = L["Shown Bags"]
+		config.args.spinner.name = L["Sort Spinner"]
 
 		return config
 	end
@@ -588,6 +597,9 @@ do -- Module Copy
 		local config = MC:CreateModuleConfigGroup(L["Chat"], 'chat')
 
 		MC:AddConfigOptions(P.chat, config, 'chat')
+
+		config.args.channelAlerts.name = L["Channel Alerts"]
+		config.args.showHistory.name = L["History"]
 
 		return config
 	end
@@ -613,6 +625,7 @@ do -- Module Copy
 		config.args.experience.name = L["Experience"]
 		config.args.reputation.name = L["Reputation"]
 		config.args.threat.name = L["Threat"]
+		config.args.petExperience.name = L["Pet Experience"]
 
 		return config
 	end
@@ -624,6 +637,7 @@ do -- Module Copy
 		MC:AddConfigOptions(P.datatexts, config, 'datatexts')
 
 		config.args.panels = ACH:Toggle(L["Panels"], nil, 2)
+		config.args.battlePanel.name = L["Battlegrounds"]
 
 		return config
 	end
@@ -637,6 +651,15 @@ do -- Module Copy
 		config.args.minimap.name = L["Minimap"]
 		config.args.totems.name = L["Class Totems"]
 		config.args.itemLevel.name = L["Item Level"]
+		config.args.bottomPanelSettings.name = L["Bottom Panel"]
+		config.args.topPanelSettings.name = L["Top Panel"]
+		config.args.raidUtility.name = L["RAID_CONTROL"]
+		config.args.fonts.name = L["Fonts"]
+		config.args.classColors.name = L["Custom Class Colors"]
+		config.args.debuffColors.name = L["Debuff Colors"]
+		config.args.customGlow.name = L["Custom Glow"]
+		config.args.lootRoll.name = L["Loot Roll"]
+		config.args.guildBank.name = L["Guild Bank"]
 
 		return config
 	end
@@ -655,6 +678,7 @@ do -- Module Copy
 		config.args.clickThrough.name = L["Click Through"]
 		config.args.plateSize.name = L["Clickable Size"]
 		config.args.colors.name = L["Colors"]
+		config.args.visibility.name = L["Visibility"]
 
 		-- Modify Tables
 		config.args.filters = nil
@@ -665,7 +689,7 @@ do -- Module Copy
 
 		-- -- Locales
 		-- config.args.units.args.PLAYER.name = L["Player"]
-		-- config.args.units.args.TARGET.name = L["Target"]
+		config.args.units.args.TARGET.name = L["Target"]
 		config.args.units.args.FRIENDLY_PLAYER.name = L["FRIENDLY_PLAYER"]
 		config.args.units.args.ENEMY_PLAYER.name = L["ENEMY_PLAYER"]
 		config.args.units.args.FRIENDLY_NPC.name = L["FRIENDLY_NPC"]
@@ -683,6 +707,7 @@ do -- Module Copy
 		config.args.visibility.name = L["Visibility"]
 		config.args.healthBar.name = L["Health Bar"]
 		config.args.factionColors.name = L["Custom Faction Colors"]
+		config.args.itemCount.name = L["Item Count"]
 
 		return config
 	end
@@ -692,6 +717,8 @@ do -- Module Copy
 		local config = MC:CreateModuleConfigGroup(L["UnitFrames"], 'unitframe')
 
 		MC:AddConfigOptions(P.unitframe, config, 'unitframe')
+
+		config.args.filters.name = L["Filters"]
 
 		config.args.cooldown = ACH:Toggle(L["Cooldown Text"], nil, 2, nil, nil, nil, function(info) return E.global.profileCopy.unitframe[info[#info]] end, function(info, value) E.global.profileCopy.unitframe[info[#info]] = value; end)
 		config.args.colors = ACH:Group(L["Colors"], nil, -9, nil, function(info) return E.global.profileCopy.unitframe[info[#info-1]][info[#info]] end, function(info, value) E.global.profileCopy.unitframe[info[#info-1]][info[#info]] = value; end)
@@ -707,6 +734,7 @@ do -- Module Copy
 		config.args.colors.args.debuffHighlight.name = L["Debuff Highlighting"]
 		config.args.colors.args.selection.name = L["Selection"]
 		config.args.colors.args.threat.name = L["Threat"]
+		config.args.colors.args.happiness.name = _G.HAPPINESS
 
 		config.args.units = ACH:Group(L["UnitFrames"], nil, -10, nil, function(info) return E.global.profileCopy.unitframe[info[#info-1]][info[#info]] end, function(info, value) E.global.profileCopy.unitframe[info[#info-1]][info[#info]] = value; end)
 		config.args.units.inline = true

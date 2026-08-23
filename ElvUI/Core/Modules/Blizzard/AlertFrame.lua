@@ -20,7 +20,7 @@ function E:PostAlertMove()
 		POSITION, ANCHOR_POINT, Y_OFFSET = 'TOP', 'BOTTOM', -5
 	end
 
-	AlertFrameMover:SetFormattedText('%s %s', AlertFrameMover.textString, growUp and '(Grow Up)' or '(Grow Down)')
+	AlertFrameMover:SetFormattedText('%s %s', AlertFrameMover.textString, growUp and L['(Grow Up)'] or L['(Grow Down)'])
 
 	AlertFrame:ClearAllPoints()
 	AlertFrame:SetAllPoints((E.private.general.lootRoll and M:UpdateLootRollAnchors(POSITION)) or _G.AlertFrameHolder)

@@ -33,7 +33,7 @@ function UF:Construct_DebuffHighlight(frame)
 end
 
 function UF:Configure_DebuffHighlight(frame)
-	if E.db.unitframe.debuffHighlighting ~= "NONE" then
+	if E.db.unitframe.debuffHighlighting ~= "NONE" and not (frame.db and frame.db.disableDebuffHighlight) then
 		frame:EnableElement("DebuffHighlight")
 
 		frame.DebuffHighlight:SetBlendMode(UF.db.colors.debuffHighlight.blendMode)

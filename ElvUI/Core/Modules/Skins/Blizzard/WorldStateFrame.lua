@@ -13,7 +13,12 @@ S:AddCallback("Skin_WorldStateFrame", function()
 		local rightBar = _G["WorldStateCaptureBar"..id.."RightBar"]
 		local middleBar = _G["WorldStateCaptureBar"..id.."MiddleBar"]
 
-		select(4, bar:GetRegions()):SetTexture(nil)
+		for i = 1, bar:GetNumRegions() do
+			local region = select(i, bar:GetRegions())
+			if region:GetObjectType() == "Texture" and not region:GetName() then
+				region:SetTexture(nil)
+			end
+		end
 
 		_G["WorldStateCaptureBar"..id.."LeftLine"]:SetTexture(nil)
 		_G["WorldStateCaptureBar"..id.."RightLine"]:SetTexture(nil)
@@ -33,7 +38,7 @@ S:AddCallback("Skin_WorldStateFrame", function()
 		leftBar:SetVertexColor(0, .44, .87)
 
 		bar.leftBarIcon = bar:CreateTexture("$parentLeftBarIcon", "ARTWORK")
-		bar.leftBarIcon:SetTexture([[Interface\AddOns\ElvUI\Media\Textures\Alliance-Logo-Small]])
+		bar.leftBarIcon:SetTexture([[Interface\AddOns\ElvUI\Core\Media\Textures\AllianceLogoSmall]])
 		bar.leftBarIcon:SetPoint("RIGHT", bar, "LEFT", 0, 0)
 		bar.leftBarIcon:SetSize(32, 32)
 
@@ -44,7 +49,7 @@ S:AddCallback("Skin_WorldStateFrame", function()
 		rightBar:SetVertexColor(.77, .12, .23)
 
 		bar.rightBarIcon = bar:CreateTexture("$parentRightBarIcon", "ARTWORK")
-		bar.rightBarIcon:SetTexture([[Interface\AddOns\ElvUI\Media\Textures\Horde-Logo-Small]])
+		bar.rightBarIcon:SetTexture([[Interface\AddOns\ElvUI\Core\Media\Textures\HordeLogoSmall]])
 		bar.rightBarIcon:SetPoint("LEFT", bar, "RIGHT", 0, 0)
 		bar.rightBarIcon:Size(32)
 
@@ -64,16 +69,14 @@ S:AddCallback("Skin_WorldStateFrame", function()
 		local bar = _G["WorldStateCaptureBar"..id]
 		local middleBar = _G["WorldStateCaptureBar"..id.."MiddleBar"]
 
-		local barSize = 170
-		local position = 173 * (1 - value / 100)
+		local barSize = 173
+		local position = math.max(2, math.min(171, barSize * (1 - value / 100)))
 
 		if neutralPercent == 0 then
 			middleBar:Width(1)
 		else
 			middleBar:Width(neutralPercent / 100 * barSize)
 		end
-
-		bar.oldValue = position
 
 		if bar.spark then
 			bar.spark:Point("CENTER", bar, "LEFT", position, 0)

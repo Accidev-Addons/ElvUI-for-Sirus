@@ -1,17 +1,17 @@
 local E, L, V, P, G = unpack(ElvUI)
 local M = E:GetModule('Misc')
 local LSM = E.Libs.LSM
-local LC = E.Libs.Compat
 
 local _G = _G
 local wipe = wipe
 local next = next
+local pcall = pcall
 local pairs = pairs
 local unpack = unpack
 local UnitGUID = UnitGUID
 local CreateFrame = CreateFrame
 
-local GetItemLevelColor = LC.GetItemLevelColor
+local GetItemLevelColor = GetItemLevelColor
 
 local InspectItems = {
     'HeadSlot',
@@ -35,10 +35,6 @@ local InspectItems = {
 }
 
 local numInspectItems = #InspectItems
-
-local whileOpenEvents = {
-	UPDATE_INVENTORY_DURABILITY = true,
-}
 
 function M:CreateInspectTexture(slot, x, y)
 	local texture = slot:CreateTexture()
@@ -131,6 +127,26 @@ function M:ToggleItemLevelInfo(setupCharacterPage, config)
 	if not IsAddOnLoaded('ElvUI_Enhanced') then return end
 	if not E.private.enhanced.character.enable then return end
 
+	if not M.ItemLevelFrame then
+		local itemLevelFrame = CreateFrame('Frame')
+		itemLevelFrame:SetScript('OnEvent', function(_, event, arg1)
+			if event == 'PLAYER_AVG_ITEM_LEVEL_READY' then
+				if E.db.general.itemLevel.displayCharacterInfo then
+					M:UpdateCharacterInfo(event)
+				end
+			elseif E.db.general.itemLevel.displayInspectInfo then
+				M:UpdateInspectInfo(event, arg1)
+			end
+		end)
+
+		if itemLevelFrame.RegisterCustomEvent then
+			pcall(itemLevelFrame.RegisterCustomEvent, itemLevelFrame, 'INSPECT_ITEM_LEVEL_UPDATE')
+			pcall(itemLevelFrame.RegisterCustomEvent, itemLevelFrame, 'PLAYER_AVG_ITEM_LEVEL_READY')
+		end
+
+		M.ItemLevelFrame = itemLevelFrame
+	end
+
 	if setupCharacterPage then
 		M:CreateSlotStrings(_G.CharacterFrame, 'Character')
 	end
@@ -138,7 +154,7 @@ function M:ToggleItemLevelInfo(setupCharacterPage, config)
 	if E.db.general.itemLevel.displayCharacterInfo then
 		M:RegisterEvent('PLAYER_EQUIPMENT_CHANGED', 'UpdateCharacterInfo')
 		M:RegisterEvent('UPDATE_INVENTORY_DURABILITY', 'UpdateCharacterInfo')
-		M:RegisterEvent('PLAYER_AVG_ITEM_LEVEL_UPDATE', 'UpdateCharacterInfo')
+		M:RegisterEvent('PLAYER_AVG_ITEM_LEVEL_READY', 'UpdateCharacterInfo')
 
 		if M:CheckStatsItemLevel() then
 			_G.CharacterAttributesFrame:Hide()
@@ -160,7 +176,7 @@ function M:ToggleItemLevelInfo(setupCharacterPage, config)
 	else
 		M:UnregisterEvent('PLAYER_EQUIPMENT_CHANGED')
 		M:UnregisterEvent('UPDATE_INVENTORY_DURABILITY')
-		M:UnregisterEvent('PLAYER_AVG_ITEM_LEVEL_UPDATE')
+		M:UnregisterEvent('PLAYER_AVG_ITEM_LEVEL_READY')
 
 		if M:CheckStatsItemLevel() then
 			_G.CharacterAttributesFrame:Show()
@@ -171,14 +187,14 @@ function M:ToggleItemLevelInfo(setupCharacterPage, config)
 	end
 
 	if E.db.general.itemLevel.displayInspectInfo then
-		M:RegisterEvent('INSPECT_READY', 'UpdateInspectInfo')
+		M:RegisterEvent('INSPECT_ITEM_LEVEL_UPDATE', 'UpdateInspectInfo')
 		M:RegisterEvent('UNIT_MODEL_CHANGED', 'UpdateInspectInfo')
 
 		if config then
 			M:UpdateSlotPoints('Inspect', true)
 		end
 	else
-		M:UnregisterEvent('INSPECT_READY')
+		M:UnregisterEvent('INSPECT_ITEM_LEVEL_UPDATE')
 		M:UnregisterEvent('UNIT_MODEL_CHANGED')
 		M:ClearPageInfo(_G.InspectFrame, 'Inspect')
 	end
@@ -236,7 +252,10 @@ function M:UpdateAverageString(frame, which, iLevelDB)
 			frame.ItemLevelText:SetText(avgTotal)
 
 			if M:CheckStatsItemLevel() then
-				frame.ItemLevelText:SetTextColor(GetItemLevelColor(frame.unit))
+				local color = GetItemLevelColor and GetItemLevelColor(avgItemLevel)
+				if color and color.GetRGB then
+					frame.ItemLevelText:SetTextColor(color:GetRGB())
+				end
 			end
 		else
 			frame.ItemLevelText:SetText(avgItemLevel)
@@ -360,8 +379,6 @@ function M:UpdateSlotPoints(which, config)
 			local itemLeft, itemRight = i == 16, i == 17
 			if itemLeft or itemRight then
 				slot.enchantText:Point(itemLeft and 'BOTTOMRIGHT' or 'BOTTOMLEFT', slot, itemLeft and -40 or 40, 3)
-			elseif i == 17 then
-				slot.enchantText:Point('TOP', slot, 'BOTTOM', 0, 3)
 			else
 				slot.enchantText:Point(justify, slot, x + (justify == 'BOTTOMLEFT' and 5 or -5), z)
 			end
@@ -405,7 +422,7 @@ function M:UpdateInspectPageFonts(which)
 	local itemLevelFontOutline = E.db.general.itemLevel.itemLevelFontOutline or 'OUTLINE'
 	for i, s in pairs(InspectItems) do
 		local slot = i ~= 4 and _G[which..s]
-		if slot then
+		if slot and slot.iLvlText then
 			slot.iLvlText:FontTemplate(itemLevelFont, itemLevelFontSize, itemLevelFontOutline)
 			slot.enchantText:FontTemplate(itemLevelFont, itemLevelFontSize, itemLevelFontOutline)
 		end

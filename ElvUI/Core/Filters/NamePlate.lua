@@ -13,7 +13,6 @@ G.nameplates.filters = {
 			priority = 2
 		},
 		actions = {
-			usePortrait = true,
 			scale = 1.15
 		}
 	},
@@ -58,13 +57,17 @@ E.StyleFilterDefaults = {
 		priority = 1,
 		isTarget = false,
 		notTarget = false,
+		requireTarget = false,
 		level = false,
+		mylevel = false,
+		negativeMatch = false,
 		casting = {
 			isCasting = false,
 			isChanneling = false,
 			notCasting = false,
 			notChanneling = false,
 			interruptible = false,
+			notInterruptible = false,
 			notSpell = false,
 			spells = {}
 		},
@@ -102,7 +105,7 @@ E.StyleFilterDefaults = {
 			enemyNPC = false
 		},
 		reactionType = {
-			enabled = false,
+			enable = false,
 			hostile = false,
 			neutral = false,
 			friendly = false
@@ -182,7 +185,8 @@ E.StyleFilterDefaults = {
 		icon = false,
 		iconOnly = false,
 		scale = 1.0,
-		alpha = -1
+		alpha = -1,
+		frameLevel = 0
 	}
 }
 

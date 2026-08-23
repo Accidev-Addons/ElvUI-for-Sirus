@@ -4,13 +4,12 @@ local DT = E:GetModule('DataTexts')
 local _G = _G
 local strjoin = strjoin
 local GetLFGRandomDungeonInfo = GetLFGRandomDungeonInfo
-local GetLFGDungeonRewards = GetLFGDungeonRewards
+local GetLFGRoleShortageRewards = GetLFGRoleShortageRewards
 local GetNumRandomDungeons = GetNumRandomDungeons
 local ToggleFrame = ToggleFrame
 
-local NUM_LFD_RANDOM_REWARD_FRAMES = NUM_LFD_RANDOM_REWARD_FRAMES
 local BATTLEGROUND_HOLIDAY = BATTLEGROUND_HOLIDAY
-local DUNGEONS = DUNGEONS
+local DUNGEONS = LFD_DUNGEON_RANDOM_TOOLTIP_HEADER
 local NOT_APPLICABLE = NOT_APPLICABLE
 
 local TANK_ICON = E:TextureString(E.Media.Textures.Tank, ':14:14')
@@ -43,7 +42,7 @@ local function OnEvent(self)
 	--Dungeons
 	for i = 1, GetNumRandomDungeons() do
 		local id = GetLFGRandomDungeonInfo(i)
-		local eligible, forTank, forHealer, forDamage, itemCount = GetLFGDungeonRewards(id)
+		local eligible, forTank, forHealer, forDamage, itemCount = GetLFGRoleShortageRewards(id)
 		if eligible and forTank and itemCount > 0 then tankReward = true; unavailable = false end
 		if eligible and forHealer and itemCount > 0 then healerReward = true; unavailable = false end
 		if eligible and forDamage and itemCount > 0 then dpsReward = true; unavailable = false end
@@ -74,7 +73,7 @@ local function OnEnter()
 	enteredFrame = true
 
 	local numCTA = 0
-	local addTooltipHeader, addTooltipSeparator = true
+	local addTooltipHeader = true
 	for i = 1, GetNumRandomDungeons() do
 		local id, name = GetLFGRandomDungeonInfo(i)
 		local tankReward = false
@@ -82,7 +81,7 @@ local function OnEnter()
 		local dpsReward = false
 		local unavailable = true
 
-		local eligible, forTank, forHealer, forDamage, itemCount = GetLFGDungeonRewards(id)
+		local eligible, forTank, forHealer, forDamage, itemCount = GetLFGRoleShortageRewards(id)
 		if eligible then unavailable = false end
 		if eligible and forTank and itemCount > 0 then tankReward = true end
 		if eligible and forHealer and itemCount > 0 then healerReward = true end
@@ -101,7 +100,6 @@ local function OnEnter()
 		end
 	end
 
-	addTooltipHeader = true
 	DT.tooltip:Show()
 end
 

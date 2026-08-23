@@ -36,15 +36,14 @@ local function OnEvent(self, event, ...)
 		end
 		lastSegment = now
 	elseif event == 'COMBAT_LOG_EVENT_UNFILTERED' then
-		local timestamp, Event, sourceGUID, _, _, _, _, _, _, _, lastHealAmount, overHeal = ...
+		local timestamp, Event, sourceGUID, _, _, _, _, _, _, _, _, lastHealAmount, overHeal = ...
 		if not events[Event] then return end
+		if sourceGUID ~= E.myguid and sourceGUID ~= petGUID then return end
 
-		if sourceGUID == E.myguid or sourceGUID == petGUID then
-			if timeStamp == 0 then timeStamp = timestamp end
-			lastSegment = timeStamp
-			combatTime = timestamp - timeStamp
-			healTotal = healTotal + max(0, lastHealAmount - overHeal)
-		end
+		if timeStamp == 0 then timeStamp = timestamp end
+		lastSegment = timeStamp
+		combatTime = timestamp - timeStamp
+		healTotal = healTotal + max(0, lastHealAmount - overHeal)
 	end
 
 	GetHPS(self)

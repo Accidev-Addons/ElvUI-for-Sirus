@@ -10,7 +10,7 @@
 -- @name LibSpellRange-1.0.lua
 
 local major = "SpellRange-1.0"
-local minor = 19
+local minor = 10019
 
 assert(LibStub, format("%s requires LibStub.", major))
 
@@ -26,11 +26,15 @@ local GetSpellInfo = _G.GetSpellInfo
 local GetSpellLink = _G.GetSpellLink
 local GetSpellName = _G.GetSpellName
 local GetSpellTabInfo = _G.GetSpellTabInfo
+local GetNumSpellTabs = _G.GetNumSpellTabs
+local HasPetSpells = _G.HasPetSpells
+
+local GetSpellIDFromLink = _G.C_SpellBook and _G.C_SpellBook.GetSpellIDFromLink or function(link)
+	return tonumber(link:gsub("|", "||"):match("spell:(%d+)"))
+end
 
 local IsSpellInRange = _G.IsSpellInRange
 local SpellHasRange = _G.SpellHasRange
-
-local MAX_SKILLLINE_TABS = _G.MAX_SKILLLINE_TABS
 
 -- isNumber is basically a tonumber cache for maximum efficiency
 Lib.isNumber = Lib.isNumber or setmetatable({}, {
@@ -81,12 +85,16 @@ local function UpdateBook(bookType)
 	local _, offs, numspells
 	local max = 0
 
-	for i = MAX_SKILLLINE_TABS, 1, -1 do
-		_, _, offs, numspells = GetSpellTabInfo(i)
+	if bookType == "pet" then
+		max = HasPetSpells() or 0
+	else
+		for i = GetNumSpellTabs(), 1, -1 do
+			_, _, offs, numspells = GetSpellTabInfo(i)
 
-		if numspells > 0 then
-			max = offs + numspells
-			break
+			if numspells and numspells > 0 then
+				max = offs + numspells
+				break
+			end
 		end
 	end
 
@@ -95,14 +103,13 @@ local function UpdateBook(bookType)
 
 	wipe(spellsByName)
 	wipe(spellsByID)
-	wipe(blacklistedIDs)
 
 	for spellBookID = 1, max do
 		local spellName, rank = GetSpellName(spellBookID, bookType)
 
 		if spellName and (rank == "" or rank:match("%d+")) then
 			local link = GetSpellLink(spellName, rank)
-			local spellID = tonumber(link and link:gsub("|", "||"):match("spell:(%d+)"))
+			local spellID = link and GetSpellIDFromLink(link)
 
 			if spellName then
 				spellsByName[strlower(spellName)] = spellBookID
@@ -121,18 +128,27 @@ if not Lib.updaterFrame then
 end
 Lib.updaterFrame:UnregisterAllEvents()
 Lib.updaterFrame:RegisterEvent("LEARNED_SPELL_IN_TAB")
+Lib.updaterFrame:RegisterEvent("SPELLS_CHANGED")
+Lib.updaterFrame:RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED")
 Lib.updaterFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 
-local function UpdateSpells(_, event)
+local function DoUpdate(self)
+	self:SetScript("OnUpdate", nil)
+	wipe(blacklistedIDs)
 	UpdateBook("spell")
 	UpdateBook("pet")
+end
+
+local function UpdateSpells(self, event)
 	if event == "PLAYER_ENTERING_WORLD" then
 		Lib.updaterFrame:UnregisterEvent(event)
 	end
+
+	Lib.updaterFrame:SetScript("OnUpdate", DoUpdate)
 end
 
 Lib.updaterFrame:SetScript("OnEvent", UpdateSpells)
-UpdateSpells()
+DoUpdate(Lib.updaterFrame)
 
 --- Improved spell range checking function.
 -- @name SpellRange.IsSpellInRange
@@ -163,11 +179,11 @@ function Lib.IsSpellInRange(spellInput, unit)
 					spell = strlowerCache[spell]
 					if spellsByName_spell[spell] then
 						local spellBookID = spellsByName_spell[spell]
-						Lib["spellsByID_spell"][spellInput] = spellBookID
+						spellsByID_spell[spellInput] = spellBookID
 						return IsSpellInRange(spellBookID, "spell", unit)
 					elseif spellsByName_pet[spell] then
 						local spellBookID = spellsByName_pet[spell]
-						Lib["spellsByID_pet"][spellInput] = spellBookID
+						spellsByID_pet[spellInput] = spellBookID
 						return IsSpellInRange(spellBookID, "pet", unit)
 					end
 				end
@@ -177,13 +193,13 @@ function Lib.IsSpellInRange(spellInput, unit)
 			end
 		end
 	else
-		spellInput = strlowerCache[spellInput]
+		local lower = strlowerCache[spellInput]
 
-		local spell = spellsByName_spell[spellInput]
+		local spell = spellsByName_spell[lower]
 		if spell then
 			return IsSpellInRange(spell, "spell", unit)
 		else
-			spell = spellsByName_pet[spellInput]
+			spell = spellsByName_pet[lower]
 			if spell then
 				return IsSpellInRange(spell, "pet", unit)
 			end
@@ -218,13 +234,13 @@ function Lib.SpellHasRange(spellInput)
 			end
 		end
 	else
-		spellInput = strlowerCache[spellInput]
+		local lower = strlowerCache[spellInput]
 
-		local spell = spellsByName_spell[spellInput]
+		local spell = spellsByName_spell[lower]
 		if spell then
 			return SpellHasRange(spell, "spell")
 		else
-			spell = spellsByName_pet[spellInput]
+			spell = spellsByName_pet[lower]
 			if spell then
 				return SpellHasRange(spell, "pet")
 			end

@@ -22,6 +22,7 @@ local CLASS_SORT_ORDER = CLASS_SORT_ORDER
 local NUM_CLASS_ORDER = #CLASS_SORT_ORDER
 local MAX_RAID_MEMBERS = MAX_RAID_MEMBERS
 local MAX_PARTY_MEMBERS = MAX_PARTY_MEMBERS
+local MAX_BOSS_FRAMES = MAX_BOSS_FRAMES
 
 local configEnv
 local originalEnvs = {}
@@ -214,8 +215,8 @@ function UF:ForceShow(frame)
 		frame.isForced = true
 		frame.forceShowAuras = true
 
-		frame.unit = 'player'
 		frame.oldUnit = frame.unit
+		frame.unit = 'player'
 	end
 
 	if not next(forceShown) then
@@ -224,6 +225,8 @@ function UF:ForceShow(frame)
 	forceShown[frame] = true
 
 	frame:EnableMouse(false)
+	-- UnforceShow leaves statehidden set, and SecureGroupHeaders refuses to re-show a button while it is there
+	frame:SetAttribute('statehidden', nil)
 	frame:Show()
 
 	UnregisterUnitWatch(frame)
@@ -281,9 +284,8 @@ end
 do
 	local allowHidePlayer = {
 		party = true,
-		raid1 = true,
-		raid2 = true,
-		raid3 = true
+		raid = true,
+		raid40 = true
 	}
 
 	local function ForceShow(frame, index, length)
@@ -417,15 +419,9 @@ function UF:PLAYER_REGEN_DISABLED()
 		end
 	end
 
-	for i = 1, 4 do
+	for i = 1, MAX_BOSS_FRAMES do
 		if self["boss"..i] and self["boss"..i].isForced then
 			self:UnforceShow(self["boss"..i])
-		end
-	end
-
-	for i = 1, 4 do
-		if self["party"..i] and self["party"..i].isForced then
-			self:UnforceShow(self["party"..i])
 		end
 	end
 end

@@ -63,7 +63,7 @@ function UF:Update_PetFrame(frame, db)
 		frame.INFO_PANEL_HEIGHT = frame.USE_INFO_PANEL and db.infoPanel.height or 0
 
 		frame.HAPPINESS_SHOWN = (db.happiness and db.happiness.enable) and frame.HappinessIndicator and frame.HappinessIndicator:IsShown()
-		frame.HAPPINESS_WIDTH = frame.HAPPINESS_SHOWN and (db.happiness.width + (frame.BORDER*2)) or 0
+		frame.HAPPINESS_WIDTH = 0
 
 		frame.BOTTOM_OFFSET = UF:GetHealthBottomOffset(frame)
 
@@ -75,6 +75,10 @@ function UF:Update_PetFrame(frame, db)
 	frame:RegisterForClicks(self.db.targetOnMouseDown and "AnyDown" or "AnyUp")
 	frame:Size(frame.UNIT_WIDTH, frame.UNIT_HEIGHT)
 	_G[frame:GetName().."Mover"]:Size(frame:GetSize())
+
+	if E.myclass == "HUNTER" then
+		UF:Configure_Happiness(frame)
+	end
 
 	UF:Configure_InfoPanel(frame)
 
@@ -112,10 +116,6 @@ function UF:Update_PetFrame(frame, db)
 
 	--AuraBars
 	UF:Configure_AuraBars(frame)
-
-	if E.myclass == "HUNTER" then
-		UF:Configure_Happiness(frame)
-	end
 
 	--CustomTexts
 	UF:Configure_CustomTexts(frame)

@@ -1,11 +1,9 @@
 local E, L, V, P, G = unpack(ElvUI)
 local NP = E:GetModule("NamePlates")
 local LSM = E.Libs.LSM
-local LAI = E.Libs.LAI
 
 --Lua functions
-local select, unpack, pairs = select, unpack, pairs
-local band = bit.band
+local select, wipe = select, wipe
 local tinsert = table.insert
 local floor = math.floor
 local split = string.split
@@ -13,9 +11,9 @@ local split = string.split
 local CreateFrame = CreateFrame
 local GetSpellInfo = GetSpellInfo
 local GetTime = GetTime
-local RAID_CLASS_COLORS = RAID_CLASS_COLORS
+local UnitAura = UnitAura
 
-local CREATED, VISIBLE, HIDDEN = 2, 1, 0
+local VISIBLE, HIDDEN = 1, 0
 
 local positionValues = {
 	BOTTOMLEFT = "TOP",
@@ -36,42 +34,12 @@ local positionValues2 = {
 }
 
 
-local RaidIconBit = {
-	["STAR"] = 0x00100000,
-	["CIRCLE"] = 0x00200000,
-	["DIAMOND"] = 0x00400000,
-	["TRIANGLE"] = 0x00800000,
-	["MOON"] = 0x01000000,
-	["SQUARE"] = 0x02000000,
-	["CROSS"] = 0x04000000,
-	["SKULL"] = 0x08000000
+local playerSpells = {}
+
+local playerFilters = {
+	HELPFUL = "HELPFUL|PLAYER",
+	HARMFUL = "HARMFUL|PLAYER"
 }
-
-local ByRaidIcon = {}
-
-function NP:LibAuraInfo_AURA_APPLIED(event, destGUID)
-	self:UpdateElement_AurasByGUID(destGUID, event)
-end
-
-function NP:LibAuraInfo_AURA_REMOVED(event, destGUID)
-	self:UpdateElement_AurasByGUID(destGUID, event)
-end
-
-function NP:LibAuraInfo_AURA_REFRESH(event, destGUID)
-	self:LibAuraInfo_AURA_APPLIED(event, destGUID)
-end
-
-function NP:LibAuraInfo_AURA_APPLIED_DOSE(event, destGUID)
-	self:LibAuraInfo_AURA_APPLIED(event, destGUID)
-end
-
-function NP:LibAuraInfo_AURA_CLEAR(event, destGUID)
-	self:UpdateElement_AurasByGUID(destGUID, event)
-end
-
-function NP:LibAuraInfo_UNIT_AURA(event, destGUID)
-	self:UpdateElement_AurasByGUID(destGUID, event)
-end
 
 function NP:UpdateTime(elapsed)
 	self.timeLeft = self.timeLeft - elapsed
@@ -93,7 +61,8 @@ function NP:UpdateTime(elapsed)
 
 	local style = E.TimeFormats[id]
 	if style then
-		local which = (self.textColors and 2 or 1) + (self.showSeconds and 0 or 2)
+		local opt = id < 3 and self.roundTime
+		local which = (self.textColors and 2 or 1) + (opt and 2 or 0)
 		if self.textColors then
 			self.text:SetFormattedText(style[which], value, self.textColors[id], remainder)
 		else
@@ -109,28 +78,27 @@ end
 
 local unstableAffliction = GetSpellInfo(30108)
 local vampiricTouch = GetSpellInfo(34914)
-function NP:SetAura(frame, guid, index, filter, isDebuff, visible)
-	local isAura, name, texture, count, debuffType, duration, expiration, caster, spellID, _ = LAI:GUIDAura(guid, index, filter)
+function NP:SetAura(frame, unit, index, filter, isDebuff, visible, spells)
+	local isAura, name, texture, count, debuffType, duration, expiration, caster, spellID, _
 
-	if frame.forceShow or frame.forceCreate then
+	if unit then
+		name, _, texture, count, debuffType, duration, expiration, caster, _, _, spellID = UnitAura(unit, index, filter)
+		isAura = name ~= nil
+	end
+
+	if frame.forceShow then
 		spellID = 47540
 		name, _, texture = GetSpellInfo(spellID)
-		if frame.forceShow then
-			isAura, count, debuffType, duration, expiration = true, 5, "Magic", 0, 0
-		end
+		isAura, count, debuffType, duration, expiration = true, 5, "Magic", 0, 0
 	end
 
 	if isAura then
 		local position = visible + 1
 		local button = frame[position] or NP:Construct_AuraIcon(frame, position)
 
-		button.caster = caster
-		button.filter = filter
-		button.isDebuff = isDebuff
-
-		local filterCheck = not frame.forceCreate
-		if not (frame.forceShow or frame.forceCreate) then
-			filterCheck = NP:AuraFilter(guid, button, name, texture, count, debuffType, duration, expiration, caster, spellID)
+		local filterCheck = true
+		if not frame.forceShow then
+			filterCheck = NP:AuraFilter(unit, button, name, texture, count, debuffType, duration, expiration, caster, spellID, spells)
 		end
 
 		if filterCheck then
@@ -147,8 +115,6 @@ function NP:SetAura(frame, guid, index, filter, isDebuff, visible)
 					button:SetValue(timeLeft)
 
 					button:SetScript("OnUpdate", NP.UpdateTime)
---				else
---					return HIDDEN
 				end
 			else
 				button.timeLeft = nil
@@ -171,10 +137,6 @@ function NP:SetAura(frame, guid, index, filter, isDebuff, visible)
 			end
 
 			return VISIBLE
-		elseif frame.forceCreate then
-			button:Hide()
-
-			return CREATED
 		else
 			return HIDDEN
 		end
@@ -228,25 +190,35 @@ function NP:Update_AurasPosition(frame, db)
 	end
 end
 
-function NP:UpdateElement_AuraIcons(frame, guid, filter, limit, isDebuff)
-	local index, visible, hidden, created = 1, 0, 0, 0
+function NP:UpdateElement_AuraIcons(frame, unit, filter, limit, isDebuff)
+	local index, visible = 1, 0
+
+	wipe(playerSpells)
+
+	if unit then
+		local playerFilter = playerFilters[filter]
+		local i = 1
+		while true do
+			local name, _, _, _, _, _, _, _, _, _, spellID = UnitAura(unit, i, playerFilter)
+			if not name then break end
+
+			if spellID then
+				playerSpells[spellID] = true
+			end
+
+			i = i + 1
+		end
+	end
 
 	while visible < limit do
-		local result = NP:SetAura(frame, guid, index, filter, isDebuff, visible)
+		local result = NP:SetAura(frame, unit, index, filter, isDebuff, visible, playerSpells)
 		if not result then
 			break
-		elseif result == HIDDEN then
-			hidden = hidden + 1
 		elseif result == VISIBLE then
 			visible = visible + 1
-		elseif result == CREATED then
-			visible = visible + 1
-			created = created + 1
 		end
 		index = index + 1
 	end
-
-	visible = visible - created
 
 	for i = visible + 1, #frame do
 		frame[i].timeLeft = nil
@@ -259,25 +231,15 @@ end
 function NP:UpdateElement_Auras(frame)
 	if not frame.Health:IsShown() then return end
 
-	local guid = frame.guid
-	if not guid then
-		if RAID_CLASS_COLORS[frame.UnitClass] then
-			guid = self:GetGUIDByName(frame.UnitName, frame.UnitType)
-		elseif frame.RaidIcon:IsShown() then
-			guid = ByRaidIcon[frame.RaidIconType]
-		end
-
-		if guid then
-			frame.guid = guid
-		elseif not frame.Buffs.forceShow and not frame.Debuffs.forceShow then
-			return
-		end
+	local unit = frame.unit
+	if not unit and not frame.Buffs.forceShow and not frame.Debuffs.forceShow then
+		return
 	end
 
 	local db = NP.db.units[frame.UnitType].buffs
 	if db.enable then
 		local buffs = frame.Buffs
-		buffs.visibleBuffs = NP:UpdateElement_AuraIcons(buffs, guid, buffs.filter or "HELPFUL", db.perrow * db.numrows)
+		NP:UpdateElement_AuraIcons(buffs, unit, "HELPFUL", db.perrow * db.numrows)
 
 		if #buffs > buffs.anchoredIcons then
 			self:Update_AurasPosition(buffs, db)
@@ -289,7 +251,7 @@ function NP:UpdateElement_Auras(frame)
 	db = NP.db.units[frame.UnitType].debuffs
 	if db.enable then
 		local debuffs = frame.Debuffs
-		debuffs.visibleDebuffs = NP:UpdateElement_AuraIcons(debuffs, guid, debuffs.filter or "HARMFUL", db.perrow * db.numrows, true)
+		NP:UpdateElement_AuraIcons(debuffs, unit, "HARMFUL", db.perrow * db.numrows, true)
 
 		if #debuffs > debuffs.anchoredIcons then
 			self:Update_AurasPosition(debuffs, db)
@@ -299,34 +261,6 @@ function NP:UpdateElement_Auras(frame)
 	end
 
 	self:StyleFilterUpdate(frame, "UNIT_AURA")
-end
-
-function NP:UpdateElement_AurasByGUID(guid, event)
-	local destName, destFlags = LAI:GetGUIDInfo(guid)
-
-	if destName then
-		destName = split("-", destName)
-	end
-
-	local raidIcon
-	if destFlags then
-		for iconName, bitmask in pairs(RaidIconBit) do
-			if band(destFlags, bitmask) > 0 then
-				ByRaidIcon[iconName] = guid
-				raidIcon = iconName
-				break
-			end
-		end
-	end
-
-	local frame = self:SearchForFrame(guid, raidIcon)
-	if frame then
-		if frame.UnitType ~= "ENEMY_NPC" and not self.GUIDList[guid] then
-			self.GUIDList[guid] = {name = destName, unitType = frame.UnitType}
-		end
-
-		self:UpdateElement_Auras(frame)
-	end
 end
 
 function NP:Construct_AuraIcon(parent, index)
@@ -359,7 +293,6 @@ function NP:Construct_AuraIcon(parent, index)
 	if not button.isRegisteredCooldown then
 		button.CooldownOverride = "nameplates"
 		button.isRegisteredCooldown = true
-		button.forceEnabled = true
 
 		if not E.RegisteredCooldowns.nameplates then E.RegisteredCooldowns.nameplates = {} end
 		tinsert(E.RegisteredCooldowns.nameplates, button)
@@ -402,7 +335,6 @@ end
 function NP:CheckFilter(name, spellID, isPlayer, allowDuration, noDuration, ...)
 	for i = 1, select("#", ...) do
 		local filterName = select(i, ...)
-		if not filterName then return true end
 		if G.nameplates.specialFilters[filterName] or E.global.unitframe.aurafilters[filterName] then
 			local filter = E.global.unitframe.aurafilters[filterName]
 			if filter then
@@ -428,24 +360,17 @@ function NP:CheckFilter(name, spellID, isPlayer, allowDuration, noDuration, ...)
 	end
 end
 
-function NP:AuraFilter(guid, button, name, texture, count, debuffType, duration, expiration, caster, spellID)
+function NP:AuraFilter(unit, button, name, texture, count, debuffType, duration, expiration, caster, spellID, spells)
 	local parent = button:GetParent()
 	local parentType = parent.type
 	local db = NP.db.units[parent:GetParent().UnitType][parentType]
 	if not db then return true end
 
-	local isPlayer = caster == E.myguid
+	local isPlayer = (spells and spells[spellID]) or false
 
-	-- keep these same as in `UF:AuraFilter`
-	button.isPlayer = isPlayer
-	button.dtype = debuffType
-	button.duration = duration
-	button.expiration = expiration
-	button.stackCount = count
+	button.expirationTime = expiration
 	button.name = name
 	button.spellID = spellID
-	button.spell = name
-	button.priority = 0
 
 	if not db.filters then return true end
 

@@ -2,7 +2,6 @@ local E, L, V, P, G = unpack(ElvUI)
 local DB = E:GetModule('DataBars')
 local LSM = E.Libs.LSM
 
-local _G = _G
 local min, type, format = min, type, format
 local pairs, error = pairs, error
 
@@ -14,9 +13,9 @@ local GetNumQuestLogEntries = GetNumQuestLogEntries
 local GetQuestLogSelection = GetQuestLogSelection
 local GetQuestLogTitle = GetQuestLogTitle
 local IsXPUserDisabled = IsXPUserDisabled
+local IsQuestWatched = IsQuestWatched
 local UnitXP, UnitXPMax = UnitXP, UnitXPMax
 local GameTooltip = GameTooltip
-local ToggleDropDownMenu = ToggleDropDownMenu
 
 local CurrentXP, XPToLevel, PercentRested, PercentXP, RemainXP, RemainTotal, RemainBars
 local RestedXP, QuestLogXP = 0, 0
@@ -31,11 +30,11 @@ function DB:ExperienceBar_CheckQuests(_, completedOnly)
 		name, _, _, _, isHeader, _, isComplete, _, questID = GetQuestLogTitle(i)
 		if isHeader then
 			currentZoneCheck = bar.db.questCurrentZoneOnly and currentZone == name or not bar.db.questCurrentZoneOnly
-		elseif currentZoneCheck and (not completedOnly or isComplete == 1) then
+		elseif currentZoneCheck and (not completedOnly or isComplete == 1) and (not bar.db.questTrackedOnly or IsQuestWatched(i)) then
 			local previousQuest = GetQuestLogSelection() -- save previous quest
 
 			SelectQuestLogEntry(i)
-			QuestLogXP = QuestLogXP + GetQuestLogRewardXP(questID)
+			QuestLogXP = QuestLogXP + (GetQuestLogRewardXP(questID) or 0)
 
 			if previousQuest then -- restore previous quest
 				SelectQuestLogEntry(previousQuest)
@@ -192,13 +191,6 @@ function DB:ExperienceBar_OnEnter()
 	GameTooltip:Show()
 end
 
-function DB:ExperienceBar_OnClick(button)
-	if not _G.XPRM then return end -- Warmane Experience Dropdown
-
-	if button == 'RightButton' then
-		ToggleDropDownMenu(1, nil, _G.XPRM, 'cursor')
-	end
-end
 function DB:ExperienceBar_XPGain()
 	DB:ExperienceBar_Update()
 	DB:ExperienceBar_QuestXP()
@@ -232,8 +224,7 @@ function DB:ExperienceBar_Toggle()
 end
 
 function DB:ExperienceBar()
-	local Experience = DB:CreateBar('ElvUI_ExperienceBar', 'Experience', DB.ExperienceBar_Update, DB.ExperienceBar_OnEnter, DB.ExperienceBar_OnClick, {'BOTTOM', E.UIParent, 'BOTTOM', 0, 43})
-	Experience:HookScript('OnMouseUp', DB.ExperienceBar_OnClick) -- Warmane
+	local Experience = DB:CreateBar('ElvUI_ExperienceBar', 'Experience', DB.ExperienceBar_Update, DB.ExperienceBar_OnEnter, nil, {'BOTTOM', E.UIParent, 'BOTTOM', 0, 43})
 	Experience:SetFrameLevel(4)
 	Experience.barTexture:SetDrawLayer('ARTWORK')
 	DB:CreateBarBubbles(Experience)
@@ -264,7 +255,6 @@ function DB:ExperienceBar()
 
 	E:CreateMover(Experience.holder, 'ExperienceBarMover', L["Experience Bar"], nil, nil, nil, nil, nil, 'databars,experience')
 
-	DB:RegisterEvent('UPDATE_EXPANSION_LEVEL', 'ExperienceBar_Toggle')
 	DB:RegisterEvent('DISABLE_XP_GAIN', 'ExperienceBar_Toggle')
 	DB:RegisterEvent('ENABLE_XP_GAIN', 'ExperienceBar_Toggle')
 	DB:ExperienceBar_Toggle()

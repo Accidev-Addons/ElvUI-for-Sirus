@@ -4,7 +4,7 @@ local ElvUF = E.oUF
 
 local select = select
 local strfind, strsub, gsub = strfind, strsub, gsub
-local floor, max = floor, max
+local floor = floor
 
 local CreateFrame = CreateFrame
 
@@ -59,7 +59,7 @@ function UF:Configure_ClassBar(frame)
 		else
 			bars.backdrop:Hide()
 		end
-		local maxClassBarButtons = max(UF.classMaxResourceBar[E.myclass] or 0)
+		local maxClassBarButtons = UF.classMaxResourceBar[E.myclass] or 0
 		for i = 1, maxClassBarButtons do
 			bars[i]:Hide()
 

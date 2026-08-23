@@ -5,7 +5,10 @@ local UF = E:GetModule("UnitFrames")
 --WoW API / Variables
 
 function UF:Construct_ReadyCheckIcon(frame)
-	local tex = frame.RaisedElementParent.TextureParent:CreateTexture(nil, "OVERLAY")
+	local holder = CreateFrame("Frame", nil, frame.RaisedElementParent)
+	holder:OffsetFrameLevel(20, frame.RaisedElementParent)
+
+	local tex = holder:CreateTexture(nil, "OVERLAY")
 	tex:Size(12)
 	tex:Point("BOTTOM", frame.Health, "BOTTOM", 0, 2)
 

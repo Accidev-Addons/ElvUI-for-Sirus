@@ -1,29 +1,35 @@
 local E, L, V, P, G = unpack(ElvUI)
 
-local pairs = pairs
+local select = select
 local IsFalling = IsFalling
 local CreateFrame = CreateFrame
 local GetUnitSpeed = GetUnitSpeed
 local GetRealZoneText = GetRealZoneText
 local GetMinimapZoneText = GetMinimapZoneText
 local GetCurrentMapAreaID = GetCurrentMapAreaID
+local GetCurrentMapContinent = GetCurrentMapContinent
+local GetMapContinents = GetMapContinents
+local GetMapInfoEx = GetMapInfoEx
 local GetMapInfo = GetMapInfo
-local GetMapZones = GetMapZones
 local GetZoneText = GetZoneText
-
 
 local MapInfo = {}
 E.MapInfo = MapInfo
 
+local function GetContinentName()
+	local index = GetCurrentMapContinent()
+	if not index or index < 1 then return end
+
+	return select(index, GetMapContinents())
+end
+
 function E:MapInfo_Update()
 	local mapID = GetCurrentMapAreaID()
 
-	local mapInfo = mapID and GetMapZones(mapID)
-	MapInfo.name = (mapInfo and mapInfo.name) or GetZoneText() or GetMapInfo() or nil
-	MapInfo.mapType = (mapInfo and mapInfo.mapType) or nil
-	MapInfo.parentMapID = (mapInfo and mapInfo.parentMapID) or nil
+	MapInfo.name = (mapID and GetMapInfoEx(mapID)) or GetZoneText() or GetMapInfo() or nil
 
 	MapInfo.mapID = mapID or nil
+	MapInfo.continentName = GetContinentName() or nil
 	MapInfo.zoneText = (mapID and E:GetZoneText(mapID)) or nil
 	MapInfo.subZoneText = GetMinimapZoneText() or nil
 	MapInfo.realZoneText = GetRealZoneText() or nil
@@ -97,56 +103,19 @@ function E:GetPlayerMapPos()
 	return x, y
 end
 
--- Code taken from LibTourist-3.0 and rewritten to fit our purpose
-local localizedMapNames = {}
-local ZoneIDToContinentName = {
-	[104] = 'Outland',
-	[107] = 'Outland',
-}
-local MapIdLookupTable = {
-	[101] = 'Outland',
-	[104] = 'Shadowmoon Valley',
-	[107] = 'Nagrand',
-}
-local function LocalizeZoneNames()
-	local mapInfo
-	for mapID, englishName in pairs(MapIdLookupTable) do
-		mapInfo = GetMapZones(mapID)
-		-- Add combination of English and localized name to lookup table
-		if mapInfo and mapInfo.name and not localizedMapNames[englishName] then
-			localizedMapNames[englishName] = mapInfo.name
-		end
-	end
-end
-LocalizeZoneNames()
-
---Add ' (Outland)' to the end of zone name for Nagrand and Shadowmoon Valley, if mapID matches Outland continent.
---We can then use this function when we need to compare the players own zone against return values from stuff like GetFriendInfo and GetGuildRosterInfo,
---which adds the ' (Outland)' part unlike the GetRealZoneText() API.
 function E:GetZoneText(mapID)
 	if not (mapID and MapInfo.name) then return end
 
-	local continent, zoneName = ZoneIDToContinentName[mapID]
-	if continent and continent == 'Outland' then
-		if MapInfo.name == localizedMapNames.Nagrand or MapInfo.name == 'Nagrand' then
-			zoneName = localizedMapNames.Nagrand..' ('..localizedMapNames.Outland..')'
-		elseif MapInfo.name == localizedMapNames['Shadowmoon Valley'] or MapInfo.name == 'Shadowmoon Valley' then
-			zoneName = localizedMapNames['Shadowmoon Valley']..' ('..localizedMapNames.Outland..')'
-		end
-	end
-
-	return zoneName or MapInfo.name
+	return MapInfo.name
 end
 
-local function toggleCoordsStartStop()
+function E:MapInfo_CoordsToggle()
 	if GetUnitSpeed('player') > 0 then
 		E:MapInfo_CoordsStart()
 	else
 		E:MapInfo_CoordsStop()
 	end
 end
-
-E:ScheduleRepeatingTimer(toggleCoordsStartStop, 0.5)
 
 E:RegisterEvent('CRITERIA_UPDATE', 'MapInfo_CoordsStop') -- when the player goes into an animation (landing)
 E:RegisterEventForObject('PLAYER_LOGIN', E.MapInfo, E.MapInfo_Update)

@@ -6,33 +6,30 @@ local strjoin = strjoin
 local format = format
 
 local GetCombatRating = GetCombatRating
-local GetHitModifier = GetHitModifier
 local GetCombatRatingBonus = GetCombatRatingBonus
 local GetArmorPenetration = GetArmorPenetration
 
-local STAT_HIT_CHANCE = STAT_HIT_CHANCE
-local STAT_CATEGORY_ENHANCEMENTS = STAT_CATEGORY_ENHANCEMENTS
 local CR_HIT_MELEE_TOOLTIP = CR_HIT_MELEE_TOOLTIP
 local CR_HIT_RANGED_TOOLTIP = CR_HIT_RANGED_TOOLTIP
 
-local CR_HIT_MELEE = CR_HIT_MELEE or 6
-local CR_HIT_RANGED = CR_HIT_RANGED or 7
+local CR_HIT_MELEE = CR_HIT_MELEE
+local CR_HIT_RANGED = CR_HIT_RANGED
 local CR_ARMOR_PENETRATION = CR_ARMOR_PENETRATION
 
 local ratingIndex = E.myclass == 'HUNTER' and CR_HIT_RANGED or CR_HIT_MELEE
+local STAT_HIT_CHANCE = _G['COMBAT_RATING_NAME'..ratingIndex]
 
 local displayString, db = ''
-local hitValue, hitPercent, hitPercentFromTalents
+local hitValue, hitPercent
 
 local function OnEvent(self)
 	hitValue = GetCombatRating(ratingIndex)
 	hitPercent = GetCombatRatingBonus(ratingIndex)
-	hitPercentFromTalents = ratingIndex == CR_HIT_MELEE and GetHitModifier() or 0
 
 	if db.NoLabel then
-		self.text:SetFormattedText(displayString, hitPercent + hitPercentFromTalents)
+		self.text:SetFormattedText(displayString, hitPercent)
 	else
-		self.text:SetFormattedText(displayString, db.Label ~= '' and db.Label or STAT_HIT_CHANCE..': ', hitPercent + hitPercentFromTalents)
+		self.text:SetFormattedText(displayString, db.Label ~= '' and db.Label or STAT_HIT_CHANCE..': ', hitPercent)
 	end
 end
 
@@ -53,4 +50,4 @@ local function ApplySettings(self, hex)
 	displayString = strjoin('', db.NoLabel and '' or '%s', hex, '%.'..db.decimalLength..'f%%|r')
 end
 
-DT:RegisterDatatext('Hit', STAT_CATEGORY_ENHANCEMENTS, { 'UNIT_STATS', 'UNIT_AURA' }, OnEvent, nil, nil, OnEnter, nil, STAT_HIT_CHANCE, nil, ApplySettings)
+DT:RegisterDatatext('Hit', L["Enhancements"], { 'UNIT_STATS', 'UNIT_AURA' }, OnEvent, nil, nil, OnEnter, nil, STAT_HIT_CHANCE, nil, ApplySettings)

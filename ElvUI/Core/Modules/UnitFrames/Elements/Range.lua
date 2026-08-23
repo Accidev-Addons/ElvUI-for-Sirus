@@ -31,14 +31,14 @@ function UF:UpdateRangeCheckSpells()
 		for spellID in pairs(spells) do
 			local enabled = spells[spellID]
 			if enabled then --We will allow value to be false to disable this spell from being used
-				AddSpell(tbl, spellID, enabled)
+				AddSpell(tbl, spellID)
 			end
 		end
 	end
 end
 
 local function getUnit(unit)
-	if not find(unit, 'party') or not find(unit, 'raid') then
+	if not find(unit, 'party') and not find(unit, 'raid') then
 		for i = 1, 4 do
 			if UnitIsUnit(unit, 'party'..i) then
 				return 'party'..i
@@ -60,9 +60,8 @@ local function friendlyIsInRange(unit)
 		unit = getUnit(unit) -- swap the unit with `raid#` or `party#` when its NOT `player`, UnitIsUnit is true, and its not using `raid#` or `party#` already
 	end
 
-	local inRange, checkedRange = UnitInRange(unit)
-	if checkedRange and not inRange then
-		return false -- blizz checked and said the unit is out of range
+	if UnitInRange(unit) == 1 then
+		return true -- blizz checked and said the unit is within 38 yards
 	end
 
 	if CheckInteractDistance(unit, 1) then

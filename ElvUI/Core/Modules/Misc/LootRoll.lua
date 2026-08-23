@@ -4,14 +4,15 @@ local M = E:GetModule("Misc")
 local LSM = E.Libs.LSM
 
 local _G = _G
-local unpack, next, pairs, ipairs = unpack, next, pairs, ipairs
+local unpack, next, pairs, ipairs, tonumber = unpack, next, pairs, ipairs, tonumber
 local find, format = string.find, string.format
 local tinsert, tremove, wipe = table.insert, table.remove, table.wipe
 
 local CreateFrame = CreateFrame
 local GetLocale = GetLocale
 local GameTooltip = GameTooltip
-local GetItemInfo = GetItemInfo
+local C_Item_GetItemInfo = C_Item.GetItemInfo
+local GetItemInfoInstant = GetItemInfoInstant
 local GetLootRollItemInfo = GetLootRollItemInfo
 local GetLootRollItemLink = GetLootRollItemLink
 local GetLootRollTimeLeft = GetLootRollTimeLeft
@@ -24,7 +25,6 @@ local UnitClass = UnitClass
 local GameTooltip_Hide = GameTooltip_Hide
 local GameTooltip_ShowCompareItem = GameTooltip_ShowCompareItem
 
-local ITEM_QUALITY_COLORS = ITEM_QUALITY_COLORS
 local GREED, NEED, PASS = GREED, NEED, PASS
 local ROLL_DISENCHANT = ROLL_DISENCHANT
 local PRIEST_COLOR = RAID_CLASS_COLORS.PRIEST
@@ -32,57 +32,13 @@ local PRIEST_COLOR = RAID_CLASS_COLORS.PRIEST
 M.RollBars = {}
 
 local locale = GetLocale()
-local rollMessages = locale == "deDE" and {
-	["(.*) passt automatisch bei (.+), weil [ersi]+ den Gegenstand nicht benutzen kann.$"] = 0,
-	["(.*) würfelt nicht für: (.+|r)$"] = 0,
-	["(.*) hat für (.+) 'Bedarf' ausgewählt"] = 1,
-	["(.*) hat für (.+) 'Gier' ausgewählt"] = 2,
-	["(.*) hat für '(.+)' Entzauberung gewählt."] = 3,
-} or locale == "frFR" and {
-	["(.*) a passé pour : (.+) parce qu'((il)|(elle)) ne peut pas ramasser cette objet.$"] = 0,
-	["(.*) a passé pour : (.+)"] = 0,
-	["(.*) a choisi Besoin pour : (.+)"] = 1,
-	["(.*) a choisi Cupidité pour : (.+)"] = 2,
-	["(.*) a choisi Désenchantement pour : (.+)"] = 3,
-} or locale == "zhCN" and {
-	["(.*)自动放弃了：(.+)，因为他无法拾取该物品$"] = 0,
-	["(.*)自动放弃了：(.+)，因为她无法拾取该物品$"] = 0,
-	["(.*)放弃了：(.+)"] = 0,
-	["(.*)选择了需求取向：(.+)"] = 1,
-	["(.*)选择了贪婪取向：(.+)"] = 2,
-	["(.*)选择了分解取向：(.+)"] = 3,
-} or locale == "zhTW" and {
-	["(.*)自動放棄:(.+)，因為他無法拾取該物品$"] = 0,
-	["(.*)自動放棄:(.+)，因為她無法拾取該物品$"] = 0,
-	["(.*)放棄了:(.+)"] = 0,
-	["(.*)選擇了需求:(.+)"] = 1,
-	["(.*)選擇了貪婪:(.+)"] = 2,
-	["(.*)選擇了分解:(.+)"] = 3,
-} or locale == "ruRU" and {
+local rollMessages = locale == "ruRU" and {
 	["(.*) автоматически передает предмет (.+), поскольку не может его забрать"] = 0,
 	["(.*) пропускает розыгрыш предмета \"(.+)\", поскольку не может его забрать"] = 0,
 	["(.*) отказывается от предмета (.+)%."] = 0,
 	["Разыгрывается: (.+)%. (.*): \"Мне это нужно\""] = 1,
 	["Разыгрывается: (.+)%. (.*): \"Не откажусь\""] = 2,
 	["Разыгрывается: (.+)%. (.*): \"Распылить\""] = 3,
-} or locale == "koKR" and {
-	["(.*)님이 획득할 수 없는 아이템이어서 자동으로 주사위 굴리기를 포기했습니다: (.+)"] = 0,
-	["(.*)님이 주사위 굴리기를 포기했습니다: (.+)"] = 0,
-	["(.*)님이 입찰을 선택했습니다: (.+)"] = 1,
-	["(.*)님이 차비를 선택했습니다: (.+)"] = 2,
-	["(.*)님이 마력 추출을 선택했습니다: (.+)"] = 3,
-} or locale == "esES" and {
-	["^(.*) pasó automáticamente de: (.+) porque no puede despojar este objeto.$"] = 0,
-	["^(.*) pasó de: (.+|r)$"] = 0,
-	["(.*) eligió Necesidad para: (.+)"] = 1,
-	["(.*) eligió Codicia para: (.+)"] = 2,
-	["(.*) eligió Desencantar para: (.+)"] = 3,
-} or locale == "esMX" and {
-	["^(.*) pasó automáticamente de: (.+) porque no puede despojar este objeto.$"] = 0,
-	["^(.*) pasó de: (.+|r)$"] = 0,
-	["(.*) eligió Necesidad para: (.+)"] = 1,
-	["(.*) eligió Codicia para: (.+)"] = 2,
-	["(.*) eligió Desencantar para: (.+)"] = 3,
 } or {
 	["^(.*) automatically passed on: (.+) because s?he cannot loot that item.$"] = 0,
 	["^(.*) passed on: (.+|r)$"] = 0,
@@ -297,7 +253,7 @@ function M:LootRoll_Create(index)
 	bar.pass = CreateRollButton(bar, [[Interface\Buttons\UI-GroupLoot-Pass-Up]], 0, PASS)
 	bar.need = CreateRollButton(bar, [[Interface\Buttons\UI-GroupLoot-Dice-Up]], 1, NEED)
 	bar.greed = CreateRollButton(bar, [[Interface\Buttons\UI-GroupLoot-Coin-Up]], 2, GREED)
-	bar.disenchant = CreateRollButton(bar, [[Interface\Buttons\UI-GroupLoot-DE-Up]], 3, ROLL_DISENCHANT) or nil
+	bar.disenchant = CreateRollButton(bar, [[Interface\Buttons\UI-GroupLoot-DE-Up]], 3, ROLL_DISENCHANT)
 
 	local name = bar:CreateFontString(nil, 'OVERLAY')
 	name:FontTemplate(nil, nil, 'OUTLINE')
@@ -370,11 +326,13 @@ function M:START_LOOT_ROLL(event, rollID, rollTime)
 
 	local bar = M:LootRoll_GetFrame()
 	if not bar then
-		return -- well this shouldn't happen
+		tinsert(waitingRolls, { rollID = rollID, rollTime = rollTime })
+		return
 	end
 
 	local itemLink = GetLootRollItemLink(rollID)
-	local _, _, _, itemLevel, _, itemType, itemSubType, _, itemEquipLoc = GetItemInfo(itemLink)
+	local _, _, _, itemLevel = C_Item_GetItemInfo(itemLink)
+	local _, _, _, itemEquipLoc, _, classID, subClassID = GetItemInfoInstant(itemLink)
 	local bindType = B:GetBindTypeText(itemLink)
 
 	local db = E.db.general.lootRoll
@@ -388,11 +346,12 @@ function M:START_LOOT_ROLL(event, rollID, rollTime)
 	bar.button.link = itemLink
 	bar.button.rollID = rollID
 	bar.button.icon:SetTexture(texture)
+	count = tonumber(count) or 1
 	bar.button.stack:SetShown(count > 1)
 	bar.button.stack:SetText(count)
-	bar.button.ilvl:SetShown(B:IsItemEligibleForItemLevelDisplay(itemType, itemSubType, itemEquipLoc, quality))
+	bar.button.ilvl:SetShown(B:IsItemEligibleForItemLevelDisplay(classID, subClassID, itemEquipLoc, quality))
 	bar.button.ilvl:SetText(itemLevel)
-	bar.button.questIcon:SetShown(B:GetItemQuestInfo(itemLink, itemType, itemSubType))
+	bar.button.questIcon:SetShown(B:GetItemQuestInfo(itemLink, classID))
 
 	bar.need.text:SetText('')
 	bar.greed.text:SetText('')

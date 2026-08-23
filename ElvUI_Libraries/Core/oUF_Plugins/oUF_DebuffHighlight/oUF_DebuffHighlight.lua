@@ -2,6 +2,7 @@ local _, ns = ...
 local oUF = oUF or ns.oUF
 if not oUF then return end
 
+local tonumber = tonumber
 local IsSpellKnown = IsSpellKnown
 local UnitAura = UnitAura
 local UnitCanAssist = UnitCanAssist
@@ -40,8 +41,8 @@ end
 
 local specChecked
 local function CheckSpec(self, event, levels)
-	if event == "SPELL_UPDATE_USABLE" then self:UnregisterEvent(event) end
-	if event == "CHARACTER_POINTS_CHANGED" and levels > 0 then return end
+	if event == "SPELL_UPDATE_USABLE" then self:UnregisterEvent(event, CheckSpec) end
+	if event == "CHARACTER_POINTS_CHANGED" and (tonumber(levels) or 0) > 0 then return end
 
 	if not event then
 		if specChecked then return end

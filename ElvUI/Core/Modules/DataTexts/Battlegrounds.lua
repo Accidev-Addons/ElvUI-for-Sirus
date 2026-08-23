@@ -2,16 +2,15 @@ local E, L, V, P, G = unpack(ElvUI)
 local DT = E:GetModule('DataTexts')
 
 local _G = _G
-local sort = sort
-local ipairs = ipairs
 local strjoin = strjoin
 local tonumber = tonumber
 
 local GetNumBattlefieldScores = GetNumBattlefieldScores
 local GetBattlefieldStatData = GetBattlefieldStatData
+local GetBattlefieldStatInfo = GetBattlefieldStatInfo
 local GetBattlefieldScore = GetBattlefieldScore
 
-local GetNumBattlefieldStats = GetNumBattlefieldStats()
+local GetNumBattlefieldStats = GetNumBattlefieldStats
 
 local displayString = ''
 local data = { killingBlows = 0, honorableKills = 0, healingDone = 0, deaths = 0, damageDone = 0, honorGained = 0 }
@@ -38,37 +37,34 @@ function DT:UPDATE_BATTLEFIELD_SCORE()
 	data.myIndex = nil
 
 	for i = 1, GetNumBattlefieldScores() do
-		local name, _
-		name, data.killingBlows, data.honorableKills, data.deaths, data.honorGained, _, _, _, _, _, data.damageDone, data.healingDone = GetBattlefieldScore(i)
+		local name, killingBlows, honorableKills, deaths, honorGained, _, _, _, _, _, damageDone, healingDone = GetBattlefieldScore(i)
 
 		if name == E.myname then
 			data.myIndex = i
+			data.killingBlows, data.honorableKills, data.deaths, data.honorGained = killingBlows, honorableKills, deaths, honorGained
+			data.damageDone, data.healingDone = damageDone, healingDone
 			break
 		end
 	end
-end
 
-local function columnSort(lhs, rhs)
-	return lhs.orderIndex < rhs.orderIndex
+	if not data.myIndex then
+		data.killingBlows, data.honorableKills, data.healingDone = 0, 0, 0
+		data.deaths, data.damageDone, data.honorGained = 0, 0, 0
+	end
 end
 
 function DT:HoverBattleStats() -- Objectives OnEnter -- Idea is to store this in a table and probably rotate it on the text field.
 	DT.tooltip:ClearLines()
 
 	if data.myIndex and DT.ShowingBattleStats == 'pvp' then
-		local columns = GetNumBattlefieldStats()
-		if columns then
-			sort(columns, columnSort)
-
-			-- Add extra statistics to watch based on what BG you are in.
-			for i, stat in ipairs(columns) do
-				if stat.name then
-					DT.tooltip:AddDoubleLine(stat.name, GetBattlefieldStatData(data.myIndex, i), 1,1,1)
-				end
+		for i = 1, GetNumBattlefieldStats() do
+			local name = GetBattlefieldStatInfo(i)
+			if name then
+				DT.tooltip:AddDoubleLine(name, GetBattlefieldStatData(data.myIndex, i), 1,1,1)
 			end
-
-			DT.tooltip:Show()
 		end
+
+		DT.tooltip:Show()
 	end
 end
 
@@ -111,10 +107,10 @@ end
 
 E.valueColorUpdateFuncs.Battlegrounds = ValueColorUpdate
 
-DT:RegisterDatatext('PvP: Kills', 'Battlegrounds', { 'UPDATE_BATTLEFIELD_SCORE' }, OnEvent, OnUpdate, DT.ToggleBattleStats)
-DT:RegisterDatatext('PvP: Honorable Kills', 'Battlegrounds', { 'UPDATE_BATTLEFIELD_SCORE' }, OnEvent, OnUpdate, DT.ToggleBattleStats)
-DT:RegisterDatatext('PvP: Heals', 'Battlegrounds', { 'UPDATE_BATTLEFIELD_SCORE' }, OnEvent, OnUpdate, DT.ToggleBattleStats)
-DT:RegisterDatatext('PvP: Deaths', 'Battlegrounds', { 'UPDATE_BATTLEFIELD_SCORE' }, OnEvent, OnUpdate, DT.ToggleBattleStats)
-DT:RegisterDatatext('PvP: Damage Done', 'Battlegrounds', { 'UPDATE_BATTLEFIELD_SCORE' }, OnEvent, OnUpdate, DT.ToggleBattleStats)
-DT:RegisterDatatext('PvP: Honor Gained', 'Battlegrounds', { 'UPDATE_BATTLEFIELD_SCORE' }, OnEvent, OnUpdate, DT.ToggleBattleStats)
-DT:RegisterDatatext('PvP: Objectives', 'Battlegrounds', { 'UPDATE_BATTLEFIELD_SCORE' }, OnEvent, OnUpdate, DT.ToggleBattleStats, DT.HoverBattleStats)
+DT:RegisterDatatext('PvP: Kills', L["Battlegrounds"], { 'UPDATE_BATTLEFIELD_SCORE' }, OnEvent, OnUpdate, DT.ToggleBattleStats, nil, nil, L["PvP: Kills"])
+DT:RegisterDatatext('PvP: Honorable Kills', L["Battlegrounds"], { 'UPDATE_BATTLEFIELD_SCORE' }, OnEvent, OnUpdate, DT.ToggleBattleStats, nil, nil, L["PvP: Honorable Kills"])
+DT:RegisterDatatext('PvP: Heals', L["Battlegrounds"], { 'UPDATE_BATTLEFIELD_SCORE' }, OnEvent, OnUpdate, DT.ToggleBattleStats, nil, nil, L["PvP: Heals"])
+DT:RegisterDatatext('PvP: Deaths', L["Battlegrounds"], { 'UPDATE_BATTLEFIELD_SCORE' }, OnEvent, OnUpdate, DT.ToggleBattleStats, nil, nil, L["PvP: Deaths"])
+DT:RegisterDatatext('PvP: Damage Done', L["Battlegrounds"], { 'UPDATE_BATTLEFIELD_SCORE' }, OnEvent, OnUpdate, DT.ToggleBattleStats, nil, nil, L["PvP: Damage Done"])
+DT:RegisterDatatext('PvP: Honor Gained', L["Battlegrounds"], { 'UPDATE_BATTLEFIELD_SCORE' }, OnEvent, OnUpdate, DT.ToggleBattleStats, nil, nil, L["PvP: Honor Gained"])
+DT:RegisterDatatext('PvP: Objectives', L["Battlegrounds"], { 'UPDATE_BATTLEFIELD_SCORE' }, OnEvent, OnUpdate, DT.ToggleBattleStats, DT.HoverBattleStats, nil, L["PvP: Objectives"])

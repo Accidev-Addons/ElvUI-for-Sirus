@@ -3,8 +3,8 @@ local M = E:GetModule('Misc')
 local CH = E:GetModule('Chat')
 local LSM = E.Libs.LSM
 
-local select, unpack = select, unpack
-local format, wipe, pairs = format, wipe, pairs
+local select, unpack, ipairs = select, unpack, ipairs
+local format = format
 local strmatch, strlower, gmatch, gsub = strmatch, strlower, gmatch, gsub
 
 local CreateFrame = CreateFrame
@@ -17,6 +17,14 @@ local WorldGetNumChildren = WorldFrame.GetNumChildren
 --Message caches
 local messageToGUID = {}
 local messageToSender = {}
+
+local function ReplaceIconTags(value)
+    local index = _G.ICON_TAG_LIST[strlower(value)]
+    local icon = index and _G.ICON_LIST[index]
+    if icon then
+        return format('%s0|t', icon)
+    end
+end
 
 function M:UpdateBubbleBorder()
     local holder = self
@@ -40,9 +48,10 @@ function M:UpdateBubbleBorder()
         M:AddChatBubbleName(self, messageToGUID[text], messageToSender[text])
     end
 
+    local rebuiltString
     if E.private.chat.enable and E.private.general.classColorMentionsSpeech then
-        local isFirstWord, rebuiltString
-        if text and strmatch(text, '%s-%S+%s*') then
+        local isFirstWord
+        if strmatch(text, '%s-%S+%s*') then
             for word in gmatch(text, '%s-%S+%s*') do
                 local tempWord = gsub(word, '^[%s%p]-([^%s%p]+)([%-]?[^%s%p]-)[%s%p]*$', '%1%2')
                 local lowerCaseWord = strlower(tempWord)
@@ -64,11 +73,13 @@ function M:UpdateBubbleBorder()
                     rebuiltString = format('%s%s', rebuiltString, word)
                 end
             end
-
-            if rebuiltString then
-                str:SetText(E:RemoveExtraSpaces(rebuiltString))
-            end
         end
+    end
+
+    rebuiltString = gsub(rebuiltString or text, '{([^}]+)}', ReplaceIconTags)
+
+    if rebuiltString ~= text then
+        str:SetText(E:RemoveExtraSpaces(rebuiltString))
     end
 end
 
@@ -83,20 +94,6 @@ function M:AddChatBubbleName(chatBubble, guid, name)
 
     chatBubble.Name:SetFormattedText('|c%s%s|r', color.colorStr, name)
     chatBubble.Name:SetWidth(chatBubble:GetWidth()-10)
-end
-
-local function CreateBubbleBorder(frame, mult, r, g, b)
-    local border = frame:CreateTexture(nil, 'ARTWORK')
-    border:SetPoint('TOPLEFT', -mult * 2, mult * 2)
-    border:SetPoint('BOTTOMRIGHT', mult * 2, -mult * 2)
-    border:SetTexture(r, g, b)
-
-    local backdrop = frame:CreateTexture(nil, 'BORDER')
-    backdrop:SetPoint('TOPLEFT', border, -mult, mult)
-    backdrop:SetPoint('BOTTOMRIGHT', border, mult, -mult)
-    backdrop:SetTexture(0, 0, 0)
-
-    return border
 end
 
 local function SetFontTemplate(name, db)

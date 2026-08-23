@@ -10,6 +10,7 @@ local pi2 = math.pi / 2
 
 local GetPlayerFacing = GetPlayerFacing
 local GetPlayerMapPosition = GetPlayerMapPosition
+local SetMapToCurrentZone = SetMapToCurrentZone
 local UnitInParty = UnitInParty
 local UnitInRaid = UnitInRaid
 local UnitInRange = UnitInRange
@@ -40,7 +41,7 @@ local function GetAngle(unit1, unit2)
 end
 
 local function UpdateElement(element, unit)
-	if not unit or UnitIsUnit(unit, "player") or not UnitIsConnected(unit) or not (UnitInParty(unit) or UnitInRaid(unit)) or (element.outOfRange and UnitInRange(unit)) then
+	if not unit or UnitIsUnit(unit, "player") or not UnitIsConnected(unit) or not (UnitInParty(unit) or UnitInRaid(unit)) or (element.outOfRange and UnitInRange(unit) == 1) then
 		element:Hide()
 	else
 		local angle = GetAngle("player", unit)
@@ -64,6 +65,9 @@ local function OnUpdateList(self, elapsed)
 
 	self.elapsed = 0
 
+	if WorldMapFrame:IsShown() then return end
+	SetMapToCurrentZone()
+
 	for i = 1, #_FRAMES do
 		local object = _FRAMES[i]
 
@@ -78,6 +82,10 @@ local function OnUpdateFrame(self, elapsed)
 	if self.__elapsed < 0.0333 then return end
 
 	self.__elapsed = 0
+
+	if WorldMapFrame:IsShown() then return end
+	SetMapToCurrentZone()
+
 	UpdateElement(self.GPS, self.unit)
 end
 

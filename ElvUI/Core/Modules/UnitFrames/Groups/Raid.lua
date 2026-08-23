@@ -4,6 +4,7 @@ local ElvUF = E.oUF
 
 local CreateFrame = CreateFrame
 local GetInstanceInfo = GetInstanceInfo
+local GetInstanceID = GetInstanceID
 local InCombatLockdown = InCombatLockdown
 local RegisterStateDriver = RegisterStateDriver
 local UnregisterStateDriver = UnregisterStateDriver
@@ -39,6 +40,7 @@ function UF:Construct_RaidFrames()
 	self.GroupRoleIndicator = UF:Construct_RoleIcon(self)
 	self.RaidTargetIndicator = UF:Construct_RaidIcon(self)
 	self.ReadyCheckIndicator = UF:Construct_ReadyCheckIcon(self)
+	self.SummonIndicator = UF:Construct_SummonIcon(self)
 	self.HealCommBar = UF:Construct_HealComm(self)
 	self.GPS = UF:Construct_GPS(self)
 	self.Fader = UF:Construct_Fader()
@@ -69,7 +71,7 @@ function UF:RaidSmartVisibility(event)
 		self.isInstanceForced = nil
 		local _, instanceType, _, _, maxPlayers = GetInstanceInfo()
 		if instanceType == "raid" or instanceType == "pvp" then
-			local mapID = GetCurrentMapAreaID()
+			local mapID = GetInstanceID()
 			if UF.instanceMapIDs[mapID] then
 				maxPlayers = UF.instanceMapIDs[mapID]
 			end
@@ -233,6 +235,8 @@ function UF:Update_RaidFrames(frame, db)
 
 	--ReadyCheck
 	UF:Configure_ReadyCheckIcon(frame)
+
+	UF:Configure_SummonIcon(frame)
 
 	--CustomTexts
 	UF:Configure_CustomTexts(frame)

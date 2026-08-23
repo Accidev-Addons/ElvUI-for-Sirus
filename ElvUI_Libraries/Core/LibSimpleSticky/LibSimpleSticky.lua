@@ -19,15 +19,13 @@
 This is a modified version by Elv and Simpy for ElvUI
 ------------------------------------------------------------------------------------]]
 
-local MAJOR, MINOR = "LibSimpleSticky-1.0", 3
-local StickyFrames, oldminor = LibStub:NewLibrary(MAJOR, MINOR)
+local MAJOR, MINOR = "LibSimpleSticky-1.0", 4
+local StickyFrames = LibStub:NewLibrary(MAJOR, MINOR)
 if not StickyFrames then return end
 
 -- GLOBALS: WorldFrame, UIParent, ElvUIParent
-local DEFAULT_CHAT_FRAME = DEFAULT_CHAT_FRAME
 local GetCursorPosition = GetCursorPosition
 local IsShiftKeyDown = IsShiftKeyDown
-local tostring = tostring
 
 --[[---------------------------------------------------------------------------------
   Class declaration, along with a temporary table to hold any existing OnUpdate
@@ -38,6 +36,20 @@ StickyFrames.scripts = StickyFrames.scripts or {}
 StickyFrames.sticky = StickyFrames.sticky or {}
 StickyFrames.rangeX = 15
 StickyFrames.rangeY = 15
+
+local groupBlacklist = {}
+
+local function isGroupPoint(frame, frame2)
+	if groupBlacklist[frame2] then
+		return true
+	else
+		local _, point = frame2:GetPoint()
+		if groupBlacklist[point] or frame.parent == point then
+			if frame2.parent then groupBlacklist[frame2.parent] = true end
+			return true
+		end
+	end
+end
 
 --[[---------------------------------------------------------------------------------
   StickyFrames:StartMoving() - Sets a custom OnUpdate for the frame so it follows
@@ -84,6 +96,8 @@ function StickyFrames:StopMoving(frame)
 	frame:SetScript("OnUpdate", self.scripts[frame])
 	self.scripts[frame] = nil
 
+	wipe(groupBlacklist)
+
 	if StickyFrames.sticky[frame] then
 		local sticky = StickyFrames.sticky[frame]
 		StickyFrames.sticky[frame] = nil
@@ -91,26 +105,6 @@ function StickyFrames:StopMoving(frame)
 	else
 		return false, nil
 	end
-end
-
---[[---------------------------------------------------------------------------------
-  This can be called in conjunction with StickyFrames:StopMoving() to anchor the
-  frame right back to the parent, so you can manipulate its children as a group
-  (This is useful in WatchDog)
-------------------------------------------------------------------------------------]]
-
-function StickyFrames:AnchorFrame(frame)
-	local xA,yA = frame:GetCenter()
-	local parent = frame:GetParent() or UIParent
-	local xP,yP = parent:GetCenter()
-	local sA,sP = frame:GetEffectiveScale(), parent:GetEffectiveScale()
-
-	xP,yP = (xP*sP) / sA, (yP*sP) / sA
-
-	local xo,yo = (xP - xA)*-1, (yP - yA)*-1
-
-	frame:ClearAllPoints()
-	frame:SetPoint("CENTER", parent, "CENTER", xo, yo)
 end
 
 --[[---------------------------------------------------------------------------------
@@ -139,7 +133,7 @@ function StickyFrames:GetUpdateFunc(frame, frameList, xoffset, yoffset, left, to
 		if frameList then
 			for i = 1, #frameList do
 				local v = frameList[i]
-				if frame ~= v and frame ~= v:GetParent() and not IsShiftKeyDown() and v:IsVisible() then
+				if frame ~= v and frame ~= v:GetParent() and not isGroupPoint(frame, v) and not IsShiftKeyDown() and v:IsVisible() then
 					if self:SnapFrame(frame, v, left, top, right, bottom) then
 						StickyFrames.sticky[frame] = v
 						break
@@ -148,14 +142,6 @@ function StickyFrames:GetUpdateFunc(frame, frameList, xoffset, yoffset, left, to
 			end
 		end
 	end
-end
-
---[[---------------------------------------------------------------------------------
-  Internal debug function.
-------------------------------------------------------------------------------------]]
-
-function StickyFrames:debug(msg)
-	DEFAULT_CHAT_FRAME:AddMessage("|cffffff00StickyFrames: |r"..tostring(msg))
 end
 
 --[[---------------------------------------------------------------------------------
@@ -178,7 +164,7 @@ function StickyFrames:SnapFrame(frameA, frameB, left, top, right, bottom)
 	if not bottom then bottom = 0 end
 
 	-- Lets translate B's coords into A's scale
-	if not xB or not yB or not sB or not sA or not sB then return end
+	if not xB or not yB or not sA or not sB then return end
 	xB, yB = (xB*sB) / sA, (yB*sB) / sA
 
 	-- Grab the edges of each frame, for easier comparison

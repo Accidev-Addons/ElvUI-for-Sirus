@@ -2,7 +2,6 @@ local E, L, V, P, G = unpack(ElvUI)
 local DT = E:GetModule('DataTexts')
 
 local _G = _G
-local format = format
 
 local GetDungeonDifficulty = GetDungeonDifficulty
 local GetRaidDifficulty = GetRaidDifficulty
@@ -56,4 +55,4 @@ local function OnEnter()
     DT.tooltip:Show()
 end
 
-DT:RegisterDatatext('Difficulty', nil, { 'CHAT_MSG_SYSTEM', 'ZONE_CHANGED', 'ZONE_CHANGED_INDOORS', 'ZONE_CHANGED_NEW_AREA' }, OnEvent, nil, OnClick, OnEnter, nil, 'Difficulty')
+DT:RegisterDatatext('Difficulty', nil, { 'CHAT_MSG_SYSTEM', 'ZONE_CHANGED', 'ZONE_CHANGED_INDOORS', 'ZONE_CHANGED_NEW_AREA' }, OnEvent, nil, OnClick, OnEnter, nil, L["Difficulty"])

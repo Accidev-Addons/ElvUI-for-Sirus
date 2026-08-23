@@ -21,14 +21,17 @@ local General = Tooltip.general.args
 General.targetInfo = ACH:Toggle(L["Target Info"], L["When in a raid group display if anyone in your raid is targeting the current tooltip unit."], 1)
 General.playerTitles = ACH:Toggle(L["Player Titles"], L["Display player titles."], 2)
 General.guildRanks = ACH:Toggle(L["Guild Ranks"], L["Display guild ranks if a unit is guilded."], 3)
-General.alwaysShowRealm = ACH:Toggle(L["Always Show Realm"], nil, 4)
-General.role = ACH:Toggle(L["ROLE"], L["Display the unit role in the tooltip."], 5, nil, nil, nil, nil, nil, nil)
 General.gender = ACH:Toggle(L["Gender"], L["Displays the gender of players."], 6)
 General.showElvUIUsers = ACH:Toggle(L["Show ElvUI Users"], L["Show ElvUI users and their version of ElvUI."], 7)
 General.itemQuality = ACH:Toggle(L["Item Quality"], L["Color tooltip border based on Item Quality."], 8)
-General.inspectDataEnable = ACH:Toggle(L["Inspect Data"], L["Display the item level and current specialization of the unit on modifier press."], 9, nil, nil, nil, nil, nil, nil)
-General.fadeOut = ACH:Toggle(L["Fade Out"], L["Fade out the tooltip when it disappers, instant otherwise. Cursor anchored tooltips are unaffected."], 10, nil, nil, nil, nil, nil, nil)
-General.colorAlpha = ACH:Range(L["OPACITY"], nil, 11, { isPercent = true, min = 0, max = 1, step = 0.01 }, nil, nil, function(info, value) E.db.tooltip[info[#info]] = value; Skins:StyleTooltips() end)
+General.inspectDataEnable = ACH:Toggle(L["Inspect Data"], L["Display the average item level of players."], 9, nil, nil, nil, nil, nil, nil)
+General.colorAlpha = ACH:Range(L["OPACITY"], nil, 11, { isPercent = true, min = 0, max = 1, step = 0.01 }, nil, nil, function(info, value) E.db.tooltip[info[#info]] = value; if Skins.StyleTooltips then Skins:StyleTooltips() end end)
+
+General.sirusGroup = ACH:Group('Sirus', nil, 12)
+General.sirusGroup.args.categoryName = ACH:Toggle(L["Category"], L["Display the category of players next to their name."], 1)
+General.sirusGroup.args.sirusClassification = ACH:Toggle(L["Classification"], L["Use the server classification for unit types (elite, rare)."], 2)
+General.sirusGroup.args.zodiacName = ACH:Toggle(L["Zodiac"], L["Display the zodiac sign of players."], 3)
+General.sirusGroup.inline = true
 
 General.modifierGroup = ACH:Group(L["Spell/Item IDs"], nil, -3)
 General.modifierGroup.args.modifierID = ACH:Select(L["Modifier for IDs"], nil, 1, modifierValues)
@@ -57,13 +60,13 @@ General.fontGroup.args.spacer = ACH:Spacer(2)
 
 General.fontGroup.args.header = ACH:Group(L["Tooltip Header"], nil, 3)
 General.fontGroup.args.header.args.headerFont = ACH:SharedMediaFont(L["Font"], nil, 1)
-General.fontGroup.args.header.args.headerFontOutline = ACH:Select(L["Font Outline"], nil, 2, C.Values.FontFlags)
+General.fontGroup.args.header.args.headerFontOutline = ACH:FontFlags(L["Font Outline"], nil, 2)
 General.fontGroup.args.header.args.headerFontSize = ACH:Range(L["Font Size"], nil, 3, C.Values.FontSize)
 General.fontGroup.args.header.inline = true
 
 General.fontGroup.args.body = ACH:Group(L["Tooltip Body"], nil, 4)
 General.fontGroup.args.body.args.font = ACH:SharedMediaFont(L["Font"], nil, 1)
-General.fontGroup.args.body.args.fontOutline = ACH:Select(L["Font Outline"], nil, 2, C.Values.FontFlags)
+General.fontGroup.args.body.args.fontOutline = ACH:FontFlags(L["Font Outline"], nil, 2)
 General.fontGroup.args.body.args.textFontSize = ACH:Range(L["Font Size"], nil, 3, C.Values.FontSize)
 General.fontGroup.args.body.inline = true
 

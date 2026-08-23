@@ -7,7 +7,47 @@ local assert, select, pairs, unpack = assert, select, pairs, unpack
 local tinsert, wipe = tinsert, wipe
 --WoW API / Variables
 local CreateFrame = CreateFrame
+local CreateObjectPool = CreateObjectPool
 local GetSpellInfo = GetSpellInfo
+
+local function AuraWatchIconCreate(pool)
+	local icon = CreateFrame("Frame", nil, pool.parent)
+
+	icon.icon = icon:CreateTexture(nil, "BORDER")
+	icon.icon:SetAllPoints(icon)
+
+	local textParent = CreateFrame("Frame", nil, icon)
+	textParent:OffsetFrameLevel(50, icon)
+	icon.text = textParent:CreateFontString(nil, "BORDER")
+	icon.text:FontTemplate()
+
+	icon.border = icon:CreateTexture(nil, "BACKGROUND")
+	icon.border:Point("TOPLEFT", -E.mult, E.mult)
+	icon.border:Point("BOTTOMRIGHT", E.mult, -E.mult)
+	icon.border:SetTexture(E.media.blankTex)
+	icon.border:SetVertexColor(0, 0, 0)
+
+	icon.cd = CreateFrame("Cooldown", nil, icon, "CooldownFrameTemplate")
+	icon.cd:SetAllPoints(icon)
+	icon.cd.noOCC = true
+	icon.cd.noCooldownCount = true
+	icon.cd:SetReverse(true)
+	icon.cd:OffsetFrameLevel(nil, icon)
+
+	icon.count = icon:CreateFontString(nil, "OVERLAY")
+	icon.count:FontTemplate()
+
+	return icon
+end
+
+local function AuraWatchIconRelease(_, icon)
+	icon:SetScript("OnUpdate", nil)
+	icon.timeLeft = nil
+	icon.count:SetText()
+	icon.text:SetText()
+	icon:ClearAllPoints()
+	icon:Hide()
+end
 
 function UF:Construct_AuraWatch(frame)
 	local auras = CreateFrame("Frame", nil, frame)
@@ -17,6 +57,8 @@ function UF:Construct_AuraWatch(frame)
 	auras.missingAlpha = 0
 	auras.strictMatching = false
 	auras.icons = {}
+	auras.pool = CreateObjectPool(AuraWatchIconCreate, AuraWatchIconRelease)
+	auras.pool.parent = auras
 
 	return auras
 end
@@ -86,23 +128,8 @@ function UF:UpdateAuraWatch(frame, petOverride, db)
 		end
 	end
 
-	--CLEAR CACHE
-	if auras.icons then
-		for i = 1, #auras.icons do
-			local matchFound = false
-			for j = 1, #buffs do
-				if buffs[j].id and buffs[j].id == auras.icons[i] then
-					matchFound = true
-					break
-				end
-			end
-
-			if not matchFound then
-				auras.icons[i]:Hide()
-				auras.icons[i] = nil
-			end
-		end
-	end
+	auras.pool:ReleaseAll()
+	wipe(auras.icons)
 
 	local unitframeFont = LSM:Fetch("font", E.db.unitframe.font)
 
@@ -110,12 +137,7 @@ function UF:UpdateAuraWatch(frame, petOverride, db)
 		if buffs[i].id then
 			local name, _, image = GetSpellInfo(buffs[i].id)
 			if name then
-				local icon
-				if not auras.icons[buffs[i].id] then
-					icon = CreateFrame("Frame", nil, auras)
-				else
-					icon = auras.icons[buffs[i].id]
-				end
+				local icon = auras.pool:Acquire()
 				icon.name = name
 				icon.image = image
 				icon.spellID = buffs[i].id
@@ -127,7 +149,7 @@ function UF:UpdateAuraWatch(frame, petOverride, db)
 				icon.textThreshold = buffs[i].textThreshold or -1
 				icon.displayText = buffs[i].displayText
 				icon.decimalThreshold = buffs[i].decimalThreshold
-				icon.size = (buffs[i].sizeOverride ~= nil and buffs[i].sizeOverride > 0 and buffs[i].sizeOverride or db.size)
+				icon.size = db.size + (buffs[i].sizeOffset or 0)
 
 				icon:Width(icon.size)
 				icon:Height(icon.size)
@@ -136,34 +158,6 @@ function UF:UpdateAuraWatch(frame, petOverride, db)
 
 				icon:ClearAllPoints()
 				icon:Point(buffs[i].point or "TOPLEFT", frame.Health, buffs[i].point or "TOPLEFT", buffs[i].xOffset, buffs[i].yOffset)
-
-				if not icon.icon then
-					icon.icon = icon:CreateTexture(nil, "BORDER")
-					icon.icon:SetAllPoints(icon)
-				end
-
-				if not icon.text then
-					local f = CreateFrame("Frame", nil, icon)
-					f:OffsetFrameLevel(50, icon)
-					icon.text = f:CreateFontString(nil, "BORDER")
-				end
-
-				if not icon.border then
-					icon.border = icon:CreateTexture(nil, "BACKGROUND")
-					icon.border:Point("TOPLEFT", -E.mult, E.mult)
-					icon.border:Point("BOTTOMRIGHT", E.mult, -E.mult)
-					icon.border:SetTexture(E.media.blankTex)
-					icon.border:SetVertexColor(0, 0, 0)
-				end
-
-				if not icon.cd then
-					icon.cd = CreateFrame("Cooldown", nil, icon, "CooldownFrameTemplate")
-					icon.cd:SetAllPoints(icon)
-					icon.cd.noOCC = true
-					icon.cd.noCooldownCount = true
-					icon.cd:SetReverse(true)
-					icon.cd:OffsetFrameLevel(nil, icon)
-				end
 
 				if icon.style == "coloredIcon" then
 					icon.icon:SetTexture(E.media.blankTex)
@@ -202,10 +196,6 @@ function UF:UpdateAuraWatch(frame, petOverride, db)
 					icon.text:Hide()
 				end
 
-				if not icon.count then
-					icon.count = icon:CreateFontString(nil, "OVERLAY")
-				end
-
 				icon.count:ClearAllPoints()
 				if icon.displayText then
 					local point, anchorPoint, x, y = unpack(textCounterOffsets[buffs[i].point])
@@ -225,11 +215,10 @@ function UF:UpdateAuraWatch(frame, petOverride, db)
 						auras.watched[buffs[i].id] = icon
 					end
 				else
-					auras.icons[buffs[i].id] = nil
 					if auras.watched then
 						auras.watched[buffs[i].id] = nil
 					end
-					icon:Hide()
+					auras.pool:Release(icon)
 				end
 			end
 		end

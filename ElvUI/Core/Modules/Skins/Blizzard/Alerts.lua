@@ -3,7 +3,6 @@ local S = E:GetModule("Skins")
 
 --Lua functions
 local _G = _G
-local unpack = unpack
 local tonumber = tonumber
 local match = string.match
 --WoW API / Variables
@@ -70,4 +69,44 @@ S:AddCallback("Skin_Alerts", function()
 	frame.dungeonTexture.backdrop:SetFrameLevel(0)
 
 	frame.glowFrame:DisableDrawLayer("OVERLAY")
+
+	for i = 1, 4 do
+		local button = _G["LootAlertButton"..i]
+
+		button:DisableDrawLayer("OVERLAY")
+		button.Background:SetAlpha(0)
+		button.IconBorder:SetAlpha(0)
+
+		button:CreateBackdrop("Transparent")
+		button.backdrop:Point("TOPLEFT", 14, -15)
+		button.backdrop:Point("BOTTOMRIGHT", -16, 11)
+
+		S:SetBackdropHitRect(button)
+
+		local iconBackdrop = CreateFrame("Frame", nil, button)
+		iconBackdrop:SetTemplate("Default")
+		iconBackdrop:SetOutside(button.Icon)
+
+		button.Icon:SetTexCoords()
+		button.Icon:SetParent(iconBackdrop)
+		button.Count:SetParent(iconBackdrop)
+
+		hooksecurefunc(button.ItemName, "SetTextColor", function(_, r, g, b)
+			iconBackdrop:SetBackdropBorderColor(r, g, b)
+		end)
+	end
+end)
+
+S:AddCallback("Skin_BossBanner", function()
+	if not E.private.skins.blizzard.enable then return end
+
+	for _, name in next, { "BossBannerOverlay", "BossBanner" } do
+		local frame = _G[name]
+		if frame then
+			S:ApplyElvUIFont(frame)
+			frame:HookScript("OnShow", function(self)
+				S:ApplyElvUIFont(self)
+			end)
+		end
+	end
 end)

@@ -167,6 +167,7 @@ function BL:EnhanceColorPicker()
 	if E.OtherAddons.ColorPickerPlus then return end
 
 	ColorPickerFrame.swatchFunc = E.noop -- REMOVE THIS LATER IF WE CAN? errors on Footer.OkayButton
+	ColorPickerFrame.func = E.noop
 
 	local Header = ColorPickerFrame.Header or _G.ColorPickerFrameHeader
 	Header:StripTextures()

@@ -1,29 +1,26 @@
 local E, L, V, P, G = unpack(ElvUI)
-local LC = E.Libs.Compat
 
 local _G = _G
 local pi = math.pi
-local utf8sub = string.utf8sub
-local tonumber, format = tonumber, format
+local utf8sub = utf8.sub
+local tonumber = tonumber
 local tinsert, strfind, strmatch = tinsert, strfind, strmatch
-local next, max, wipe, gsub = next, max, wipe, gsub
+local next, max, wipe, gsub, select = next, max, wipe, gsub, select
 
-local GetCVarBool = GetCVarBool
+local C_Item = C_Item
 local GetItemInfo = GetItemInfo
 local GetInventoryItemTexture = GetInventoryItemTexture
 local GetInventoryItemLink = GetInventoryItemLink
 local UnitIsUnit = UnitIsUnit
 local UIParent = UIParent
 
-local GetInspectSpecialization = LC.GetInspectSpecialization
-local GetAverageItemLevel = LC.GetAverageItemLevel
+local GetInspectSpecialization = E.GetInspectSpecialization
+local GetAverageItemLevel = GetAverageItemLevel
 
 local RETRIEVING_ITEM_INFO = RETRIEVING_ITEM_INFO
 local ITEM_SPELL_TRIGGER_ONEQUIP = ITEM_SPELL_TRIGGER_ONEQUIP
 
 local MATCH_ITEM_LEVEL = ITEM_LEVEL:gsub('%%d', '(%%d+)')
-local ENCHANTED_TOOLTIP_LINE = 'Enchanted: %s'
-local MATCH_ENCHANT = ENCHANTED_TOOLTIP_LINE:gsub('%%s', '(.+)')
 
 local X2_INVTYPES, X2_EXCEPTIONS, ARMOR_SLOTS = {
 	INVTYPE_2HWEAPON = true,
@@ -49,19 +46,16 @@ function E:InspectGearSlot(line, lineText, slotInfo)
 
 	local r, g, b = line:GetTextColor()
 	r, g, b = E:Round(r, 2), E:Round(g, 2), E:Round(b, 2)
-	local allow = ((r == 0 and g == 1 and b == 0) and not (strfind(lineText, ITEM_SPELL_TRIGGER_ONEQUIP) == 1) and not strfind(lineText, '%(%d+ min%)'))
+	local allow = ((r == 0 and g == 1 and b == 0) and strfind(lineText, ITEM_SPELL_TRIGGER_ONEQUIP) ~= 1 and not strfind(lineText, '%(%d+ min%)'))
 	if not allow then return end
 
-	local enchant = strmatch(lineText, MATCH_ENCHANT) or (strfind(lineText, '^%+') and lineText)
+	local enchant = strfind(lineText, '^%+') and lineText
 	if enchant then
-		local color1, color2 = strmatch(enchant, '(|cn.-:).-(|r)')
-		local text = gsub(gsub(enchant, '%s?|A.-|a', ''), '|cn.-:(.-)|r', '%1')
-
-		local shortStrip = gsub(text, '[&+] ?', '')
+		local shortStrip = gsub(enchant, '[&+] ?', '')
 		local shortAbbrev = E.db.general.itemLevel.enchantAbbrev and gsub(shortStrip, '(%w%w%w)%w+', '%1')
-		slotInfo.enchantText = format('%s%s%s', color1 or '', text, color2 or '')
-		slotInfo.enchantTextShort = format('%s%s%s', color1 or '', utf8sub(shortAbbrev or shortStrip, 1, 20), color2 or '')
-		slotInfo.enchantTextReal = enchant -- unchanged, contains Atlas and color
+		slotInfo.enchantText = enchant
+		slotInfo.enchantTextShort = utf8sub(shortAbbrev or shortStrip, 1, 20)
+		slotInfo.enchantTextReal = enchant
 
 		slotInfo.enchantColors[1] = r
 		slotInfo.enchantColors[2] = g
@@ -71,48 +65,42 @@ end
 
 function E:GetGearSlotInfo(unit, slot, deepScan)
 	local tt = E.ScanTooltip
+
+	if not tt.slotInfo then tt.slotInfo = {} else wipe(tt.slotInfo) end
+	local slotInfo = tt.slotInfo
+
+	if not deepScan then
+		local link = GetInventoryItemLink(unit, slot)
+		if link then
+			local itemLevel = select(4, GetItemInfo(link))
+			if not itemLevel then return 'tooSoon' end
+
+			slotInfo.iLvl = itemLevel
+		end
+
+		return slotInfo
+	end
+
 	tt:SetOwner(UIParent, 'ANCHOR_NONE')
 	local hasItem = tt:SetInventoryItem(unit, slot)
 	tt:Show()
 
 	local info = hasItem and tt:GetTooltipData()
-	if not tt.slotInfo then tt.slotInfo = {} else wipe(tt.slotInfo) end
-	local slotInfo = tt.slotInfo
 
-	if deepScan then
-		slotInfo.gems = E:ScanTooltipTextures()
+	slotInfo.gems = E:ScanTooltipTextures()
 
-		if not tt.enchantColors then tt.enchantColors = {} else wipe(tt.enchantColors) end
-		if not tt.itemLevelColors then tt.itemLevelColors = {} else wipe(tt.itemLevelColors) end
-		slotInfo.enchantColors = tt.enchantColors
-		slotInfo.itemLevelColors = tt.itemLevelColors
+	if not tt.enchantColors then tt.enchantColors = {} else wipe(tt.enchantColors) end
+	if not tt.itemLevelColors then tt.itemLevelColors = {} else wipe(tt.itemLevelColors) end
+	slotInfo.enchantColors = tt.enchantColors
+	slotInfo.itemLevelColors = tt.itemLevelColors
 
-		if info then
-			for i, line in next, info.lines do
-				local text = line and line.leftText
-				if i == 1 and text == RETRIEVING_ITEM_INFO then
-					return 'tooSoon'
-				else
-					E:InspectGearSlot(_G['ElvUI_ScanTooltipTextLeft'..i], text, slotInfo)
-				end
-			end
-		end
-	elseif info then
-		local firstLine = info.lines[1]
-		local firstText = firstLine and firstLine.leftText
-		if firstText == RETRIEVING_ITEM_INFO then
-			return 'tooSoon'
-		end
-
-		local colorblind = GetCVarBool('colorblindmode') and 4 or 3
-		for x = 2, colorblind do
-			local line = info.lines[x]
-			if line then
-				local text = line.leftText
-				local itemLevel = strmatch(text, MATCH_ITEM_LEVEL)
-				if itemLevel then
-					slotInfo.iLvl = tonumber(itemLevel)
-				end
+	if info then
+		for i, line in next, info.lines do
+			local text = line and line.leftText
+			if i == 1 and text == RETRIEVING_ITEM_INFO then
+				return 'tooSoon'
+			else
+				E:InspectGearSlot(_G['ElvUI_ScanTooltipTextLeft'..i], text, slotInfo)
 			end
 		end
 	end
@@ -145,11 +133,15 @@ function E:CalculateAverageItemLevel(iLevelDB, unit)
 	end
 
 	-- Main hand
-	local mainItemLevel, mainQuality, mainEquipLoc, mainItemClass, mainItemSubClass, _ = 0
+	local mainItemLevel, mainQuality, mainEquipLoc, mainItemClass, mainItemSubClass, mainName, _ = 0
 	local mainLink = GetInventoryItemLink(unit, 16)
 	if mainLink then
 		mainItemLevel = iLevelDB[16]
-		_, _, mainQuality, _, _, mainItemClass, mainItemSubClass, _, mainEquipLoc = GetItemInfo(mainLink)
+		mainName, _, mainQuality, _, _, _, _, _, mainEquipLoc, _, _, _, mainItemClass, mainItemSubClass = C_Item.GetItemInfo(mainLink)
+
+		if not mainName then
+			mainItemClass, mainItemSubClass = nil, nil
+		end
 	elseif GetInventoryItemTexture(unit, 16) then
 		return
 	end
@@ -192,8 +184,8 @@ function E:ColorizeItemLevel(num)
 end
 
 function E:GetPlayerItemLevel()
-	local average, equipped = GetAverageItemLevel()
-	return E:Round(average, 2), E:Round(equipped, 2)
+	local level = E:Round(GetAverageItemLevel(), 2)
+	return level, level
 end
 
 do

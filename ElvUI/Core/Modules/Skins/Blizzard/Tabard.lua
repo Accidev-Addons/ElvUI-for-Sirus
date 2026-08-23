@@ -1,59 +1,47 @@
 local E, L, V, P, G = unpack(ElvUI)
 local S = E:GetModule("Skins")
 
---Lua functions
---WoW API / Variables
+local _G = _G
+local next = next
 
-S:AddCallback("Skin_Tabard", function()
+local function LoadSkin()
 	if not E.private.skins.blizzard.enable or not E.private.skins.blizzard.tabard then return end
 
-	TabardFrame:StripTextures()
-	TabardFrame:CreateBackdrop("Transparent")
-	TabardFrame.backdrop:Point("TOPLEFT", 11, -12)
-	TabardFrame.backdrop:Point("BOTTOMRIGHT", -32, 76)
+	local TabardFrame = _G.TabardFrame
 
-	S:SetUIPanelWindowInfo(TabardFrame, "width")
-	S:SetBackdropHitRect(TabardFrame)
+	S:HandleSirusFrame(TabardFrame)
 
-	S:HandleCloseButton(TabardFrameCloseButton, TabardFrame.backdrop)
-
-	TabardFramePortrait:Kill()
-
-	TabardModel:CreateBackdrop("Transparent")
-	TabardModel.backdrop:Point("TOPLEFT", -2, 5)
-	TabardModel.backdrop:Point("BOTTOMRIGHT", 20, -1)
+	S:HandleButton(TabardFrameAcceptButton)
+	S:HandleButton(TabardFrameCancelButton)
 
 	S:HandleRotateButton(TabardCharacterModelRotateLeftButton)
 	S:HandleRotateButton(TabardCharacterModelRotateRightButton)
 
-	S:HandleButton(TabardFrameCancelButton)
-	S:HandleButton(TabardFrameAcceptButton)
-
 	TabardFrameCostFrame:StripTextures()
 	TabardFrameCustomizationFrame:StripTextures()
+	TabardFrameMoneyInset:StripTextures()
+	TabardFrameMoneyBg:StripTextures()
+
+	TabardModel:SetTemplate()
+
+	for _, frame in next, {
+		TabardFrameEmblemTopRight,
+		TabardFrameEmblemBottomRight,
+		TabardFrameEmblemTopLeft,
+		TabardFrameEmblemBottomLeft,
+	} do
+		frame:SetParent(TabardModel)
+		frame.Show = nil
+		frame:Show()
+	end
 
 	for i = 1, 5 do
-		_G["TabardFrameCustomization"..i]:StripTextures()
+		local button = _G["TabardFrameCustomization"..i]
+		button:StripTextures()
+
 		S:HandleNextPrevButton(_G["TabardFrameCustomization"..i.."LeftButton"])
 		S:HandleNextPrevButton(_G["TabardFrameCustomization"..i.."RightButton"])
 	end
+end
 
-	TabardModel:Point("BOTTOM", -20, 114)
-
-	TabardCharacterModelRotateLeftButton:Point("BOTTOMLEFT", 2, 3)
-	TabardCharacterModelRotateRightButton:Point("TOPLEFT", TabardCharacterModelRotateLeftButton, "TOPRIGHT", 3, 0)
-
---	TabardCharacterModelRotateLeftButton.SetPoint = E.noop
---	TabardCharacterModelRotateRightButton.SetPoint = E.noop
-
-	TabardFrameEmblemTopRight:Point("TOPRIGHT", TabardFrameOuterFrameTopRight, "TOPRIGHT", 24, 6)
-
-	TabardFrameCustomization1:Point("TOPLEFT", TabardFrameCustomizationBorder, "TOPLEFT", 63, -63)
-
-	TabardFrameMoneyFrame:Point("BOTTOMRIGHT", TabardFrame, "BOTTOMLEFT", 183, 88)
-
-	TabardFrameCancelButton:Point("CENTER", TabardFrame, "TOPLEFT", 304, -417)
-	TabardFrameAcceptButton:Point("CENTER", TabardFrame, "TOPLEFT", 221, -417)
-
-	TabardModel:SetModelScale(1.25)
-end)
+S:AddCallback("Skin_Tabard", LoadSkin)

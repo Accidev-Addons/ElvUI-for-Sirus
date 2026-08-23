@@ -17,7 +17,7 @@ S:AddCallbackForAddon('Blizzard_DebugTools', 'Skin_Blizzard_DebugTools', functio
 	_G.ScriptErrorsFrame:StripTextures()
 	_G.ScriptErrorsFrame:SetTemplate('Transparent')
 
-	S:HandleScrollBar(_G.ScriptErrorsFrameScrollFrameScrollBar)
+	S:HandleSirusScrollBar(_G.ScriptErrorsFrameScrollFrameScrollBar)
 	S:HandleCloseButton(_G.ScriptErrorsFrameClose, _G.ScriptErrorsFrame)
 
 	_G.ScriptErrorsFrameScrollFrameText:FontTemplate(nil, 13)
@@ -146,10 +146,10 @@ S:AddCallbackForAddon('ViragDevTool', 'Skin_ViragDevTool', function()
 		PlaySound(isShown and 620 or 621) -- QUESTLOGOPEN or QUESTLOGCLOSE
 	end)
 
-	local button = _G.ViragDevToolFrameResizeButton
-	local normal, pushed = button:GetNormalTexture(), button:GetPushedTexture()
+	local resizeButton = _G.ViragDevToolFrameResizeButton
+	local normal, pushed = resizeButton:GetNormalTexture(), resizeButton:GetPushedTexture()
 
-	S:HandleNextPrevButton(button)
+	S:HandleNextPrevButton(resizeButton)
 
 	normal:SetRotation(-2.35)
 	pushed:SetRotation(-2.35)
@@ -157,8 +157,8 @@ S:AddCallbackForAddon('ViragDevTool', 'Skin_ViragDevTool', function()
 	S:HandleEditBox(_G.ViragDevToolFrameSideBarTextArea, 'Transparent')
 	S:HandleEditBox(_G.ViragDevToolFrameTextArea, 'Transparent')
 
-	S:HandleScrollBar(_G.ViragDevToolFrameScrollFrameScrollBar)
-	S:HandleScrollBar(_G.ViragDevToolFrameSideBarScrollFrameScrollBar)
+	S:HandleSirusScrollBar(_G.ViragDevToolFrameScrollFrameScrollBar)
+	S:HandleSirusScrollBar(_G.ViragDevToolFrameSideBarScrollFrameScrollBar)
 
 	S:HandleCloseButton(_G.ViragDevToolFrameCloseWndButton)
 end)

@@ -1,11 +1,10 @@
 local E, L, V, P, G = unpack(ElvUI)
 local S = E:GetModule('Skins')
--- local ACD = E.Libs.AceConfigDialog
 
 local _G = _G
 local hooksecurefunc = hooksecurefunc
 local next, strsplit = next, strsplit
-local unpack, sort, gsub, wipe = unpack, sort, gsub, wipe
+local unpack, sort = unpack, sort
 local strupper, ipairs, tonumber = strupper, ipairs, tonumber
 local floor, select, type, min = floor, select, type, min
 local pairs, tinsert, tContains = pairs, tinsert, tContains
@@ -305,7 +304,7 @@ function E:CreateMoverPopup()
 	local snapName = f:GetName()..'CheckButton'
 	local snapping = CreateFrame('CheckButton', snapName, f, 'UICheckButtonTemplate')
 	snapping:SetScript('OnShow', function(cb) cb:SetChecked(E.db.general.stickyFrames) end)
-	snapping:SetScript('OnClick', function(cb) E.db.general.stickyFrames = cb:GetChecked() end)
+	snapping:SetScript('OnClick', function(cb) E.db.general.stickyFrames = cb:GetChecked() and true or false end)
 	snapping.text = _G[snapName.."Text"]
 	snapping.text:SetText(L["Sticky Frames"])
 	snapping.text:FontTemplate(nil, 12, 'SHADOW')
@@ -327,7 +326,7 @@ function E:CreateMoverPopup()
 	end)
 	f.lock = lock
 
-	local reset = CreateFrame('Button', f:GetName()..'CloseButton', f, 'OptionsButtonTemplate')
+	local reset = CreateFrame('Button', f:GetName()..'ResetButton', f, 'OptionsButtonTemplate')
 	reset:SetText(L["Reset"])
 	reset:SetScript('OnClick', function() E:ResetUI() end)
 	reset:Width(100)
@@ -411,6 +410,7 @@ function E:CreateMoverPopup()
 	nudgeFrame:CreateShadow(5)
 	nudgeFrame.shadow:SetBackdropBorderColor(r, g, b, 0.9)
 	nudgeFrame:SetFrameLevel(100)
+	nudgeFrame:Hide()
 	nudgeFrame:EnableMouse(true)
 	nudgeFrame:SetClampedToScreen(true)
 	nudgeFrame:EnableKeyboard(nudgeFrame:IsShown() and true or false)
@@ -539,7 +539,6 @@ function E:CreateMoverPopup()
 	upButton:Point('BOTTOMRIGHT', nudgeFrame, 'BOTTOM', -6, 4)
 	upButton:SetScript('OnClick', function() E:NudgeMover(nil, 1) end)
 	S:HandleNextPrevButton(upButton)
-	S:HandleButton(upButton)
 	upButton:Size(22)
 	nudgeFrame.upButton = upButton
 
@@ -547,7 +546,6 @@ function E:CreateMoverPopup()
 	downButton:Point('BOTTOMLEFT', nudgeFrame, 'BOTTOM', 6, 4)
 	downButton:SetScript('OnClick', function() E:NudgeMover(nil, -1) end)
 	S:HandleNextPrevButton(downButton)
-	S:HandleButton(downButton)
 	downButton:Size(22)
 	nudgeFrame.downButton = downButton
 
@@ -555,7 +553,6 @@ function E:CreateMoverPopup()
 	leftButton:Point('RIGHT', upButton, 'LEFT', -6, 0)
 	leftButton:SetScript('OnClick', function() E:NudgeMover(-1) end)
 	S:HandleNextPrevButton(leftButton)
-	S:HandleButton(leftButton)
 	leftButton:Size(22)
 	nudgeFrame.leftButton = leftButton
 
@@ -563,7 +560,6 @@ function E:CreateMoverPopup()
 	rightButton:Point('LEFT', downButton, 'RIGHT', 6, 0)
 	rightButton:SetScript('OnClick', function() E:NudgeMover(1) end)
 	S:HandleNextPrevButton(rightButton)
-	S:HandleButton(rightButton)
 	rightButton:Size(22)
 	nudgeFrame.rightButton = rightButton
 end
@@ -593,12 +589,8 @@ function E:Config_UpdateSize(reset)
 	if not frame then return end
 
 	local maxWidth, maxHeight = self.UIParent:GetSize()
-	if frame.SetResizeBounds then
-		frame:SetResizeBounds(800, 600, maxWidth-50, maxHeight-50)
-	else
-		frame:SetMinResize(800, 600)
-		frame:SetMaxResize(maxWidth-50, maxHeight-50)
-	end
+	frame:SetMinResize(800, 600)
+	frame:SetMaxResize(maxWidth-50, maxHeight-50)
 
 	self.Libs.AceConfigDialog:SetDefaultSize('ElvUI', E:Config_GetDefaultSize())
 
@@ -1140,6 +1132,27 @@ function E:Config_WindowOpened(frame)
 		E:Config_SaveOldPosition(content)
 		E:Config_ContentPlacement(frame, content, unskinned)
 
+		if not frame.clipScroll then
+			local clip = CreateFrame('ScrollFrame', nil, frame)
+			clip:SetAllPoints(content)
+
+			local child = CreateFrame('Frame', nil, clip)
+			child:Point('TOPLEFT')
+			clip:SetScrollChild(child)
+
+			local function syncClip()
+				local width, height = clip:GetWidth(), clip:GetHeight()
+				child:SetSize((width and width > 0 and width) or 1, (height and height > 0 and height) or 1)
+			end
+
+			frame:HookScript('OnSizeChanged', syncClip)
+			frame:HookScript('OnShow', syncClip)
+			syncClip()
+
+			content:SetParent(child)
+			frame.clipScroll = clip
+		end
+
 		local titlebg = frame.obj.titlebg
 		E:Config_SaveOldPosition(titlebg)
 		titlebg:ClearAllPoints()
@@ -1260,7 +1273,7 @@ function E:Config_CreateBottomButtons(frame, unskinned)
 			element:HookScript('OnEnter', E.Config_RepositionOnEnter)
 			element:HookScript('OnLeave', E.Config_RepositionOnLeave)
 		elseif info.editBox then
-			element = E:Config_CreateFrame(info, frame, unskinned, 'EditBox', nil, frame.bottomHolder, info.editbox)
+			element = E:Config_CreateFrame(info, frame, unskinned, 'EditBox', nil, frame.bottomHolder, info.editBox)
 		else
 			element = E:Config_CreateFrame(info, frame, unskinned, 'Button', nil, frame.bottomHolder, 'UIPanelButtonTemplate')
 		end
@@ -1293,45 +1306,32 @@ function E:Config_CreateBottomButtons(frame, unskinned)
 	end
 end
 
-local pageNodes = {}
 function E:Config_GetToggleMode(frame, msg)
-	local pages, msgStr
+	local pages
 	if msg and msg ~= "" then
 		pages = {strsplit(',', msg)}
-		msgStr = gsub(msg, ',', '\001')
 	end
 
 	local empty = pages ~= nil
 	if not frame or empty then
 		if empty then
 			local ACD = E.Libs.AceConfigDialog
-			local pageCount, index, mainSel = #pages
+			local pageCount, multi, matched, mainSel = #pages
 			if pageCount > 1 then
-				wipe(pageNodes)
-				index = 0
+				multi = true
 
-				local main, mainNode, mainSelStr, sub, subNode, subSel
+				local node, selected = ACD and ACD.Status and ACD.Status.ElvUI
 				for i = 1, pageCount do
-					if i == 1 then
-						main = pages[i] and ACD and ACD.Status and ACD.Status.ElvUI
-						mainSel = main and main.status and main.status.groups and main.status.groups.selected
-						mainSelStr = mainSel and ('^'..E:EscapeString(mainSel)..'\001')
-						mainNode = main and main.children and main.children[pages[i]]
-						pageNodes[index+1], pageNodes[index+2] = main, mainNode
-					else
-						sub = pages[i] and pageNodes[i] and ((i == pageCount and pageNodes[i]) or pageNodes[i].children[pages[i]])
-						subSel = sub and sub.status and sub.status.groups and sub.status.groups.selected
-						subNode = (mainSelStr and msgStr:match(mainSelStr..E:EscapeString(pages[i])..'$') and (subSel and subSel == pages[i])) or ((i == pageCount and not subSel) and mainSel and mainSel == msgStr)
-						pageNodes[index+1], pageNodes[index+2] = sub, subNode
-					end
-					index = index + 2
+					selected = node and node.status and node.status.groups and node.status.groups.selected
+					matched = (i == 1 or matched) and selected == pages[i]
+					node = matched and node.children and node.children[pages[i]] or nil
 				end
 			else
 				local main = pages[1] and ACD and ACD.Status and ACD.Status.ElvUI
 				mainSel = main and main.status and main.status.groups and main.status.groups.selected
 			end
 
-			if frame and ((not index and mainSel and mainSel == msg) or (index and pageNodes and pageNodes[index])) then
+			if frame and ((not multi and mainSel and mainSel == msg) or (multi and matched)) then
 				return 'Close'
 			else
 				return 'Open', pages

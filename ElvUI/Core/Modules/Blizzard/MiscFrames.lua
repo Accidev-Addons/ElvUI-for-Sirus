@@ -2,28 +2,14 @@ local E, L = unpack(ElvUI)
 local BL = E:GetModule('Blizzard')
 
 local _G = _G
-local GetLocale = GetLocale
-local CreateFrame = CreateFrame
 local UnitIsUnit = UnitIsUnit
 local hooksecurefunc = hooksecurefunc
 
 local Minimap_SetPing = Minimap_SetPing
-local KnowledgeBaseFrame_OnEvent = KnowledgeBaseFrame_OnEvent
 
 local MINIMAPPING_FADE_TIMER = MINIMAPPING_FADE_TIMER
 
 function BL:HandleMiscFrames()
-    -- disable the annoying one line popup about the knowledge base being disabled
-	KBArticle_BeginLoading = E.noop
-	KBSetup_BeginLoading = E.noop
-	KnowledgeBaseFrame_OnEvent(nil, 'KNOWLEDGE_BASE_SETUP_LOAD_FAILURE')
-
-	-- fix german abbrevations
-	if GetLocale() == 'deDE' then
-		DAY_ONELETTER_ABBR = '%d d'
-		MINUTE_ONELETTER_ABBR = '%d m'
-	end
-
 	-- fix minimap ping
 	_G.MinimapPing:HookScript('OnUpdate', function(self)
 		if self.fadeOut or self.timer > MINIMAPPING_FADE_TIMER then
@@ -56,6 +42,14 @@ function BL:HandleMiscFrames()
 	_G.DurabilityFrame:SetFrameStrata('HIGH')
 	_G.DurabilityFrame:SetScale(0.6)
 
+	if _G.DurabilityFrame.BreakFromFrameManager then
+		_G.DurabilityFrame:BreakFromFrameManager()
+	end
+
+	if _G.DurabilityFrame.systemInfo then
+		_G.DurabilityFrame.systemInfo.isInDefaultPosition = false
+	end
+
 	_G.DurabilityWeapon:Point('RIGHT', _G.DurabilityWrists, 'LEFT', 6, 0)
 	_G.DurabilityShield:Point('LEFT', _G.DurabilityWrists, 'RIGHT', -6, 10)
 	_G.DurabilityOffWeapon:Point('LEFT', _G.DurabilityWrists, 'RIGHT', -6, 0)
@@ -83,30 +77,29 @@ function BL:HandleMiscFrames()
 
 	E:CreateMover(_G.TicketStatusFrame, 'GMMover', L["GM Ticket Frame"])
 
+	-- df ui bag bar
+	if _G.BagsBar then
+		_G.BagsBar:Kill()
+	end
+
+	-- df ui status tracking bars (reputation, experience)
+	if _G.StatusTrackingBarManager then
+		_G.StatusTrackingBarManager:Kill()
+	end
+
 	-- fix lfr browse frame taint
-    local frame = CreateFrame('Frame')
-	frame:SetScript('OnUpdate', function()
-		if _G.LFRBrowseFrame.timeToClear then
-			_G.LFRBrowseFrame.timeToClear = nil
-		end
+	_G.LFRParentFrame:HookScript('OnHide', function()
+		_G.LFRBrowseFrame.timeToClear = nil
 	end)
 
     -- fix lfd cooldown frame taint
 	do
-		local originalFunc = LFDQueueFrameRandomCooldownFrame_OnEvent
-		local originalScript = _G.LFDQueueFrameCooldownFrame:GetScript('OnEvent')
+		local handler = _G.LFDQueueFrameCooldownFrame:GetScript('OnEvent') or LFDQueueFrameRandomCooldownFrame_OnEvent
 
-		LFDQueueFrameRandomCooldownFrame_OnEvent = function(self, event, unit, ...)
-			if event == 'UNIT_AURA' and not unit then return end
-			originalFunc(self, event, unit, ...)
-		end
-
-		if originalFunc == originalScript then
-			_G.LFDQueueFrameCooldownFrame:SetScript('OnEvent', LFDQueueFrameRandomCooldownFrame_OnEvent)
-		else
+		if handler then
 			_G.LFDQueueFrameCooldownFrame:SetScript('OnEvent', function(self, event, unit, ...)
 				if event == 'UNIT_AURA' and not unit then return end
-				originalScript(self, event, unit, ...)
+				handler(self, event, unit, ...)
 			end)
 		end
 	end

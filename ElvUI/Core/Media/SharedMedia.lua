@@ -2,10 +2,7 @@ local E, L, V, P, G = unpack(ElvUI)
 local LSM = E.Libs.LSM
 
 local format, ipairs, type, pcall = format, ipairs, type, pcall
-local koKR = LSM.LOCALE_BIT_koKR
 local ruRU = LSM.LOCALE_BIT_ruRU
-local zhCN = LSM.LOCALE_BIT_zhCN
-local zhTW = LSM.LOCALE_BIT_zhTW
 local western = LSM.LOCALE_BIT_western
 
 E.Media = {
@@ -13,7 +10,6 @@ E.Media = {
 	Sounds = {},
 	Arrows = {},
 	MailIcons = {},
-	RestIcons = {},
 	ChatEmojis = {},
 	ChatLogos = {},
 	Textures = {},
@@ -33,7 +29,6 @@ local MediaKey = {
 	sound	= 'Sounds',
 	arrow	= 'Arrows',
 	mail	= 'MailIcons',
-	resting = 'RestIcons',
 	emoji	= 'ChatEmojis',
 	logo	= 'ChatLogos',
 	texture	= 'Textures'
@@ -44,7 +39,6 @@ local MediaPath = {
 	sound	= [[Interface\AddOns\ElvUI\Core\Media\Sounds\]],
 	arrow	= [[Interface\AddOns\ElvUI\Core\Media\Arrows\]],
 	mail	= [[Interface\AddOns\ElvUI\Core\Media\MailIcons\]],
-	resting = [[Interface\AddOns\ElvUI\Core\Media\RestIcons\]],
 	emoji	= [[Interface\AddOns\ElvUI\Core\Media\ChatEmojis\]],
 	logo	= [[Interface\AddOns\ElvUI\Core\Media\ChatLogos\]],
 	texture	= [[Interface\AddOns\ElvUI\Core\Media\Textures\]]
@@ -83,7 +77,7 @@ end
 AddMedia('font','ActionMan.ttf',			'Action Man')
 AddMedia('font','ContinuumMedium.ttf',		'Continuum Medium')
 AddMedia('font','DieDieDie.ttf',			'Die Die Die!')
-AddMedia('font','PTSansNarrow.ttf',			'PT Sans Narrow', nil, koKR + ruRU + zhCN + zhTW + western)
+AddMedia('font','PTSansNarrow.ttf',			'PT Sans Narrow', nil, ruRU + western)
 AddMedia('font','Expressway.ttf',			true, nil, ruRU + western)
 AddMedia('font','Homespun.ttf',				true, nil, ruRU + western)
 AddMedia('font','Invisible.ttf')
@@ -110,10 +104,6 @@ for i = 0, 7 do -- mail icons
 	AddMedia('mail','Mail'..i)
 end
 
-for i = 0, 2 do -- resting icons
-	AddMedia('resting','Resting'..i)
-end
-
 -- nameplate target arrows
 AddMedia('arrow','ArrowRed')
 for i = 0, 72 do
@@ -132,10 +122,7 @@ AddMedia('texture','BagQuestIcon')
 AddMedia('texture','BagUpgradeIcon')
 AddMedia('texture','Black8x8')
 AddMedia('texture','BubbleTex')
-AddMedia('texture','White8x8')
 AddMedia('texture','Broom')
-AddMedia('texture','ChatEmojis')
-AddMedia('texture','ChatLogos')
 AddMedia('texture','ChestPlate')
 AddMedia('texture','Close')
 AddMedia('texture','Coins')
@@ -145,9 +132,9 @@ AddMedia('texture','Cross')
 AddMedia('texture','DPS')
 AddMedia('texture','ExitVehicle')
 AddMedia('texture','FabricSilk')
+AddMedia('texture','Filter')
 AddMedia('texture','GoldCoins')
 AddMedia('texture','GreenPotion')
-AddMedia('texture','GlowTex')
 AddMedia('texture','Healer')
 AddMedia('texture','Help')
 AddMedia('texture','HelloKitty')
@@ -167,15 +154,13 @@ AddMedia('texture','Leader')
 AddMedia('texture','LevelUpTex')
 AddMedia('texture','Logo')
 AddMedia('texture','Mail')
-AddMedia('texture','Melli')
-AddMedia('texture','Minimalist')
 AddMedia('texture','Nameplates')
-AddMedia('texture','NormTex')
-AddMedia('texture','NormTex2')
+AddMedia('texture','PartyRaidBlips')
 AddMedia('texture','Pause')
 AddMedia('texture','PetBroom')
 AddMedia('texture','PVPHorde')
 AddMedia('texture','PVPAlliance')
+AddMedia('texture','PVPRenegade')
 AddMedia('texture','PhaseBorder')
 AddMedia('texture','PhaseCenter')
 AddMedia('texture','Planks')

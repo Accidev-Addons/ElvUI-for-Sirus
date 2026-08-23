@@ -22,7 +22,7 @@ Chat.args.enable = ACH:Toggle(L["Enable"], nil, 2, nil, nil, nil, function() ret
 local General = ACH:Group(L["General"], nil, 10, nil, nil, nil, function() return not E.Chat.Initialized end)
 Chat.args.general = General
 
-General.args.url = ACH:Toggle(L["URL Links"], L["Attempt to create URL links inside the chat."], 1)
+General.args.url = ACH:Toggle(L["URL Links"], L["Attempt to create URL links inside the chat."]..'\n'..L["Shift-Click a link to open it in your browser."], 1)
 General.args.shortChannels = ACH:Toggle(L["Short Channels"], L["Shorten the channel names in chat."], 2)
 General.args.hideChannels = ACH:Toggle(L["Hide Channels"], L["Hide the channel names in chat."], 3)
 General.args.hyperlinkHover = ACH:Toggle(L["Hyperlink Hover"], L["Display the hyperlink tooltip while hovering over a hyperlink."], 4, nil, nil, nil, nil, function(info, value) E.db.chat[info[#info]] = value CH:ToggleHyperlink(value) end)
@@ -68,13 +68,6 @@ General.args.fontGroup.args.tabFont = ACH:SharedMediaFont(L["Tab Font"], nil, 3)
 General.args.fontGroup.args.tabFontOutline = ACH:FontFlags(L["Tab Font Outline"], nil, 5)
 General.args.fontGroup.args.tabFontSize = ACH:Range(L["Tab Font Size"], nil, 3, C.Values.FontSize)
 
-General.args.voicechatGroup = ACH:Group(L["BINDING_HEADER_VOICE_CHAT"], nil, 90)
-General.args.voicechatGroup.args.hideVoiceButtons = ACH:Toggle(L["Hide Voice Buttons"], L["Completely hide the voice buttons."], 1, nil, nil, nil, nil, function(info, value) E.db.chat[info[#info]] = value E.ShowPopup = true end)
-General.args.voicechatGroup.args.pinVoiceButtons = ACH:Toggle(L["Pin Voice Buttons"], L["This will pin the voice buttons to the chat's tab panel. Unchecking it will create a voice button panel with a mover."], 2, nil, nil, nil, nil, function(info, value) E.db.chat[info[#info]] = value E.ShowPopup = true end, function() return E.db.chat.hideVoiceButtons end)
-General.args.voicechatGroup.args.desaturateVoiceIcons = ACH:Toggle(L["Desaturate Voice Icons"], nil, 3, nil, nil, nil, nil, function(info, value) E.db.chat[info[#info]] = value CH:UpdateVoiceChatIcons() end, function() return E.db.chat.hideVoiceButtons end)
-General.args.voicechatGroup.args.mouseoverVoicePanel = ACH:Toggle(L["Mouseover"], nil, 4, nil, nil, nil, nil, function(info, value) E.db.chat[info[#info]] = value CH:ResetVoicePanelAlpha() end, function() return E.db.chat.hideVoiceButtons or E.db.chat.pinVoiceButtons end)
-General.args.voicechatGroup.args.voicePanelAlpha = ACH:Range(L["Alpha"], L["Change the alpha level of the frame."], 5, { min = 0, max = 1, step = 0.01 }, nil, nil, function(info, value) E.db.chat[info[#info]] = value CH:ResetVoicePanelAlpha() end, function() return E.db.chat.hideVoiceButtons or E.db.chat.pinVoiceButtons or not E.db.chat.mouseoverVoicePanel end)
-
 General.args.timestampGroup = ACH:Group(L["TIMESTAMPS_LABEL"], nil, 95)
 General.args.timestampGroup.args.timeStampLocalTime = ACH:Toggle(L["Local Time"], L["If not set to true then the server time will be displayed instead."], 1)
 General.args.timestampGroup.args.timeStampFormat = ACH:Select(L["TIMESTAMPS_LABEL"], L["OPTION_TOOLTIP_TIMESTAMPS"], 2, { ['NONE'] = L["None"], ['%I:%M '] = '03:27', ['%I:%M:%S '] = '03:27:32', ['%I:%M %p '] = '03:27 PM', ['%I:%M:%S %p '] = '03:27:32 PM', ['%H:%M '] = '15:27', ['%H:%M:%S '] = '15:27:32' })
@@ -92,7 +85,7 @@ local function RepopulateAlertChannels()
 	wipe(Alerts.args.alertChannels.args)
 
 	local channels = { GetChannelList() }
-	for i = 2, #channels, 3 do
+	for i = 2, #channels, 2 do
 		local channel = channels[i]
 		Alerts.args.alertChannels.args[channel] = ACH:SharedMediaSound(channel)
 	end
@@ -135,7 +128,7 @@ Panels.args.datatextGroup.args.RightChatDataPanelAnchor = ACH:Select(L["Right Po
 Panels.args.tabGroup = ACH:Group(L["Tab Panels"], nil, 15, nil, nil, nil, nil, function() return not E.Chat.Initialized end)
 Panels.args.tabGroup.inline = true
 Panels.args.tabGroup.args.panelTabTransparency = ACH:Toggle(L["Tab Panel Transparency"], nil, 1, nil, nil, 250, nil, function(info, value) E.db.chat[info[#info]] = value LO:SetChatTabStyle() end, function() return not E.db.chat.panelTabBackdrop end)
-Panels.args.tabGroup.args.panelTabBackdrop = ACH:Toggle(L["Tab Panel"], L["Toggle the chat tab panel backdrop."], 2, nil, nil, nil, nil, function(info, value) E.db.chat[info[#info]] = value LO:ToggleChatPanels() if E.db.chat.pinVoiceButtons and not E.db.chat.hideVoiceButtons then CH:ReparentVoiceChatIcon() end end)
+Panels.args.tabGroup.args.panelTabBackdrop = ACH:Toggle(L["Tab Panel"], L["Toggle the chat tab panel backdrop."], 2, nil, nil, nil, nil, function(info, value) E.db.chat[info[#info]] = value LO:ToggleChatPanels() end)
 
 Panels.args.panels = ACH:Group(L["Chat Panels"], nil, 20)
 Panels.args.panels.inline = true

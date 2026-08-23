@@ -24,14 +24,12 @@ function LO:Initialize()
 
 	LO.BottomPanel = CreateFrame('Frame', 'ElvUI_BottomPanel', E.UIParent)
 	LO.BottomPanel:SetScript('OnShow', Panel_OnShow)
-	E.FrameLocks.ElvUI_BottomPanel = true
 	Panel_OnShow(LO.BottomPanel)
 	LO:UpdateBottomPanel()
 
 	LO.TopPanel = CreateFrame('Frame', 'ElvUI_TopPanel', E.UIParent)
 	LO.TopPanel:SetScript('OnShow', Panel_OnShow)
 	Panel_OnShow(LO.TopPanel)
-	E.FrameLocks.ElvUI_TopPanel = true
 	LO:UpdateTopPanel()
 end
 
@@ -104,7 +102,7 @@ local function ChatButton_OnClick(self)
 		fadeChatPanel(self, 0.2, 0)
 	end
 
-	GameTooltip:Hide()
+	_G.GameTooltip:Hide()
 end
 
 function HideLeftChat()
@@ -176,7 +174,7 @@ function LO:RefreshChatMovers()
 
 	-- mover sizes: same as in CH.PositionChats for panels but including the datatext bar height
 	local panelWidth, panelHeight = E:Scale(E.db.chat.panelWidth), E:Scale(E.db.chat.panelHeight)
-	LeftChatMover:SetSize(panelWidth, panelHeight + (showLeftPanel and barHeight or 0))
+	LeftChatMover:SetSize(panelWidth, panelHeight + E:Scale(showLeftPanel and barHeight or 0))
 	if E.db.chat.separateSizes then
 		RightChatMover:SetSize(E:Scale(E.db.chat.panelWidthRight), E:Scale(E.db.chat.panelHeightRight) + E:Scale(showRightPanel and barHeight or 0))
 	else
@@ -337,8 +335,6 @@ function LO:CreateChatPanels()
 	lchattbtex:Point('CENTER')
 	lchattbtex:Size(16)
 	lchattb.texture = lchattbtex
-	lchattb.OnEnter = ChatButton_OnEnter
-	lchattb.OnLeave = ChatButton_OnLeave
 	lchattb.parent = lchat
 
 	--Right Chat

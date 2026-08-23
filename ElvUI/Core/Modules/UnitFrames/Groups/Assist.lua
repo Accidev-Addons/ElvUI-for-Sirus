@@ -52,7 +52,6 @@ function UF:Update_AssistHeader(header, db)
 	header:Hide()
 	header.db = db
 
-	RegisterStateDriver(header, "visibility", "show")
 	RegisterStateDriver(header, "visibility", "[@raid1,exists] show;hide")
 
 	local width, height = header:GetSize()

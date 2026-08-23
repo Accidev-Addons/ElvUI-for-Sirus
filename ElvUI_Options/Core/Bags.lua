@@ -36,8 +36,7 @@ Bags.args.general.args.generalGroup.values = {
 }
 
 local excludeUpdates = {
-	clearSearchOnClose = true,
-	auctionToggle = true
+	clearSearchOnClose = true
 }
 
 Bags.args.general.args.generalGroup.set = function(_, key, value)
@@ -66,6 +65,20 @@ Bags.args.general.args.bankGroup.args.bankSize = ACH:Range(L["Button Size"], nil
 Bags.args.general.args.bankGroup.args.bankButtonSpacing = ACH:Range(L["Button Spacing"], nil, 3, { min = -3, max = 20, step = 1 })
 Bags.args.general.args.bankGroup.args.bankWidth = ACH:Range(L["Panel Width"], L["Adjust the width of the bank frame."], 4, { min = 150, max = 1400, step = 1 })
 Bags.args.general.args.bankGroup.args.disableBankSort = ACH:Toggle(L["Disable Sort"], nil, 5, nil, nil, nil, nil, function(info, value) E.db.bags[info[#info]] = value B:ToggleSortButtonState(true) end)
+
+local function SetReagentMode(info, value)
+	E.db.bags[info[#info]] = value
+
+	if B.BankFrame then
+		B:ShowBankTab(B.BankFrame, 1)
+		B:UpdateAllSlots(B.BankFrame)
+	end
+
+	B:Layout(true)
+end
+
+Bags.args.general.args.bankGroup.args.reagentMode = ACH:Select(REAGENT_BANK, L["Show the reagent bank on its own tab or as an extra bag inside the bank."], 6, { TABS = L["Tabs"], MERGED = L["Single Bag"] }, nil, nil, nil, SetReagentMode)
+Bags.args.general.args.bankGroup.args.reagentCompact = ACH:Toggle(L["Compact"], L["Collapse the reagent bank into a single slot showing the number of free slots."], 7, nil, nil, nil, nil, SetReagentMode, function() return E.db.bags.reagentMode ~= 'MERGED' end)
 
 Bags.args.general.args.bankGroup.args.split = ACH:Group(L["Split"], nil, -1, nil, function(info) return E.db.bags.split[info[#info]] end, function(info, value) E.db.bags.split[info[#info]] = value B:Layout(true) end)
 Bags.args.general.args.bankGroup.args.split.args.bank = ACH:Toggle(L["Enable"], nil, 1)
@@ -170,7 +183,7 @@ Bags.args.vendorGrays.args.interval = ACH:Range(L["Sell Interval"], L["Will atte
 Bags.args.vendorGrays.args.details = ACH:Toggle(L["Vendor Gray Detailed Report"], L["Displays a detailed report of every item sold when enabled."], 3)
 Bags.args.vendorGrays.args.progressBar = ACH:Toggle(L["Progress Bar"], nil, 4)
 
-Bags.args.bagSortingGroup = ACH:Group(L["Sorting"], nil, 5, nil, nil, nil, function() return (not E.Bags.Initialized) or E.db.bags.useBlizzardCleanup end)
+Bags.args.bagSortingGroup = ACH:Group(L["Sorting"], nil, 5, nil, nil, nil, function() return not E.Bags.Initialized end)
 Bags.args.bagSortingGroup.args.sortInverted = ACH:Toggle(L["Sort Inverted"], L["Direction the bag sorting will use to allocate the items."], 1)
 Bags.args.bagSortingGroup.args.description = ACH:Description(L["Here you can add items or search terms that you want to be excluded from sorting. To remove an item just click on its name in the list."], 3)
 Bags.args.bagSortingGroup.args.addEntryGroup = ACH:Group(L["Add Item or Search Syntax"], nil, 3)
@@ -193,3 +206,34 @@ end
 
 Bags.args.bagSortingGroup.args.ignoredEntriesProfile = ACH:MultiSelect(L["Ignored Items and Search Syntax (Profile)"], nil, 4, function() return getIgnoreList(E.db.bags.ignoredItems) end, nil, nil, function(_, value) return E.db.bags.ignoredItems[value] end, function(_, value) E.db.bags.ignoredItems[value] = nil GameTooltip:Hide() end, nil, function() return not next(E.db.bags.ignoredItems) end)
 Bags.args.bagSortingGroup.args.ignoredEntriesGlobal = ACH:MultiSelect(L["Ignored Items and Search Syntax (Global)"], nil, 5, function() return getIgnoreList(E.global.bags.ignoredItems) end, nil, nil, function(_, value) return E.global.bags.ignoredItems[value] end, function(_, value) E.global.bags.ignoredItems[value] = nil GameTooltip:Hide() end, nil, function() return not next(E.global.bags.ignoredItems) end)
+
+local function updateBlacklist(skill)
+	local D = B:GetModule('Deconstruct', true)
+	if not D then return end
+
+	if skill == 'LOCK' then
+		if D.BuildBlacklistLOCK then D:BuildBlacklistLOCK() end
+	elseif D.BuildBlacklistDE then
+		D:BuildBlacklistDE()
+	end
+end
+
+Bags.args.deconstruct = ACH:Group(L["Deconstruct Mode"], nil, 6, nil, nil, nil, function() return not E.Bags.Initialized end)
+Bags.args.deconstruct.args.description = ACH:Description(L["Deconstruct Mode Desc"], 1)
+Bags.args.deconstruct.args.enable = ACH:Toggle(L["Enable"], nil, 2, nil, nil, nil, function() return E.db.bags.deconstruct end, function(_, value) E.db.bags.deconstruct = value E:StaticPopup_Show('PRIVATE_RL') end)
+
+Bags.args.deconstruct.args.deconstructBlacklistGroup = ACH:Group(L["Deconstruct Blacklist"], nil, 3)
+Bags.args.deconstruct.args.deconstructBlacklistGroup.inline = true
+Bags.args.deconstruct.args.deconstructBlacklistGroup.args.addEntryProfile = ACH:Input(L["Profile"], L["Add an item or search syntax to the deconstruct blacklist."], 1, nil, nil, C.Blank, function(_, value) if value == '' or gsub(value, '%s+', '') == '' then return end local itemID = strmatch(value, 'item:(%d+)') E.db.bags.deconstructBlacklist[(itemID or value)] = value updateBlacklist('DE') end)
+Bags.args.deconstruct.args.deconstructBlacklistGroup.args.addEntryGlobal = ACH:Input(L["Global"], L["Add an item or search syntax to the deconstruct blacklist."], 2, nil, nil, C.Blank, function(_, value) if value == '' or gsub(value, '%s+', '') == '' then return end local itemID = strmatch(value, 'item:(%d+)') E.global.bags.deconstructBlacklist[(itemID or value)] = value if E.db.bags.deconstructBlacklist[(itemID or value)] then E.db.bags.deconstructBlacklist[(itemID or value)] = nil end updateBlacklist('DE') end)
+
+Bags.args.deconstruct.args.deconstructBlacklistProfile = ACH:MultiSelect(L["Deconstruct Blacklist (Profile)"], nil, 4, function() return getIgnoreList(E.db.bags.deconstructBlacklist) end, nil, nil, function(_, value) return E.db.bags.deconstructBlacklist[value] end, function(_, value) E.db.bags.deconstructBlacklist[value] = nil GameTooltip:Hide() updateBlacklist('DE') end, nil, function() return not next(E.db.bags.deconstructBlacklist) end)
+Bags.args.deconstruct.args.deconstructBlacklistGlobal = ACH:MultiSelect(L["Deconstruct Blacklist (Global)"], nil, 5, function() return getIgnoreList(E.global.bags.deconstructBlacklist) end, nil, nil, function(_, value) return E.global.bags.deconstructBlacklist[value] end, function(_, value) E.global.bags.deconstructBlacklist[value] = nil GameTooltip:Hide() updateBlacklist('DE') end, nil, function() return not next(E.global.bags.deconstructBlacklist) end)
+
+Bags.args.deconstruct.args.lockBlacklistGroup = ACH:Group(L["Lockbox Blacklist"], nil, 6)
+Bags.args.deconstruct.args.lockBlacklistGroup.inline = true
+Bags.args.deconstruct.args.lockBlacklistGroup.args.addEntryProfile = ACH:Input(L["Profile"], L["Add an item or search syntax to the lockbox blacklist."], 1, nil, nil, C.Blank, function(_, value) if value == '' or gsub(value, '%s+', '') == '' then return end local itemID = strmatch(value, 'item:(%d+)') E.db.bags.lockBlacklist[(itemID or value)] = value updateBlacklist('LOCK') end)
+Bags.args.deconstruct.args.lockBlacklistGroup.args.addEntryGlobal = ACH:Input(L["Global"], L["Add an item or search syntax to the lockbox blacklist."], 2, nil, nil, C.Blank, function(_, value) if value == '' or gsub(value, '%s+', '') == '' then return end local itemID = strmatch(value, 'item:(%d+)') E.global.bags.lockBlacklist[(itemID or value)] = value if E.db.bags.lockBlacklist[(itemID or value)] then E.db.bags.lockBlacklist[(itemID or value)] = nil end updateBlacklist('LOCK') end)
+
+Bags.args.deconstruct.args.lockBlacklistProfile = ACH:MultiSelect(L["Lockbox Blacklist (Profile)"], nil, 7, function() return getIgnoreList(E.db.bags.lockBlacklist) end, nil, nil, function(_, value) return E.db.bags.lockBlacklist[value] end, function(_, value) E.db.bags.lockBlacklist[value] = nil GameTooltip:Hide() updateBlacklist('LOCK') end, nil, function() return not next(E.db.bags.lockBlacklist) end)
+Bags.args.deconstruct.args.lockBlacklistGlobal = ACH:MultiSelect(L["Lockbox Blacklist (Global)"], nil, 8, function() return getIgnoreList(E.global.bags.lockBlacklist) end, nil, nil, function(_, value) return E.global.bags.lockBlacklist[value] end, function(_, value) E.global.bags.lockBlacklist[value] = nil GameTooltip:Hide() updateBlacklist('LOCK') end, nil, function() return not next(E.global.bags.lockBlacklist) end)

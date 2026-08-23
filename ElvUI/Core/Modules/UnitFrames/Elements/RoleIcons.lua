@@ -12,7 +12,8 @@ function UF:Construct_RoleIcon(frame)
 	tex:Size(17)
 	tex:Point("BOTTOM", frame.Health, "BOTTOM", 0, 2)
 	tex.Override = UF.UpdateRoleIcon
-	frame:RegisterEvent("UNIT_CONNECTION", UF.UpdateRoleIcon)
+	frame:RegisterEvent("PARTY_MEMBER_ENABLE", UF.UpdateRoleIcon, true)
+	frame:RegisterEvent("PARTY_MEMBER_DISABLE", UF.UpdateRoleIcon, true)
 
 	return tex
 end
@@ -40,15 +41,15 @@ function UF:UpdateRoleIcon(event)
 		role = rnd == 1 and "TANK" or (rnd == 2 and "HEALER" or (rnd == 3 and "DAMAGER"))
 	end
 
---	local shouldHide = ((event == "PLAYER_REGEN_DISABLED" and db.combatHide and true) or false)
+	local shouldHide = ((event == "PLAYER_REGEN_DISABLED" and db.combatHide and true) or false)
 
 	if (self.isForced or UnitIsConnected(self.unit)) and ((role == "DAMAGER" and db.damager) or (role == "HEALER" and db.healer) or (role == "TANK" and db.tank)) then
 		lfdrole:SetTexture(roleIconTextures[role])
---		if not shouldHide then
+		if not shouldHide then
 			lfdrole:Show()
---		else
---			lfdrole:Hide()
---		end
+		else
+			lfdrole:Hide()
+		end
 	else
 		lfdrole:Hide()
 	end

@@ -3,9 +3,8 @@ local NP = E:GetModule("NamePlates")
 local LSM = E.Libs.LSM
 
 --Lua functions
-local ipairs, next, pairs, rawget, rawset, select, setmetatable, tonumber, type, unpack, tostring = ipairs, next, pairs, rawget, rawset, select, setmetatable, tonumber, type, unpack, tostring
+local ipairs, next, pairs, tonumber, unpack = ipairs, next, pairs, tonumber, unpack
 local tinsert, sort, twipe = table.insert, table.sort, table.wipe
-local match = string.match
 --WoW API / Variables
 local GetInstanceInfo = GetInstanceInfo
 local GetSpellCooldown = GetSpellCooldown
@@ -19,9 +18,7 @@ local UnitPower = UnitPower
 local UnitPowerMax = UnitPowerMax
 
 NP.TriggerConditions = {
-	reactions = {'hated', 'hostile', 'unfriendly', 'neutral', 'friendly', 'honored', 'revered', 'exalted'},
 	raidTargets = {'star', 'circle', 'diamond', 'triangle', 'moon', 'square', 'cross', 'skull'},
-	tankThreat = {[0] = 3, 2, 1, 0},
 	frameTypes = {
 		FRIENDLY_PLAYER = "friendlyPlayer",
 		FRIENDLY_NPC = "friendlyNPC",
@@ -33,221 +30,21 @@ NP.TriggerConditions = {
 		HEALER = "healer",
 		DAMAGER = "damager"
 	},
-	keys = {
-		Modifier = IsModifierKeyDown,
-		Shift = IsShiftKeyDown,
-		Alt = IsAltKeyDown,
-		Control = IsControlKeyDown,
-		LeftShift = IsLeftShiftKeyDown,
-		LeftAlt = IsLeftAltKeyDown,
-		LeftControl = IsLeftControlKeyDown,
-		RightShift = IsRightShiftKeyDown,
-		RightAlt = IsRightAltKeyDown,
-		RightControl = IsRightControlKeyDown,
-	},
-	threat = {
-		[-3] = 'offTank',
-		[-2] = 'offTankBadTransition',
-		[-1] = 'offTankGoodTransition',
-		[0] = 'good',
-		[1] = 'badTransition',
-		[2] = 'goodTransition',
-		[3] = 'bad'
-	},
 	difficulties = {
-		-- dungeons
-		[1] = "normal",
-		[2] = "heroic",
-		-- raids
-		[14] = "normal",
-		[15] = "heroic",
+		party = {
+			[1] = "normal",
+			[2] = "heroic",
+		},
+		raid = {
+			[1] = "normal",
+			[2] = "normal",
+			[3] = "heroic",
+			[4] = "heroic",
+		},
 	},
 	totems = {},
 	uniqueUnits = {}
 }
-
-do -- E.CreatureTypes; Do *not* change the value, only the key (['key'] = 'value').
-	local c, locale = {}, E.locale
-	if locale == 'frFR' then
-		c['Aberration'] = 'Aberration'
-		c['Bête'] = 'Beast'
-		c['Bestiole'] = 'Critter'
-		c['Démon'] = 'Demon'
-		c['Draconien'] = 'Dragonkin'
-		c['Élémentaire'] = 'Elemental'
-		c['Nuage de gaz'] = 'Gas Cloud'
-		c['Géant'] = 'Giant'
-		c['Humanoïde'] = 'Humanoid'
-		c['Machine'] = 'Mechanical'
-		c['Non spécifié'] = 'Not specified'
-		c['Totem'] = 'Totem'
-		c['Mort-vivant'] = 'Undead'
-		c['Mascotte sauvage'] = 'Wild Pet'
-		c['Familier pacifique'] = 'Non-combat Pet'
-	elseif locale == 'deDE' then
-		c['Anomalie'] = 'Aberration'
-		c['Wildtier'] = 'Beast'
-		c['Kleintier'] = 'Critter'
-		c['Dämon'] = 'Demon'
-		c['Drachkin'] = 'Dragonkin'
-		c['Elementar'] = 'Elemental'
-		c['Gaswolke'] = 'Gas Cloud'
-		c['Riese'] = 'Giant'
-		c['Humanoid'] = 'Humanoid'
-		c['Mechanisch'] = 'Mechanical'
-		c['Nicht spezifiziert'] = 'Not specified'
-		c['Totem'] = 'Totem'
-		c['Untoter'] = 'Undead'
-		c['Ungezähmtes Tier'] = 'Wild Pet'
-		c['Haustier'] = 'Non-combat Pet'
-	elseif locale == 'koKR' then
-		c['돌연변이'] = 'Aberration'
-		c['야수'] = 'Beast'
-		c['동물'] = 'Critter'
-		c['악마'] = 'Demon'
-		c['용족'] = 'Dragonkin'
-		c['정령'] = 'Elemental'
-		c['가스'] = 'Gas Cloud'
-		c['거인'] = 'Giant'
-		c['인간형'] = 'Humanoid'
-		c['기계'] = 'Mechanical'
-		c['기타'] = 'Not specified'
-		c['토템'] = 'Totem'
-		c['언데드'] = 'Undead'
-		c['야생 애완동물'] = 'Wild Pet'
-		c['애완동물'] = 'Non-combat Pet'
-	elseif locale == 'ruRU' then
-		c['Аберрация'] = 'Aberration'
-		c['Животное'] = 'Beast'
-		c['Существо'] = 'Critter'
-		c['Демон'] = 'Demon'
-		c['Дракон'] = 'Dragonkin'
-		c['Элементаль'] = 'Elemental'
-		c['Газовое облако'] = 'Gas Cloud'
-		c['Великан'] = 'Giant'
-		c['Гуманоид'] = 'Humanoid'
-		c['Механизм'] = 'Mechanical'
-		c['Не указано'] = 'Not specified'
-		c['Тотем'] = 'Totem'
-		c['Нежить'] = 'Undead'
-		c['дикий питомец'] = 'Wild Pet'
-		c['Спутник'] = 'Non-combat Pet'
-	elseif locale == 'zhCN' then
-		c['畸变'] = 'Aberration'
-		c['野兽'] = 'Beast'
-		c['小动物'] = 'Critter'
-		c['恶魔'] = 'Demon'
-		c['龙类'] = 'Dragonkin'
-		c['元素生物'] = 'Elemental'
-		c['气体云雾'] = 'Gas Cloud'
-		c['巨人'] = 'Giant'
-		c['人型生物'] = 'Humanoid'
-		c['机械'] = 'Mechanical'
-		c['未指定'] = 'Not specified'
-		c['图腾'] = 'Totem'
-		c['亡灵'] = 'Undead'
-		c['野生宠物'] = 'Wild Pet'
-		c['非战斗宠物'] = 'Non-combat Pet'
-	elseif locale == 'zhTW' then
-		c['畸變'] = 'Aberration'
-		c['野獸'] = 'Beast'
-		c['小動物'] = 'Critter'
-		c['惡魔'] = 'Demon'
-		c['龍類'] = 'Dragonkin'
-		c['元素生物'] = 'Elemental'
-		c['氣體雲'] = 'Gas Cloud'
-		c['巨人'] = 'Giant'
-		c['人型生物'] = 'Humanoid'
-		c['機械'] = 'Mechanical'
-		c['不明'] = 'Not specified'
-		c['圖騰'] = 'Totem'
-		c['不死族'] = 'Undead'
-		c['野生寵物'] = 'Wild Pet'
-		c['非戰鬥寵物'] = 'Non-combat Pet'
-	elseif locale == 'esES' then
-		c['Desviación'] = 'Aberration'
-		c['Bestia'] = 'Beast'
-		c['Alma'] = 'Critter'
-		c['Demonio'] = 'Demon'
-		c['Dragon'] = 'Dragonkin'
-		c['Elemental'] = 'Elemental'
-		c['Nube de Gas'] = 'Gas Cloud'
-		c['Gigante'] = 'Giant'
-		c['Humanoide'] = 'Humanoid'
-		c['Mecánico'] = 'Mechanical'
-		c['No especificado'] = 'Not specified'
-		c['Tótem'] = 'Totem'
-		c['No-muerto'] = 'Undead'
-		c['Mascota salvaje'] = 'Wild Pet'
-		c['Mascota no combatiente'] = 'Non-combat Pet'
-	elseif locale == 'esMX' then
-		c['Desviación'] = 'Aberration'
-		c['Bestia'] = 'Beast'
-		c['Alma'] = 'Critter'
-		c['Demonio'] = 'Demon'
-		c['Dragón'] = 'Dragonkin'
-		c['Elemental'] = 'Elemental'
-		c['Nube de Gas'] = 'Gas Cloud'
-		c['Gigante'] = 'Giant'
-		c['Humanoide'] = 'Humanoid'
-		c['Mecánico'] = 'Mechanical'
-		c['Sin especificar'] = 'Not specified'
-		c['Totém'] = 'Totem'
-		c['No-muerto'] = 'Undead'
-		c['Mascota salvaje'] = 'Wild Pet'
-		c['Mascota mansa'] = 'Non-combat Pet'
-	elseif locale == 'ptBR' then
-		c['Aberração'] = 'Aberration'
-		c['Fera'] = 'Beast'
-		c['Bicho'] = 'Critter'
-		c['Demônio'] = 'Demon'
-		c['Dracônico'] = 'Dragonkin'
-		c['Elemental'] = 'Elemental'
-		c['Gasoso'] = 'Gas Cloud'
-		c['Gigante'] = 'Giant'
-		c['Humanoide'] = 'Humanoid'
-		c['Mecânico'] = 'Mechanical'
-		c['Não especificado'] = 'Not specified'
-		c['Totem'] = 'Totem'
-		c['Renegado'] = 'Undead'
-		c['Mascote Selvagem'] = 'Wild Pet'
-		c['Mascote não-combatente'] = 'Non-combat Pet'
-	elseif locale == 'itIT' then
-		c['Aberrazione'] = 'Aberration'
-		c['Bestia'] = 'Beast'
-		c['Animale'] = 'Critter'
-		c['Demone'] = 'Demon'
-		c['Dragoide'] = 'Dragonkin'
-		c['Elementale'] = 'Elemental'
-		c['Nube di Gas'] = 'Gas Cloud'
-		c['Gigante'] = 'Giant'
-		c['Umanoide'] = 'Humanoid'
-		c['Meccanico'] = 'Mechanical'
-		c['Non Specificato'] = 'Not specified'
-		c['Totem'] = 'Totem'
-		c['Non Morto'] = 'Undead'
-		c['Mascotte selvatica'] = 'Wild Pet'
-		c['Animale Non combattente'] = 'Non-combat Pet'
-	else -- enUS
-		c['Aberration'] = 'Aberration'
-		c['Beast'] = 'Beast'
-		c['Critter'] = 'Critter'
-		c['Demon'] = 'Demon'
-		c['Dragonkin'] = 'Dragonkin'
-		c['Elemental'] = 'Elemental'
-		c['Gas Cloud'] = 'Gas Cloud'
-		c['Giant'] = 'Giant'
-		c['Humanoid'] = 'Humanoid'
-		c['Mechanical'] = 'Mechanical'
-		c['Not specified'] = 'Not specified'
-		c['Totem'] = 'Totem'
-		c['Undead'] = 'Undead'
-		c['Wild Pet'] = 'Wild Pet'
-		c['Non-combat Pet'] = 'Non-combat Pet'
-	end
-
-	E.CreatureTypes = c
-end
 
 local totemTypes = {
 	air = { -- Air Totems
@@ -399,21 +196,17 @@ end
 
 for totemSchool, totems in pairs(totemTypes) do
 	for spellID, totemID in pairs(totems) do
-		local totemName, rank, texture = GetSpellInfo(spellID)
+		local totemName, _, texture = GetSpellInfo(spellID)
 
-		if not NP.TriggerConditions.totems[totemID] then
-			NP.TriggerConditions.totems[totemID] = {totemName, totemSchool, texture}
+		if totemName then
+			if not NP.TriggerConditions.totems[totemID] then
+				NP.TriggerConditions.totems[totemID] = {totemName, totemSchool, texture}
+			end
+
+			for _, rank in ipairs(totemRanks) do
+				NP.Totems[totemName..rank] = totemID
+			end
 		end
-
-		rank = totemRanks[tonumber(match(rank, ("%d+")))]
-
-		if rank then
-			totemName = totemName..rank
-		else
-			totemName = totemName
-		end
-
-		NP.Totems[totemName] = totemID
 	end
 end
 
@@ -446,14 +239,15 @@ end
 function NP:StyleFilterCooldownCheck(names, mustHaveAll)
 	local total, count = 0, 0
 	local _, gcd = GetSpellCooldown(61304)
+	gcd = gcd or 0
 
 	for name, value in pairs(names) do
 		if value == "ONCD" or value == "OFFCD" then --only if they are turned on
 			total = total + 1 --keep track of the names
 
 			local _, duration = GetSpellCooldown(name)
-			if (duration > gcd and value == "ONCD")
-			or (duration <= gcd and value == "OFFCD") then
+			if duration and ((duration > gcd and value == "ONCD")
+			or (duration <= gcd and value == "OFFCD")) then
 				count = count + 1
 				--print(((duration > gcd and value == "ONCD") and name.."passes because it is on cd.") or ((duration <= gcd and value == "OFFCD") and name.." passes because it is off cd."))
 			end
@@ -531,7 +325,7 @@ function NP:StyleFilterSetChanges(frame, actions, HealthColorChanged, BorderChan
 	if NameColorChanged then
 		frame.StyleChanged = true
 		frame.NameColorChanged = true
-		local nameText = frame.oldName:GetText()
+		local nameText = frame.UnitName
 		if nameText and nameText ~= "" then
 			frame.Name:SetTextColor(actions.color.nameColor.r, actions.color.nameColor.g, actions.color.nameColor.b, actions.color.nameColor.a)
 			if NP.db.nameColoredGlow then
@@ -560,7 +354,7 @@ function NP:StyleFilterSetChanges(frame, actions, HealthColorChanged, BorderChan
 			frame.Level:SetParent(frame)
 			frame.Level:SetFormattedText("")
 		end
-		if not NameColorChanged or not IconOnlyChanged then
+		if not NameColorChanged and not IconOnlyChanged then
 			NP:Update_Name(frame, true)
 		end
 	end
@@ -639,7 +433,6 @@ function NP:StyleFilterClearChanges(frame, HealthColorChanged, BorderChanged, Fl
 	end
 	if NameOnlyChanged then
 		frame.NameOnlyChanged = nil
-		frame.TopLevelFrame = nil --We can safely clear this here because it is set upon `UpdateElement_Auras` if needed
 		if NP.db.units[frame.UnitType].health.enable or (frame.isTarget and NP.db.alwaysShowTargetHealth) then
 			frame.Health:Show()
 			NP:Configure_Glow(frame)
@@ -704,8 +497,9 @@ function NP:StyleFilterConditionCheck(frame, filter, trigger)
 
 	-- Health
 	if trigger.healthThreshold then
-		local health = (trigger.healthUsePlayer and UnitHealth("player")) or frame.oldHealthBar:GetValue() or 0
-		local maxHealth = (trigger.healthUsePlayer and UnitHealthMax("player")) or select(2, frame.oldHealthBar:GetMinMaxValues()) or 0
+		local frameHealth, frameMaxHealth = NP:GetHealth(frame)
+		local health = (trigger.healthUsePlayer and UnitHealth("player")) or frameHealth or 0
+		local maxHealth = (trigger.healthUsePlayer and UnitHealthMax("player")) or frameMaxHealth or 0
 		local percHealth = (maxHealth and (maxHealth > 0) and health/maxHealth) or 0
 		local underHealthThreshold = trigger.underHealthThreshold and (trigger.underHealthThreshold ~= 0) and (trigger.underHealthThreshold > percHealth)
 		local overHealthThreshold = trigger.overHealthThreshold and (trigger.overHealthThreshold ~= 0) and (trigger.overHealthThreshold < percHealth)
@@ -743,20 +537,23 @@ function NP:StyleFilterConditionCheck(frame, filter, trigger)
 	end
 
 	-- Instance Type
-	if trigger.instanceType.none or trigger.instanceType.party or trigger.instanceType.raid or trigger.instanceType.arena or trigger.instanceType.pvp then
-		local _, instanceType, difficultyID = GetInstanceInfo()
+	if trigger.instanceType and (trigger.instanceType.none or trigger.instanceType.party or trigger.instanceType.raid or trigger.instanceType.arena or trigger.instanceType.pvp) then
+		local _, instanceType, difficultyID, _, _, dynamicDifficulty, isDynamic = GetInstanceInfo()
 		if trigger.instanceType[instanceType] then
 			passed = true
 
 			-- Instance Difficulty
 			if instanceType == "raid" or instanceType == "party" then
-				local D = trigger.instanceDifficulty[(instanceType == "party" and "dungeon") or instanceType]
-				for _, value in pairs(D) do
-					if value and not D[NP.TriggerConditions.difficulties[difficultyID]] then return end
+				local D = trigger.instanceDifficulty and trigger.instanceDifficulty[(instanceType == "party" and "dungeon") or instanceType]
+				if D then
+					local difficulty = (isDynamic and ((dynamicDifficulty == 1 and "heroic") or "normal")) or NP.TriggerConditions.difficulties[instanceType][difficultyID]
+					for _, value in pairs(D) do
+						if value and not D[difficulty] then return end
+					end
 				end
 			end
 		else return end
-	elseif trigger.instanceType.sanctuary then
+	elseif trigger.instanceType and trigger.instanceType.sanctuary then
 		if UnitIsPVPSanctuary("player") then passed = true else return end
 	end
 
@@ -789,8 +586,8 @@ function NP:StyleFilterConditionCheck(frame, filter, trigger)
 	end
 
 	-- Raid Target
-	if trigger.raidTarget.star or trigger.raidTarget.circle or trigger.raidTarget.diamond or trigger.raidTarget.triangle or trigger.raidTarget.moon or trigger.raidTarget.square or trigger.raidTarget.cross or trigger.raidTarget.skull then
-		if trigger.raidTarget[NP.TriggerConditions.raidTargets[frame.RaidIconType]] then passed = true else return end
+	if trigger.raidTarget and (trigger.raidTarget.star or trigger.raidTarget.circle or trigger.raidTarget.diamond or trigger.raidTarget.triangle or trigger.raidTarget.moon or trigger.raidTarget.square or trigger.raidTarget.cross or trigger.raidTarget.skull) then
+		if trigger.raidTarget[NP.TriggerConditions.raidTargets[frame.RaidIconIndex]] then passed = true else return end
 	end
 
 	-- Casting
@@ -802,8 +599,8 @@ function NP:StyleFilterConditionCheck(frame, filter, trigger)
 			if c.spells and next(c.spells) then
 				for _, value in pairs(c.spells) do
 					if value then -- only run if at least one is selected
-						local _, _, _, _, _, _, spellID = GetSpellInfo(b.spellName)
-						local castingSpell = (spellID and c.spells[tostring(spellID)]) or c.spells[b.spellName]
+						local byID = NP.StyleFilterCastSpells[c]
+						local castingSpell = c.spells[b.spellName] or (byID and byID[b.spellName])
 						if (c.notSpell and not castingSpell) or (castingSpell and not c.notSpell) then passed = true else return end
 						break -- we can execute this once on the first enabled option then kill the loop
 					end
@@ -849,25 +646,15 @@ function NP:StyleFilterConditionCheck(frame, filter, trigger)
 	end
 
 	-- Totems
-	if frame.UnitName and trigger.totems.enable then
+	if frame.UnitName and trigger.totems and trigger.totems.enable then
 		local totem = NP.Totems[frame.UnitName]
 		if totem then if trigger.totems[totem] then passed = true else return end end
 	end
 
 	-- Unique Units
-	if frame.UnitName and trigger.uniqueUnits.enable then
+	if frame.UnitName and trigger.uniqueUnits and trigger.uniqueUnits.enable then
 		local unit = NP.UniqueUnits[frame.UnitName]
 		if unit then if trigger.uniqueUnits[unit] then passed = true else return end end
-	end
-
-	-- Plugin Callback
-	if NP.StyleFilterCustomChecks then
-		for _, customCheck in pairs(NP.StyleFilterCustomChecks) do
-			local custom = customCheck(frame, filter, trigger)
-			if custom ~= nil then -- ignore if nil return
-				if custom then passed = true else return end
-			end
-		end
 	end
 
 	-- Pass it along
@@ -903,9 +690,7 @@ function NP:StyleFilterClear(frame)
 end
 
 function NP:StyleFilterSort(place)
-	if self[2] and place[2] then
-		return self[2] > place[2] --Sort by priority: 1=first, 2=second, 3=third, etc
-	end
+	return self[2] > place[2] --Sort by priority: 1=first, 2=second, 3=third, etc
 end
 
 function NP:StyleFilterClearVariables(nameplate)
@@ -915,9 +700,14 @@ end
 
 NP.StyleFilterTriggerList = {}
 NP.StyleFilterTriggerEvents = {}
+NP.StyleFilterCastSpells = {}
+
+local StyleFilterPowerEvents = {"UNIT_HEALTH", "UNIT_MANA", "UNIT_ENERGY", "UNIT_FOCUS", "UNIT_RAGE", "UNIT_RUNIC_POWER", "UNIT_DISPLAYPOWER"}
+
 function NP:StyleFilterConfigure()
 	twipe(NP.StyleFilterTriggerList)
 	twipe(NP.StyleFilterTriggerEvents)
+	twipe(NP.StyleFilterCastSpells)
 
 	for filterName, filter in pairs(E.global.nameplates.filters) do
 		local t = filter.triggers
@@ -930,15 +720,26 @@ function NP:StyleFilterConfigure()
 
 				if t.casting then
 					if next(t.casting.spells) then
-						for _, value in pairs(t.casting.spells) do
+						local byID
+						for key, value in pairs(t.casting.spells) do
 							if value then
-								NP.StyleFilterTriggerEvents.FAKE_Casting = 0
-								break
-					end end end
+								NP.StyleFilterTriggerEvents.FAKE_Casting = 1
+							end
+
+							local spellID = tonumber(key)
+							local spellName = spellID and GetSpellInfo(spellID)
+							if spellName then
+								byID = byID or {}
+								byID[spellName] = value
+							end
+						end
+
+						NP.StyleFilterCastSpells[t.casting] = byID
+					end
 
 					if (t.casting.interruptible or t.casting.notInterruptible)
 					or (t.casting.isCasting or t.casting.isChanneling or t.casting.notCasting or t.casting.notChanneling) then
-						NP.StyleFilterTriggerEvents.FAKE_Casting = 0
+						NP.StyleFilterTriggerEvents.FAKE_Casting = 1
 					end
 				end
 
@@ -951,7 +752,6 @@ function NP:StyleFilterConfigure()
 
 				if t.healthThreshold then
 					NP.StyleFilterTriggerEvents.UNIT_HEALTH = 1
-					NP.StyleFilterTriggerEvents.UNIT_MAXHEALTH = 1
 				end
 
 				if t.powerThreshold then
@@ -962,13 +762,6 @@ function NP:StyleFilterConfigure()
 					NP.StyleFilterTriggerEvents.UNIT_RUNIC_POWER = 1
 					NP.StyleFilterTriggerEvents.UNIT_DISPLAYPOWER = 1
 				end
-
-				if t.names and next(t.names) then
-					for _, value in pairs(t.names) do
-						if value then
-							NP.StyleFilterTriggerEvents.UNIT_NAME_UPDATE = 1
-							break
-				end end end
 
 				if t.inCombat or t.outOfCombat then
 					NP.StyleFilterTriggerEvents.PLAYER_REGEN_DISABLED = true
@@ -1008,6 +801,14 @@ function NP:StyleFilterConfigure()
 	else
 		NP:ForEachPlate("StyleFilterClear")
 	end
+
+	for _, event in ipairs(StyleFilterPowerEvents) do
+		if NP.StyleFilterTriggerEvents[event] then
+			NP:RegisterEvent(event)
+		else
+			NP:UnregisterEvent(event)
+		end
+	end
 end
 
 function NP:StyleFilterUpdate(frame, event)
@@ -1032,22 +833,6 @@ function NP:StyleFilterUpdate(frame, event)
 			NP:StyleFilterConditionCheck(frame, filter, filter.triggers)
 		end
 	end
-end
-
-function NP:StyleFilterAddCustomCheck(name, func)
-	if not NP.StyleFilterCustomChecks then
-		NP.StyleFilterCustomChecks = {}
-	end
-
-	NP.StyleFilterCustomChecks[name] = func
-end
-
-function NP:StyleFilterRemoveCustomCheck(name)
-	if not NP.StyleFilterCustomChecks then
-		return
-	end
-
-	NP.StyleFilterCustomChecks[name] = nil
 end
 
 function NP:PLAYER_LOGOUT()

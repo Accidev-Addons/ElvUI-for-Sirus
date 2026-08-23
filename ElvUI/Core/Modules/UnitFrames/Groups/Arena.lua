@@ -113,7 +113,6 @@ function UF:Update_ArenaFrames(frame, db)
 
 	frame:ClearAllPoints()
 	if frame.index == 1 then
-		local ArenaHeaderMover = ArenaHeaderMover
 		if db.growthDirection == "UP" then
 			frame:Point("BOTTOMRIGHT", ArenaHeaderMover, "BOTTOMRIGHT")
 		elseif db.growthDirection == "RIGHT" then

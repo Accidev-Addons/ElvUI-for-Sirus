@@ -5,7 +5,7 @@ local UF = E:GetModule("UnitFrames")
 --WoW API / Variables
 
 function UF:Construct_Happiness(frame)
-	local HappinessIndicator = CreateFrame("Statusbar", nil, frame)
+	local HappinessIndicator = CreateFrame("StatusBar", nil, frame)
 
 	HappinessIndicator.backdrop = CreateFrame("Frame", nil, HappinessIndicator)
 	UF.statusbars[HappinessIndicator] = true

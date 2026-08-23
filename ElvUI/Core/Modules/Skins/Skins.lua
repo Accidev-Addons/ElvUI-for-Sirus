@@ -4,8 +4,8 @@ local LibStub = _G.LibStub
 
 local _G = _G
 local hooksecurefunc = hooksecurefunc
-local tinsert, xpcall, next, ipairs, pairs = tinsert, xpcall, next, ipairs, pairs
-local unpack, assert, type, gsub, rad, strfind = unpack, assert, type, gsub, rad, strfind
+local tinsert, next, ipairs, pairs = tinsert, next, ipairs, pairs
+local unpack, assert, type, gsub, rad, select, strfind = unpack, assert, type, gsub, rad, select, strfind
 
 local CreateFrame = CreateFrame
 local IsAddOnLoaded = IsAddOnLoaded
@@ -107,7 +107,18 @@ do
 	end
 end
 
-function S:HandleButtonHighlight(frame, r, g, b)
+function S:HandleButtonHighlight(frame, r, g, b, a)
+	if frame.SetTexture then
+		if not r then r = 0.9 end
+		if not g then g = 0.9 end
+		if not b then b = 0.9 end
+		if not a then a = 0.35 end
+
+		frame:SetTexture(E.Media.Textures.Highlight)
+		frame:SetVertexColor(r, g, b, a)
+		return
+	end
+
 	if frame.SetHighlightTexture then
 		frame:SetHighlightTexture(E.ClearTexture)
 	end
@@ -197,9 +208,22 @@ function S:HandlePortraitFrame(frame, createBackdrop, noStrip)
 	if not noStrip then
 		frame:StripTextures()
 
-		if portraitFrame then portraitFrame:SetAlpha(0) end
-		if portraitFrameOverlay then portraitFrameOverlay:SetAlpha(0) end
+		if portraitFrameOverlay then
+			portraitFrameOverlay:SetAlpha(1)
+			if portraitFrameOverlay.portrait then portraitFrameOverlay.portrait:SetAlpha(0) end
+			if portraitFrame then portraitFrame:SetAlpha(0) end
+		elseif portraitFrame then
+			portraitFrame:SetAlpha(0)
+		end
 		if artFrameOverlay then artFrameOverlay:SetAlpha(0) end
+
+		local title = frame.TitleText or (name and _G[name..'TitleText'])
+		if title then
+			title:Show()
+			title:SetAlpha(1)
+			title:FontTemplate(nil, nil, 'NONE')
+			title:SetTextColor(1, 1, 1)
+		end
 
 		if insetFrame then
 			S:HandleInsetFrame(insetFrame)
@@ -641,6 +665,16 @@ do
 
 		if frame.backdrop then return end
 
+		if frame.GetObjectType and frame:GetObjectType() ~= 'Slider' and frame.GetThumb then
+			if not frame.trimSkinned then
+				frame.trimSkinned = true
+
+				S:HandleTrimScrollBar(frame)
+			end
+
+			return
+		end
+
 		local upButton, downButton = GetButton(frame, upButtons), GetButton(frame, downButtons)
 		local thumb = GetButton(frame, thumbButtons) or (frame.GetThumbTexture and frame:GetThumbTexture())
 
@@ -783,6 +817,46 @@ do --Tab Regions
 		'Right'
 	}
 
+	local hookedTexts = {}
+
+	local function HandleTabText(text)
+		local tab = hookedTexts[text]
+		if not tab or text._elvTabTextForced then return end
+
+		local y = 0
+		if tab.GetParent and tab.GetID and PanelTemplates_GetSelectedTab then
+			local parent = tab:GetParent()
+			if parent and PanelTemplates_GetSelectedTab(parent) == tab:GetID() then
+				y = -1
+			end
+		end
+
+		text._elvTabTextForced = true
+		text:ClearAllPoints()
+		text:SetPoint('CENTER', tab, 'CENTER', 0, y)
+		text._elvTabTextForced = false
+	end
+
+	local function ForceTabTextCenter(tab, y)
+		if not tab then return end
+		local text = tab.Text or (tab.GetName and _G[tab:GetName()..'Text'])
+		if not text then return end
+		text._elvTabTextForced = true
+		text:ClearAllPoints()
+		text:SetPoint('CENTER', tab, 'CENTER', 0, y or 0)
+		text._elvTabTextForced = false
+	end
+
+	hooksecurefunc('PanelTemplates_SelectTab', function(tab)
+		ForceTabTextCenter(tab, -1)
+	end)
+	hooksecurefunc('PanelTemplates_DeselectTab', function(tab)
+		ForceTabTextCenter(tab, 0)
+	end)
+	hooksecurefunc('PanelTemplates_SetDisabledTabState', function(tab)
+		ForceTabTextCenter(tab, 0)
+	end)
+
 	function S:HandleTab(tab, noBackdrop, template)
 		if not tab or (tab.backdrop and not noBackdrop) then return end
 
@@ -800,6 +874,17 @@ do --Tab Regions
 			highlightTex:SetTexture()
 		else
 			tab:StripTextures()
+		end
+
+		local text = tab.Text or (tab.GetName and _G[tab:GetName()..'Text']) or (tab.GetFontString and tab:GetFontString())
+		if text then
+			text:ClearAllPoints()
+			text:SetPoint('CENTER', tab)
+
+			if not hookedTexts[text] then
+				hookedTexts[text] = tab
+				hooksecurefunc(text, 'SetPoint', HandleTabText)
+			end
 		end
 
 		if not noBackdrop then
@@ -840,6 +925,96 @@ function S:HandleRotateButton(frame, width, height, noSize)
 	end
 
 	frame.isSkinned = true
+end
+
+function S:HandleControlButton(button)
+	if not button or button.isSkinned then return end
+
+	S:HandleButton(button)
+	button:Size(18)
+
+	if button.bg then
+		button.bg:SetAlpha(0)
+	end
+	if button.icon then
+		button.icon:SetInside()
+	end
+
+	local region = select(3, button:GetRegions())
+	if region then
+		region:Hide()
+	end
+end
+
+function S:ApplyElvUIFont(frame)
+	if not frame or not frame.GetNumRegions then return end
+
+	for i = 1, (frame:GetNumRegions() or 0) do
+		local region = select(i, frame:GetRegions())
+		if region and region.GetObjectType and region:GetObjectType() == 'FontString' and region.FontTemplate then
+			local _, size, flags = region:GetFont()
+			region:FontTemplate(nil, (size and size >= 1) and size or nil, flags)
+		end
+	end
+
+	for i = 1, (frame:GetNumChildren() or 0) do
+		local child = select(i, frame:GetChildren())
+		if child then
+			S:ApplyElvUIFont(child)
+		end
+	end
+end
+
+function S:ApplyElvUIFontForce(frame)
+	if not frame or not frame.GetObjectType then return end
+
+	for i = 1, (frame:GetNumRegions() or 0) do
+		local region = select(i, frame:GetRegions())
+		if region and region.GetObjectType and region:GetObjectType() == 'FontString' and region.SetFont then
+			local _, size, flags = region:GetFont()
+			region:SetFont(E.media.normFont or _G.GameFontNormal:GetFont(), (size and size >= 1) and size or 12, flags or '')
+		end
+	end
+
+	for i = 1, (frame:GetNumChildren() or 0) do
+		local child = select(i, frame:GetChildren())
+		if child then
+			S:ApplyElvUIFontForce(child)
+		end
+	end
+end
+
+function S:HandleSirusTabs(prefix, count)
+	for i = 1, count do
+		local tab = _G[prefix..i]
+		if tab then
+			S:HandleSirusTab(tab, i > 1 and _G[prefix..(i - 1)])
+		end
+	end
+end
+
+function S:HandleModelRotateButton(button, left, right)
+	if not button or button.isSkinned then return end
+
+	local icon = button:CreateTexture(nil, "ARTWORK")
+	icon:SetTexture([[Interface\Common\UI-ModelControlPanel]])
+	icon:SetTexCoord(left, right, 0.2890625, 0.4140625)
+	button.icon = icon
+
+	S:HandleControlButton(button)
+end
+
+function S:HandleControlFrame(frame)
+	if not frame or frame.isSkinned then return end
+	frame.isSkinned = true
+
+	local name = frame:GetName()
+	frame:StripTextures()
+	frame:Width(58)
+
+	S:HandleControlButton(_G[name..'RotateLeftButton'])
+	S:HandleControlButton(_G[name..'RotateRightButton'])
+	S:HandleControlButton(_G[name..'RotateResetButton'])
 end
 
 do
@@ -909,7 +1084,7 @@ function S:HandleTooltip(tooltip, scale, showHook)
 	end
 
 	if scale then
-		tooltip:SetScale(S.UIScale)
+		tooltip:SetScale(E.uiscale)
 	end
 end
 
@@ -921,8 +1096,11 @@ function S:HandleEditBox(frame, template, search)
 	S:HandleBlizzardRegions(frame)
 
 	for _, region in next, { frame:GetRegions() } do
-		if region:IsObjectType('Texture') and (region:GetTexture() == [[Interface\ChatFrame\UI-ChatInputBorder-Left]] or region:GetTexture() == [[Interface\ChatFrame\UI-ChatInputBorder-Right]]) then
-			region:Kill()
+		if region:IsObjectType('Texture') then
+			local texture = region:GetTexture()
+			if texture == [[Interface\ChatFrame\UI-ChatInputBorder-Left]] or texture == [[Interface\ChatFrame\UI-ChatInputBorder-Right]] or texture == [[Interface\Common\Common-Input-Border]] then
+				region:Kill()
+			end
 		end
 	end
 
@@ -952,28 +1130,32 @@ end
 function S:HandleSearchBox(frame, unskinned)
 	frame:SetTextInsets(16, 20, 0, 0)
 
-	frame.Instructions = frame:CreateFontString(nil, 'ARTWORK', 'GameFontDisableSmall')
+	frame.Instructions = frame.Instructions or frame:CreateFontString(nil, 'ARTWORK', 'GameFontDisableSmall')
 	frame.Instructions:SetText(SEARCH)
+	frame.Instructions:ClearAllPoints()
 	frame.Instructions:SetPoint('TOPLEFT', frame, 'TOPLEFT', 15, 0)
 	frame.Instructions:SetPoint('BOTTOMRIGHT', frame, 'BOTTOMRIGHT', -20, 0)
 	frame.Instructions:SetTextColor(0.35, 0.35, 0.35)
 	frame.Instructions:SetJustifyH('LEFT')
 	frame.Instructions:SetJustifyV('MIDDLE')
 
-	frame.searchIcon = frame:CreateTexture(nil, 'OVERLAY')
+	frame.searchIcon = frame.searchIcon or frame:CreateTexture(nil, 'OVERLAY')
 	frame.searchIcon:SetTexture([[Interface\Common\UI-Searchbox-Icon]])
 	frame.searchIcon:SetVertexColor(0.6, 0.6, 0.6)
 	frame.searchIcon:Size(14)
+	frame.searchIcon:ClearAllPoints()
 	frame.searchIcon:Point('LEFT', 0, -2)
 
-	frame.clearButton = CreateFrame('Button', nil, frame)
+	frame.clearButton = frame.clearButton or CreateFrame('Button', nil, frame)
 	frame.clearButton:Size(14)
+	frame.clearButton:ClearAllPoints()
 	frame.clearButton:Point('RIGHT', -3, 0)
 
-	frame.clearButton.texture = frame.clearButton:CreateTexture()
+	frame.clearButton.texture = frame.clearButton.texture or frame.clearButton:CreateTexture()
 	frame.clearButton.texture:SetTexture([[Interface\FriendsFrame\ClearBroadcastIcon]])
 	frame.clearButton.texture:SetAlpha(0.5)
 	frame.clearButton.texture:Size(16)
+	frame.clearButton.texture:ClearAllPoints()
 	frame.clearButton.texture:Point('CENTER', 0, 0)
 
 	frame.clearButton:SetScript('OnEnter', function(self) self.texture:SetAlpha(1.0) end)
@@ -1170,56 +1352,23 @@ function S:HandleColorSwatch(frame, size)
 end
 
 do
-	local background = [[Interface\Minimap\UI-Minimap-Background]]
-
-	local function buttonNormalTexture(frame, texture) if texture ~= E.ClearTexture then frame:SetNormalTexture(E.ClearTexture) end end
-	local function buttonPushedTexture(frame, texture) if texture ~= E.ClearTexture then frame:SetPushedTexture(E.ClearTexture) end end
-	local function buttonDisabledTexture(frame, texture) if texture ~= E.ClearTexture then frame:SetDisabledTexture(E.ClearTexture) end end
-	local function buttonHighlightTexture(frame, texture) if texture ~= E.ClearTexture then frame:SetHighlightTexture(E.ClearTexture) end end
-
 	function S:HandleRadioButton(Button)
 		if Button.IsSkinned then return end
+		Button.IsSkinned = true
 
-		local InsideMask = Button:CreateTexture()
-		InsideMask:SetTexture(background)
-		InsideMask:Size(10)
-		InsideMask:Point('CENTER')
-		Button.InsideMask = InsideMask
-
-		local OutsideMask = Button:CreateTexture()
-		OutsideMask:SetTexture(background)
-		OutsideMask:Size(13)
-		OutsideMask:Point('CENTER')
-		Button.OutsideMask = OutsideMask
-
-		Button:SetCheckedTexture(E.media.normTex)
-		Button:SetNormalTexture(E.media.normTex)
-		Button:SetHighlightTexture(E.media.normTex)
-		Button:SetDisabledTexture(E.media.normTex)
-
-		local Check = Button:GetCheckedTexture()
-		Check:SetVertexColor(unpack(E.media.rgbvaluecolor))
-		Check:SetTexCoord(0, 1, 0, 1)
-		Check:SetInside()
-
-		local Highlight = Button:GetHighlightTexture()
-		Highlight:SetTexCoord(0, 1, 0, 1)
-		Highlight:SetVertexColor(1, 1, 1)
+		Button:SetSize(16, 16)
 
 		local Normal = Button:GetNormalTexture()
-		Normal:SetOutside()
-		Normal:SetTexCoord(0, 1, 0, 1)
-		Normal:SetVertexColor(unpack(E.media.bordercolor))
+		if Normal then Normal:SetVertexColor(0.5, 0.5, 0.5) end
 
-		local Disabled = Button:GetDisabledTexture()
-		Disabled:SetVertexColor(.3, .3, .3)
+		local Checked = Button:GetCheckedTexture()
+		if Checked then Checked:SetVertexColor(unpack(E.media.rgbvaluecolor)) end
 
-		hooksecurefunc(Button, 'SetNormalTexture', buttonNormalTexture)
-		hooksecurefunc(Button, 'SetPushedTexture', buttonPushedTexture)
-		hooksecurefunc(Button, 'SetDisabledTexture', buttonDisabledTexture)
-		hooksecurefunc(Button, 'SetHighlightTexture', buttonHighlightTexture)
-
-		Button.IsSkinned = true
+		local Highlight = Button:GetHighlightTexture()
+		if Highlight then
+			Highlight:SetVertexColor(unpack(E.media.rgbvaluecolor))
+			Highlight:SetBlendMode('ADD')
+		end
 	end
 end
 
@@ -1237,6 +1386,49 @@ function S:HandleIcon(icon, backdrop)
 	if backdrop and not icon.backdrop then
 		icon:CreateBackdrop()
 	end
+end
+
+function S:HandleIconBorder(border, backdrop, customFunc)
+	if not border or not border.SetVertexColor then return end
+
+	if not backdrop then
+		local parent = border:GetParent()
+		backdrop = (parent and parent.backdrop) or parent
+	end
+
+	if customFunc then
+		border.customFunc = customFunc
+	end
+
+	local function applyColor(self)
+		if not self or not self.SetVertexColor then return end
+
+		if self.customFunc then
+			local br, bg, bb = unpack(E.media.bordercolor)
+			self.customFunc(self, br, bg, bb)
+			return
+		end
+
+		local r, g, b, a = self:GetVertexColor()
+		if r and g and b then
+			if backdrop and backdrop.SetBackdropBorderColor then
+				backdrop:SetBackdropBorderColor(r, g, b, a or 1)
+			end
+		else
+			local br, bg, bb = unpack(E.media.bordercolor)
+			if backdrop and backdrop.SetBackdropBorderColor then
+				backdrop:SetBackdropBorderColor(br, bg, bb)
+			end
+		end
+	end
+
+	if not border.IconBorderHooked then
+		border.IconBorderHooked = true
+		hooksecurefunc(border, 'SetVertexColor', applyColor)
+	end
+
+	border:Hide()
+	applyColor(border)
 end
 
 function S:HandleItemButton(b, setInside)
@@ -1550,13 +1742,7 @@ do -- Handle collapse
 	local function UpdateCollapseTexture(button, texture, skip)
 		if skip then return end
 
-		if type(texture) == 'number' then
-			if texture == [[Interface\Buttons\UI-PlusButton-UP]] then
-				button:SetNormalTexture(E.Media.Textures.PlusButton, true)
-			elseif texture == [[Interface\Buttons\UI-MinusButton-UP]] then
-				button:SetNormalTexture(E.Media.Textures.MinusButton, true)
-			end
-		elseif strfind(texture, 'Plus') or strfind(texture, 'Closed') then
+		if strfind(texture, 'Plus') or strfind(texture, 'Closed') then
 			button:SetNormalTexture(E.Media.Textures.PlusButton, true)
 		elseif strfind(texture, 'Minus') or strfind(texture, 'Open') then
 			button:SetNormalTexture(E.Media.Textures.MinusButton, true)
@@ -1585,7 +1771,6 @@ do -- Handle collapse
 		UpdateCollapseTexture(button, button:GetNormalTexture():GetTexture())
 	end
 end
-
 
 local function SetPanelWindowInfo(frame, name, value, igroneUpdate)
 	frame:SetAttribute(name, value)

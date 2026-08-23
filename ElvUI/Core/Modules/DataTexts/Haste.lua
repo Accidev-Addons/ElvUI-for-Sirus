@@ -1,7 +1,6 @@
 local E, L, V, P, G = unpack(ElvUI)
 local DT = E:GetModule('DataTexts')
 
-local _G = _G
 local format, strjoin = format, strjoin
 
 local GetCombatRating = GetCombatRating
@@ -22,11 +21,18 @@ local SPELL_HASTE_TOOLTIP = SPELL_HASTE_TOOLTIP
 local haste
 local displayString, db = ''
 
+local casterClass = { MAGE = true, WARLOCK = true, PRIEST = true }
+local hybridClass = { DRUID = true, SHAMAN = true, PALADIN = true }
+
+local function IsCaster()
+	return casterClass[E.myclass] or (hybridClass[E.myclass] and E.myrole == 'HEALER') or false
+end
+
 local function OnEnter()
 	DT.tooltip:ClearLines()
 
 	local text, tooltip
-	if E.Role == 'Caster' then
+	if IsCaster() then
 		text = format('%s %d', SPELL_HASTE, haste)
 		tooltip = format(SPELL_HASTE_TOOLTIP, GetCombatRatingBonus(CR_HASTE_SPELL))
 	elseif E.myclass == 'HUNTER' then
@@ -51,7 +57,7 @@ local function OnEnter()
 end
 
 local function OnEvent(self)
-	if E.Role == 'Caster' then
+	if IsCaster() then
 		haste = GetCombatRating(CR_HASTE_SPELL)
 	elseif E.myclass == 'HUNTER' then
 		haste = GetCombatRating(CR_HASTE_RANGED)
@@ -74,4 +80,4 @@ local function ApplySettings(self, hex)
 	displayString = strjoin('', db.NoLabel and '' or '%s', hex, '%.'..db.decimalLength..'f%%|r')
 end
 
-DT:RegisterDatatext(SPELL_HASTE_ABBR, L["Enhancements"], { 'SPELL_UPDATE_USABLE', 'ACTIVE_TALENT_GROUP_CHANGED', 'PLAYER_TALENT_UPDATE', 'UNIT_ATTACK_SPEED', 'UNIT_SPELL_HASTE' }, OnEvent, nil, nil, OnEnter, nil, SPELL_HASTE, nil, ApplySettings)
+DT:RegisterDatatext('Haste', L["Enhancements"], { 'SPELL_UPDATE_USABLE', 'ACTIVE_TALENT_GROUP_CHANGED', 'PLAYER_TALENT_UPDATE', 'UNIT_ATTACK_SPEED', 'COMBAT_RATING_UPDATE' }, OnEvent, nil, nil, OnEnter, nil, SPELL_HASTE, nil, ApplySettings)

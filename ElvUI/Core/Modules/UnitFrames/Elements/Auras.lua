@@ -3,7 +3,7 @@ local UF = E:GetModule("UnitFrames")
 local LSM = E.Libs.LSM
 
 local unpack = unpack
-local ceil = math.ceil
+local ceil, max = math.ceil, math.max
 local find, format, split = string.find, string.format, string.split
 local sort = table.sort
 
@@ -147,14 +147,21 @@ function UF:Configure_Auras(frame, auraType)
 	auraType = string.lower(auraType)
 	auras.db = db[auraType]
 
-	local rows = auras.db.numrows
+	-- a zero in the profile turns the math below into a division by zero and NaNs the whole frame
+	local rows = max(auras.db.numrows or 1, 1)
+	local perrow = max(auras.db.perrow or 1, 1)
 	auras.forceShow = frame.forceShowAuras
-	auras.num = auras.db.perrow * rows
+	auras.num = perrow * rows
+
+	-- icons default to parent+1 and end up under the health bar; lift them over every text element
+	if frame.RaisedElementParent then
+		auras:SetFrameLevel(frame.RaisedElementParent:GetFrameLevel() + 10)
+	end
 	auras.size = auras.db.sizeOverride ~= 0 and auras.db.sizeOverride or ((((auras:GetWidth() - (auras.spacing*(auras.num/rows - 1))) / auras.num)) * rows)
 	auras.disableMouse = auras.db.clickThrough
 
 	if auras.db.sizeOverride and auras.db.sizeOverride > 0 then
-		auras:Width(auras.db.perrow * auras.db.sizeOverride)
+		auras:Width(perrow * auras.db.sizeOverride)
 	else
 		local totalWidth = frame.UNIT_WIDTH - frame.SPACING*2
 		if frame.USE_POWERBAR_OFFSET then
@@ -265,61 +272,33 @@ function UF:Configure_Auras(frame, auraType)
 	end
 end
 
-local function SortAurasByTime(a, b)
-	if a and b and a:GetParent().db then
-		if a:IsShown() and b:IsShown() then
-			local sortDirection = a:GetParent().db.sortDirection
-			local aTime = a.expiration or -1
-			local bTime = b.expiration or -1
-			if (aTime and bTime) then
-				if sortDirection == "DESCENDING" then
-					return aTime < bTime
-				else
-					return aTime > bTime
-				end
-			end
-		elseif a:IsShown() then
-			return true
+local function SortAurasByField(a, b, field, default)
+	if not (a and b and a:GetParent().db) then return end
+
+	if a:IsShown() and b:IsShown() then
+		local aValue = a[field] or default
+		local bValue = b[field] or default
+
+		if a:GetParent().db.sortDirection == "DESCENDING" then
+			return aValue < bValue
+		else
+			return aValue > bValue
 		end
+	elseif a:IsShown() then
+		return true
 	end
+end
+
+local function SortAurasByTime(a, b)
+	return SortAurasByField(a, b, "expiration", -1)
 end
 
 local function SortAurasByName(a, b)
-	if a and b and a:GetParent().db then
-		if a:IsShown() and b:IsShown() then
-			local sortDirection = a:GetParent().db.sortDirection
-			local aName = a.spell or ""
-			local bName = b.spell or ""
-			if aName and bName then
-				if sortDirection == "DESCENDING" then
-					return aName < bName
-				else
-					return aName > bName
-				end
-			end
-		elseif a:IsShown() then
-			return true
-		end
-	end
+	return SortAurasByField(a, b, "spell", "")
 end
 
 local function SortAurasByDuration(a, b)
-	if a and b and a:GetParent().db then
-		if a:IsShown() and b:IsShown() then
-			local sortDirection = a:GetParent().db.sortDirection
-			local aTime = a.duration or -1
-			local bTime = b.duration or -1
-			if aTime and bTime then
-				if sortDirection == "DESCENDING" then
-					return aTime < bTime
-				else
-					return aTime > bTime
-				end
-			end
-		elseif a:IsShown() then
-			return true
-		end
-	end
+	return SortAurasByField(a, b, "duration", -1)
 end
 
 local function SortAurasByCaster(a, b)
@@ -360,24 +339,37 @@ end
 
 local unstableAffliction = GetSpellInfo(30108)
 local vampiricTouch = GetSpellInfo(34914)
+local function SetForcedBorderColor(button, r, g, b, a)
+	local fc = button.forcedBorderColors
+	if not fc then
+		fc = {}
+		button.forcedBorderColors = fc
+	end
+
+	fc[1], fc[2], fc[3], fc[4] = r, g, b, a
+
+	button:SetBackdropBorderColor(r, g, b, a)
+end
+
 function UF:PostUpdateAura(unit, button)
 	if button.isDebuff then
 		if not button.isFriend and not button.isPlayer then --[[and (not E.isDebuffWhiteList[name])]]
-			button:SetBackdropBorderColor(0.9, 0.1, 0.1)
+			SetForcedBorderColor(button, 0.9, 0.1, 0.1)
 			button.icon:SetDesaturated((unit and not find(unit, "arena%d")) and true or false)
 		else
 			local color = (button.dtype and DebuffTypeColor[button.dtype]) or DebuffTypeColor.none
 			if button.name and (button.name == unstableAffliction or button.name == vampiricTouch) and E.myclass ~= "WARLOCK" then
-				button:SetBackdropBorderColor(0.05, 0.85, 0.94)
+				SetForcedBorderColor(button, 0.05, 0.85, 0.94)
 			else
-				button:SetBackdropBorderColor(color.r * 0.6, color.g * 0.6, color.b * 0.6)
+				SetForcedBorderColor(button, color.r * 0.6, color.g * 0.6, color.b * 0.6)
 			end
 			button.icon:SetDesaturated(false)
 		end
 	else
 		if button.isStealable and not button.isFriend then
-			button:SetBackdropBorderColor(0.93, 0.91, 0.55, 1.0)
+			SetForcedBorderColor(button, 0.93, 0.91, 0.55, 1.0)
 		else
+			button.forcedBorderColors = nil
 			button:SetBackdropBorderColor(unpack(E.media.unitframeBorderColor))
 		end
 	end
@@ -405,7 +397,6 @@ function UF:AuraFilter(unit, button, name, _, _, _, debuffType, duration, expira
 	button.expiration = expiration
 	button.name = name
 	button.spellID = spellID
-	button.owner = caster --what uses this?
 	button.spell = name --what uses this? (SortAurasByName?)
 	button.priority = 0
 
@@ -425,110 +416,50 @@ function UF:AuraFilter(unit, button, name, _, _, _, debuffType, duration, expira
 	return filterCheck
 end
 
+local function PositionAuras(target, other, count)
+	local source = (count == 0 and other) or target
+
+	target:ClearAllPoints()
+	target:Point(source.point, source.attachTo, source.anchorPoint, source.xOffset, source.yOffset)
+end
+
+local function ResizeAuras(holder, db, count)
+	if count > 0 then
+		local numRows = ceil(count / max(db.perrow or 1, 1))
+		holder:Height(holder.size * (numRows > db.numrows and db.numrows or numRows))
+	else
+		holder:Height(holder.size)
+	end
+end
+
 function UF:UpdateBuffsHeaderPosition()
 	local parent = self:GetParent()
-	local buffs = parent.Buffs
-	local debuffs = parent.Debuffs
-	local numDebuffs = self.visibleDebuffs
-
-	if numDebuffs == 0 then
-		buffs:ClearAllPoints()
-		buffs:Point(debuffs.point, debuffs.attachTo, debuffs.anchorPoint, debuffs.xOffset, debuffs.yOffset)
-	else
-		buffs:ClearAllPoints()
-		buffs:Point(buffs.point, buffs.attachTo, buffs.anchorPoint, buffs.xOffset, buffs.yOffset)
-	end
+	PositionAuras(parent.Buffs, parent.Debuffs, self.visibleDebuffs)
 end
 
 function UF:UpdateDebuffsHeaderPosition()
 	local parent = self:GetParent()
-	local debuffs = parent.Debuffs
-	local buffs = parent.Buffs
-	local numBuffs = self.visibleBuffs
-
-	if numBuffs == 0 then
-		debuffs:ClearAllPoints()
-		debuffs:Point(buffs.point, buffs.attachTo, buffs.anchorPoint, buffs.xOffset, buffs.yOffset)
-	else
-		debuffs:ClearAllPoints()
-		debuffs:Point(debuffs.point, debuffs.attachTo, debuffs.anchorPoint, debuffs.xOffset, debuffs.yOffset)
-	end
+	PositionAuras(parent.Debuffs, parent.Buffs, self.visibleBuffs)
 end
 
 function UF:UpdateBuffsPositionAndDebuffHeight()
 	local parent = self:GetParent()
-	local db = parent.db
-	local buffs = parent.Buffs
-	local debuffs = parent.Debuffs
-	local numDebuffs = self.visibleDebuffs
-
-	if numDebuffs == 0 then
-		buffs:ClearAllPoints()
-		buffs:Point(debuffs.point, debuffs.attachTo, debuffs.anchorPoint, debuffs.xOffset, debuffs.yOffset)
-	else
-		buffs:ClearAllPoints()
-		buffs:Point(buffs.point, buffs.attachTo, buffs.anchorPoint, buffs.xOffset, buffs.yOffset)
-	end
-
-	if numDebuffs > 0 then
-		local numRows = ceil(numDebuffs/db.debuffs.perrow)
-		debuffs:Height(debuffs.size * (numRows > db.debuffs.numrows and db.debuffs.numrows or numRows))
-	else
-		debuffs:Height(debuffs.size)
-	end
+	PositionAuras(parent.Buffs, parent.Debuffs, self.visibleDebuffs)
+	ResizeAuras(parent.Debuffs, parent.db.debuffs, self.visibleDebuffs)
 end
 
 function UF:UpdateDebuffsPositionAndBuffHeight()
 	local parent = self:GetParent()
-	local db = parent.db
-	local debuffs = parent.Debuffs
-	local buffs = parent.Buffs
-	local numBuffs = self.visibleBuffs
-
-	if numBuffs == 0 then
-		debuffs:ClearAllPoints()
-		debuffs:Point(buffs.point, buffs.attachTo, buffs.anchorPoint, buffs.xOffset, buffs.yOffset)
-	else
-		debuffs:ClearAllPoints()
-		debuffs:Point(debuffs.point, debuffs.attachTo, debuffs.anchorPoint, debuffs.xOffset, debuffs.yOffset)
-	end
-
-	if numBuffs > 0 then
-		local numRows = ceil(numBuffs/db.buffs.perrow)
-		buffs:Height(buffs.size * (numRows > db.buffs.numrows and db.buffs.numrows or numRows))
-	else
-		buffs:Height(buffs.size)
-	end
+	PositionAuras(parent.Debuffs, parent.Buffs, self.visibleBuffs)
+	ResizeAuras(parent.Buffs, parent.db.buffs, self.visibleBuffs)
 end
 
 function UF:UpdateBuffsHeight()
 	local parent = self:GetParent()
-	local db = parent.db
-	local buffs = parent.Buffs
-	local numBuffs = self.visibleBuffs
-
-	if numBuffs > 0 then
-		local numRows = ceil(numBuffs/db.buffs.perrow)
-		buffs:Height(buffs.size * (numRows > db.buffs.numrows and db.buffs.numrows or numRows))
-	else
-		buffs:Height(buffs.size)
-		-- Any way to get rid of the last row as well?
-		-- Using buffs:Height(0) makes frames anchored to this one disappear
-	end
+	ResizeAuras(parent.Buffs, parent.db.buffs, self.visibleBuffs)
 end
 
 function UF:UpdateDebuffsHeight()
 	local parent = self:GetParent()
-	local db = parent.db
-	local debuffs = parent.Debuffs
-	local numDebuffs = self.visibleDebuffs
-
-	if numDebuffs > 0 then
-		local numRows = ceil(numDebuffs/db.debuffs.perrow)
-		debuffs:Height(debuffs.size * (numRows > db.debuffs.numrows and db.debuffs.numrows or numRows))
-	else
-		debuffs:Height(debuffs.size)
-		-- Any way to get rid of the last row as well?
-		-- Using debuffs:Height(0) makes frames anchored to this one disappear
-	end
+	ResizeAuras(parent.Debuffs, parent.db.debuffs, self.visibleDebuffs)
 end

@@ -10,10 +10,8 @@ local PetHasActionBar = PetHasActionBar
 local GetPetActionInfo = GetPetActionInfo
 local IsPetAttackAction = IsPetAttackAction
 local GetPetActionSlotUsable = GetPetActionSlotUsable
-local GetPetActionCooldown = GetPetActionCooldown
 local SetDesaturation = SetDesaturation
 local RegisterStateDriver = RegisterStateDriver
-local GameTooltip = GameTooltip
 
 local AutoCastShine_AutoCastStart = AutoCastShine_AutoCastStart
 local AutoCastShine_AutoCastStop = AutoCastShine_AutoCastStop
@@ -30,7 +28,8 @@ bar:SetFrameStrata('LOW')
 bar.buttons = {}
 
 function AB:UpdatePet(event, unit)
-	if (event == 'UNIT_FLAGS' or event == 'UNIT_AURA' and unit ~= 'pet') or (event == 'UNIT_PET' and unit ~= 'player') then return end
+	if (event == 'UNIT_FLAGS' or event == 'UNIT_AURA') and unit ~= 'pet' then return end
+	if event == 'UNIT_PET' and unit ~= 'player' then return end
 
 	for i, button in ipairs(bar.buttons) do
 		local name, subtext, texture, isToken, isActive, autoCastAllowed, autoCastEnabled = GetPetActionInfo(i)
@@ -63,21 +62,13 @@ function AB:UpdatePet(event, unit)
 			button:SetChecked(true)
 
 			if IsPetAttackAction(i) then
-				if PetActionButton_StartFlash then
-					PetActionButton_StartFlash(button)
-				else
-					button:StartFlash()
-				end
+				PetActionButton_StartFlash(button)
 			end
 		else
 			button:SetChecked(false)
 
 			if IsPetAttackAction(i) then
-				if PetActionButton_StopFlash then
-					PetActionButton_StopFlash(button)
-				else
-					button:StopFlash()
-				end
+				PetActionButton_StopFlash(button)
 			end
 		end
 
@@ -94,11 +85,7 @@ function AB:UpdatePet(event, unit)
 		end
 
 		if not PetHasActionBar() and texture and name ~= 'PET_ACTION_FOLLOW' then
-			if PetActionButton_StopFlash then
-				PetActionButton_StopFlash(button)
-			else
-				button:StopFlash()
-			end
+			PetActionButton_StopFlash(button)
 
 			button.icon:SetVertexColor(0.4, 0.4, 0.4)
 			SetDesaturation(button.icon, true)
@@ -213,33 +200,7 @@ function AB:UpdatePetBindings()
 end
 
 function AB:UpdatePetCooldowns()
-	if PetActionBar_UpdateCooldowns then
-		PetActionBar_UpdateCooldowns()
-	else
-		local owner = GameTooltip:GetOwner()
-
-		for i, button in ipairs(bar.buttons) do
-			local start, duration = GetPetActionCooldown(i)
-			button.cooldown:SetCooldown(start, duration)
-
-			if owner == button then
-				button:OnEnter(button)
-			end
-		end
-	end
-end
-
-function AB:PetBar_OnShow()
-	-- holder
-end
-
-function AB:PetBar_OnHide()
-	for _, button in ipairs(bar.buttons) do
-		if button.spellDataLoadedCancelFunc then
-			button.spellDataLoadedCancelFunc()
-			button.spellDataLoadedCancelFunc = nil
-		end
-	end
+	PetActionBar_UpdateCooldowns()
 end
 
 function AB:CreateBarPet()
@@ -278,17 +239,15 @@ function AB:CreateBarPet()
 		end
 	]])
 
-	bar:SetScript('OnHide', AB.PetBar_OnHide)
-	bar:SetScript('OnShow', AB.PetBar_OnShow)
-
 	PetActionBar_ShowGrid()
 
 	AB:RegisterEvent('PET_BAR_UPDATE', 'UpdatePet')
+	AB:RegisterEvent('PET_BAR_UPDATE_USABLE', 'UpdatePet')
 	AB:RegisterEvent('PLAYER_CONTROL_GAINED', 'UpdatePet')
 	AB:RegisterEvent('PLAYER_CONTROL_LOST', 'UpdatePet')
-	AB:RegisterEvent('PLAYER_ENTERING_WORLD', 'UpdatePet')
 	AB:RegisterEvent('PLAYER_FARSIGHT_FOCUS_CHANGED', 'UpdatePet')
 	AB:RegisterEvent('SPELLS_CHANGED', 'UpdatePet')
+	AB:RegisterEvent('UNIT_AURA', 'UpdatePet')
 	AB:RegisterEvent('UNIT_FLAGS', 'UpdatePet')
 	AB:RegisterEvent('UNIT_PET', 'UpdatePet')
 	AB:RegisterEvent('PET_BAR_UPDATE_COOLDOWN', 'UpdatePetCooldowns')

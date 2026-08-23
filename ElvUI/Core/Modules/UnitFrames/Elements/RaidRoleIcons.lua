@@ -1,30 +1,9 @@
 local E, L, V, P, G = unpack(ElvUI)
 local UF = E:GetModule("UnitFrames")
 
---Lua functions
-local match = string.match
-local select, tonumber = select, tonumber
 --WoW API / Variables
 local CreateFrame = CreateFrame
-local GetNumRaidMembers = GetNumRaidMembers
-local GetRaidRosterInfo = GetRaidRosterInfo
-local IsPartyLeader = IsPartyLeader
-local UnitInParty = UnitInParty
-local UnitInRaid = UnitInRaid
-
-local function CheckLeader(unit)
-	if unit == "player" then
-		return IsPartyLeader()
-	elseif unit ~= "player" and (UnitInParty(unit) or UnitInRaid(unit)) then
-		local gtype, index = match(unit, "(%D+)(%d+)")
-		index = tonumber(index)
-		if gtype == "party" and GetNumRaidMembers() == 0 then
-			return GetPartyLeaderIndex() == index
-		elseif gtype == "raid" and GetNumRaidMembers() > 0 then
-			return select(2, GetRaidRosterInfo(index)) == 2
-		end
-	end
-end
+local UnitIsGroupLeader = UnitIsGroupLeader
 
 local function UpdateOverride(self)
 	local element = self.LeaderIndicator
@@ -33,7 +12,7 @@ local function UpdateOverride(self)
 		element:PreUpdate()
 	end
 
-	local isLeader = CheckLeader(self.unit)
+	local isLeader = self.unit and UnitIsGroupLeader(self.unit)
 
 	if isLeader then
 		element:Show()

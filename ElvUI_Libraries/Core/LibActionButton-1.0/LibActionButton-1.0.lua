@@ -1,7 +1,7 @@
 -- License: LICENSE.txt
 
 local MAJOR_VERSION = "LibActionButton-1.0-ElvUI"
-local MINOR_VERSION = 47 -- the real minor version is 108
+local MINOR_VERSION = 48 -- the real minor version is 108
 
 local LibStub = LibStub
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
@@ -74,6 +74,48 @@ local UpdateRange -- Sezz: new method
 local UpdateAuraCooldowns -- Simpy
 local AURA_COOLDOWNS_ENABLED = true
 local AURA_COOLDOWNS_DURATION = 0
+
+local GetSpellIDFromLink = C_SpellBook and C_SpellBook.GetSpellIDFromLink or function(link)
+	return tonumber(link:gsub("|", "||"):match("spell:(%d+)"))
+end
+
+local spellBookSlots = {}
+local spellBookScanned = false
+local function ScanSpellBook()
+	spellBookScanned = true
+	wipe(spellBookSlots)
+
+	local max = 0
+	for i = GetNumSpellTabs(), 1, -1 do
+		local _, _, offset, numSpells = GetSpellTabInfo(i)
+		if numSpells and numSpells > 0 then
+			max = offset + numSpells
+			break
+		end
+	end
+
+	for slot = 1, max do
+		local spellName, rank = GetSpellName(slot, "spell")
+		if spellName then
+			local link = GetSpellLink(spellName, rank)
+			local spellID = link and GetSpellIDFromLink(link)
+			if spellID then
+				spellBookSlots[spellID] = slot
+			end
+		end
+	end
+end
+
+local function FindSpellBookSlotBySpellID(spellID)
+	spellID = tonumber(spellID)
+	if not spellID then return end
+
+	if not spellBookScanned then
+		ScanSpellBook()
+	end
+
+	return spellBookSlots[spellID]
+end
 
 local InitializeEventHandler, OnEvent, ForAllButtons, OnUpdate
 
@@ -858,10 +900,13 @@ function InitializeEventHandler()
 	lib.eventFrame:RegisterEvent("SPELL_UPDATE_COOLDOWN")
 	lib.eventFrame:RegisterEvent("SPELL_UPDATE_USABLE")
 	lib.eventFrame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
+	lib.eventFrame:RegisterEvent("SPELLS_CHANGED")
 end
 
 function OnEvent(frame, event, arg1, ...)
 	if event == "SPELLS_CHANGED" then
+		ScanSpellBook()
+
 		for button in next, ActiveButtons do
 			local texture = button:GetTexture()
 			if texture then
@@ -887,12 +932,6 @@ function OnEvent(frame, event, arg1, ...)
 		local tooltipOwner = GameTooltip:GetOwner()
 		if ButtonRegistry[tooltipOwner] then
 			tooltipOwner:SetTooltip()
-		end
-	elseif event == "ACTIONBAR_SLOT_CHANGED" then
-		for button in next, ButtonRegistry do
-			if button._state_type == "action" and (arg1 == 0 or arg1 == tonumber(button._state_action)) then
-				Update(button, event)
-			end
 		end
 	elseif event == "PLAYER_ENTERING_WORLD" or event == "UPDATE_SHAPESHIFT_FORM" then
 		ForAllButtons(Update, nil, event)
@@ -921,8 +960,8 @@ function OnEvent(frame, event, arg1, ...)
 			UpdateRangeTimer(button)
 		end
 	elseif event == "UNIT_AURA" then
-		if AURA_COOLDOWNS_ENABLED then
-			UpdateAuraCooldowns()
+		if AURA_COOLDOWNS_ENABLED and arg1 == "target" then
+			UpdateAuraCooldowns(event)
 		end
 	elseif (event == "ACTIONBAR_UPDATE_STATE") or ((event == "UNIT_ENTERED_VEHICLE" or event == "UNIT_EXITED_VEHICLE") and (arg1 == "player"))
 		or ((event == "COMPANION_UPDATE") and (arg1 == "MOUNT")) or (event == "TRADE_SKILL_SHOW" or event == "TRADE_SKILL_CLOSE" or event == "TRADE_CLOSED") then
@@ -1057,33 +1096,35 @@ end
 
 local currentAuras = {}
 function UpdateAuraCooldowns(event, disable)
-	local filter = disable and "" or UnitIsFriend("player", "target") and "PLAYER|HELPFUL" or "PLAYER|HARMFUL"
-
 	local previousAuras = CopyTable(currentAuras, true)
 	wipe(currentAuras)
 
-	local index = 1
-	local name, _, _, _, _, duration, expiration = UnitAura("target", index, filter)
-	while name do
-		local buttons = AuraButtons.auras[name]
-		if buttons then
-			local start = (duration and duration > 0 and duration <= AURA_COOLDOWNS_DURATION) and (expiration - duration)
-			for _, button in next, buttons do
-				if start then
-					button.AuraCooldown:SetCooldown(start, duration, 1)
+	if not disable then
+		local filter = UnitIsFriend("player", "target") and "PLAYER|HELPFUL" or "PLAYER|HARMFUL"
 
-					currentAuras[button] = true
-					previousAuras[button] = nil
+		local index = 1
+		local name, _, _, _, _, duration, expiration = UnitAura("target", index, filter)
+		while name do
+			local buttons = AuraButtons.auras[name]
+			if buttons then
+				local start = (duration and duration > 0 and duration <= AURA_COOLDOWNS_DURATION) and (expiration - duration)
+				for _, button in next, buttons do
+					if start then
+						button.AuraCooldown:SetCooldown(start, duration, 1)
+
+						currentAuras[button] = true
+						previousAuras[button] = nil
+					end
 				end
 			end
-		end
 
-		index = index + 1
-		name, _, _, _, _, duration, expiration = UnitAura("target", index, filter)
+			index = index + 1
+			name, _, _, _, _, duration, expiration = UnitAura("target", index, filter)
+		end
 	end
 
 	for button in next, previousAuras do
-		button.AuraCooldown:Clear()
+		button.AuraCooldown:SetCooldown(0, 0)
 	end
 end
 
@@ -1527,13 +1568,13 @@ Spell.GetActionText           = function(self) return "" end
 Spell.GetTexture              = function(self) return GetSpellTexture(self._state_action) end
 Spell.GetCount                = function(self) return GetSpellCount(self._state_action) end
 Spell.GetCooldown             = function(self) return GetSpellCooldown(self._state_action) end
-Spell.IsAttack                = function(self) return IsAttackSpell(FindSpellBookSlotBySpellID(self._state_action), "spell") end -- needs spell book id as of 4.0.1.13066
+Spell.IsAttack                = function(self) local slot = FindSpellBookSlotBySpellID(self._state_action) return slot and IsAttackSpell(slot, "spell") end -- needs spell book id as of 4.0.1.13066
 Spell.IsEquipped              = function(self) return nil end
 Spell.IsCurrentlyActive       = function(self) return IsCurrentSpell(self._state_action) end
-Spell.IsAutoRepeat            = function(self) return IsAutoRepeatSpell(FindSpellBookSlotBySpellID(self._state_action), "spell") end -- needs spell book id as of 4.0.1.13066
+Spell.IsAutoRepeat            = function(self) local slot = FindSpellBookSlotBySpellID(self._state_action) return slot and IsAutoRepeatSpell(slot, "spell") end -- needs spell book id as of 4.0.1.13066
 Spell.IsUsable                = function(self) return IsUsableSpell(self._state_action) end
 Spell.IsConsumableOrStackable = function(self) return IsConsumableSpell(self._state_action) end
-Spell.IsUnitInRange           = function(self, unit) return IsSpellInRange(FindSpellBookSlotBySpellID(self._state_action), "spell", unit) end -- needs spell book id as of 4.0.1.13066
+Spell.IsUnitInRange           = function(self, unit) local slot = FindSpellBookSlotBySpellID(self._state_action) return slot and IsSpellInRange(slot, "spell", unit) end -- needs spell book id as of 4.0.1.13066
 Spell.SetTooltip              = function(self) return GameTooltip:SetSpellByID(self._state_action) end
 Spell.GetSpellId              = function(self) return self._state_action end
 

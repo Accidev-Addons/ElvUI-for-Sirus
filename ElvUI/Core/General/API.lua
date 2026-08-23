@@ -5,43 +5,32 @@
 local E, L, V, P, G = unpack(ElvUI)
 local TT = E:GetModule('Tooltip')
 local ElvUF = E.oUF
-local LC = E.Libs.Compat
 
 local _G = _G
 local type, pairs, unpack = type, pairs, unpack
-local wipe, max, next, tinsert, date, time = wipe, max, next, tinsert, date, time
-local format, gsub, strlen, strmatch, tonumber, tostring = string.format, string.gsub, strlen, strmatch, tonumber, tostring
+local wipe, next, tinsert, date, time = wipe, next, tinsert, date, time
+local format, gsub, strlen, strmatch, strsub, tonumber, tostring = string.format, string.gsub, strlen, strmatch, strsub, tonumber, tostring
+local abs = math.abs
 local hooksecurefunc = hooksecurefunc
 
 local CopyTable = CopyTable
 local CreateFrame = CreateFrame
-local GetActiveTalentGroup = GetActiveTalentGroup
 local GetBattlefieldArenaFaction = GetBattlefieldArenaFaction
 local GetCVarBool = GetCVarBool
 local GetDungeonDifficulty = GetDungeonDifficulty
-local GetExpansionLevel = GetExpansionLevel
 local GetFunctionCPUUsage = GetFunctionCPUUsage
 local GetGameTime = GetGameTime
 local GetInstanceInfo = GetInstanceInfo
-local GetNumGroupMembers = LC.GetNumGroupMembers
-local GetNumSubgroupMembers = LC.GetNumSubgroupMembers
-local GetItemInfo = GetItemInfo
-local GetLootSlotLink = GetLootSlotLink
-local GetNumPartyMembers = GetNumPartyMembers
-local GetNumQuestLeaderBoards = GetNumQuestLeaderBoards
-local GetNumQuestLogEntries = GetNumQuestLogEntries
+local GetNumGroupMembers = GetNumGroupMembers
+local GetNumSubgroupMembers = GetNumSubgroupMembers
 local GetPartyAssignment = GetPartyAssignment
-local GetQuestLogLeaderBoard = GetQuestLogLeaderBoard
-local GetQuestLogTitle = GetQuestLogTitle
 local GetRaidDifficulty = GetRaidDifficulty
-local GetSpellInfo = GetSpellInfo
-local GetTalentTabInfo = GetTalentTabInfo
 local GetWatchedFactionInfo = GetWatchedFactionInfo
 local HideUIPanel = HideUIPanel
 local InCombatLockdown = InCombatLockdown
-local IsInGroup = LC.IsInGroup
-local IsInRaid = LC.IsInRaid
-local IsLevelAtEffectiveMaxLevel = LC.IsLevelAtEffectiveMaxLevel
+local IsInGroup = IsInGroup
+local IsInRaid = IsInRaid
+local IsLevelAtEffectiveMaxLevel = IsLevelAtEffectiveMaxLevel
 local IsAddOnLoaded = IsAddOnLoaded
 local IsXPUserDisabled = IsXPUserDisabled
 local RequestBattlefieldScoreData = RequestBattlefieldScoreData
@@ -54,20 +43,20 @@ local UnitHasVehicleUI = UnitHasVehicleUI
 local UnitInBattleground = UnitInBattleground
 local UnitIsPlayer = UnitIsPlayer
 
-local GetSpecialization = LC.GetSpecialization
-local GetSpecializationInfo = LC.GetSpecializationInfo
+local GetSpecialization = E.GetSpecialization
+local GetSpecializationInfo = E.GetSpecializationInfo
+local GetSpecializationInfoByID = E.GetSpecializationInfoByID
+local GetInspectSpecialization = E.GetInspectSpecialization
 
-local MAX_TALENT_TABS = MAX_TALENT_TABS
 local NONE = NONE
 
 local ERR_NOT_IN_COMBAT = ERR_NOT_IN_COMBAT
 local FACTION_HORDE = FACTION_HORDE
 local FACTION_ALLIANCE = FACTION_ALLIANCE
 local PLAYER_FACTION_GROUP = PLAYER_FACTION_GROUP
-local MAX_PLAYER_LEVEL_TABLE = MAX_PLAYER_LEVEL_TABLE
 
 local GameMenuButtonLogout = GameMenuButtonLogout
-local GameMenuButtonAddOns = GameMenuButtonAddOns
+local GameMenuButtonAddons = GameMenuButtonAddons
 local GameMenuFrame = GameMenuFrame
 local UIErrorsFrame = UIErrorsFrame
 -- GLOBALS: ElvDB, ElvUI
@@ -98,7 +87,7 @@ E.SpecByClass = {
 	WARRIOR		= { 71, 72, 73 },
 }
 
-E.ClassName = { -- english locale
+E.ClassName = {
 	DEATHKNIGHT	= 'Death Knight',
 	DRUID		= 'Druid',
 	HUNTER		= 'Hunter',
@@ -111,7 +100,9 @@ E.ClassName = { -- english locale
 	WARRIOR		= 'Warrior',
 }
 
-E.SpecName = { -- english locale
+local EnglishClassName = CopyTable(E.ClassName)
+
+local EnglishSpecName = {
 	-- Death Knight
 	[250]	= 'Blood',
 	[251]	= 'Frost',
@@ -155,12 +146,65 @@ E.SpecName = { -- english locale
 	[73]	= 'Protection',
 }
 
-function E:RemoveExtraSpaces(str)
-	return gsub(str, '     +', '    ')	--Replace all instances of 5+ spaces with only 4 spaces.
+E.SpecName = {}
+
+do
+	local SpecNameGlobal = {
+		[250]	= 'DEATHKNIGHT_SPEC_BLOOD_TITLE',
+		[251]	= 'DEATHKNIGHT_SPEC_FROST_TITLE',
+		[252]	= 'DEATHKNIGHT_SPEC_UNHOLY_TITLE',
+		[102]	= 'DRUID_BALANCE_TITLE',
+		[103]	= 'DRUID_FERAL_TITLE',
+		[104]	= 'DRUID_FERAL_TITLE',
+		[105]	= 'DRUID_RESTORATION_TITLE',
+		[253]	= 'HUNTER_SPEC_BEASTMASTERY_TITLE',
+		[254]	= 'HUNTER_SPEC_MARKSMANSHIP_TITLE',
+		[255]	= 'HUNTER_SPEC_SURVIVAL_TITLE',
+		[62]	= 'MAGE_SPEC_ARCANE_TITLE',
+		[63]	= 'MAGE_SPEC_FIRE_TITLE',
+		[64]	= 'MAGE_SPEC_FROST_TITLE',
+		[65]	= 'PALADIN_SPEC_HOLY_TITLE',
+		[66]	= 'PALADIN_SPEC_PROTECTION_TITLE',
+		[70]	= 'PALADIN_SPEC_RETRIBUTION_TITLE',
+		[256]	= 'PRIEST_SPEC_DISCIPLINE_TITLE',
+		[257]	= 'PRIEST_SPEC_HOLY_TITLE',
+		[258]	= 'PRIEST_SPEC_SHADOW_TITLE',
+		[259]	= 'ROGUE_SPEC_ASSASSINATION_TITLE',
+		[260]	= 'ROGUE_SPEC_COMBAT_TITLE',
+		[261]	= 'ROGUE_SPEC_SUBTLETY_TITLE',
+		[262]	= 'SHAMAN_SPEC_ELEMENTAL_TITLE',
+		[263]	= 'SHAMAN_SPEC_ENHANCEMENT_TITLE',
+		[264]	= 'SHAMAN_SPEC_RESTORATION_TITLE',
+		[265]	= 'WARLOCK_AFFLICTION_TITLE',
+		[266]	= 'WARLOCK_DEMONOLOGY_TITLE',
+		[267]	= 'WARLOCK_DESTRUCTION_TITLE',
+		[71]	= 'WARRIOR_SPEC_ARMS_TITLE',
+		[72]	= 'WARRIOR_SPEC_FURY_TITLE',
+		[73]	= 'WARRIOR_SPEC_PROTECTION_TITLE',
+	}
+
+	local localizedClass = _G.LOCALIZED_CLASS_NAMES_MALE
+	for classFile, name in pairs(E.ClassName) do
+		local localized = localizedClass and localizedClass[classFile]
+		if type(localized) == 'string' and localized ~= '' then
+			E.ClassName[classFile] = localized
+		else
+			E.ClassName[classFile] = name
+		end
+	end
+
+	for id, name in pairs(EnglishSpecName) do
+		local localized = _G[SpecNameGlobal[id]]
+		if type(localized) == 'string' and localized ~= '' then
+			E.SpecName[id] = localized
+		else
+			E.SpecName[id] = name
+		end
+	end
 end
 
-function E:GetCurrencyIDFromLink(link)
-	return link and tonumber(strmatch(link, 'currency:(%d+)'))
+function E:RemoveExtraSpaces(str)
+	return gsub(str, '     +', '    ')	--Replace all instances of 5+ spaces with only 4 spaces.
 end
 
 function E:GetDateTime(localTime, unix)
@@ -206,6 +250,29 @@ function E:GetQualityColor(quality)
 	return _G.ITEM_QUALITY_COLORS[quality]
 end
 
+function E:GetAddOnDisplayName(name)
+	if not name then return end
+
+	local first = strsub(name, 1, 1)
+	if first == '+' or first == '!' or first == '_' then
+		return strsub(name, 2)
+	end
+
+	return name
+end
+
+function E:SyncFauxScrollBar(scrollBar, offset, maxOffset, rowHeight)
+	if not scrollBar then return end
+
+	scrollBar:SetMinMaxValues(0, maxOffset * rowHeight)
+	scrollBar:SetValueStep(rowHeight)
+	scrollBar:SetShown(maxOffset > 0)
+
+	if abs(scrollBar:GetValue() - offset * rowHeight) > 0.01 then
+		scrollBar:SetValue(offset * rowHeight)
+	end
+end
+
 function E:GetItemQualityColor(quality)
 	if quality == -1 then
 		return 0, 0, 0
@@ -219,46 +286,29 @@ function E:GetItemQualityColor(quality)
 	end
 end
 
-function E:InverseClassColor(class, usePriestColor, forceCap)
-	local color = E:CopyTable({}, E:ClassColor(class, usePriestColor))
-	local capColor = class == 'PRIEST' or forceCap
-
-	color.r = capColor and max(1-color.r,0.35) or (1-color.r)
-	color.g = capColor and max(1-color.g,0.35) or (1-color.g)
-	color.b = capColor and max(1-color.b,0.35) or (1-color.b)
-	color.colorStr = E:RGBToHex(color.r, color.g, color.b, 'ff')
-
-	return color
-end
-
 -- taken from https://gitlab.com/Tsoukie/classicapi/-/blob/main/!!!ClassicAPI/Util/C_CreatureInfo.lua
-local classData
+local classData = {
+	[1] = 'WARRIOR',
+	[2] = 'PALADIN',
+	[3] = 'HUNTER',
+	[4] = 'ROGUE',
+	[5] = 'PRIEST',
+	[6] = 'DEATHKNIGHT',
+	[7] = 'SHAMAN',
+	[8] = 'MAGE',
+	[9] = 'WARLOCK',
+	[11] = 'DRUID',
+}
+
 local function GetClassInfo(classID)
-		classData = {
-			[1] = 'WARRIOR',
-			[2] = 'PALADIN',
-			[3] = 'HUNTER',
-			[4] = 'ROGUE',
-			[5] = 'PRIEST',
-			[6] = 'DEATHKNIGHT',
-			[7] = 'SHAMAN',
-			[8] = 'MAGE',
-			[9] = 'WARLOCK',
-			[11] = 'DRUID',
-		}
+	local classFile = classData[classID]
+	if not classFile then return end
 
-	local classInfo = classData[classID]
-
-	if classInfo then
-		classInfo = {
-			className = _G.LOCALIZED_CLASS_NAMES_MALE[classInfo],
-			classFile = classInfo,
-			classID = classID
-		}
-		classData[classID] = classInfo
-	end
-
-	return classInfo
+	return {
+		className = _G.LOCALIZED_CLASS_NAMES_MALE[classFile],
+		classFile = classFile,
+		classID = classID
+	}
 end
 
 do
@@ -268,16 +318,12 @@ do
 	E.ClassInfoByID = classByID
 	E.ClassInfoByFile = classByFile
 
-	for index = 1, 10 do
+	for index = 1, 11 do
 		local info = GetClassInfo(index)
 		if info then
 			classByID[info.classID] = info
 			classByFile[info.classFile] = info
 		end
-	end
-
-	function E:GetClassInfo(value) -- classFile or classID
-		return classByFile[value] or classByID[value]
 	end
 end
 
@@ -303,6 +349,10 @@ end
 function E:GetUnitSpecInfo(unit)
 	if not UnitIsPlayer(unit) then return end
 
+	local specID = GetInspectSpecialization(unit)
+	local specInfo = specID and E.SpecInfoBySpecID[specID]
+	if specInfo then return specInfo end
+
 	E.ScanTooltip:SetOwner(WorldFrame, 'ANCHOR_NONE')
 	E.ScanTooltip:SetUnit(unit)
 
@@ -320,9 +370,13 @@ function E:PopulateSpecInfo()
 
 	for classFile, specID in next, E.SpecByClass do
 		local info = E.ClassInfoByFile[classFile]
-		if info then -- exclude evoker on mists
+		if info then
 			local classMale, classFemale = E:LocalizedClassName(classFile, 2), E:LocalizedClassName(classFile, 3)
 			for index, id in next, specID do
+				local _, libName, _, libIcon, _, role = GetSpecializationInfoByID(id)
+				local englishName = EnglishSpecName[id]
+				local name = E.SpecName[id] or libName
+
 				local data = {
 					id = id,
 					index = index,
@@ -330,37 +384,26 @@ function E:PopulateSpecInfo()
 					className = info.className,
 					classMale = classMale,
 					classFemale = classFemale,
-					englishName = E.SpecName[id]
+					englishName = englishName,
+					name = name,
+					icon = libIcon,
+					role = role
 				}
 
 				E.SpecInfoBySpecID[id] = data
 
-				for x = 3, 1, -1 do
-					local _, name, desc, icon, _, role = GetSpecializationInfo(id, x)
-					if name then
-						if x == 1 then -- SpecInfoBySpecID
-							data.name = name
-							data.desc = desc
-							data.icon = icon
-							data.role = role
+				local englishClass = EnglishClassName[classFile]
+				if englishName and englishClass then
+					E.SpecInfoBySpecClass[englishName..' '..englishClass] = data
+				end
 
-							local specClass = name..' '..info.className
-							E.SpecInfoBySpecClass[specClass] = data
-						else
-							local copy = E:CopyTable({}, data)
-							copy.name = name
-							copy.desc = desc
-							copy.icon = icon
-							copy.role = role
+				if name then
+					if classMale then
+						E.SpecInfoBySpecClass[name..' '..classMale] = data
+					end
 
-							local localized = (x == 3 and classFemale) or classMale
-							copy.className = localized
-
-							if localized then
-								local specClassLocalized = name..' '..localized
-								E.SpecInfoBySpecClass[specClassLocalized] = copy
-							end
-						end
+					if classFemale and classFemale ~= classMale then
+						E.SpecInfoBySpecClass[name..' '..classFemale] = data
 					end
 				end
 			end
@@ -391,38 +434,6 @@ do
 end
 
 do
-	function E:GetSpellInfo(spellID)
-		local info = {}
-		info.name, _, info.iconID, info.castTime, info.minRange, info.maxRange, info.spellID, info.originalIconID = spellID and GetSpellInfo(spellID)
-		if not info then return end
-
-		return info
-	end
-end
-
-do -- Spell renaming provided by BigWigs
-	function E:GetSpellRename(spellID)
-		if not spellID then return end
-
-		local API = _G.BigWigsAPI
-		local GetRename = API and API.GetSpellRename
-		if GetRename then
-			return GetRename(spellID)
-		end
-	end
-
-	function E:SetSpellRename(spellID, text)
-		if not spellID then return end
-
-		local API = _G.BigWigsAPI
-		local SetRename = API and API.SetSpellRename
-		if SetRename then
-			SetRename(spellID, text)
-		end
-	end
-end
-
-do
 	function E:GetAuraData(unitToken, index, filter)
 		return UnitAura(unitToken, index, filter)
 	end
@@ -449,31 +460,6 @@ do
 	function E:GetAuraByName(unit, name, filter)
 		return FindAura('name', name, unit, 1, filter, E:GetAuraData(unit, 1, filter))
 	end
-end
-
-function E:GetTalentSpecInfo(isInspect)
-	local talantGroup = GetActiveTalentGroup(isInspect)
-	local maxPoints, specIdx, specName, specIcon = 0, 0
-
-	for i = 1, MAX_TALENT_TABS do
-		local name, icon, pointsSpent = GetTalentTabInfo(i, isInspect, nil, talantGroup)
-		if maxPoints < pointsSpent then
-			maxPoints = pointsSpent
-			specIdx = i
-			specName = name
-			specIcon = icon
-		end
-	end
-
-	if not specName then
-		specName = NONE
-	end
-
-	if not specIcon then
-		specIcon = [[Interface\Icons\INV_Misc_QuestionMark]]
-	end
-
-	return specIdx, specName, specIcon
 end
 
 function E:GetThreatStatusColor(status, nothreat)
@@ -897,17 +883,9 @@ function E:GetUnitBattlefieldFaction(unit)
 	local englishFaction, localizedFaction = UnitFactionGroup(unit)
 
 	-- this might be a rated BG or wargame and if so the player's faction might be altered
-	if unit == 'player' then
-		if UnitInBattleground(unit) then
-			englishFaction = PLAYER_FACTION_GROUP[GetBattlefieldArenaFaction()]
-			localizedFaction = (englishFaction == 'Alliance' and FACTION_ALLIANCE) or FACTION_HORDE
-		else
-			if englishFaction == 'Alliance' then
-				englishFaction, localizedFaction = 'Horde', FACTION_HORDE
-			else
-				englishFaction, localizedFaction = 'Alliance', FACTION_ALLIANCE
-			end
-		end
+	if unit == 'player' and UnitInBattleground(unit) then
+		englishFaction = PLAYER_FACTION_GROUP[GetBattlefieldArenaFaction()]
+		localizedFaction = (englishFaction == 'Alliance' and FACTION_ALLIANCE) or FACTION_HORDE
 	end
 
 	return englishFaction, localizedFaction
@@ -917,7 +895,6 @@ function E:PLAYER_LEVEL_UP(_, level)
 	E.mylevel = level
 end
 
-local gameMenuFrameIsShown = false
 function E:PositionGameMenuButton()
 	local button = GameMenuFrame.ElvUI
 	if button then
@@ -930,11 +907,6 @@ function E:PositionGameMenuButton()
 
 			GameMenuButtonLogout:ClearAllPoints()
 			GameMenuButtonLogout:Point('TOPLEFT', button, 'BOTTOMLEFT', 0, offY)
-		end
-
-		if not gameMenuFrameIsShown then
-			GameMenuFrame:Height(GameMenuFrame:GetHeight() + GameMenuButtonLogout:GetHeight() - 4)
-			gameMenuFrameIsShown = true
 		end
 	end
 end
@@ -961,8 +933,17 @@ function E:SetupGameMenu()
 	E:ScaleGameMenu()
 
 	button:Size(GameMenuButtonLogout:GetSize())
-	button:Point('TOPLEFT', GameMenuButtonAddOns, 'BOTTOMLEFT', 0, -1)
-	hooksecurefunc(GameMenuFrame, 'Show', E.PositionGameMenuButton)
+	button:Point('TOPLEFT', GameMenuButtonAddons, 'BOTTOMLEFT', 0, -1)
+	hooksecurefunc(GameMenuFrame, 'Show', function() E:PositionGameMenuButton() end)
+
+	if GameMenuFrame_UpdateVisibleButtons then
+		hooksecurefunc('GameMenuFrame_UpdateVisibleButtons', function()
+			local button = GameMenuFrame.ElvUI
+			if button and GameMenuButtonLogout then
+				GameMenuFrame:Height(GameMenuFrame:GetHeight() + GameMenuButtonLogout:GetHeight() - 4)
+			end
+		end)
+	end
 end
 
 function E:CompatibleTooltip(tt) -- knock off compatibility
@@ -1009,6 +990,10 @@ function E:CropRatio(width, height, mult)
 
 	local left, right, top, bottom = E:GetTexCoords()
 
+	if type(width) ~= 'number' or type(height) ~= 'number' or width <= 0 or height <= 0 then
+		return left, right, top, bottom
+	end
+
 	local ratio = width / height
 	if ratio > 1 then
 		local trimAmount = (1 - (1 / ratio)) * mult
@@ -1047,51 +1032,9 @@ function E:ScanTooltip_HyperlinkInfo(link)
 	return E.ScanTooltip:GetTooltipData()
 end
 
-function E:UnitTankedByGroup(unit)
-	for _, unitToken in next, E.GroupUnitsByRole.TANK do
-		if E:GetThreatSituation(unit, unitToken) == 3 then
-			return unitToken
-		end
-	end
-end
-
-function E:GetThreatSituation(unit, feedbackUnit)
-	if not unit or not E:UnitExists(unit) then return end
-
-	if feedbackUnit and feedbackUnit ~= unit and E:UnitExists(feedbackUnit) then
-		return UnitThreatSituation(feedbackUnit, unit)
-	else
-		return UnitThreatSituation(unit)
-	end
-end
-
-function E:PARTY_MEMBERS_CHANGED()
-	local isInGroup = IsInGroup()
-	E.IsInGroup = isInGroup
-
-	wipe(E.GroupRoles)
-
-	for _, units in next, E.GroupUnitsByRole do
-		wipe(units)
-	end
-
-	if E.IsInGroup then
-		local group = isInGroup and 'party'
-		for i = 1, GetNumSubgroupMembers() do
-			local unit = group..i
-			local guid = UnitGUID(unit)
-			local role = guid and ((GetPartyAssignment('MAINTANK', unit) and 'TANK' or 'NONE') or UnitGroupRolesAssigned(unit))
-			if role then
-				E.GroupRoles[guid] = role
-				E.GroupUnitsByRole[role][guid] = unit
-			end
-		end
-	end
-end
-
-function E:RAID_ROSTER_UPDATE()
+function E:GroupRosterUpdate()
 	local isInRaid = IsInRaid()
-	E.IsInGroup = isInRaid
+	E.IsInGroup = isInRaid or IsInGroup()
 
 	wipe(E.GroupRoles)
 
@@ -1100,11 +1043,14 @@ function E:RAID_ROSTER_UPDATE()
 	end
 
 	if E.IsInGroup then
-		local group = isInRaid and 'raid'
-		for i = 1, GetNumGroupMembers() do
+		local group = (isInRaid and 'raid') or 'party'
+		local members = (isInRaid and GetNumGroupMembers()) or GetNumSubgroupMembers()
+
+		for i = 1, members do
 			local unit = group..i
 			local guid = UnitGUID(unit)
-			local role = guid and ((GetPartyAssignment('MAINTANK', unit) and 'TANK' or 'NONE') or UnitGroupRolesAssigned(unit))
+			local isTank, isHealer, isDamage = UnitGroupRolesAssigned(unit)
+			local role = guid and ((GetPartyAssignment('MAINTANK', unit) and 'TANK') or (isTank and 'TANK') or (isHealer and 'HEALER') or (isDamage and 'DAMAGER') or 'NONE')
 			if role then
 				E.GroupRoles[guid] = role
 				E.GroupUnitsByRole[role][guid] = unit
@@ -1114,16 +1060,15 @@ function E:RAID_ROSTER_UPDATE()
 end
 
 function E:LoadAPI()
-	E:RegisterEvent('PARTY_MEMBERS_CHANGED')
-	E:RegisterEvent('RAID_ROSTER_UPDATE')
+	E:RegisterEvent('PARTY_MEMBERS_CHANGED', 'GroupRosterUpdate')
+	E:RegisterEvent('RAID_ROSTER_UPDATE', 'GroupRosterUpdate')
 	E:RegisterEvent('PLAYER_LEVEL_UP')
 	E:RegisterEvent('PLAYER_ENTERING_WORLD')
 	E:RegisterEvent('PLAYER_REGEN_ENABLED')
 	E:RegisterEvent('PLAYER_REGEN_DISABLED')
-	E:RegisterEvent('UI_SCALE_CHANGED', 'PixelScaleChanged')
+	E:RegisterEvent('DISPLAY_SIZE_CHANGED', 'PixelScaleChanged')
 
-	E:PARTY_MEMBERS_CHANGED()
-	E:RAID_ROSTER_UPDATE()
+	E:GroupRosterUpdate()
 	E:SetupGameMenu()
 	E:UpdateTexCoords() -- update cropIcon texCoords
 	E:PopulateSpecInfo()
@@ -1143,6 +1088,7 @@ function E:LoadAPI()
 	E:RegisterEvent('CHARACTER_POINTS_CHANGED', 'CheckRole')
 	E:RegisterEvent('UNIT_INVENTORY_CHANGED', 'CheckRole')
 	E:RegisterEvent('UPDATE_BONUS_ACTIONBAR', 'CheckRole')
+	E:RegisterEvent('ZONE_CHANGED_NEW_AREA', 'CheckRole') -- role is not recalculated on entering an instance otherwise
 
 	E:RegisterEvent('UNIT_ENTERED_VEHICLE', 'EnterVehicleHideFrames')
 	E:RegisterEvent('UNIT_EXITED_VEHICLE', 'ExitVehicleShowFrames')

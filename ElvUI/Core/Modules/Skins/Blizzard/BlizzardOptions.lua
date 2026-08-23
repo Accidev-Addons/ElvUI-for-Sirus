@@ -4,6 +4,7 @@ local S = E:GetModule("Skins")
 --Lua functions
 local _G = _G
 local ipairs = ipairs
+local pcall, type, strfind = pcall, type, strfind
 --WoW API / Variables
 local InCombatLockdown = InCombatLockdown
 local hooksecurefunc = hooksecurefunc
@@ -99,197 +100,6 @@ S:AddCallback("Skin_BlizzardOptions", function()
 		end
 	end
 
-	local checkboxes = {
-		"InterfaceOptionsControlsPanelStickyTargeting",
-		"InterfaceOptionsControlsPanelAutoDismount",
-		"InterfaceOptionsControlsPanelAutoClearAFK",
-		"InterfaceOptionsControlsPanelBlockTrades",
-		"InterfaceOptionsControlsPanelLootAtMouse",
-		"InterfaceOptionsControlsPanelAutoLootCorpse",
-		"InterfaceOptionsCombatPanelAttackOnAssist",
-		"InterfaceOptionsCombatPanelAutoRange",
-		"InterfaceOptionsCombatPanelStopAutoAttack",
-		"InterfaceOptionsCombatPanelNameplateClassColors",
-		"InterfaceOptionsCombatPanelAutoSelfCast",
-		"InterfaceOptionsCombatPanelTargetOfTarget",
-		"InterfaceOptionsCombatPanelEnemyCastBarsOnPortrait",
-		"InterfaceOptionsCombatPanelEnemyCastBarsOnNameplates",
-		"InterfaceOptionsDisplayPanelShowCloak",
-		"InterfaceOptionsDisplayPanelShowHelm",
-		"InterfaceOptionsDisplayPanelShowAggroPercentage",
-		"InterfaceOptionsDisplayPanelPlayAggroSounds",
-		"InterfaceOptionsDisplayPanelDetailedLootInfo",
-		"InterfaceOptionsDisplayPanelShowFreeBagSpace",
-		"InterfaceOptionsDisplayPanelCinematicSubtitles",
-		"InterfaceOptionsDisplayPanelRotateMinimap",
-		"InterfaceOptionsDisplayPanelScreenEdgeFlash",
-		"InterfaceOptionsDisplayPanelShowClock",
-		"InterfaceOptionsDisplayPanelColorblindMode",
-		"InterfaceOptionsDisplayPanelShowItemLevel",
-		"InterfaceOptionsObjectivesPanelInstantQuestText",
-		"InterfaceOptionsObjectivesPanelAutoQuestTracking",
-		"InterfaceOptionsObjectivesPanelAutoQuestProgress",
-		"InterfaceOptionsObjectivesPanelMapQuestDifficulty",
-		"InterfaceOptionsObjectivesPanelAdvancedWorldMap",
-		"InterfaceOptionsObjectivesPanelWatchFrameWidth",
-		"InterfaceOptionsSocialPanelProfanityFilter",
-		"InterfaceOptionsSocialPanelSpamFilter",
-		"InterfaceOptionsSocialPanelChatBubbles",
-		"InterfaceOptionsSocialPanelPartyChat",
-		"InterfaceOptionsSocialPanelChatHoverDelay",
-		"InterfaceOptionsSocialPanelGuildMemberAlert",
-		"InterfaceOptionsSocialPanelGuildRecruitment",
-		"InterfaceOptionsSocialPanelChatMouseScroll",
-		"InterfaceOptionsSocialPanelWholeChatWindowClickable",
-		"InterfaceOptionsActionBarsPanelLockActionBars",
-		"InterfaceOptionsActionBarsPanelSecureAbilityToggle",
-		"InterfaceOptionsActionBarsPanelAlwaysShowActionBars",
-		"InterfaceOptionsActionBarsPanelBottomLeft",
-		"InterfaceOptionsActionBarsPanelBottomRight",
-		"InterfaceOptionsActionBarsPanelRight",
-		"InterfaceOptionsActionBarsPanelRightTwo",
-		"InterfaceOptionsNamesPanelMyName",
-		"InterfaceOptionsNamesPanelFriendlyPlayerNames",
-		"InterfaceOptionsNamesPanelFriendlyPets",
-		"InterfaceOptionsNamesPanelFriendlyGuardians",
-		"InterfaceOptionsNamesPanelFriendlyTotems",
-		"InterfaceOptionsNamesPanelUnitNameplatesFriends",
-		"InterfaceOptionsNamesPanelUnitNameplatesFriendlyGuardians",
-		"InterfaceOptionsNamesPanelUnitNameplatesFriendlyPets",
-		"InterfaceOptionsNamesPanelUnitNameplatesFriendlyTotems",
-		"InterfaceOptionsNamesPanelGuilds",
-		"InterfaceOptionsNamesPanelNPCNames",
-		"InterfaceOptionsNamesPanelUnitNameplatesAllowOverlap",
-		"InterfaceOptionsNamesPanelTitles",
-		"InterfaceOptionsNamesPanelNonCombatCreature",
-		"InterfaceOptionsNamesPanelEnemyPlayerNames",
-		"InterfaceOptionsNamesPanelEnemyPets",
-		"InterfaceOptionsNamesPanelEnemyGuardians",
-		"InterfaceOptionsNamesPanelEnemyTotems",
-		"InterfaceOptionsNamesPanelUnitNameplatesEnemyPets",
-		"InterfaceOptionsNamesPanelUnitNameplatesEnemies",
-		"InterfaceOptionsNamesPanelUnitNameplatesEnemyGuardians",
-		"InterfaceOptionsNamesPanelUnitNameplatesEnemyTotems",
-		"InterfaceOptionsCombatTextPanelTargetDamage",
-		"InterfaceOptionsCombatTextPanelPeriodicDamage",
-		"InterfaceOptionsCombatTextPanelPetDamage",
-		"InterfaceOptionsCombatTextPanelHealing",
-		"InterfaceOptionsCombatTextPanelTargetEffects",
-		"InterfaceOptionsCombatTextPanelOtherTargetEffects",
-		"InterfaceOptionsCombatTextPanelEnableFCT",
-		"InterfaceOptionsCombatTextPanelDodgeParryMiss",
-		"InterfaceOptionsCombatTextPanelDamageReduction",
-		"InterfaceOptionsCombatTextPanelRepChanges",
-		"InterfaceOptionsCombatTextPanelReactiveAbilities",
-		"InterfaceOptionsCombatTextPanelFriendlyHealerNames",
-		"InterfaceOptionsCombatTextPanelCombatState",
-		"InterfaceOptionsCombatTextPanelComboPoints",
-		"InterfaceOptionsCombatTextPanelLowManaHealth",
-		"InterfaceOptionsCombatTextPanelEnergyGains",
-		"InterfaceOptionsCombatTextPanelPeriodicEnergyGains",
-		"InterfaceOptionsCombatTextPanelHonorGains",
-		"InterfaceOptionsCombatTextPanelAuras",
-		"InterfaceOptionsBuffsPanelBuffDurations",
-		"InterfaceOptionsBuffsPanelDispellableDebuffs",
-		"InterfaceOptionsBuffsPanelCastableBuffs",
-		"InterfaceOptionsBuffsPanelConsolidateBuffs",
-		"InterfaceOptionsBuffsPanelShowCastableDebuffs",
-		"InterfaceOptionsCameraPanelFollowTerrain",
-		"InterfaceOptionsCameraPanelHeadBob",
-		"InterfaceOptionsCameraPanelWaterCollision",
-		"InterfaceOptionsCameraPanelSmartPivot",
-		"InterfaceOptionsMousePanelInvertMouse",
-		"InterfaceOptionsMousePanelClickToMove",
-		"InterfaceOptionsMousePanelWoWMouse",
-		"InterfaceOptionsHelpPanelShowTutorials",
-		"InterfaceOptionsHelpPanelLoadingScreenTips",
-		"InterfaceOptionsHelpPanelEnhancedTooltips",
-		"InterfaceOptionsHelpPanelBeginnerTooltips",
-		"InterfaceOptionsHelpPanelShowLuaErrors",
-		"InterfaceOptionsStatusTextPanelPlayer",
-		"InterfaceOptionsStatusTextPanelPet",
-		"InterfaceOptionsStatusTextPanelParty",
-		"InterfaceOptionsStatusTextPanelTarget",
-		"InterfaceOptionsStatusTextPanelPercentages",
-		"InterfaceOptionsStatusTextPanelXP",
-		"InterfaceOptionsUnitFramePanelPartyBackground",
-		"InterfaceOptionsUnitFramePanelPartyPets",
-		"InterfaceOptionsUnitFramePanelArenaEnemyFrames",
-		"InterfaceOptionsUnitFramePanelArenaEnemyCastBar",
-		"InterfaceOptionsUnitFramePanelArenaEnemyPets",
-		"InterfaceOptionsUnitFramePanelPartyInRaid",
-		"InterfaceOptionsUnitFramePanelRaidRange",
-		"InterfaceOptionsUnitFramePanelFullSizeFocusFrame",
-		"InterfaceOptionsFeaturesPanelPreviewTalentChanges",
-		"InterfaceOptionsFeaturesPanelEquipmentManager",
-
-		"AudioOptionsSoundPanelEnableSound",
-		"AudioOptionsSoundPanelSoundEffects",
-		"AudioOptionsSoundPanelErrorSpeech",
-		"AudioOptionsSoundPanelEmoteSounds",
-		"AudioOptionsSoundPanelPetSounds",
-		"AudioOptionsSoundPanelMusic",
-		"AudioOptionsSoundPanelLoopMusic",
-		"AudioOptionsSoundPanelAmbientSounds",
-		"AudioOptionsSoundPanelSoundInBG",
-		"AudioOptionsSoundPanelReverb",
-		"AudioOptionsSoundPanelHRTF",
-		"AudioOptionsSoundPanelEnableDSPs",
-		"AudioOptionsSoundPanelUseHardware",
-
-		"VideoOptionsResolutionPanelVSync",
-		"VideoOptionsResolutionPanelTripleBuffer",
-		"VideoOptionsResolutionPanelHardwareCursor",
-		"VideoOptionsResolutionPanelFixInputLag",
-		"VideoOptionsResolutionPanelUseUIScale",
-		"VideoOptionsResolutionPanelWindowed",
-		"VideoOptionsResolutionPanelMaximized",
-		"VideoOptionsResolutionPanelDisableResize",
-		"VideoOptionsResolutionPanelDesktopGamma",
-		"VideoOptionsEffectsPanelSpecularLighting",
-		"VideoOptionsEffectsPanelFullScreenGlow",
-		"VideoOptionsEffectsPanelDeathEffect",
-		"VideoOptionsEffectsPanelProjectedTextures",
-	}
-	for _, checkbox in ipairs(checkboxes) do
-		checkbox = _G[checkbox]
-		if checkbox then
-			S:HandleCheckBox(checkbox)
-		end
-	end
-
-	local sliders = {
-		"InterfaceOptionsCameraPanelMaxDistanceSlider",
-		"InterfaceOptionsCameraPanelFollowSpeedSlider",
-		"InterfaceOptionsMousePanelMouseLookSpeedSlider",
-		"InterfaceOptionsMousePanelMouseSensitivitySlider",
-
-		"AudioOptionsSoundPanelSoundQuality",
-		"AudioOptionsSoundPanelSoundChannels",
-		"AudioOptionsSoundPanelMasterVolume",
-		"AudioOptionsSoundPanelSoundVolume",
-		"AudioOptionsSoundPanelMusicVolume",
-		"AudioOptionsSoundPanelAmbienceVolume",
-
-		"VideoOptionsResolutionPanelUIScaleSlider",
-		"VideoOptionsEffectsPanelQualitySlider",
-		"VideoOptionsEffectsPanelViewDistance",
-		"VideoOptionsEffectsPanelEnvironmentDetail",
-		"VideoOptionsEffectsPanelTextureResolution",
-		"VideoOptionsEffectsPanelTerrainDetail",
-		"VideoOptionsEffectsPanelClutterDensity",
-		"VideoOptionsEffectsPanelTextureFiltering",
-		"VideoOptionsEffectsPanelParticleDensity",
-		"VideoOptionsEffectsPanelShadowQuality",
-		"VideoOptionsEffectsPanelClutterRadius",
-		"VideoOptionsEffectsPanelWeatherIntensity",
-		"VideoOptionsEffectsPanelPlayerTexture",
-		"VideoOptionsResolutionPanelGammaSlider",
-	}
-	for _, slider in ipairs(sliders) do
-		S:HandleSliderFrame(_G[slider])
-	end
-
 	local buttons = {
 		"InterfaceOptionsFrameDefaults",
 		"InterfaceOptionsFrameOkay",
@@ -309,37 +119,11 @@ S:AddCallback("Skin_BlizzardOptions", function()
 		S:HandleButton(_G[button])
 	end
 
-	local dropdowns = {
-		"InterfaceOptionsControlsPanelAutoLootKeyDropDown",
-		"InterfaceOptionsCombatPanelTOTDropDown",
-		"InterfaceOptionsCombatPanelFocusCastKeyDropDown",
-		"InterfaceOptionsCombatPanelSelfCastKeyDropDown",
-		"InterfaceOptionsDisplayPanelAggroWarningDisplay",
-		"InterfaceOptionsDisplayPanelWorldPVPObjectiveDisplay",
-		"InterfaceOptionsSocialPanelChatStyle",
-		"InterfaceOptionsSocialPanelTimestamps",
-		"InterfaceOptionsCombatTextPanelFCTDropDown",
-		"InterfaceOptionsCameraPanelStyleDropDown",
-		"InterfaceOptionsMousePanelClickMoveStyleDropDown",
-		"InterfaceOptionsLanguagesPanelLocaleDropDown",
-
-		"AudioOptionsSoundPanelHardwareDropDown",
-
-		"VideoOptionsResolutionPanelResolutionDropDown",
-		"VideoOptionsResolutionPanelRefreshDropDown",
-	}
-	for _, dropdown in ipairs(dropdowns) do
-		dropdown = _G[dropdown]
-		if dropdown then
-			S:HandleDropDownBox(dropdown)
-		end
-	end
-
 	InterfaceOptionsFrameCategoriesList:StripTextures()
 	InterfaceOptionsFrameAddOnsList:StripTextures()
 
-	S:HandleScrollBar(InterfaceOptionsFrameCategoriesListScrollBar)
-	S:HandleScrollBar(InterfaceOptionsFrameAddOnsListScrollBar)
+	S:HandleSirusScrollBar(InterfaceOptionsFrameCategoriesListScrollBar)
+	S:HandleSirusScrollBar(InterfaceOptionsFrameAddOnsListScrollBar)
 
 	InterfaceOptionsFrameCategoriesListScrollBar:Point("TOPRIGHT", 0, -20)
 	InterfaceOptionsFrameCategoriesListScrollBar:Point("BOTTOMLEFT", 6, 19)
@@ -363,6 +147,133 @@ S:AddCallback("Skin_BlizzardOptions", function()
 	InterfaceOptionsFrameOkay:Point("BOTTOMRIGHT", InterfaceOptionsFrameCancel, "BOTTOMLEFT", -3, 0)
 
 	VideoOptionsResolutionPanelBrightnessGrayScale:SetTexture([[Interface\OptionsFrame\21stepgrayscale]])
+
+	-- Generic sweep for the Sirus/AddOn option panels the lists above don't name
+	local optionContainers = {
+		"InterfaceOptionsFramePanelContainer",
+		"VideoOptionsFramePanelContainer",
+		"AudioOptionsFramePanelContainer"
+	}
+
+	local function GetPanelChildren(frame)
+		return { frame:GetChildren() }
+	end
+
+	local function GetDropDownMiddle(frame, name)
+		return frame.Middle or (name and _G[name.."Middle"])
+	end
+
+	local function IsDropDownFrame(frame, name)
+		if not GetDropDownMiddle(frame, name) then return end
+
+		return frame.Button or (name and (_G[name.."Button"] or _G[name.."_Button"]))
+	end
+
+	local function GetDropDownWidth(frame, name)
+		local middle = GetDropDownMiddle(frame, name)
+		local width = middle and middle.GetWidth and middle:GetWidth()
+
+		return width and width > 0 and (width + 50) or frame:GetWidth()
+	end
+
+	local function IsPanelButton(button, name)
+		local left = button.Left or (name and _G[name.."Left"])
+		local texture = left and left.GetTexture and left:GetTexture()
+
+		return type(texture) == "string" and strfind(texture, "UI%-Panel%-Button")
+	end
+
+	local function IsRadioButton(checkbox)
+		local normal = checkbox.GetNormalTexture and checkbox:GetNormalTexture()
+		local texture = normal and normal:GetTexture()
+
+		return type(texture) == "string" and strfind(texture, "UI%-RadioButton")
+	end
+
+	local function IsSliderSkinned(slider)
+		local thumb = slider.GetThumbTexture and slider:GetThumbTexture()
+
+		return thumb and thumb:GetTexture() == E.Media.Textures.Melli
+	end
+
+	local function SkinOptionChildren(frame, depth)
+		if depth > 8 then return end
+
+		local success, children = pcall(GetPanelChildren, frame)
+		if not success then return end
+
+		for _, child in ipairs(children) do
+			local objectType = child.GetObjectType and child:GetObjectType()
+			local name = child.GetName and child:GetName()
+			local dropdown
+
+			if objectType == "CheckButton" then
+				if IsRadioButton(child) then
+					S:HandleRadioButton(child)
+				else
+					S:HandleCheckBox(child)
+				end
+			elseif objectType == "Slider" then
+				if not IsSliderSkinned(child) and not (name and strfind(name, "ScrollBar")) then
+					S:HandleSliderFrame(child)
+				end
+			elseif objectType == "EditBox" then
+				S:HandleEditBox(child)
+			elseif objectType == "Button" then
+				if IsPanelButton(child, name) then
+					S:HandleButton(child)
+				end
+			elseif objectType == "Frame" then
+				dropdown = IsDropDownFrame(child, name)
+
+				if dropdown and not child.backdrop then
+					S:HandleDropDownBox(child, GetDropDownWidth(child, name))
+				end
+			end
+
+			if not dropdown then
+				SkinOptionChildren(child, depth + 1)
+			end
+		end
+	end
+
+	local function SkinOptionPanel(panel)
+		if type(panel) ~= "table" or not panel.GetObjectType then return end
+
+		SkinOptionChildren(panel, 0)
+	end
+
+	local function SkinOptionList(list)
+		if not (list and list.buttons) then return end
+
+		for _, button in ipairs(list.buttons) do
+			SkinOptionPanel(button.element)
+		end
+	end
+
+	local function SweepOptionPanels()
+		SkinOptionList(InterfaceOptionsFrameCategories)
+		SkinOptionList(InterfaceOptionsFrameAddOns)
+
+		if INTERFACEOPTIONS_ADDONCATEGORIES then
+			for _, panel in ipairs(INTERFACEOPTIONS_ADDONCATEGORIES) do
+				SkinOptionPanel(panel)
+			end
+		end
+
+		for _, container in ipairs(optionContainers) do
+			SkinOptionPanel(_G[container])
+		end
+	end
+
+	SweepOptionPanels()
+
+	InterfaceOptionsFrame:HookScript("OnShow", SweepOptionPanels)
+	VideoOptionsFrame:HookScript("OnShow", SweepOptionPanels)
+	AudioOptionsFrame:HookScript("OnShow", SweepOptionPanels)
+
+	hooksecurefunc("InterfaceOptionsList_DisplayPanel", SkinOptionPanel)
+	hooksecurefunc("InterfaceOptions_AddCategory", SkinOptionPanel)
 
 	-- Mac Options
 	if E.IsMacClient then
@@ -455,7 +366,7 @@ S:AddCallback("Skin_BlizzardOptions", function()
 
 	ChatConfigCombatSettingsFiltersScrollFrame:StripTextures()
 
-	S:HandleScrollBar(ChatConfigCombatSettingsFiltersScrollFrameScrollBar)
+	S:HandleSirusScrollBar(ChatConfigCombatSettingsFiltersScrollFrameScrollBar)
 	ChatConfigCombatSettingsFiltersScrollFrameScrollBarBorder:Kill()
 
 	S:HandleButton(ChatConfigCombatSettingsFiltersDeleteButton)

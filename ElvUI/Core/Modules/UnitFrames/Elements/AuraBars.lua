@@ -17,11 +17,11 @@ local RAID_CLASS_COLORS = RAID_CLASS_COLORS
 local function OnClick(self)
 	local mod = E.db.unitframe.auraBlacklistModifier
 	if mod == "NONE" or not ((mod == "SHIFT" and IsShiftKeyDown()) or (mod == "ALT" and IsAltKeyDown()) or (mod == "CTRL" and IsControlKeyDown())) then return end
-	local auraName = self:GetParent().aura.name
+	local aura = self:GetParent().aura
 
-	if auraName then
-		E:Print(format(L["The spell '%s' has been added to the Blacklist unitframe aura filter."], auraName))
-		E.global.unitframe.aurafilters.Blacklist.spells[auraName] = {enable = true, priority = 0}
+	if aura and aura.name and aura.spellID then
+		E:Print(format(L["The spell '%s' has been added to the Blacklist unitframe aura filter."], aura.name))
+		E.global.unitframe.aurafilters.Blacklist.spells[aura.spellID] = {enable = true, priority = 0}
 		UF:Update_AllFrames()
 	end
 end
@@ -231,6 +231,7 @@ function UF:AuraBarFilter(unit, name, _, _, _, debuffType, duration, _, unitCast
 	local db = self.db.aurabar
 
 	if not name then return nil end
+
 	local filterCheck, isUnit, isFriend, isPlayer, canDispell, allowDuration, noDuration
 
 	if db.priority ~= "" then
@@ -238,7 +239,7 @@ function UF:AuraBarFilter(unit, name, _, _, _, debuffType, duration, _, unitCast
 		isFriend = unit and UnitIsFriend("player", unit) and not UnitCanAttack("player", unit)
 		isPlayer = (unitCaster == "player" or unitCaster == "vehicle")
 		isUnit = unit and unitCaster and UnitIsUnit(unit, unitCaster)
-		canDispell = (self.type == "Buffs" and isStealable) or (self.type == "Debuffs" and debuffType and E:IsDispellableByMe(debuffType))
+		canDispell = (isStealable and true) or (debuffType and E:IsDispellableByMe(debuffType)) or false
 		allowDuration = noDuration or (duration and (duration > 0) and (db.maxDuration == 0 or duration <= db.maxDuration) and (db.minDuration == 0 or duration >= db.minDuration))
 		filterCheck = UF:CheckFilter(name, unitCaster, spellID, isFriend, isPlayer, isUnit, allowDuration, noDuration, canDispell, strsplit(",", db.priority))
 	else

@@ -26,17 +26,24 @@ end
 
 --[[ Parsing ]]--
 
+local lastSearch, lastClean
+
 function Lib:Matches(object, search, filters)
 	if object then
 		self.filters = filters
 		self.object = object
 
-		return self:MatchAll(search or '')
+		search = search or ''
+		if search ~= lastSearch then
+			lastSearch, lastClean = search, self:Clean(search)
+		end
+
+		return self:MatchAll(lastClean)
 	end
 end
 
 function Lib:MatchAll(search)
-	for phrase in self:Clean(search):gmatch('[^&]+') do
+	for phrase in search:gmatch('[^&]+') do
 		if not self:MatchAny(phrase) then
       		return
 		end
@@ -64,7 +71,7 @@ function Lib:Match(search)
 	local failed
 
 	for word in words do
-		if word == self.OR then
+		if self.OR ~= '' and word == self.OR then
 			if failed then
 				failed = false
 			else
@@ -121,9 +128,9 @@ function Lib:Filter(tag, operator, search)
 end
 
 function Lib:UseFilter(filter, operator, search)
-	local data = {filter:canSearch(operator, search, self.object)}
-	if data[1] then
-		return filter:match(self.object, operator, unpack(data))
+	local a, b, c = filter:canSearch(operator, search, self.object)
+	if a then
+		return filter:match(self.object, operator, a, b, c)
 	end
 end
 
@@ -139,12 +146,13 @@ function Lib:Find(search, ...)
 	end
 end
 
-function Lib:Clean(string)
-	string = string:lower()
-	string = string:gsub('[%(%)%.%%%+%-%*%?%[%]%^%$]', function(c) return '%'..c end)
+local ESCAPES = setmetatable({}, {__index = function(t, c) local v = '%'..c t[c] = v return v end})
 
-	for accent, char in pairs(self.ACCENTS) do
-		string = string:gsub(accent, char)
+function Lib:Clean(string)
+	string = string:lower():gsub('[%(%)%.%%%+%-%*%?%[%]%^%$]', ESCAPES)
+
+	if self.ACCENT_PATTERN then
+		string = string:gsub(self.ACCENT_PATTERN, self.ACCENTS)
 	end
 
 	return string
@@ -180,7 +188,7 @@ do
 	local just_or = {enUS = 'Or', frFR = 'Ou', deDE = 'Oder', ruRU = 'Или'}
 	local accents = {
 		a = {'à','â','ã','å'},
-		e = {'è','é','ê','ê','ë'},
+		e = {'è','é','ê','ë'},
 		i = {'ì', 'í', 'î', 'ï'},
 		o = {'ó','ò','ô','õ'},
 		u = {'ù', 'ú', 'û', 'ü'},
@@ -194,10 +202,10 @@ do
 		end
 	end
 
+	Lib.ACCENT_PATTERN = GetLocale() ~= 'ruRU' and '\195[\128-\191]' or nil
+
 	Lib.OR = Lib:Clean(just_or[GetLocale()] or "")
 	Lib.NOT = no[GetLocale()] or NO
 	Lib.NOT_MATCH = Lib:Clean(Lib.NOT)
 	setmetatable(Lib, {__call = Lib.Matches})
 end
-
-return Lib

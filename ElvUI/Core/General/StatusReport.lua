@@ -2,7 +2,7 @@ local E, L, V, P, G = unpack(ElvUI)
 local LSM = E.Libs.LSM
 
 local wipe, sort, unpack = wipe, sort, unpack
-local next, pairs, select, tinsert = next, pairs, select, tinsert
+local next, pairs, tinsert = next, pairs, tinsert
 
 local CreateFrame = CreateFrame
 local GetRealZoneText = GetRealZoneText
@@ -12,6 +12,7 @@ local GetAddOnInfo = GetAddOnInfo
 local GetNumAddOns = GetNumAddOns
 
 local UNKNOWN = UNKNOWN
+local YES, NO = YES, NO
 
 E.Status_Addons = {
 	ElvUI = true,
@@ -47,7 +48,11 @@ function E:AreOtherAddOnsEnabled()
 end
 
 function E:GetDisplayMode()
-	return GetCVarBool('gxMaximize') and 'Fullscreen' or 'Windowed'
+	if not GetCVarBool('gxWindow') then
+		return L["Fullscreen"]
+	end
+
+	return GetCVarBool('gxMaximize') and L["Windowed (Maximized)"] or L["Windowed"]
 end
 
 local function GetSpecName()
@@ -194,16 +199,16 @@ function E:CreateStatusFrame()
 	StatusFrame.Section3.Content = E:CreateStatusContent(7, 260, StatusFrame.Section3, StatusFrame.Section3.Header)
 
 	--Content lines
-	StatusFrame.Section1.Content.Line3.Text:SetFormattedText('Recommended Scale: |cff4beb2c%s|r', E:PixelBestSize())
-	StatusFrame.Section1.Content.Line4.Text:SetFormattedText('UI Scale Is: |cff4beb2c%s|r', E.global.general.UIScale)
+	StatusFrame.Section2.Content.Line1.Text:SetFormattedText('%s: |cff4beb2c%s (build %s)|r', L["Version of WoW"], E.wowpatch, E.wowbuild)
+	StatusFrame.Section2.Content.Line2.Text:SetFormattedText('%s: |cff4beb2c%s|r', L["Client Language"], E.locale)
 
-	StatusFrame.Section2.Content.Line1.Text:SetFormattedText('Version of WoW: |cff4beb2c%s (build %s)|r', E.wowpatch, E.wowbuild)
-	StatusFrame.Section2.Content.Line2.Text:SetFormattedText('Client Language: |cff4beb2c%s|r', E.locale)
+	local factionTag = E:GetModule('DataTexts').GetPlayerFaction()
+	local factionText = (factionTag and _G['FACTION_'..factionTag:upper()]) or E.myLocalizedFaction or E.myfaction
 
-	StatusFrame.Section3.Content.Line1.Text:SetFormattedText('Realm: |cff4beb2c%s|r', E.myrealm)
-	StatusFrame.Section3.Content.Line2.Text:SetFormattedText('Faction: |cff4beb2c%s|r', E.myfaction)
-	StatusFrame.Section3.Content.Line3.Text:SetFormattedText('Race: |cff4beb2c%s|r', E.myrace)
-	StatusFrame.Section3.Content.Line4.Text:SetFormattedText('Class: |cff4beb2c%s|r', E.ClassName[E.myclass])
+	StatusFrame.Section3.Content.Line1.Text:SetFormattedText('%s: |cff4beb2c%s|r', L["Realm"], E.myrealm)
+	StatusFrame.Section3.Content.Line2.Text:SetFormattedText('%s: |cff4beb2c%s|r', L["Faction"], factionText)
+	StatusFrame.Section3.Content.Line3.Text:SetFormattedText('%s: |cff4beb2c%s|r', L["Race"], E.myLocalizedRace or E.myrace)
+	StatusFrame.Section3.Content.Line4.Text:SetFormattedText('%s: |cff4beb2c%s|r', L["Class"], E.myLocalizedClass or E.ClassName[E.myclass])
 
 	return StatusFrame
 end
@@ -222,20 +227,30 @@ function E:UpdateStatusFrame()
 
 	--Section headers
 	local valueColor = E.media.hexvaluecolor
-	StatusFrame.Section1.Header.Text:SetFormattedText('%sAddOn Info|r', valueColor)
-	StatusFrame.Section2.Header.Text:SetFormattedText('%sWoW Info|r', valueColor)
-	StatusFrame.Section3.Header.Text:SetFormattedText('%sCharacter Info|r', valueColor)
+	StatusFrame.Section1.Header.Text:SetFormattedText('%s%s|r', valueColor, L["AddOn Info"])
+	StatusFrame.Section2.Header.Text:SetFormattedText('%s%s|r', valueColor, L["WoW Info"])
+	StatusFrame.Section3.Header.Text:SetFormattedText('%s%s|r', valueColor, L["Character Info"])
 
-	StatusFrame.Section1.Content.Line3.Text:SetFormattedText('Recommended Scale: |cff4beb2c%s|r', E:PixelBestSize())
-	StatusFrame.Section1.Content.Line4.Text:SetFormattedText('UI Scale Is: |cff4beb2c%s|r', E.global.general.UIScale)
+	StatusFrame.Section1.Content.Line3.Text:SetFormattedText('%s: |cff4beb2c%s|r', L["Recommended Scale"], E:PixelBestSize())
+	StatusFrame.Section1.Content.Line4.Text:SetFormattedText('%s: |cff4beb2c%s|r', L["UI Scale Is"], E.global.general.UIScale)
 
 	local PluginSection = PluginFrame.SectionP
-	PluginSection.Header.Text:SetFormattedText('%sPlugins|r', valueColor)
+	PluginSection.Header.Text:SetFormattedText('%s%s|r', valueColor, L["Plugins"])
 
-	StatusFrame.Section1.Content.Line1.Text:SetFormattedText('Version of ElvUI: |cff%s%.2f|r', (E.recievedOutOfDateMessage and 'ff3333') or (E.updateRequestTriggered and 'ff9933') or '33ff33', E.version)
+	StatusFrame.Section1.Content.Line1.Text:SetFormattedText('%s: |cff%s%.2f|r', L["Version of ElvUI"], (E.recievedOutOfDateMessage and 'ff3333') or (E.updateRequestTriggered and 'ff9933') or '33ff33', E.version)
 
 	local addons, bugs, plugins = E:AreOtherAddOnsEnabled()
-	StatusFrame.Section1.Content.Line2.Text:SetFormattedText('Other AddOns Enabled: |cff%s|r', (not addons and not plugins and bugs and '33ff33Debug') or (not addons and plugins and 'ff9933Plugins') or (addons and 'ff3333Yes') or '33ff33No')
+	local addonsColor, addonsText
+	if not addons and not plugins and bugs then
+		addonsColor, addonsText = '33ff33', L["Debug"]
+	elseif not addons and plugins then
+		addonsColor, addonsText = 'ff9933', L["Plugins"]
+	elseif addons then
+		addonsColor, addonsText = 'ff3333', YES
+	else
+		addonsColor, addonsText = '33ff33', NO
+	end
+	StatusFrame.Section1.Content.Line2.Text:SetFormattedText('%s: |cff%s%s|r', L["Other AddOns Enabled"], addonsColor, addonsText)
 
 	if plugins then
 		wipe(pluginData)
@@ -269,14 +284,16 @@ function E:UpdateStatusFrame()
 	end
 
 	local Section2 = StatusFrame.Section2
-	Section2.Content.Line3.Text:SetFormattedText('Display Mode: |cff4beb2c%s|r', E:GetDisplayMode())
-	Section2.Content.Line4.Text:SetFormattedText('Resolution: |cff4beb2c%s|r', E.resolution)
-	Section2.Content.Line5.Text:SetFormattedText('HD Interface Patch: |cff%s|r', not E:IsHDPatch() and '33ff33No' or 'ff3333Yes')
+	Section2.Content.Line3.Text:SetFormattedText('%s: |cff4beb2c%s|r', L["Display Mode"], E:GetDisplayMode())
+	Section2.Content.Line4.Text:SetFormattedText('%s: |cff4beb2c%s|r', L["Resolution"], E.resolution)
+
+	local isHD = E:IsHDPatch()
+	Section2.Content.Line5.Text:SetFormattedText('%s: |cff%s%s|r', L["HD Interface Patch"], isHD and 'ff3333' or '33ff33', isHD and YES or NO)
 
 	local Section3 = StatusFrame.Section3
-	Section3.Content.Line5.Text:SetFormattedText('Level: |cff4beb2c%s|r', E.mylevel)
-	Section3.Content.Line6.Text:SetFormattedText('Zone: |cff4beb2c%s|r', GetRealZoneText() or UNKNOWN)
-	Section3.Content.Line7.Text:SetFormattedText('Specialization: |cff4beb2c%s|r', GetSpecName() or UNKNOWN)
+	Section3.Content.Line5.Text:SetFormattedText('%s: |cff4beb2c%s|r', L["Level"], E.mylevel)
+	Section3.Content.Line6.Text:SetFormattedText('%s: |cff4beb2c%s|r', L["Zone"], GetRealZoneText() or UNKNOWN)
+	Section3.Content.Line7.Text:SetFormattedText('%s: |cff4beb2c%s|r', L["Specialization"], GetSpecName() or UNKNOWN)
 
 	local content = Section3.Content
 	local children = {content:GetChildren()}

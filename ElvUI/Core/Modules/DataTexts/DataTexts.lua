@@ -3,7 +3,6 @@ local DT = E:GetModule('DataTexts')
 local TT = E:GetModule('Tooltip')
 local LDB = E.Libs.LDB
 local LSM = E.Libs.LSM
-local LC = E.Libs.Compat
 
 local _G = _G
 local min, max = min, max
@@ -21,12 +20,13 @@ local GetCurrencyListSize = GetCurrencyListSize
 local GetCurrencyListInfo = GetCurrencyListInfo
 local GetExpansionLevel = GetExpansionLevel
 local GetItemCount = GetItemCount
-local GetItemInfo = GetItemInfo
+local GetCurrencyInfo = C_CurrencyInfo and C_CurrencyInfo.GetCurrencyInfo
 local ExpandCurrencyList = ExpandCurrencyList
-local GetNumTalentTabs = GetNumTalentTabs
-local GetSpecializationInfo = LC.GetSpecializationInfo
 local InCombatLockdown = InCombatLockdown
 local IsInInstance = IsInInstance
+local IsRenegade = _G.C_Unit and _G.C_Unit.IsRenegade
+local GetOriginalFaction = _G.C_FactionManager and _G.C_FactionManager.GetOriginalFaction
+local PLAYER_FACTION_GROUP = _G.PLAYER_FACTION_GROUP
 local MouseIsOver = MouseIsOver
 local RegisterStateDriver = RegisterStateDriver
 local UnregisterStateDriver = UnregisterStateDriver
@@ -42,8 +42,6 @@ local iconString = '|T%s:20:20:0:0:64:64:4:60:4:60|t'
 local honorID, arenaID = 43308, 43307 -- itemid for Honor and Arena points
 local honorTex = [[Interface\TargetingFrame\UI-PVP-]]..E.myfaction
 local arenaTex = [[Interface\PVPFrame\PVP-ArenaPoints-Icon]]
-local honorCur, honorMax = GetHonorCurrency()
-local arenaCur, arenaMax = GetArenaCurrency()
 
 DT.tooltip = CreateFrame('GameTooltip', 'DataTextTooltip', E.UIParent, 'GameTooltipTemplate')
 
@@ -70,8 +68,6 @@ DT.UnitEvents = {
 	UNIT_TARGET = true,
 	UNIT_SPELL_HASTE = true
 }
-
-DT.SPECIALIZATION_CACHE = {}
 
 function DT:QuickDTMode(_, key, active)
 	if DT.SelectedDatatext and (key == 'LALT' or key == 'RALT') then
@@ -421,6 +417,10 @@ function DT:AssignPanelToDataText(dt, data, event, ...)
 						dt.watchModKey = true
 					else
 						pcall(dt.RegisterEvent, dt, ev)
+
+						if dt.RegisterCustomEvent and not dt:IsEventRegistered(ev) then
+							pcall(dt.RegisterCustomEvent, dt, ev)
+						end
 					end
 				end
 			end
@@ -694,7 +694,7 @@ end
 
 do
 	local function MenuSort(a, b)
-		if a.order and b.order and not (a.order == b.order) then
+		if a.order and b.order and a.order ~= b.order then
 			return a.order < b.order
 		end
 
@@ -751,7 +751,7 @@ do
 	end
 end
 
-function DT:PopulateData(currencyOnly)
+function DT:PopulateData()
 	local listSize, i = GetCurrencyListSize(), 1
 
 	local headerIndex
@@ -760,7 +760,7 @@ function DT:PopulateData(currencyOnly)
 
 		if info.isHeader then
 			if not info.isHeaderExpanded then
-				ExpandCurrencyList(i, true)
+				ExpandCurrencyList(i, 1)
 				Collapsed[info.name] = true
 
 				listSize = GetCurrencyListSize()
@@ -771,8 +771,7 @@ function DT:PopulateData(currencyOnly)
 
 			headerIndex = i
 		elseif info.name then
-			local currencyLink = info.itemID and select(2, GetItemInfo(info.itemID))
-			local currencyID = E:GetCurrencyIDFromLink(currencyLink)
+			local currencyID = info.itemID
 			if currencyID then
 				if DT.CurrencyList then
 					DT.CurrencyList[tostring(currencyID)] = info.name
@@ -793,36 +792,25 @@ function DT:PopulateData(currencyOnly)
 		if not info.name then
 			break
 		elseif info.isHeader and info.isHeaderExpanded and Collapsed[info.name] then
-			ExpandCurrencyList(k, false)
+			ExpandCurrencyList(k, 0)
 		end
 	end
 
 	wipe(Collapsed)
-
-	if not currencyOnly then
-		for index = 1, GetNumTalentTabs() do
-			local id, name, _, icon, _, _, statID = GetSpecializationInfo(index)
-
-			if id then
-				DT.SPECIALIZATION_CACHE[index] = { id = id, name = name, icon = icon, statID = statID }
-				DT.SPECIALIZATION_CACHE[id] = { name = name, icon = icon }
-			end
-		end
-	end
 end
 
 function DT:CURRENCY_DISPLAY_UPDATE(_, currencyID)
 	if currencyID and not DT.CurrencyList[tostring(currencyID)] then
 		local _, name = DT:CurrencyInfo(currencyID)
 		if name then
-			DT:PopulateData(true)
+			DT:PopulateData()
 		end
 	end
 end
 
 function DT:GetTokenIDFromItemID(index)
     local listSize = GetCurrencyListSize()
-    for i = 0, listSize do
+    for i = 1, listSize do
         local _, _, _, _, _, _, _, _, id = GetCurrencyListInfo(i)
         if id == index then
             return i
@@ -843,14 +831,18 @@ end
 function DT:CurrencyInfo(id)
 	local info = {}
 
-	info.name, _, _, _, _, _, _, info.maxQuantity, _, info.iconFileID = GetItemInfo(id)
+	local name, quantity, icon, _, _, maxQuantity = GetCurrencyInfo(id)
+	info.name, info.iconFileID = name, icon
 
-	info.quantity = (id == honorID and honorCur) or (id == arenaID and arenaCur) or GetItemCount(id)
-	info.maxQuantity = (id == honorID and honorMax) or (id == arenaID and arenaMax) or info.maxQuantity
+	local honorCur, honorMax = GetHonorCurrency()
+	local arenaCur, arenaMax = GetArenaCurrency()
+
+	info.quantity = (id == honorID and honorCur) or (id == arenaID and arenaCur) or quantity or GetItemCount(id)
+	info.maxQuantity = (id == honorID and honorMax) or (id == arenaID and arenaMax) or ((maxQuantity and maxQuantity > 0) and maxQuantity) or nil
 	info.iconFileID = (id == honorID and honorTex) or (id == arenaID and arenaTex) or info.iconFileID
 
-	iconString = strmatch(info and info.iconFileID or '', E.myfaction) ~= nil and gsub(iconString, '4:60:4:60', '4:38:2:36') or iconString
-	return info, info and info.name, format(iconString, info and info.iconFileID or [[Interface\Icons\Spell_Nature_Bloodlust]])
+	local texString = strmatch(info.iconFileID or '', E.myfaction) ~= nil and gsub(iconString, '4:60:4:60', '4:38:2:36') or iconString
+	return info, info.name, format(texString, info.iconFileID or [[Interface\Icons\Spell_Nature_Bloodlust]])
 end
 
 function DT:BackpackCurrencyInfo(index)
@@ -866,6 +858,16 @@ function DT:PLAYER_ENTERING_WORLD()
 	DT:LoadDataTexts()
 end
 
+function DT.GetPlayerFaction()
+	local factionID = GetOriginalFaction and GetOriginalFaction()
+	local tag = factionID and PLAYER_FACTION_GROUP and PLAYER_FACTION_GROUP[factionID]
+	if tag then
+		return tag
+	end
+
+	return (IsRenegade and IsRenegade('player') and 'Renegade') or E.myfaction
+end
+
 function DT:BuildTables()
 	local db = ElvDB
 	if not db then db = {} ElvDB = db end
@@ -879,7 +881,7 @@ function DT:BuildTables()
 
 	if not db.faction then db.faction = {} end
 	db.faction[E.myrealm] = db.faction[E.myrealm] or {}
-	db.faction[E.myrealm][E.myname] = E.myfaction
+	db.faction[E.myrealm][E.myname] = DT.GetPlayerFaction()
 end
 
 function DT:CloseMenus()
@@ -966,7 +968,7 @@ function DT:RegisterDatatext(name, category, events, onEvent, onUpdate, onClick,
 	if type(events) == 'function' then
 		return E:Print(format('%s is an invalid DataText. Events must be registered as a table or a string.', name))
 	else
-		data.events = type(events) == 'string' and { strsplit('[, ]', events) } or events
+		data.events = type(events) == 'string' and { strsplit(',', gsub(events, '%s', '')) } or events
 		data.eventFunc = onEvent
 		data.objectEvent = objectEvent
 	end

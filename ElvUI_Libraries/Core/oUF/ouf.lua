@@ -791,6 +791,15 @@ function oUF:GetSpellInfo(spellID)
 	return info
 end
 
+-- Called by tags.lua to filter irrelevant UNIT_AURA events (Retail provides per-aura args).
+-- On 3.3.5a UNIT_AURA only passes the unit, so we can't filter and always allow the update.
+function oUF:ShouldSkipAuraUpdate(frame, event, unit, updateInfo, verifyAura)
+	local auraInstanceID = updateInfo
+	if type(auraInstanceID) ~= 'number' then return false end
+
+	return not verifyAura(frame, event, unit, auraInstanceID, updateInfo)
+end
+
 oUF.version = _VERSION
 --[[ oUF.objects
 Array containing all unit frames created by `oUF:Spawn`.

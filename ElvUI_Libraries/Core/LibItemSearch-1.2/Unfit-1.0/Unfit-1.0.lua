@@ -33,63 +33,66 @@ do
 	if Class == 'DEATHKNIGHT' then
 		Unusable = {
 			{3, 4, 10, 11, 13, 14, 15, 16},
-			{7}
+			{7, 8, 9, 10}
 		}
 	elseif Class == 'DRUID' then
 		Unusable = {
 			{1, 2, 3, 4, 8, 9, 14, 15, 16},
-			{4, 5, 7},
+			{4, 5, 7, 8, 10, 11},
 			true
 		}
 	elseif Class == 'HUNTER' then
 		Unusable = {
 			{5, 6, 16},
-			{5, 6}
+			{5, 7, 8, 9, 10, 11}
 		}
 	elseif Class == 'MAGE' then
 		Unusable = {
 			{1, 2, 3, 4, 5, 6, 7, 9, 11, 14, 15},
-			{3, 4, 5, 7},
+			{3, 4, 5, 7, 8, 9, 10, 11},
 			true
 		}
 	elseif Class == 'PALADIN' then
 		Unusable = {
 			{3, 4, 10, 11, 13, 14, 15, 16},
-			{},
+			{9, 10, 11},
 			true
 		}
 	elseif Class == 'PRIEST' then
 		Unusable = {
 			{1, 2, 3, 4, 6, 7, 8, 9, 11, 14, 15},
-			{3, 4, 5, 7},
+			{3, 4, 5, 7, 8, 9, 10, 11},
 			true
 		}
 	elseif Class == 'ROGUE' then
 		Unusable = {
 			{2, 6, 7, 9, 10, 16},
-			{4, 5, 6}
+			{4, 5, 7, 8, 9, 10, 11}
 		}
 	elseif Class == 'SHAMAN' then
 		Unusable = {
 			{3, 4, 7, 8, 9, 14, 15, 16},
-			{5}
+			{5, 8, 9, 11}
 		}
 	elseif Class == 'WARLOCK' then
 		Unusable = {
 			{1, 2, 3, 4, 5, 6, 7, 9, 11, 14, 15},
-			{3, 4, 5, 7},
+			{3, 4, 5, 7, 8, 9, 10, 11},
 			true
 		}
 	elseif Class == 'WARRIOR' then
-		Unusable = {{16}, {}}
+		Unusable = {{16}, {8, 9, 10, 11}}
 	else
 		Unusable = {{}, {}}
 	end
 
 	for class = 1, 2 do
 		local subs = {GetAuctionItemSubClasses(class)}
-		for i, subclass in ipairs(Unusable[class]) do
-			Unusable[subs[subclass]] = true
+		for _, subclass in ipairs(Unusable[class]) do
+			local name = subs[subclass]
+			if name then
+				Unusable[name] = true
+			end
 		end
 
 		Unusable[class] = nil

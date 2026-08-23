@@ -95,7 +95,7 @@ S:AddCallbackForAddon("Blizzard_GMSurveyUI", "Skin_Blizzard_GMSurveyUI", functio
 	S:HandleCloseButton(GMSurveyCloseButton, GMSurveyFrame.backdrop)
 
 	GMSurveyScrollFrame:StripTextures()
-	S:HandleScrollBar(GMSurveyScrollFrameScrollBar)
+	S:HandleSirusScrollBar(GMSurveyScrollFrameScrollBar)
 
 	S:HandleButton(GMSurveyCancelButton)
 	S:HandleButton(GMSurveySubmitButton)

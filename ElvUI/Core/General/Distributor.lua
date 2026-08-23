@@ -1,17 +1,16 @@
 local E, L, V, P, G = unpack(ElvUI)
 local D = E:GetModule('Distributor')
 local NP = E:GetModule('NamePlates')
-local LC = E.Libs.Compat
 local LibDeflate = E.Libs.Deflate
 
 local _G = _G
-local tonumber, type, gsub, pairs, pcall, loadstring = tonumber, type, gsub, pairs, pcall, loadstring
-local strlen, format, split, strmatch, strfind = strlen, format, strsplit, strmatch, strfind
+local tonumber, type, gsub, pairs, pcall, loadstring, unpack = tonumber, type, gsub, pairs, pcall, loadstring, unpack
+local strlen, format, split, strmatch, strsplittable = strlen, format, strsplit, strmatch, strsplittable
 
 local ReloadUI = ReloadUI
 local CreateFrame = CreateFrame
-local IsInRaid, UnitInRaid = LC.IsInRaid, UnitInRaid
-local IsInGroup, UnitInParty = LC.IsInGroup, UnitInParty
+local IsInRaid, UnitInRaid = IsInRaid, UnitInRaid
+local IsInGroup, UnitInParty = IsInGroup, UnitInParty
 local ACCEPT, CANCEL, YES, NO = ACCEPT, CANCEL, YES, NO
 -- GLOBALS: ElvDB, ElvPrivateDB
 
@@ -42,9 +41,6 @@ D.blacklistedKeys = {
 			cropIcon = true,
 			numberPrefixStyle = true
 		},
-		chat = {
-			hideVoiceButtons = true
-		},
 		bags = {
 			shownBags = true
 		}
@@ -59,7 +55,6 @@ D.blacklistedKeys = {
 			version = true,
 			eyefinity = true,
 			ultrawide = true,
-			disableTutorialButtons = true,
 			allowDistributor = true
 		},
 		chat = {
@@ -78,7 +73,7 @@ D.blacklistedKeys = {
 		},
 		unitframe = {
 			aurafilters = true,
-			aurawatch = true,
+			buffwatch = true,
 			newCustomText = true,
 		}
 	},
@@ -117,7 +112,7 @@ D.GeneratedKeys = {
 		unitframe = {
 			AuraBarColors = true,
 			aurafilters = true,
-			aurawatch = true
+			buffwatch = true
 		},
 		nameplates = {
 			filters = true
@@ -201,7 +196,7 @@ function D:Distribute(target, otherServer, dataKey)
 	if otherServer then
 		if IsInRaid() and UnitInRaid('target') then
 			D:SendCommMessage(REQUEST_PREFIX, message, 'RAID')
-		elseif IsInGroup() > 0 and UnitInParty('target') then
+		elseif IsInGroup() and UnitInParty('target') then
 			D:SendCommMessage(REQUEST_PREFIX, message, 'PARTY')
 		else
 			E:Print(L["Must be in group with the player if he isn't on the same server as you."])
@@ -436,7 +431,7 @@ function D:GetProfileData(dataType, dataKey)
 	elseif dataType == 'filters' then
 		profileData.unitframe = {}
 		profileData.unitframe.aurafilters = E:CopyTable({}, ElvDB.global.unitframe.aurafilters)
-		profileData.unitframe.aurawatch = E:CopyTable({}, ElvDB.global.unitframe.aurawatch)
+		profileData.unitframe.buffwatch = E:CopyTable({}, ElvDB.global.unitframe.buffwatch)
 		profileData = E:RemoveTableDuplicates(profileData, G, D.GeneratedKeys.global)
 		profileKey = 'filters'
 	elseif dataType == 'styleFilters' then
@@ -494,7 +489,7 @@ function D:Decode(dataString)
 		end
 
 		local serializedData, success
-		serializedData, profileInfo = E:SplitString(decompressed, '^^::') -- '^^' indicates the end of the AceSerializer string
+		serializedData, profileInfo = unpack(strsplittable('^^::', decompressed)) -- '^^' indicates the end of the AceSerializer string
 
 		if not profileInfo then
 			E:Print('Error importing profile. String is invalid or corrupted!')
@@ -502,7 +497,7 @@ function D:Decode(dataString)
 		end
 
 		serializedData = format('%s%s', serializedData, '^^') --Add back the AceSerializer terminator
-		profileType, profileKey = E:SplitString(profileInfo, '::')
+		profileType, profileKey = unpack(strsplittable('::', profileInfo))
 		success, profileData = D:Deserialize(serializedData)
 
 		if not success then
@@ -511,7 +506,7 @@ function D:Decode(dataString)
 		end
 	elseif stringType == 'Table' then
 		local profileDataAsString
-		profileDataAsString, profileInfo = E:SplitString(dataString, '}::') -- '}::' indicates the end of the table
+		profileDataAsString, profileInfo = unpack(strsplittable('}::', dataString)) -- '}::' indicates the end of the table
 
 		if not profileInfo then
 			E:Print('Error extracting profile info. Invalid import string!')
@@ -525,14 +520,14 @@ function D:Decode(dataString)
 
 		profileDataAsString = format('%s%s', profileDataAsString, '}') --Add back the missing '}'
 		profileDataAsString = gsub(profileDataAsString, '\124\124', '\124') --Remove escape pipe characters
-		profileType, profileKey = E:SplitString(profileInfo, '::')
+		profileType, profileKey = unpack(strsplittable('::', profileInfo))
 
 		local profileMessage
 		local profileToTable = loadstring(format('%s %s', 'return', profileDataAsString))
 		if profileToTable then profileMessage, profileData = pcall(profileToTable) end
 
-		if profileMessage and (not profileData or type(profileData) ~= 'table') then
-			E:Print('Error converting lua string to table:', profileMessage)
+		if not profileMessage or type(profileData) ~= 'table' then
+			E:Print('Error converting lua string to table:', profileData)
 			return
 		end
 	end

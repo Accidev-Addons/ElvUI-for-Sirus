@@ -156,13 +156,21 @@ function AceLocale:GetLocale(application, locale, silent)
 		locale = gameLocale
 	end
 
-	if not silent and not AceLocale.apps[application] then
+	local app = AceLocale.apps[application]
+
+	if not app then
+		if silent then return end
+
 		error("Usage: GetLocale(application[,locale[, silent]]): 'application' - No locales registered for '"..tostring(application).."'", 2)
 	end
 
-	if locale ~= AceLocale.apps[application].defaultLocale then
-		BackfillTable(AceLocale.apps[application][locale], AceLocale.apps[application][AceLocale.apps[application].defaultLocale])
+	if type(rawget(app, locale)) ~= 'table' then
+		locale = app.defaultLocale
 	end
 
-	return AceLocale.apps[application][locale] or AceLocale.apps[application][gameLocale] -- Just in case the table doesn't exist it reverts to default
+	if locale ~= rawget(app, 'defaultLocale') then
+		BackfillTable(app[locale], app[app.defaultLocale])
+	end
+
+	return app[locale]
 end

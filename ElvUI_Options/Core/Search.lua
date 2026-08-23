@@ -29,7 +29,6 @@ local blockOption = {
 	plugins = true,
 	search = true,
 	tagGroup = true,
-	modulecontrol = true,
 	profiles = true
 }
 
@@ -171,7 +170,7 @@ function C:Search_Config(tbl, loc, locName, whatsNew)
 
 	for option, infoTable in pairs(tbl or E.Options.args) do
 		if not blockOption[option] and (whatsNew or not (typeInvalid[infoTable.type] or C:Search_IsHidden(infoTable))) then
-			local location, locationName = loc and (infoTable.type == 'group' and not infoTable.inline and strjoin(',', loc, option) or loc) or option
+			local location, locationName = loc and (infoTable.type == 'group' and not (infoTable.inline or infoTable.guiInline or infoTable.dialogInline) and strjoin(',', loc, option) or loc) or option
 			local name = C:Search_GetReturn(infoTable.name, option)
 			if type(name) == 'string' then -- bad apples
 				locationName = locName and (strmatch(name, '%S+') and strjoin(sep, locName, name) or locName) or name

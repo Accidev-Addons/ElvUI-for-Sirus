@@ -11,7 +11,7 @@ You should have received a copy of the GNU Lesser General Public License along w
 --]]
 
 local MAJOR_VERSION = "LibTranslit-1.0"
-local MINOR_VERSION = 4
+local MINOR_VERSION = 10004
 
 if not LibStub then
 	error(MAJOR_VERSION .. " requires LibStub.")
@@ -35,7 +35,7 @@ local cyrToLat = {
 	["д"] = "d",
 	["Е"] = "E",
 	["е"] = "e",
-	["Ё"] = "e",
+	["Ё"] = "E",
 	["ё"] = "e",
 	["Ж"] = "Zh",
 	["ж"] = "zh",
@@ -101,8 +101,9 @@ function lib:Transliterate(str, mark)
 	local tword = ""
 	local mark_word = false
 	local i = 1
+	local len = #str
 
-	while i <= string.len(str) do
+	while i <= len do
 		local c = str:sub(i, i)
 		local b = string.byte(c)
 

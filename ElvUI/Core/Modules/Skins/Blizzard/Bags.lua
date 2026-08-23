@@ -4,6 +4,7 @@ local B = E:GetModule("Bags")
 
 --Lua functions
 local _G = _G
+local ipairs = ipairs
 local select = select
 local unpack = unpack
 --WoW API / Variables
@@ -16,17 +17,149 @@ local GetItemInfo = GetItemInfo
 local GetInventoryItemID = GetInventoryItemID
 
 local BANK_CONTAINER = BANK_CONTAINER
+local REAGENTBANK_CONTAINER = REAGENTBANK_CONTAINER
+
+local function SetItemBorder(button, r, g, b)
+	if r then
+		button:SetBackdropBorderColor(r, g, b)
+		button.ignoreBorderColors = true
+	else
+		button:SetBackdropBorderColor(unpack(E.media.bordercolor))
+		button.ignoreBorderColors = nil
+	end
+end
+
+local function QualityColor(quality)
+	if quality and quality > 1 then
+		return E:GetItemQualityColor(quality)
+	end
+end
+
+local function UpdateSlotBorder(button, bagID, slotID, questTexture)
+	if questTexture then
+		questTexture:Hide()
+	end
+
+	local link = GetContainerItemLink(bagID, slotID)
+	if not link then
+		return SetItemBorder(button)
+	end
+
+	local isQuestItem, questId, isActive = GetContainerItemQuestInfo(bagID, slotID)
+
+	if questId and not isActive then
+		if questTexture then
+			questTexture:Show()
+		end
+
+		return SetItemBorder(button, unpack(B.QuestColors.questStarter))
+	elseif questId or isQuestItem then
+		return SetItemBorder(button, unpack(B.QuestColors.questItem))
+	end
+
+	return SetItemBorder(button, QualityColor(select(3, GetItemInfo(link))))
+end
+
+local function SkinItemButton(button)
+	if button.elvSkinned then return end
+
+	button:SetNormalTexture(nil)
+	button:SetTemplate("Default", true)
+	button:StyleButton()
+	button.emptyBackgroundAtlas = nil
+	button.emptyBackgroundTexture = nil
+
+	button.icon:SetInside()
+	button.icon:SetTexCoords()
+
+	if button.IconBorder then
+		button.IconBorder:SetAlpha(0)
+	end
+
+	button.IconQuestTexture:SetTexture(E.Media.Textures.BagQuestIcon)
+	button.IconQuestTexture.SetTexture = E.noop
+	button.IconQuestTexture:SetTexCoord(0, 1, 0, 1)
+	button.IconQuestTexture:SetInside()
+
+	button.Cooldown.CooldownOverride = "bags"
+	E:RegisterCooldown(button.Cooldown)
+
+	button.elvSkinned = true
+end
+
+S:AddCallback("Skin_ItemExpiration", function()
+	if not E.private.skins.blizzard.enable or not E.private.skins.blizzard.bags then return end
+
+	local frame = _G.ContainerItemExpirationFrame
+	if not frame then return end
+
+	frame:StripTextures()
+	frame:SetTemplate("Transparent")
+
+	frame.Title:ClearAllPoints()
+	frame.Title:Point("TOPLEFT", 8, -9)
+	frame.Title:SetJustifyH("LEFT")
+
+	frame.TextBackground:SetTexture(E.media.blankTex)
+	frame.TextBackground:SetVertexColor(0, 0, 0, 0.25)
+
+	S:HandleCloseButton(_G.ContainerItemExpirationFrameCloseButton)
+
+	hooksecurefunc(frame, "UpdateItems", function(self)
+		for _, button in ipairs(self.buttons) do
+			SkinItemButton(button)
+
+			if button.IconBorder:IsShown() then
+				SetItemBorder(button, button.IconBorder:GetVertexColor())
+			else
+				SetItemBorder(button)
+			end
+		end
+	end)
+end)
 
 S:AddCallback("Skin_Bags", function()
 	if E.private.bags.enable then return end
 	if not E.private.skins.blizzard.enable or not E.private.skins.blizzard.bags then return end
 
-	-- ContainerFrame
+	local function UpdateBorderColors(frame)
+		if not frame.Items then return end
+
+		for _, button in ipairs(frame.Items) do
+			if button.elvSkinned then
+				local bagID = button:GetBagID()
+				local _, bagType = GetContainerNumFreeSlots(bagID)
+
+				if B.ProfessionColors[bagType] then
+					button.IconQuestTexture:Hide()
+					SetItemBorder(button, unpack(B.ProfessionColors[bagType]))
+				else
+					UpdateSlotBorder(button, bagID, button:GetID(), button.IconQuestTexture)
+				end
+			end
+		end
+	end
+
+	local function SkinFrameItems(frame)
+		if not frame.Items then return end
+
+		for _, button in ipairs(frame.Items) do
+			SkinItemButton(button)
+			button.emptyBackgroundAtlas = nil
+			button.emptyBackgroundTexture = nil
+		end
+	end
+
 	for i = 1, NUM_CONTAINER_FRAMES do
 		local frame = _G["ContainerFrame"..i]
 		local closeButton = _G["ContainerFrame"..i.."CloseButton"]
 
 		frame:StripTextures(true)
+
+		if frame.Bg then
+			frame.Bg:StripTextures(true)
+		end
+
 		frame:CreateBackdrop("Transparent")
 		frame.backdrop:Point("TOPLEFT", 9, -4)
 		frame.backdrop:Point("BOTTOMRIGHT", -4, 1)
@@ -38,27 +171,14 @@ S:AddCallback("Skin_Bags", function()
 
 		S:HandleCloseButton(closeButton, frame.backdrop)
 
-		for j = 1, MAX_CONTAINER_ITEMS do
-			local item = _G["ContainerFrame"..i.."Item"..j]
-			local icon = _G["ContainerFrame"..i.."Item"..j.."IconTexture"]
-			local questIcon = _G["ContainerFrame"..i.."Item"..j.."IconQuestTexture"]
-			local cooldown = _G["ContainerFrame"..i.."Item"..j.."Cooldown"]
-
-			item:SetNormalTexture(nil)
-			item:SetTemplate("Default", true)
-			item:StyleButton()
-
-			icon:SetInside()
-			icon:SetTexCoords()
-
-			questIcon:SetTexture(E.Media.Textures.BagQuestIcon)
-			questIcon.SetTexture = E.noop
-			questIcon:SetTexCoord(0, 1, 0, 1)
-			questIcon:SetInside()
-
-			cooldown.CooldownOverride = "bags"
-			E:RegisterCooldown(cooldown)
+		if frame.UpdateItemSlots then
+			hooksecurefunc(frame, "UpdateItemSlots", SkinFrameItems)
 		end
+		if frame.UpdateItems then
+			hooksecurefunc(frame, "UpdateItems", UpdateBorderColors)
+		end
+
+		SkinFrameItems(frame)
 	end
 
 	BackpackTokenFrame:StripTextures()
@@ -70,7 +190,6 @@ S:AddCallback("Skin_Bags", function()
 		token.backdrop:SetOutside(token.icon)
 
 		token.icon:SetTexCoords()
-		token.icon:Point("LEFT", token.count, "RIGHT", 2, 0)
 		token.icon:Size(16)
 	end
 
@@ -113,52 +232,50 @@ S:AddCallback("Skin_Bags", function()
 		end
 	end)
 
-	hooksecurefunc("ContainerFrame_Update", function(frame)
-		local frameName = frame:GetName()
-		local id = frame:GetID()
-		local _, bagType = GetContainerNumFreeSlots(id)
-		local item, questIcon, link
-
-		for i = 1, frame.size do
-			item = _G[frameName.."Item"..i]
-			questIcon = _G[frameName.."Item"..i.."IconQuestTexture"]
-			link = GetContainerItemLink(id, item:GetID())
-
-			questIcon:Hide()
-
-			if B.ProfessionColors[bagType] then
-				item:SetBackdropBorderColor(unpack(B.ProfessionColors[bagType]))
-				item.ignoreBorderColors = true
-			elseif link then
-				local isQuestItem, questId, isActive = GetContainerItemQuestInfo(id, item:GetID())
-				local _, _, quality = GetItemInfo(link)
-
-				if questId and not isActive then
-					item:SetBackdropBorderColor(unpack(B.QuestColors.questStarter))
-					item.ignoreBorderColors = true
-					questIcon:Show()
-				elseif questId or isQuestItem then
-					item:SetBackdropBorderColor(unpack(B.QuestColors.questItem))
-					item.ignoreBorderColors = true
-				elseif quality and quality > 1 then
-					item:SetBackdropBorderColor(E:GetItemQualityColor(quality))
-					item.ignoreBorderColors = true
-				else
-					item:SetBackdropBorderColor(unpack(E.media.bordercolor))
-					item.ignoreBorderColors = nil
-				end
-			else
-				item:SetBackdropBorderColor(unpack(E.media.bordercolor))
-				item.ignoreBorderColors = nil
-			end
-		end
-	end)
-
 	-- BankFrame
 	BankFrame:StripTextures(true)
 	BankFrame:CreateBackdrop("Transparent")
+
+	local bankSlotsFrame = _G.BankSlotsFrame
+	if bankSlotsFrame then
+		bankSlotsFrame:StripTextures(true)
+
+		for _, region in next, { bankSlotsFrame:GetRegions() } do
+			if region.SetText then
+				local text = region:GetText()
+				if text == ITEMSLOTTEXT or text == BAGSLOTTEXT then
+					region:SetText("")
+				end
+			end
+		end
+	end
 	BankFrame.backdrop:Point("TOPLEFT", 11, -12)
-	BankFrame.backdrop:Point("BOTTOMRIGHT", -26, 76)
+	BankFrame.backdrop:Point("BOTTOMRIGHT", -26, 2)
+
+	local moneyInset = _G.BankFrameMoneyFrameInset
+	if moneyInset then
+		moneyInset:StripTextures(true)
+	end
+
+	local moneyBorder = _G.BankFrameMoneyFrameBorder
+	if moneyBorder then
+		moneyBorder:StripTextures(true)
+	end
+
+	local moneyFrame = _G.BankFrameMoneyFrame
+	if moneyFrame then
+		if moneyFrame.backdrop then
+			moneyFrame.backdrop:Hide()
+		end
+		moneyFrame:ClearAllPoints()
+		moneyFrame:Point("BOTTOMRIGHT", BankFrame, "BOTTOMRIGHT", -30, 20)
+	end
+
+	local titleText = BankFrame.TitleText
+	if titleText then
+		titleText:ClearAllPoints()
+		titleText:Point("TOP", BankFrame.backdrop, "TOP", 0, -8)
+	end
 
 	S:HookScript(BankFrame, "OnShow", function(self)
 		S:SetUIPanelWindowInfo(self, "width")
@@ -166,30 +283,43 @@ S:AddCallback("Skin_Bags", function()
 		S:Unhook(self, "OnShow")
 	end)
 
-	S:HandleCloseButton(BankCloseButton, BankFrame.backdrop)
+	S:HandleCloseButton(BankFrame.CloseButton, BankFrame.backdrop)
 
-	BankFrameItem1:Point("TOPLEFT", 39, -73)
+	BankFrameItem1:ClearAllPoints()
+	BankFrameItem1:Point("TOPLEFT", _G.BankSlotsFrame or BankFrame, "TOPLEFT", 28, -73)
+
+	for i = 2, NUM_BANKGENERIC_SLOTS do
+		local button = _G["BankFrameItem"..i]
+		if button then
+			button:ClearAllPoints()
+
+			if (i - 1) % 7 == 0 then
+				button:Point("TOPLEFT", _G["BankFrameItem"..(i - 7)], "BOTTOMLEFT", 0, -7)
+			else
+				button:Point("TOPLEFT", _G["BankFrameItem"..(i - 1)], "TOPRIGHT", 12, 0)
+			end
+		end
+	end
+
+	BankFrameBag1:ClearAllPoints()
+	BankFrameBag1:Point("TOPLEFT", BankFrameItem1, "BOTTOMLEFT", 0, -164)
+
+	for i = 2, NUM_BANKBAGSLOTS do
+		local button = _G["BankFrameBag"..i]
+		if button then
+			button:ClearAllPoints()
+			button:Point("TOPLEFT", _G["BankFrameBag"..(i - 1)], "TOPRIGHT", 12, 0)
+		end
+	end
 
 	for i = 1, NUM_BANKGENERIC_SLOTS do
 		local button = _G["BankFrameItem"..i]
-		local icon = _G["BankFrameItem"..i.."IconTexture"]
-		local quest = _G["BankFrameItem"..i.."IconQuestTexture"]
-		local cooldown = _G["BankFrameItem"..i.."Cooldown"]
 
-		button:SetNormalTexture(nil)
-		button:SetTemplate("Default", true)
-		button:StyleButton()
+		if button.Background then
+			button.Background:SetTexture(nil)
+		end
 
-		icon:SetInside()
-		icon:SetTexCoords()
-
-		quest:SetTexture(E.Media.Textures.BagQuestIcon)
-		quest.SetTexture = E.noop
-		quest:SetTexCoord(0, 1, 0, 1)
-		quest:SetInside()
-
-		cooldown.CooldownOverride = "bags"
-		E:RegisterCooldown(cooldown)
+		SkinItemButton(button)
 	end
 
 	BankFrame.itemBackdrop = CreateFrame("Frame", "BankFrameItemBackdrop", BankFrame)
@@ -221,62 +351,173 @@ S:AddCallback("Skin_Bags", function()
 	S:HandleButton(BankFramePurchaseButton)
 	BankFramePurchaseButton:Point("RIGHT", -4, -10)
 
+	for i = 1, 2 do
+		local tab = _G["BankFrameTab"..i]
+		if tab then
+			S:HandleSirusTab(tab, i > 1 and _G["BankFrameTab"..(i - 1)])
+		end
+	end
+
 	hooksecurefunc("BankFrameItemButton_Update", function(button)
 		local id = button:GetID()
+
+		button:SetNormalTexture(nil)
+
+		if button.Background then
+			button.Background:SetTexture(nil)
+		end
 
 		if button.isBag then
 			local link = GetInventoryItemLink("player", ContainerIDToInventoryID(id))
 
-			if link then
-				local quality = select(3, GetItemInfo(link))
-
-				if quality and quality > 1 then
-					button:SetBackdropBorderColor(E:GetItemQualityColor(quality))
-					button.ignoreBorderColors = true
-				else
-					button:SetBackdropBorderColor(unpack(E.media.bordercolor))
-					button.ignoreBorderColors = nil
-				end
-			else
-				button:SetBackdropBorderColor(unpack(E.media.bordercolor))
-				button.ignoreBorderColors = nil
-			end
+			SetItemBorder(button, QualityColor(link and select(3, GetItemInfo(link))))
 		else
-			local link = GetContainerItemLink(BANK_CONTAINER, id)
-			local questTexture = _G[button:GetName().."IconQuestTexture"]
-
-			if questTexture then
-				questTexture:Hide()
-			end
-
-			if link then
-				local isQuestItem, questId, isActive = GetContainerItemQuestInfo(BANK_CONTAINER, id)
-
-				if questId and not isActive then
-					button:SetBackdropBorderColor(unpack(B.QuestColors.questStarter))
-					button.ignoreBorderColors = true
-
-					if questTexture then
-						questTexture:Show()
-					end
-				elseif questId or isQuestItem then
-					button:SetBackdropBorderColor(unpack(B.QuestColors.questItem))
-					button.ignoreBorderColors = true
-				else
-					local quality = select(3, GetItemInfo(link))
-
-					if quality and quality > 1 then
-						button:SetBackdropBorderColor(E:GetItemQualityColor(quality))
-						button.ignoreBorderColors = true
-					else
-						button:SetBackdropBorderColor(unpack(E.media.bordercolor))
-						button.ignoreBorderColors = nil
-					end
-				end
-			else
-				button:SetBackdropBorderColor(unpack(E.media.bordercolor))
-				button.ignoreBorderColors = nil
-			end
+			UpdateSlotBorder(button, button:GetBagID() or BANK_CONTAINER, id, _G[button:GetName().."IconQuestTexture"])
 		end
 	end)
+
+	local reagentBankFrame = _G.ReagentBankFrame
+	if reagentBankFrame then
+		reagentBankFrame:StripTextures(true)
+
+		local function SkinReagentBankSlot(button)
+			if button.elvSkinned then return end
+
+			if button.Background then
+				button.Background:SetTexture(nil)
+			end
+
+			button:SetNormalTexture(nil)
+			button:SetTemplate("Transparent")
+			button:StyleButton()
+			button.emptyBackgroundAtlas = nil
+			button.emptyBackgroundTexture = nil
+
+			button.icon:SetInside()
+			button.icon:SetTexCoords()
+
+			if button.IconBorder then
+				button.IconBorder:SetAlpha(0)
+			end
+
+			button.IconQuestTexture:SetTexture(E.Media.Textures.BagQuestIcon)
+			button.IconQuestTexture.SetTexture = E.noop
+			button.IconQuestTexture:SetTexCoord(0, 1, 0, 1)
+			button.IconQuestTexture:SetInside()
+
+			button.Cooldown.CooldownOverride = "bags"
+			E:RegisterCooldown(button.Cooldown)
+
+			if not button.reagentTooltipFixed then
+				local function ReagentTooltip_OnEnter(self)
+					local link = GetContainerItemLink(REAGENTBANK_CONTAINER, self:GetID())
+					if link then
+						GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+						GameTooltip:SetHyperlink(link)
+						GameTooltip:Show()
+					else
+						GameTooltip:Hide()
+					end
+					ResetCursor()
+				end
+				button:SetScript("OnEnter", ReagentTooltip_OnEnter)
+				button.UpdateTooltip = ReagentTooltip_OnEnter
+				button.reagentTooltipFixed = true
+			end
+
+			button.elvSkinned = true
+		end
+
+		local function SkinReagentBank()
+			if BankFrame.backdrop then
+				BankFrame.backdrop:Hide()
+			end
+
+			if not reagentBankFrame.backdrop then
+				reagentBankFrame:CreateBackdrop("Transparent")
+				reagentBankFrame.backdrop:Point("TOPLEFT", 11, -12)
+				reagentBankFrame.backdrop:Point("BOTTOMRIGHT", -26, 2)
+			end
+			reagentBankFrame.backdrop:Show()
+
+			if reagentBankFrame.itemBackdrop then
+				reagentBankFrame.itemBackdrop:Hide()
+			end
+
+			if BankFrame.itemBackdrop then
+				BankFrame.itemBackdrop:Hide()
+			end
+			if BankFrame.bagBackdrop then
+				BankFrame.bagBackdrop:Hide()
+			end
+
+			reagentBankFrame:StripTextures(true)
+			for column = 1, 7 do
+				local bg = reagentBankFrame["BG"..column]
+				if bg then bg:SetTexture(nil) end
+			end
+
+			for i = 1, 98 do
+				local button = _G["ReagentBankFrameItem"..i]
+				if button then
+					SkinReagentBankSlot(button)
+				end
+			end
+		end
+
+		reagentBankFrame:HookScript("OnShow", SkinReagentBank)
+		SkinReagentBank()
+
+		if reagentBankFrame.DespositButton then
+			S:HandleButton(reagentBankFrame.DespositButton)
+			reagentBankFrame.DespositButton:Point("BOTTOM", reagentBankFrame, "BOTTOM", 0, 24)
+		end
+
+		local sortButton = _G.BankItemAutoSortButton
+		if sortButton then
+			sortButton:ClearAllPoints()
+			sortButton:Point("TOPRIGHT", BankFrame, "TOPRIGHT", -26, -30)
+		end
+
+		local unlockInfo = reagentBankFrame.UnlockInfo
+		if unlockInfo then
+			if unlockInfo.PurchaseButton then
+				S:HandleButton(unlockInfo.PurchaseButton)
+			end
+
+			unlockInfo:StripTextures()
+			unlockInfo:SetTemplate("Transparent")
+		end
+
+		if bankSlotsFrame then
+			bankSlotsFrame:HookScript("OnShow", function()
+				if BankFrame.backdrop then
+					BankFrame.backdrop:Show()
+				end
+				if reagentBankFrame.backdrop then
+					reagentBankFrame.backdrop:Hide()
+				end
+				if BankFrame.itemBackdrop then
+					BankFrame.itemBackdrop:Show()
+				end
+				if BankFrame.bagBackdrop then
+					BankFrame.bagBackdrop:Show()
+				end
+			end)
+		end
+
+		local BANK_WINDOW_WIDTH = 400
+		local REAGENT_WINDOW_WIDTH = 755
+
+		if BankFrame_ShowPanel then
+			hooksecurefunc("BankFrame_ShowPanel", function(sidePanelName)
+				if sidePanelName == "ReagentBankFrame" then
+					BankFrame:SetWidth(REAGENT_WINDOW_WIDTH)
+				elseif sidePanelName == "BankSlotsFrame" then
+					BankFrame:SetWidth(BANK_WINDOW_WIDTH)
+				end
+			end)
+		end
+
+	end
 end)

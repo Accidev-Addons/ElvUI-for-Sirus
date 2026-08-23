@@ -12,14 +12,22 @@ local Updater = CreateFrame("StatusBar", nil, nil)
 local Texture = Updater:CreateTexture()
 local FontString = Updater:CreateFontString()
 local Initialize, Update, Easing = {}, {}, {}
-local Callbacks = {onplay = {}, onpause = {}, onresume = {}, onstop = {}, onreset = {}, onfinished = {}}
+local WeakKeys = {__mode = 'k'}
+local Callbacks = {
+	onplay = setmetatable({}, WeakKeys),
+	onpause = setmetatable({}, WeakKeys),
+	onresume = setmetatable({}, WeakKeys),
+	onstop = setmetatable({}, WeakKeys),
+	onreset = setmetatable({}, WeakKeys),
+	onfinished = setmetatable({}, WeakKeys)
+}
 local pi, cos, sin, sqrt, floor = math.pi, math.cos, math.sin, math.sqrt, math.floor
 local type, pairs, ipairs, tonumber = type, pairs, ipairs, tonumber
 local tinsert, tremove, strlower = tinsert, tremove, strlower
 
 -- Update all current animations
 local AnimationOnUpdate = function(self, elapsed)
-	for i = 1, #self do
+	for i = #self, 1, -1 do
 		if self[i] then -- Double check that the index still exists, due to pauses/stops removing them on the fly
 			self[i]:Update(elapsed, i)
 		end
@@ -469,7 +477,8 @@ local AnimMethods = {
 		end,
 
 		SetOrder = function(self, order)
-			self.Order = order or 1
+			order = order or 1
+			self.Order = order
 
 			if order > self.Group.MaxOrder then
 				self.Group.MaxOrder = order
@@ -1158,7 +1167,7 @@ Initialize.number = function(self)
 	end
 
 	self.EndNumber = self.EndNumberSetting or 0
-	self.NumberChange = self.EndNumberSetting - self.StartNumber
+	self.NumberChange = self.EndNumber - self.StartNumber
 	self.Prefix = self.Prefix or ""
 	self.Postfix = self.Postfix or ""
 

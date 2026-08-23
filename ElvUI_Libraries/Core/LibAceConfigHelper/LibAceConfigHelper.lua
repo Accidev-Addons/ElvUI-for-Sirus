@@ -18,6 +18,18 @@ ACH.FontValues = {
 	MONOCHROMETHICKOUTLINE = '|cFFAAAAAAMono|r Thick'
 }
 
+ACH.FontSorting = {
+	'NONE',
+	'OUTLINE',
+	'THICKOUTLINE',
+	'MONOCHROME',
+	'MONOCHROMEOUTLINE',
+	'MONOCHROMETHICKOUTLINE',
+	'SHADOW',
+	'SHADOWOUTLINE',
+	'SHADOWTHICKOUTLINE'
+}
+
 local function insertWidth(opt, width)
 	if type(width) == 'number' and width > 5 then
 		opt.customWidth = width
@@ -159,7 +171,7 @@ function ACH:SharedMediaBorder(name, desc, order, width, get, set, disabled, hid
 end
 
 function ACH:FontFlags(name, desc, order, width, get, set, disabled, hidden)
-	local optionTable = { type = 'select', name = name, desc = desc, order = order, get = get, set = set, disabled = disabled, hidden = hidden, values = ACH.FontValues, sortByValue = true }
+	local optionTable = { type = 'select', name = name, desc = desc, order = order, get = get, set = set, disabled = disabled, hidden = hidden, values = ACH.FontValues, sorting = ACH.FontSorting }
 
 	if width then insertWidth(optionTable, width) end
 

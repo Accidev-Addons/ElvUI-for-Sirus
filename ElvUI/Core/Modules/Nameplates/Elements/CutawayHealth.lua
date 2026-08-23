@@ -37,7 +37,6 @@ function NP:CutawayHealthValueChangeCallback(frame, health, maxHealth)
 	else
 		if frame.CutawayHealth.isPlaying then
 			frame.CutawayHealth.isPlaying = nil
-			frame.CutawayHealth:SetScript("OnUpdate", nil)
 		end
 		frame.CutawayHealth:Hide()
 	end

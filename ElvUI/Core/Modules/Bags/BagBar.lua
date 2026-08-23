@@ -6,18 +6,16 @@ local LSM = E.Libs.LSM
 local _G = _G
 local gsub = gsub
 local ipairs = ipairs
-local unpack = unpack
 local tinsert = tinsert
 
 local CreateFrame = CreateFrame
 local GameTooltip = GameTooltip
-local GetContainerNumFreeSlots = GetContainerNumFreeSlots
 local InCombatLockdown = InCombatLockdown
 local RegisterStateDriver = RegisterStateDriver
+local hooksecurefunc = hooksecurefunc
 
 local BACKPACK_CONTAINER = BACKPACK_CONTAINER
 local NUM_BAG_FRAMES = NUM_BAG_FRAMES
-local NUM_BAG_SLOTS = NUM_BAG_SLOTS
 
 local commandNames = {
 	[-1] = 'TOGGLEBACKPACK',
@@ -27,17 +25,7 @@ local commandNames = {
 	'TOGGLEBAG1'	-- 3
 }
 
-local function CalculateTotalNumberOfFreeBagSlots()
-	local totalFree, freeSlots, bagFamily = 0
-	for i = BACKPACK_CONTAINER, NUM_BAG_SLOTS do
-		freeSlots, bagFamily = GetContainerNumFreeSlots(i)
-		if bagFamily == 0 then
-			totalFree = totalFree + freeSlots
-		end
-	end
-
-	return totalFree
-end
+local CalculateTotalNumberOfFreeBagSlots = CalculateTotalNumberOfFreeBagSlots
 
 function B:BagBar_OnEnter()
 	return B.BagBar.db.mouseover and E:UIFrameFadeIn(B.BagBar, 0.2, B.BagBar:GetAlpha(), 1)
@@ -92,7 +80,7 @@ function B:KeyRing_OnLeave()
 		B:ResetSlotAlphaForBags(B.BagFrame)
 	end
 
-	B:BagBar_OnEnter()
+	B:BagBar_OnLeave()
 end
 
 function B:SkinBag(bag)
@@ -103,14 +91,22 @@ function B:SkinBag(bag)
 	bag:SetTemplate()
 	bag:StyleButton(true)
 
-	if bag.searchOverlay then
-		bag.searchOverlay:SetColorTexture(0, 0, 0, 0.6)
+	if not bag.searchOverlay then
+		bag.searchOverlay = bag:CreateTexture(nil, 'OVERLAY', nil, 1)
+		bag.searchOverlay:SetInside()
+		bag.searchOverlay:Hide()
 	end
+
+	bag.searchOverlay:SetTexture(0, 0, 0, 0.6) -- SetColorTexture does not exist on 3.3.5a
 
 	if icon then
 		icon:SetInside()
 		icon:SetTexture((not bag.oldTex or bag.oldTex == [[Interface\MainMenuBar\UI-MainMenuBar-Dwarf]]) and E.Media.Textures.Backpack or bag.oldTex)
 		icon:SetTexCoords()
+	end
+
+	if bag.UpdateTextures then
+		hooksecurefunc(bag, 'UpdateTextures', B.BagButton_UpdateTextures)
 	end
 end
 
@@ -181,8 +177,9 @@ function B:SizeAndPositionBagBar()
 		end
 	end
 
-	local btnSize = bagBarSize * (NUM_BAG_FRAMES + 1)
-	local btnSpace = buttonSpacing * NUM_BAG_FRAMES
+	local numButtons = #B.BagBar.buttons
+	local btnSize = bagBarSize * numButtons
+	local btnSpace = buttonSpacing * (numButtons - 1)
 	local bdpDoubled = backdropSpacing * 2
 
 	B.BagBar.backdrop:ClearAllPoints()
@@ -215,13 +212,33 @@ function B:BackpackButton_OnClick()
 end
 
 function B:BagButton_UpdateTextures()
+	local normal = self.GetNormalTexture and self:GetNormalTexture()
+	if normal then -- df ui re-applies the bag-border atlas on every bag update
+		normal:SetTexture(E.ClearTexture)
+		normal:Hide()
+	end
+
 	local pushed = self:GetPushedTexture()
 	pushed:SetInside()
 	pushed:SetTexture(0.9, 0.8, 0.1, 0.3)
 
-	if self.SlotHighlightTexture then
-		self.SlotHighlightTexture:SetTexture(1, 1, 1, 0.3)
-		self.SlotHighlightTexture:SetInside()
+	local checked = self.GetCheckedTexture and self:GetCheckedTexture()
+	if checked then
+		checked:SetInside()
+		checked:SetTexture(1, 1, 1, 0.3)
+	end
+
+	local highlight = self.GetHighlightTexture and self:GetHighlightTexture()
+	if highlight then
+		highlight:SetInside()
+		highlight:SetTexture(1, 1, 1, 0.3)
+		highlight:SetAlpha(1)
+	end
+
+	local icon = self.icon or _G[self:GetName()..'IconTexture']
+	if icon then
+		icon:SetInside()
+		icon:SetTexCoords()
 	end
 end
 
@@ -263,6 +280,8 @@ function B:LoadBagBar()
 	_G.MainMenuBarBackpackButton:ClearAllPoints()
 	_G.MainMenuBarBackpackButton:HookScript('OnEnter', B.BagButton_OnEnter)
 	_G.MainMenuBarBackpackButton:HookScript('OnLeave', B.BagButton_OnLeave)
+	_G.MainMenuBarBackpackButton:UnregisterEvent('PLAYER_ENTERING_WORLD')
+	_G.MainMenuBarBackpackButton:UnregisterEvent('CVAR_UPDATE')
 
 	_G.MainMenuBarBackpackButtonCount:ClearAllPoints()
 	_G.MainMenuBarBackpackButtonCount:Point('BOTTOMRIGHT', _G.MainMenuBarBackpackButton, 0, 1)

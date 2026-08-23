@@ -1,21 +1,34 @@
 local E, L, V, P, G = unpack(ElvUI)
 local DT = E:GetModule('DataTexts')
-local LC = E.Libs.Compat
 
 local _G = _G
+local type = type
 local strjoin = strjoin
 
 local UnitStat = UnitStat
-local GetSpecialization = LC.GetSpecialization
+local GetSpecialization = E.GetSpecialization
 
-local PRIMARY_STAT = gsub('Primary Stat: %s', '[:：%s]-%%s$', '')
+local PRIMARY_STAT = L["Primary Stat"]
 local NOT_APPLICABLE = NOT_APPLICABLE
 
 local displayString = ''
 
+local classStat = {
+	WARRIOR = 1,
+	PALADIN = 1,
+	DEATHKNIGHT = 1,
+	HUNTER = 2,
+	ROGUE = 2,
+	MAGE = 4,
+	WARLOCK = 4,
+	PRIEST = 4,
+	DRUID = { 4, 2, 4 },
+	SHAMAN = { 4, 2, 4 }
+}
+
 local function OnEvent(self)
-	local spec = GetSpecialization()
-	local statID = spec and DT.SPECIALIZATION_CACHE[spec] and DT.SPECIALIZATION_CACHE[spec].statID
+	local stat = classStat[E.myclass]
+	local statID = (type(stat) == 'table' and stat[GetSpecialization() or 1]) or (type(stat) == 'number' and stat)
 
 	local name = statID and _G['SPELL_STAT'..statID..'_NAME']
 	if name then

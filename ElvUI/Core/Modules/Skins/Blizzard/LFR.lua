@@ -1,9 +1,7 @@
 local E, L, V, P, G = unpack(ElvUI)
 local S = E:GetModule("Skins")
 
---Lua functions
 local _G = _G
---WoW API / Variables
 
 S:AddCallback("Skin_LFR", function()
 	if not E.private.skins.blizzard.enable or not E.private.skins.blizzard.lfr then return end
@@ -36,15 +34,14 @@ S:AddCallback("Skin_LFR", function()
 		S:HandleButton(buttons[i], true)
 	end
 
-	S:HandleTab(LFRParentFrameTab1)
-	S:HandleTab(LFRParentFrameTab2)
+	S:HandleSirusTab(LFRParentFrameTab1)
+	S:HandleSirusTab(LFRParentFrameTab2, LFRParentFrameTab1)
 
 	S:HandleDropDownBox(LFRBrowseFrameRaidDropDown)
-	S:HandleScrollBar(LFRQueueFrameSpecificListScrollFrameScrollBar)
+	S:HandleSirusScrollBar(LFRQueueFrameSpecificListScrollFrameScrollBar)
 
 	LFRQueueFrameCommentTextButton:CreateBackdrop("Default")
 
-	--DPS, Healer, Tank check button's don't have a name, use it's parent as a referance.
 	S:HandleCheckBox((LFRQueueFrameRoleButtonTank:GetChildren()))
 	S:HandleCheckBox((LFRQueueFrameRoleButtonHealer:GetChildren()))
 	S:HandleCheckBox((LFRQueueFrameRoleButtonDPS:GetChildren()))

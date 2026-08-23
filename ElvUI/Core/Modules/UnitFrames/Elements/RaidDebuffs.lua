@@ -2,7 +2,6 @@ local E, L, V, P, G = unpack(ElvUI)
 local UF = E:GetModule("UnitFrames")
 
 --Lua functions
-local unpack = unpack
 --WoW API / Variables
 local CreateFrame = CreateFrame
 

@@ -153,15 +153,38 @@ end
 function M:CheckMovement()
 	if not _G.WorldMapFrame:IsShown() then return end
 
+	local fadeDuration = E.global.general.fadeMapDuration or 0.3
+
 	if GetUnitSpeed('player') ~= 0 and not _G.WorldMapPositioningGuide:IsMouseOver() then
-		E:UIFrameFadeOut(_G.WorldMapFrame, 0.3, _G.WorldMapFrame:GetAlpha(), E.global.general.mapAlphaWhenMoving)
+		E:UIFrameFadeOut(_G.WorldMapFrame, fadeDuration, _G.WorldMapFrame:GetAlpha(), E.global.general.mapAlphaWhenMoving)
 		_G.WorldMapBlobFrame:SetFillAlpha(128 * E.global.general.mapAlphaWhenMoving)
 		_G.WorldMapBlobFrame:SetBorderAlpha(192 * E.global.general.mapAlphaWhenMoving)
 	else
-		E:UIFrameFadeIn(_G.WorldMapFrame, 0.3, _G.WorldMapFrame:GetAlpha(), 1)
+		E:UIFrameFadeIn(_G.WorldMapFrame, fadeDuration, _G.WorldMapFrame:GetAlpha(), 1)
 		_G.WorldMapBlobFrame:SetFillAlpha(128)
 		_G.WorldMapBlobFrame:SetBorderAlpha(192)
 	end
+end
+
+function M:UpdateMapFade(frame, minAlpha, maxAlpha, durationSec)
+	frame = frame or _G.WorldMapFrame
+	minAlpha = minAlpha or E.global.general.mapAlphaWhenMoving
+	maxAlpha = maxAlpha or 1
+	durationSec = durationSec or E.global.general.fadeMapDuration or 0.3
+
+	if frame:IsShown() then
+		if GetUnitSpeed('player') ~= 0 and not _G.WorldMapPositioningGuide:IsMouseOver() then
+			E:UIFrameFadeOut(frame, durationSec, frame:GetAlpha(), minAlpha)
+			_G.WorldMapBlobFrame:SetFillAlpha(128 * minAlpha)
+			_G.WorldMapBlobFrame:SetBorderAlpha(192 * minAlpha)
+		else
+			E:UIFrameFadeIn(frame, durationSec, frame:GetAlpha(), maxAlpha)
+			_G.WorldMapBlobFrame:SetFillAlpha(128)
+			_G.WorldMapBlobFrame:SetBorderAlpha(192)
+		end
+	end
+
+	M:UpdateMapAlpha()
 end
 
 function M:UpdateMapAlpha()
@@ -241,10 +264,10 @@ function M:Initialize()
 			end
 		end)
 
-		M:RawHook('WorldMapQuestPOI_OnLeave', function()
+		hooksecurefunc('WorldMapQuestPOI_OnLeave', function()
 			_G.WorldMapPOIFrame.allowBlobTooltip = true
 			_G.WorldMapTooltip:Hide()
-		end, true)
+		end)
 	end
 end
 

@@ -2,7 +2,7 @@ local E, L, V, P, G = unpack(ElvUI)
 local UF = E:GetModule("UnitFrames")
 local ElvUF = E.oUF
 
-local random = random
+local random, type = random, type
 
 local CreateFrame = CreateFrame
 local UnitIsTapped = UnitIsTapped
@@ -195,14 +195,16 @@ function UF:Configure_HealthBar(frame)
 			db.health.frequentUpdates = true
 		end
 
-		--health:SetFrequentUpdates(db.health.frequentUpdates)
+		if health.SetFrequentUpdates then
+			health:SetFrequentUpdates(db.health.frequentUpdates)
+		end
 	end
 
 	--Transparency Settings
 	UF:ToggleTransparentStatusBar(UF.db.colors.transparentHealth, frame.Health, frame.Health.bg, true, nil)
 
 	--Prediction Texture; keep under ToggleTransparentStatusBar
-	UF:UpdatePredictionStatusBar(frame.HealthPrediction, frame.Health)
+	UF:UpdatePredictionStatusBar(frame.HealCommBar, frame.Health)
 
 	--Highlight Texture
 	UF:Configure_FrameGlow(frame)
@@ -272,7 +274,8 @@ end
 function UF:PostUpdateHealth(_, _, max)
 	local parent = self:GetParent()
 	if parent.isForced then
-		local cur = random(1, max or 100)
+		-- random() throws "interval is empty" when the server hands us a zero max health
+		local cur = random(1, (type(max) == "number" and max >= 1) and max or 100)
 		parent.forcedHealth = cur
 		self:SetValue(cur)
 	else

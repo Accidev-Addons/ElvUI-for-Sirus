@@ -10,7 +10,7 @@ function UF:Construct_GPS(frame)
 	gps:OffsetFrameLevel(50, frame)
 	gps:Hide()
 
-	gps.Texture = gps:CreateTexture("OVERLAY")
+	gps.Texture = gps:CreateTexture(nil, "OVERLAY")
 	gps.Texture:SetTexture(E.Media.Textures.Arrow)
 	gps.Texture:SetBlendMode("BLEND")
 	gps.Texture:SetVertexColor(214/255, 41/255, 41/255)

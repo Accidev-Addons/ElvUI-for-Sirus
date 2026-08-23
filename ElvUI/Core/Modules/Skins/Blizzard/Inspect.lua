@@ -1,73 +1,47 @@
 local E, L, V, P, G = unpack(ElvUI)
 local S = E:GetModule("Skins")
 
---Lua functions
 local _G = _G
+local ipairs = ipairs
 local unpack = unpack
---WoW API / Variables
+
 local GetInventoryItemID = GetInventoryItemID
 local GetItemInfo = GetItemInfo
 
-S:AddCallbackForAddon("Blizzard_InspectUI", "Skin_Blizzard_InspectUI", function()
+local Slots = {
+	"HeadSlot", "NeckSlot", "ShoulderSlot", "BackSlot", "ChestSlot", "ShirtSlot", "TabardSlot", "WristSlot",
+	"HandsSlot", "WaistSlot", "LegsSlot", "FeetSlot", "Finger0Slot", "Finger1Slot", "Trinket0Slot", "Trinket1Slot",
+	"MainHandSlot", "SecondaryHandSlot", "RangedSlot"
+}
+
+local function LoadSkin()
 	if not E.private.skins.blizzard.enable or not E.private.skins.blizzard.inspect then return end
 
-	InspectFrame:StripTextures(true)
-	InspectFrame:CreateBackdrop("Transparent")
-	InspectFrame.backdrop:Point("TOPLEFT", 11, -12)
-	InspectFrame.backdrop:Point("BOTTOMRIGHT", -32, 76)
+	S:HandleSirusFrame(InspectFrame)
 
-	S:SetUIPanelWindowInfo(InspectFrame, "width")
-
-	S:SetBackdropHitRect(InspectFrame)
-	S:SetBackdropHitRect(InspectPVPFrame, InspectFrame.backdrop)
-	S:SetBackdropHitRect(InspectTalentFrame, InspectFrame.backdrop)
-
-	InspectPVPFrameHonor:SetHitRectInsets(0, 120, 0, 0)
-	InspectPVPFrameArena:SetHitRectInsets(0, 120, 0, 0)
-
-	S:HandleCloseButton(InspectFrameCloseButton, InspectFrame.backdrop)
-
-	S:HandleTab(InspectFrameTab1)
-	S:HandleTab(InspectFrameTab2)
-	S:HandleTab(InspectFrameTab3)
+	S:HandleSirusTabs("InspectFrameTab", 5)
 
 	InspectPaperDollFrame:StripTextures()
 
-	local slots = {
-		"HeadSlot",
-		"NeckSlot",
-		"ShoulderSlot",
-		"BackSlot",
-		"ChestSlot",
-		"ShirtSlot",
-		"TabardSlot",
-		"WristSlot",
-		"HandsSlot",
-		"WaistSlot",
-		"LegsSlot",
-		"FeetSlot",
-		"Finger0Slot",
-		"Finger1Slot",
-		"Trinket0Slot",
-		"Trinket1Slot",
-		"MainHandSlot",
-		"SecondaryHandSlot",
-		"RangedSlot"
-	}
+	if InspectPaperDollFrame.ViewButton then
+		S:HandleButton(InspectPaperDollFrame.ViewButton)
+	end
 
-	for _, slot in ipairs(slots) do
-		local icon = _G["Inspect"..slot.."IconTexture"]
-		local frame = _G["Inspect"..slot]
+	for _, slot in ipairs(Slots) do
+		local frame = _G["Inspect" .. slot]
+		if frame then
+			frame:StripTextures()
+			frame:OffsetFrameLevel(2)
+			frame:CreateBackdrop("Default")
+			frame.backdrop:SetAllPoints()
+			frame:StyleButton()
 
-		frame:StripTextures()
-		frame:OffsetFrameLevel(2)
-		frame:CreateBackdrop("Default")
-		frame.backdrop:SetAllPoints()
-
-		frame:StyleButton()
-
-		icon:SetTexCoords()
-		icon:SetInside()
+			local icon = _G["Inspect" .. slot .. "IconTexture"]
+			if icon then
+				icon:SetTexCoords()
+				icon:SetInside()
+			end
+		end
 	end
 
 	local styleButton
@@ -83,7 +57,6 @@ S:AddCallbackForAddon("Blizzard_InspectUI", "Skin_Blizzard_InspectUI", function(
 				local itemID = GetInventoryItemID(InspectFrame.unit, button:GetID())
 				if itemID then
 					local _, _, quality = GetItemInfo(itemID)
-
 					if not quality and quality > 1 then
 						E:Delay(0.1, awaitCache, button)
 						return
@@ -100,90 +73,181 @@ S:AddCallbackForAddon("Blizzard_InspectUI", "Skin_Blizzard_InspectUI", function(
 
 	hooksecurefunc("InspectPaperDollItemSlotButton_Update", styleButton)
 
-	S:HandleRotateButton(InspectModelRotateLeftButton)
-	S:HandleRotateButton(InspectModelRotateRightButton)
+	if InspectModelFrameControlFrameRotateLeftButton then
+		S:HandleRotateButton(InspectModelFrameControlFrameRotateLeftButton)
+	end
+	if InspectModelFrameControlFrameRotateRightButton then
+		S:HandleRotateButton(InspectModelFrameControlFrameRotateRightButton)
+	end
 
 	InspectPVPFrame:StripTextures()
 
+	S:HandleSirusTabs("InspectPVPFrameTab", 3)
+
+	local pvpService = InspectPVPFrame.Service
+	local pvpRating = InspectPVPFrame.Rating
+
+	for _, subFrame in next, { pvpService, pvpRating, InspectPVPFrame.Statistics } do
+		if subFrame and subFrame.Inset then
+			subFrame.Inset:StripTextures()
+			subFrame.Inset:CreateBackdrop("Transparent")
+			subFrame.Inset.backdrop:SetAllPoints()
+		end
+	end
+
+	if pvpService and pvpService.Container and pvpService.Container.LaurelBackground then
+		pvpService.Container.LaurelBackground:Hide()
+	end
+
+	if pvpRating and pvpRating.Container then
+		for _, key in next, { "Background", "Divider" } do
+			local object = pvpRating.Container[key]
+			if object then object:Hide() end
+		end
+	end
+
+	local statsScrollFrame = InspectBattlegroundStatisticsScrollFrame
+	if statsScrollFrame then
+		statsScrollFrame:StripTextures()
+		statsScrollFrame:CreateBackdrop("Transparent")
+		statsScrollFrame.backdrop:Point("TOPLEFT", 1, -1)
+		statsScrollFrame.backdrop:Point("BOTTOMRIGHT", -8, 1)
+		S:HandleSirusScrollBar(InspectBattlegroundStatisticsScrollFrameScrollBar)
+	end
+
+	hooksecurefunc("InspectBattlegroundStatisticsScrollFrame_OnShow", function()
+		if not statsScrollFrame or not statsScrollFrame.buttons then return end
+
+		for _, button in ipairs(statsScrollFrame.buttons) do
+			if not button.isSkinned then
+				button:StripTextures()
+				button:CreateBackdrop("Default")
+				button.backdrop:Point("TOPLEFT", 1, -1)
+				button.backdrop:Point("BOTTOMRIGHT", -1, 1)
+
+				for i = 1, 10 do
+					local statFrame = button["StatFrame" .. i]
+					if statFrame then statFrame:StripTextures() end
+				end
+
+				S:HandleSirusToggle(button.TogglePlus, E.Media.Textures.Plus)
+				S:HandleSirusToggle(button.ToggleMinus, E.Media.Textures.Minus)
+
+				button.isSkinned = true
+			end
+		end
+	end)
+
+	local ladder = InspectPVPFrame.Ladder
+	if ladder then
+		if ladder.CentralContainer then
+			ladder.CentralContainer:StripTextures()
+			ladder.CentralContainer:CreateBackdrop("Transparent")
+			ladder.CentralContainer.backdrop:Point("TOPLEFT", 2, -2)
+			ladder.CentralContainer.backdrop:Point("BOTTOMRIGHT", -2, 2)
+		end
+
+		if ladder.ScrollFrame then
+			ladder.ScrollFrame:StripTextures()
+			S:HandleSirusScrollBar(ladder.ScrollFrame.ScrollBar)
+		end
+
+		if ladder.TopContainer and ladder.TopContainer.StatisticsFrame then
+			ladder.TopContainer.StatisticsFrame:StripTextures()
+			ladder.TopContainer.StatisticsFrame:CreateBackdrop("Transparent")
+			ladder.TopContainer.StatisticsFrame.backdrop:Point("TOPLEFT", 3, -3)
+			ladder.TopContainer.StatisticsFrame.backdrop:Point("BOTTOMRIGHT", -3, 3)
+		end
+	end
+
 	for i = 1, MAX_ARENA_TEAMS do
-		local frame = _G["InspectPVPTeam"..i]
-		frame:StripTextures()
-		frame:CreateBackdrop("Transparent")
-		frame.backdrop:Point("TOPLEFT", 9, -6)
-		frame.backdrop:Point("BOTTOMRIGHT", -24, -5)
-	--	_G["InspectPVPTeam"..i.."StandardBar"]:Kill()
-		S:SetBackdropHitRect(frame)
+		local frame = _G["InspectPVPTeam" .. i]
+		if frame then
+			frame:StripTextures()
+			frame:CreateBackdrop("Transparent")
+			frame.backdrop:Point("TOPLEFT", 9, -6)
+			frame.backdrop:Point("BOTTOMRIGHT", -24, -5)
+			S:SetBackdropHitRect(frame)
+		end
 	end
 
 	InspectTalentFrame:StripTextures()
-
-	S:HandleCloseButton(InspectTalentFrameCloseButton, InspectFrame.backdrop)
-
 	for i = 1, MAX_TALENT_TABS do
-		local headerTab = _G["InspectTalentFrameTab"..i]
+		local headerTab = _G["InspectTalentFrameTab" .. i]
+		if headerTab then
+			headerTab:StripTextures()
+			headerTab:CreateBackdrop("Default", true)
+			headerTab.backdrop:Point("TOPLEFT", 2, -7)
+			headerTab.backdrop:Point("BOTTOMRIGHT", 1, -1)
+			S:SetBackdropHitRect(headerTab)
 
-		headerTab:StripTextures()
-		headerTab:CreateBackdrop("Default", true)
-		headerTab.backdrop:Point("TOPLEFT", 2, -7)
-		headerTab.backdrop:Point("BOTTOMRIGHT", 1, -1)
-		S:SetBackdropHitRect(headerTab)
-
-		headerTab:Width(i == 2 and 101 or 102)
-		headerTab.SetWidth = E.noop
-
-		headerTab:HookScript("OnEnter", S.SetModifiedBackdrop)
-		headerTab:HookScript("OnLeave", S.SetOriginalBackdrop)
+			headerTab:HookScript("OnEnter", S.SetModifiedBackdrop)
+			headerTab:HookScript("OnLeave", S.SetOriginalBackdrop)
+		end
 	end
 
 	for i = 1, MAX_NUM_TALENTS do
-		local talent = _G["InspectTalentFrameTalent"..i]
-
+		local talent = _G["InspectTalentFrameTalent" .. i]
 		if talent then
-			local icon = _G["InspectTalentFrameTalent"..i.."IconTexture"]
-			local rank = _G["InspectTalentFrameTalent"..i.."Rank"]
+			local icon = _G["InspectTalentFrameTalent" .. i .. "IconTexture"]
+			local rank = _G["InspectTalentFrameTalent" .. i .. "Rank"]
 
 			talent:StripTextures()
 			talent:SetTemplate("Default")
 			talent:StyleButton()
 
-			icon:SetInside()
-			icon:SetTexCoords()
-			icon:SetDrawLayer("ARTWORK")
+			if icon then
+				icon:SetInside()
+				icon:SetTexCoords()
+				icon:SetDrawLayer("ARTWORK")
+			end
 
-			rank:SetFont(E.LSM:Fetch("font", E.db.general.font), 12, "OUTLINE")
+			if rank then
+				rank:SetFont(E.LSM:Fetch("font", E.db.general.font), 12, "OUTLINE")
+			end
 		end
 	end
-
-	InspectHeadSlot:Point("TOPLEFT", 19, -76)
-	InspectHandsSlot:Point("TOPLEFT", 307, -76)
-	InspectMainHandSlot:Point("TOPLEFT", InspectPaperDollFrame, "BOTTOMLEFT", 121, 131)
-
-	InspectModelFrame:Size(237, 324)
-	InspectModelFrame:Point("TOPLEFT", 63, -76)
-
-	InspectModelRotateLeftButton:Point("TOPLEFT", 4, -4)
 
 	InspectTalentFrameScrollFrame:StripTextures()
 	InspectTalentFrameScrollFrame:CreateBackdrop("Transparent")
 	InspectTalentFrameScrollFrame.backdrop:Point("TOPLEFT", -1, 1)
 	InspectTalentFrameScrollFrame.backdrop:Point("BOTTOMRIGHT", 5, -4)
+	S:HandleSirusScrollBar(InspectTalentFrameScrollFrameScrollBar)
 
 	InspectTalentFramePointsBar:StripTextures()
 
-	InspectModelRotateRightButton:Point("TOPLEFT", InspectModelRotateLeftButton, "TOPRIGHT", 3, 0)
+	if InspectGlyphFrame then
+		InspectGlyphFrame:StripTextures()
 
-	InspectFrameTab1:Point("CENTER", InspectFrame, "BOTTOMLEFT", 54, 62)
-	InspectFrameTab2:Point("LEFT", InspectFrameTab1, "RIGHT", -15, 0)
-	InspectFrameTab3:Point("LEFT", InspectFrameTab2, "RIGHT", -15, 0)
+		for i = 1, 6 do
+			local glyph = _G["InspectGlyphFrameGlyph" .. i]
+			if glyph then
+				glyph:StripTextures()
+				glyph:CreateBackdrop("Default")
+				glyph.backdrop:SetAllPoints()
+				glyph:StyleButton()
 
-	InspectTalentFrameBackgroundTopLeft:Point("TOPLEFT", 21, -77)
+				if glyph.glyph then
+					glyph.glyph:SetTexCoords()
+					glyph.glyph:SetInside()
+					glyph.glyph:SetDrawLayer("ARTWORK")
+				end
+			end
+		end
+	end
 
-	InspectTalentFrameTab1:Point("TOPLEFT", 17, -40)
+	if InspectGuildFrame then
+		local guildBG = _G.InspectGuildFrameBG
+		if guildBG then guildBG:SetTexture() end
+	end
 
-	InspectTalentFrameScrollFrame:Width(298)
-	InspectTalentFrameScrollFrame:Point("TOPRIGHT", -66, -77)
+	hooksecurefunc("InspectGuildFrame_Update", function()
+		local emblem = _G.InspectGuildFrameEmblem
+		if emblem then
+			emblem:SetTexture("Interface\\GuildFrame\\GuildEmblemsLG_01")
+			emblem:Show()
+		end
+	end)
+end
 
-	S:HandleScrollBar(InspectTalentFrameScrollFrameScrollBar)
-	InspectTalentFrameScrollFrameScrollBar:Point("TOPLEFT", InspectTalentFrameScrollFrame, "TOPRIGHT", 8, -18)
-	InspectTalentFrameScrollFrameScrollBar:Point("BOTTOMLEFT", InspectTalentFrameScrollFrame, "BOTTOMRIGHT", 8, 15)
-end)
+S:AddCallback("Skin_Inspect", LoadSkin)

@@ -2,7 +2,7 @@ local E, L, V, P, G = unpack(ElvUI)
 local S = E:GetModule('Skins')
 
 local _G = _G
-local ipairs, unpack = ipairs, unpack
+local ipairs = ipairs
 local hooksecurefunc = hooksecurefunc
 local CLASS_SORT_ORDER = CLASS_SORT_ORDER
 
@@ -20,7 +20,7 @@ local StripAllTextures = {
 function S:Blizzard_RaidUI()
 	if E.private.skins.blizzard.enable and E.private.skins.blizzard.friends then
 		_G.RaidClassButton1:HookScript("OnShow", function()
-			S:SetUIPanelWindowInfo(FriendsFrame, "width", nil, 21)
+			S:SetUIPanelWindowInfo(FriendsFrame, "width", nil, 30)
 		end)
 		_G.RaidClassButton1:HookScript("OnHide", function()
 			S:SetUIPanelWindowInfo(FriendsFrame, "width")
@@ -30,8 +30,8 @@ function S:Blizzard_RaidUI()
 	if not (E.private.skins.blizzard.enable and E.private.skins.blizzard.raid) then return end
 
 	-- Raid Frame Tab
-	S:HandleButton(_G.RaidFrameRaidBrowserButton)
 	S:HandleButton(_G.RaidFrameReadyCheckButton)
+	S:HandleCheckBox(_G.RaidFrameAllAssistCheckButton)
 
 	_G.RaidFrameConvertToRaidButton:Point('BOTTOMRIGHT', -6, 4)
 
@@ -54,9 +54,6 @@ function S:Blizzard_RaidUI()
 		end
 	end
 
-	_G.RaidClassButton1:ClearAllPoints()
-	_G.RaidClassButton1:Point('TOPLEFT', _G.RaidFrame, 'TOPRIGHT', -50, -50)
-
 	do -- Classes on the right side of the Raid Control
 		local prevButton
 		for index = 1, 13 do
@@ -70,7 +67,7 @@ function S:Blizzard_RaidUI()
 
 			button:ClearAllPoints()
 			if index == 1 then
-				button:Point('TOPLEFT', _G.RaidFrame, 'TOPRIGHT', -33, -48)
+				button:Point('TOPLEFT', _G.RaidFrame, 'TOPRIGHT', 6, -48)
 			elseif index == 11 then
 				button:Point('TOP', prevButton, 'BOTTOM', 0, -25)
 			else

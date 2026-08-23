@@ -4,18 +4,11 @@ local UF = E:GetModule("UnitFrames")
 --Lua functions
 --WoW API / Variables
 
-local CombatTextures = {
-	["COMBAT"] = E.Media.Textures.Combat,
-	["DEFAULT"] = [[Interface\CharacterFrame\UI-StateIcon]],
-	["ATTACK"] = [[Interface\CURSOR\Attack]],
-	["ALERT"] = [[Interface\DialogFrame\UI-Dialog-Icon-AlertNew]],
-	["ALERT2"] = [[Interface\OptionsFrame\UI-OptionsFrame-NewFeatureIcon]],
-	["ARTHAS"] = [[Interface\LFGFRAME\UI-LFR-PORTRAIT]],
-	["SKULL"] = [[Interface\LootFrame\LootPanel-Icon]],
-}
-
 function UF:Construct_CombatIndicator(frame)
-	return frame.RaisedElementParent.TextureParent:CreateTexture(nil, "OVERLAY")
+	local holder = CreateFrame("Frame", nil, frame.RaisedElementParent)
+	holder:OffsetFrameLevel(20, frame.RaisedElementParent)
+
+	return holder:CreateTexture(nil, "OVERLAY")
 end
 
 function UF:Configure_CombatIndicator(frame)
@@ -35,14 +28,15 @@ function UF:Configure_CombatIndicator(frame)
 		Icon:SetDesaturated(true)
 	end
 
+	local textures = E.Media.CombatIcons
 	if db.texture == "CUSTOM" and db.customTexture then
 		Icon:SetTexture(db.customTexture)
 		Icon:SetTexCoord(0, 1, 0, 1)
-	elseif db.texture ~= "DEFAULT" and CombatTextures[db.texture] then
-		Icon:SetTexture(CombatTextures[db.texture])
+	elseif db.texture ~= "DEFAULT" and textures[db.texture] then
+		Icon:SetTexture(textures[db.texture])
 		Icon:SetTexCoord(0, 1, 0, 1)
 	else
-		Icon:SetTexture(CombatTextures.DEFAULT)
+		Icon:SetTexture(textures.DEFAULT)
 		Icon:SetTexCoord(.5, 1, 0, .49)
 	end
 

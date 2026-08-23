@@ -74,7 +74,7 @@ function UF:Update_RaidpetHeader(header, db)
 		headerHolder:ClearAllPoints()
 		headerHolder:Point("BOTTOMLEFT", E.UIParent, "BOTTOMLEFT", 4, 574)
 
-		E:CreateMover(headerHolder, headerHolder:GetName().."Mover", L["Raid Pet Frames"], nil, nil, nil, "ALL,RAID10,RAID25,RAID40", nil, "unitframe,raidpet,generalGroup")
+		E:CreateMover(headerHolder, headerHolder:GetName().."Mover", L["Raid Pet Frames"], nil, nil, nil, "ALL,RAID", nil, "unitframe,raidpet,generalGroup")
 		headerHolder.positioned = true
 
 		headerHolder:RegisterEvent("PLAYER_LOGIN")

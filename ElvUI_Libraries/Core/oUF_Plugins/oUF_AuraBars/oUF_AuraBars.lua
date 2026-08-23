@@ -3,6 +3,7 @@ local oUF = oUF or ns.oUF
 assert(oUF, "oUF_AuraBars was unable to locate oUF install.")
 
 local type = type
+local wipe = wipe
 local unpack = unpack
 local floor, huge, min = math.floor, math.huge, math.min
 local format = string.format
@@ -27,7 +28,11 @@ local function formatTime(s)
 end
 
 local function UpdateTooltip(self)
-	GameTooltip:SetUnitAura(self.__unit, self:GetParent().aura.name, self:GetParent().aura.rank, self:GetParent().aura.filter)
+	local owner = self.__owner
+	local aura = self:GetParent().aura
+	if not (owner and owner.unit and aura and aura.index) then return end
+
+	GameTooltip:SetUnitAura(owner.unit, aura.index, aura.filter)
 end
 
 local function OnEnter(self)
@@ -109,7 +114,7 @@ local function CreateAuraBar(self, anchor)
 	statusBar.iconHolder = CreateFrame("Button", nil, statusBar)
 	statusBar.iconHolder:Size(frame:GetHeight())
 	statusBar.iconHolder:SetPoint("BOTTOMRIGHT", frame, "BOTTOMLEFT", -element.gap, 0)
-	statusBar.iconHolder.__unit = self.unit
+	statusBar.iconHolder.__owner = self
 	statusBar.iconHolder:SetScript("OnEnter", OnEnter)
 	statusBar.iconHolder:SetScript("OnLeave", OnLeave)
 	statusBar.iconHolder.UpdateTooltip = UpdateTooltip
@@ -148,7 +153,15 @@ local function CreateAuraBar(self, anchor)
 	return frame
 end
 
-local function UpdateBars(element)
+local function UpdateBars(element, elapsed)
+	local throttle = (element.throttle or 0) - elapsed
+	if throttle > 0 then
+		element.throttle = throttle
+		return
+	end
+
+	element.throttle = 0.1
+
 	local bars = element.bars
 	local currentTime = GetTime()
 
@@ -189,6 +202,19 @@ local function sortByTime(a, b)
 	return compa > compb
 end
 
+local auras, aurapool = {}, {}
+local function nextAura(index)
+	local aura = aurapool[index]
+	if not aura then
+		aura = {}
+		aurapool[index] = aura
+	end
+
+	auras[index] = aura
+
+	return aura
+end
+
 local function Update(self, event, unit)
 	if self.unit ~= unit then return end
 
@@ -207,8 +233,8 @@ local function Update(self, event, unit)
 	end
 
 	-- Create a table of auras to display
-	local auras = {}
 	local lastAuraIndex = 0
+	wipe(auras)
 
 	if element.forceShow then
 		local spellID = 47540
@@ -217,24 +243,26 @@ local function Update(self, event, unit)
 
 		for i = 1, element.maxBars do
 			lastAuraIndex = lastAuraIndex + 1
-			auras[lastAuraIndex] = {}
-			auras[lastAuraIndex].spellID = spellID
-			auras[lastAuraIndex].name = name
-			auras[lastAuraIndex].rank = rank
-			auras[lastAuraIndex].icon = icon
-			auras[lastAuraIndex].count = count
-			auras[lastAuraIndex].debuffType = debuffType
-			auras[lastAuraIndex].duration = duration
-			auras[lastAuraIndex].expirationTime = expirationTime
-			auras[lastAuraIndex].unitCaster = unitCaster
-			auras[lastAuraIndex].isStealable = isStealable
-			auras[lastAuraIndex].noTime = (duration == 0 and expirationTime == 0)
-			auras[lastAuraIndex].filter = helpOrHarm
-			auras[lastAuraIndex].shouldConsolidate = shouldConsolidate
+
+			local aura = nextAura(lastAuraIndex)
+			aura.index = nil
+			aura.spellID = spellID
+			aura.name = name
+			aura.rank = rank
+			aura.icon = icon
+			aura.count = count
+			aura.debuffType = debuffType
+			aura.duration = duration
+			aura.expirationTime = expirationTime
+			aura.unitCaster = unitCaster
+			aura.isStealable = isStealable
+			aura.noTime = (duration == 0 and expirationTime == 0)
+			aura.filter = helpOrHarm
+			aura.shouldConsolidate = shouldConsolidate
 		end
 	else
 		local i = 0
-		while lastAuraIndex <= element.maxBars do
+		while lastAuraIndex < element.maxBars do
 			i = i + 1
 
 			local name, rank, icon, count, debuffType, duration, expirationTime, unitCaster, isStealable, shouldConsolidate, spellID = UnitAura(unit, i, helpOrHarm)
@@ -242,20 +270,22 @@ local function Update(self, event, unit)
 
 			if (element.filter or DefaultFilter)(self, unit, name, rank, icon, count, debuffType, duration, expirationTime, unitCaster, isStealable, shouldConsolidate, spellID) then
 				lastAuraIndex = lastAuraIndex + 1
-				auras[lastAuraIndex] = {}
-				auras[lastAuraIndex].spellID = spellID
-				auras[lastAuraIndex].name = name
-				auras[lastAuraIndex].rank = rank
-				auras[lastAuraIndex].icon = icon
-				auras[lastAuraIndex].count = count
-				auras[lastAuraIndex].debuffType = debuffType
-				auras[lastAuraIndex].duration = duration
-				auras[lastAuraIndex].expirationTime = expirationTime
-				auras[lastAuraIndex].unitCaster = unitCaster
-				auras[lastAuraIndex].isStealable = isStealable
-				auras[lastAuraIndex].noTime = (duration == 0 and expirationTime == 0)
-				auras[lastAuraIndex].filter = helpOrHarm
-				auras[lastAuraIndex].shouldConsolidate = shouldConsolidate
+
+				local aura = nextAura(lastAuraIndex)
+				aura.index = i
+				aura.spellID = spellID
+				aura.name = name
+				aura.rank = rank
+				aura.icon = icon
+				aura.count = count
+				aura.debuffType = debuffType
+				aura.duration = duration
+				aura.expirationTime = expirationTime
+				aura.unitCaster = unitCaster
+				aura.isStealable = isStealable
+				aura.noTime = (duration == 0 and expirationTime == 0)
+				aura.filter = helpOrHarm
+				aura.shouldConsolidate = shouldConsolidate
 			end
 		end
 	end
@@ -318,7 +348,7 @@ local function Update(self, event, unit)
 		bar.icon:SetTexture(bar.aura.icon)
 
 		bar.spellname:SetText(bar.aura.count > 1 and format("%s [%d]", bar.aura.name, bar.aura.count) or bar.aura.name)
-		bar.spelltime:SetText(not bar.noTime and formatTime(bar.aura.expirationTime - currentTime))
+		bar.spelltime:SetText(not bar.aura.noTime and formatTime(bar.aura.expirationTime - currentTime))
 
 		-- Colour bars
 		local r, g, b

@@ -1,41 +1,42 @@
 local E, L, V, P, G = unpack(ElvUI)
-local LC = E.Libs.Compat
 
-local tinsert, tremove, next, wipe, ipairs = tinsert, tremove, next, wipe, ipairs
+local next, wipe, ipairs = next, wipe, ipairs
 local select, tonumber, type, unpack, strmatch = select, tonumber, type, unpack, strmatch
 local modf, atan2, floor, abs, sqrt, mod = math.modf, atan2, floor, abs, sqrt, mod
 local format, strsub, strupper, strlen, gsub, gmatch = format, strsub, strupper, strlen, gsub, gmatch
-local tostring, pairs, utf8sub, utf8len = tostring, pairs, string.utf8sub, string.utf8len
+local tostring, pairs, utf8sub, utf8len = tostring, pairs, utf8.sub, utf8.len
 
-local CreateFrame = CreateFrame
+local C_Timer = C_Timer
 local GetPlayerFacing = GetPlayerFacing
 local GetPlayerMapPosition = GetPlayerMapPosition
 
-local BreakUpLargeNumbers = LC.BreakUpLargeNumbers
+local BreakUpLargeNumbers = BreakUpLargeNumbers
 
 E.ShortPrefixValues = {}
 E.ShortPrefixStyles = {
-	TCHINESE = {{1e8,'億'}, {1e4,'萬'}},
-	CHINESE = {{1e8,'亿'}, {1e4,'万'}},
+	CHINESE = {{1e8,'Y'}, {1e4,'W'}},
 	ENGLISH = {{1e12,'T'}, {1e9,'B'}, {1e6,'M'}, {1e3,'K'}},
 	GERMAN = {{1e12,'Bio'}, {1e9,'Mrd'}, {1e6,'Mio'}, {1e3,'Tsd'}},
 	KOREAN = {{1e8,'억'}, {1e4,'만'}, {1e3,'천'}},
-	METRIC = {{1e12,'T'}, {1e9,'G'}, {1e6,'M'}, {1e3,'k'}}
+	METRIC = {{1e12,'T'}, {1e9,'G'}, {1e6,'M'}, {1e3,'k'}},
+	NONE = {{1e12,''}, {1e9,''}, {1e6,''}, {1e3,''}}
 }
 
 E.GetFormattedTextStyles = {
+	NOSIGN = '%s',
 	CURRENT = '%s',
 	CURRENT_MAX = '%s - %s',
 	CURRENT_PERCENT = '%s - %.1f%%',
 	CURRENT_MAX_PERCENT = '%s - %s | %.1f%%',
 	PERCENT = '%.1f%%',
+	PERCENT_NOSIGN = '%d',
 	DEFICIT = '-%s',
 }
 
 function E:BuildPrefixValues()
 	if next(E.ShortPrefixValues) then wipe(E.ShortPrefixValues) end
 
-	E.ShortPrefixValues = E:CopyTable(E.ShortPrefixValues, E.ShortPrefixStyles[E.db.general.numberPrefixStyle])
+	E.ShortPrefixValues = E:CopyTable(E.ShortPrefixValues, E.ShortPrefixStyles[E.db.general.numberPrefixStyle] or E.ShortPrefixStyles.ENGLISH)
 	E.ShortValueDec = format('%%.%df', E.db.general.decimalLength or 1)
 
 	for _, style in ipairs(E.ShortPrefixValues) do
@@ -68,22 +69,25 @@ function E:ShortValue(value, dec)
 	return format('%.0f', value)
 end
 
-function E:IsEvenNumber(num)
-	return num % 2 == 0
-end
-
 -- https://warcraft.wiki.gg/wiki/ColorGradient
 function E:ColorGradient(perc, ...)
 	local value = select('#', ...)
-	if perc >= 1 then
-		return select(value - 2, ...)
-	elseif perc <= 0 then
+	if value < 3 then
 		return ...
+	elseif perc ~= perc or perc <= 0 then -- NaN comes from a 0/0 percent, treat it as the low end
+		return ...
+	elseif perc >= 1 then
+		return select(value - 2, ...)
 	end
 
 	local num = value / 3
 	local segment, relperc = modf(perc*(num-1))
-	local r1, g1, b1, r2, g2, b2 = select((segment*3)+1, ...)
+	local index = (segment*3) + 1
+	if (index + 5) > value then -- not enough colors left to interpolate towards
+		return select(value - 2, ...)
+	end
+
+	local r1, g1, b1, r2, g2, b2 = select(index, ...)
 
 	return r1+(r2-r1)*relperc, g1+(g2-g1)*relperc, b1+(b2-b1)*relperc
 end
@@ -114,17 +118,6 @@ function E:TextGradient(text, ...)
 	return msg
 end
 
--- quick convert function: (nil or table to populate, 'ff0000', '00ff00', '0000ff', ...) to get (1,0,0, 0,1,0, 0,0,1, ...)
-function E:HexsToRGBs(rgb, ...)
-	if not rgb then rgb = {} end
-	for i = 1, select('#', ...) do
-		local x, r, g, b = #rgb, E:HexToRGB(select(i, ...))
-		rgb[x+1], rgb[x+2], rgb[x+3] = r/255, g/255, b/255
-	end
-
-	return unpack(rgb)
-end
-
 --Return rounded number
 function E:Round(num, idp)
 	if type(num) ~= 'number' then
@@ -139,26 +132,12 @@ function E:Round(num, idp)
 	return floor(num + 0.5)
 end
 
---Truncate a number off to n places
-function E:Truncate(v, decimals)
-	return v - (v % (0.1 ^ (decimals or 0)))
-end
-
 --RGB to Hex
 function E:RGBToHex(r, g, b, header, ending)
 	r = r <= 1 and r >= 0 and r or 1
 	g = g <= 1 and g >= 0 and g or 1
 	b = b <= 1 and b >= 0 and b or 1
 	return format('%s%02x%02x%02x%s', header or '|cff', r*255, g*255, b*255, ending or '')
-end
-
---Hex to RGB
-function E:HexToRGB(hex)
-	local a, r, g, b = strmatch(hex, '^|?c?(%x%x)(%x%x)(%x%x)(%x?%x?)|?r?$')
-	if not a then return 0, 0, 0, 0 end
-	if b == '' then r, g, b, a = a, r, g, 'ff' end
-
-	return tonumber(r, 16), tonumber(g, 16), tonumber(b, 16), tonumber(a, 16)
 end
 
 --From http://wow.gamepedia.com/UI_coordinates
@@ -250,7 +229,7 @@ function E:GetFormattedText(style, min, max, dec, short)
 			return (deficit > 0 and format(useStyle, short and E:ShortValue(deficit, dec) or BreakUpLargeNumbers(deficit))) or ''
 		elseif style == 'CURRENT_MAX' then
 			return format(useStyle, short and E:ShortValue(min, dec) or BreakUpLargeNumbers(min), short and E:ShortValue(max, dec) or BreakUpLargeNumbers(max))
-		elseif style == 'PERCENT' or style == 'CURRENT_PERCENT' or style == 'CURRENT_MAX_PERCENT' then
+		elseif style == 'PERCENT' or style == 'CURRENT_PERCENT' or style == 'CURRENT_MAX_PERCENT' or style == 'PERCENT_NOSIGN' then
 			if dec then useStyle = gsub(useStyle, '%d', tonumber(dec) or 0) end
 			local perc = min / max * 100
 
@@ -260,40 +239,21 @@ function E:GetFormattedText(style, min, max, dec, short)
 				return format(useStyle, short and E:ShortValue(min, dec) or BreakUpLargeNumbers(min), perc)
 			elseif style == 'CURRENT_MAX_PERCENT' then
 				return format(useStyle, short and E:ShortValue(min, dec) or BreakUpLargeNumbers(min), short and E:ShortValue(max, dec) or BreakUpLargeNumbers(max), perc)
+			elseif style == 'PERCENT_NOSIGN' then
+				return format(useStyle, perc)
 			end
+		elseif style == 'NOSIGN' then
+			return min
 		end
 	end
 end
 
 function E:ShortenString(str, numChars, dots)
-	local bytes = #str
-	if bytes <= numChars then
+	if utf8len(str) <= numChars then
 		return str
-	else
-		local len, pos = 0, 1
-		while pos <= bytes do
-			len = len + 1
-			local c = str:byte(pos)
-			if c > 0 and c <= 127 then
-				pos = pos + 1
-			elseif c >= 192 and c <= 223 then
-				pos = pos + 2
-			elseif c >= 224 and c <= 239 then
-				pos = pos + 3
-			elseif c >= 240 and c <= 247 then
-				pos = pos + 4
-			end
-			if len == numChars then
-				break
-			end
-		end
-
-		if len == numChars and pos <= bytes then
-			return strsub(str, 1, pos - 1)..(dots and '...' or '')
-		else
-			return str
-		end
 	end
+
+	return utf8sub(str, 1, numChars)..(dots and '...' or '')
 end
 
 function E:AbbreviateString(str, allUpper)
@@ -307,57 +267,15 @@ function E:AbbreviateString(str, allUpper)
 	return newString
 end
 
-do
-	local WaitTable = {}
-	local WaitFrame = CreateFrame('Frame')
-	local lastUpdate = 0
-
-	local function WaitFunc(_, elapsed)
-		lastUpdate = lastUpdate + elapsed
-
-		-- Only process every few milliseconds to reduce CPU usage
-		if lastUpdate < 0.005 then return end
-
-		local processedElapsed = lastUpdate
-		lastUpdate = 0
-
-		for i = #WaitTable, 1, -1 do
-			local data = WaitTable[i]
-			data[1] = data[1] - processedElapsed
-
-			if data[1] <= 0 then
-				tremove(WaitTable, i)
-				data[2](unpack(data[3]))
-			end
-		end
-
-		-- Stop the frame when no more delays are pending
-		if #WaitTable == 0 then
-			WaitFrame:SetScript('OnUpdate', nil)
-		end
+function E:Delay(delay, func, ...)
+	if type(delay) ~= 'number' or type(func) ~= 'function' then
+		return false
 	end
 
-	WaitFrame:SetScript('OnUpdate', WaitFunc)
-	WaitFrame:SetScript('OnUpdate', nil) -- Initially disabled
+	local args = {...}
+	C_Timer:After(delay < 0.01 and 0.01 or delay, function() func(unpack(args)) end)
 
-	function E:Delay(delay, func, ...)
-		if type(delay) ~= 'number' or type(func) ~= 'function' then
-			return false
-		end
-
-		-- Clamp minimum delay
-		delay = delay < 0.01 and 0.01 or delay
-
-		tinsert(WaitTable, {delay, func, {...}})
-
-		-- Enable OnUpdate only when needed
-		if not WaitFrame:GetScript('OnUpdate') then
-			WaitFrame:SetScript('OnUpdate', WaitFunc)
-			lastUpdate = 0
-		end
-
-		return true
-	end
+	return true
 end
 
 function E:StringTitle(str)
@@ -386,15 +304,12 @@ E.TimeFormats = { -- short / indicator color
 }
 
 E.TimeFormats[6] = E:CopyTable({}, E.TimeFormats[5]) -- hhmm
-E.TimeFormats[7] = E:CopyTable({}, E.TimeFormats[3]) -- modRate
 
 do
 	local YEAR, DAY, HOUR, MINUTE = 31557600, 86400, 3600, 60
-	function E:GetTimeInfo(sec, threshold, hhmm, mmss, modRate)
+	function E:GetTimeInfo(sec, threshold, hhmm, mmss)
 		if sec < MINUTE then
-			if modRate then
-				return sec, 7, 0.5 / modRate
-			elseif sec > threshold then
+			if sec > threshold then
 				return sec, 3, 0.5
 			else
 				return sec, 4, 0.1
@@ -417,13 +332,11 @@ do
 end
 
 function E:GetDistance(unit1, unit2)
-	local x1, y1, _, map1 = GetPlayerMapPosition(unit1)
-	if not x1 then return end
+	local x1, y1 = GetPlayerMapPosition(unit1)
+	if not x1 or (x1 == 0 and y1 == 0) then return end
 
-	local x2, y2, _, map2 = GetPlayerMapPosition(unit2)
-	if not x2 then return end
-
-	if map1 ~= map2 then return end
+	local x2, y2 = GetPlayerMapPosition(unit2)
+	if not x2 or (x2 == 0 and y2 == 0) then return end
 
 	local dX = x2 - x1
 	local dY = y2 - y1

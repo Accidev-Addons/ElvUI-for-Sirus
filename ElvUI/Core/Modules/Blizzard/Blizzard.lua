@@ -18,30 +18,6 @@ local GetTradeSkillListLink = GetTradeSkillListLink
 local ChatEdit_ChooseBoxForSend = ChatEdit_ChooseBoxForSend
 local ChatEdit_ActivateChat = ChatEdit_ActivateChat
 
-local function PostMove(mover)
-	local x, y = mover:GetCenter()
-	local top = E.UIParent:GetTop()
-	local right = E.UIParent:GetRight()
-
-	local point
-	if y > (top*0.5) then
-		point = (x > (right*0.5)) and 'TOPRIGHT' or 'TOPLEFT'
-	else
-		point = (x > (right*0.5)) and 'BOTTOMRIGHT' or 'BOTTOMLEFT'
-	end
-	mover.anchorPoint = point
-
-	mover.parent:ClearAllPoints()
-	mover.parent:Point(point, mover)
-end
-
-function BL:RepositionFrame(frame, _, anchor)
-	if anchor ~= frame.mover then
-		frame:ClearAllPoints()
-		frame:Point(frame.mover.anchorPoint or 'TOPLEFT', frame.mover, frame.mover.anchorPoint or 'TOPLEFT')
-	end
-end
-
 function BL:QuestXPPercent()
 	if not E.db.general.questXPPercent then return end
 
@@ -57,6 +33,10 @@ function BL:ObjectiveTracker_HasQuestTracker()
 	return E.OtherAddons.KalielsTracker or E.OtherAddons.DugisGuideViewerZ
 end
 
+function BL:GetObjectiveTracker()
+	return _G.ObjectiveTrackerFrame
+end
+
 function BL:ObjectiveTracker_IsCollapsed(frame)
 	return frame:GetParent() == E.HiddenFrame
 end
@@ -70,7 +50,7 @@ function BL:ObjectiveTracker_Expand(frame)
 end
 
 function BL:ObjectiveTracker_AutoHideOnShow()
-	local tracker = (E.Mists and _G.WatchFrame) or _G.ObjectiveTrackerFrame
+	local tracker = BL:GetObjectiveTracker()
 	if tracker and BL:ObjectiveTracker_IsCollapsed(tracker) then
 		BL:ObjectiveTracker_Expand(tracker)
 	end
@@ -81,7 +61,7 @@ do
 	function BL:ObjectiveTracker_AutoHide()
 		if E.OtherAddons.BigWigs or E.OtherAddons.DBM then return end
 
-		local tracker = _G.WatchFrame
+		local tracker = BL:GetObjectiveTracker()
 		if not tracker then return end
 
 		if not AutoHider then
@@ -102,8 +82,12 @@ end
 
 function BL:ADDON_LOADED(_, addon)
 	if addon == 'Blizzard_GuildBankUI' then
+		BL.GuildBankHooked = true
+
 		BL:ImproveGuildBank()
 	elseif addon == 'Blizzard_TradeSkillUI' then
+		BL.TradeSkillHooked = true
+
 		_G.TradeSkillLinkButton:SetScript('OnClick', function()
 			local ChatFrameEditBox = ChatEdit_ChooseBoxForSend()
 			if not ChatFrameEditBox:IsShown() then
@@ -112,10 +96,10 @@ function BL:ADDON_LOADED(_, addon)
 
 			ChatFrameEditBox:Insert(GetTradeSkillListLink())
 		end)
+	end
 
+	if BL.GuildBankHooked and BL.TradeSkillHooked then
 		BL:UnregisterEvent('ADDON_LOADED')
-	elseif BL.TryDisableTutorials then
-		BL:ShutdownTutorials()
 	end
 end
 
@@ -126,6 +110,7 @@ function BL:Initialize()
 	BL:AlertMovers()
 	BL:HandleMiscFrames()
 	BL:PositionCaptureBar()
+	BL:PositionAlwaysUpFrame()
 
 	BL:RegisterEvent('ADDON_LOADED')
 
@@ -141,14 +126,6 @@ function BL:Initialize()
 		end
 	end
 
-	local MinimapAnchor = _G.ElvUI_MinimapHolder or _G.Minimap
-	do -- Battle.Net Frame
-		_G.BNToastFrame:ClearAllPoints()
-		_G.BNToastFrame:Point('TOPRIGHT', MinimapAnchor, 'BOTTOMRIGHT', 0, -10)
-		E:CreateMover(_G.BNToastFrame, 'BNETMover', L["BNet Frame"], nil, nil, PostMove)
-		_G.BNToastFrame.mover:Size(_G.BNToastFrame:GetSize())
-		BL:SecureHook(_G.BNToastFrame, 'SetPoint', 'RepositionFrame')
-	end
 end
 
 E:RegisterModule(BL:GetName())

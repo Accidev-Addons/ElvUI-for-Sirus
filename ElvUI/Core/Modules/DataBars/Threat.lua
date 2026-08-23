@@ -1,15 +1,12 @@
 local E, L, V, P, G = unpack(ElvUI)
 local DB = E:GetModule("DataBars")
-local LC = E.Libs.Compat
 local ElvUF = E.oUF
 
 local next = next
 local wipe = wipe
 
-local IsInGroup, IsInRaid = LC.IsInGroup, LC.IsInRaid
 local UnitAffectingCombat = UnitAffectingCombat
 local UnitDetailedThreatSituation = UnitDetailedThreatSituation
-local GetNumGroupMembers = LC.GetNumGroupMembers
 local UnitIsPlayer = UnitIsPlayer
 local UnitReaction = UnitReaction
 local UnitExists = UnitExists
@@ -66,7 +63,8 @@ function DB:ThreatBar_Update()
 				end
 
 				for guid, role in next, E.GroupRoles do
-					local unit = E.GroupUnitsByRole[role][guid]
+					local units = E.GroupUnitsByRole[role]
+					local unit = units and units[guid]
 					if unit and not UnitIsUnit(unit, 'player') then
 						_, _, bar.list[unit] = UnitDetailedThreatSituation(unit, 'target')
 					end

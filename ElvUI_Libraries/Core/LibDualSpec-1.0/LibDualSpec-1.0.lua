@@ -31,14 +31,10 @@ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 --]]
 
-local MAJOR, MINOR = "LibDualSpec-1.0", 24
+local MAJOR, MINOR = "LibDualSpec-1.0", 25
 assert(LibStub, MAJOR.." requires LibStub")
 local lib, minor = LibStub:NewLibrary(MAJOR, MINOR)
 if not lib then return end
-
--- ----------------------------------------------------------------------------
--- Library data
--- ----------------------------------------------------------------------------
 
 lib.eventFrame = lib.eventFrame or CreateFrame("Frame")
 
@@ -48,39 +44,61 @@ lib.mixin = lib.mixin or {}
 lib.upgrades = lib.upgrades or {}
 lib.currentSpec = tonumber(lib.currentSpec) or 0
 
-if minor and minor < 15 then
+if minor and minor < 25 then
 	lib.talentsLoaded, lib.talentGroup = nil, nil
 	lib.specLoaded, lib.specGroup = nil, nil
 	lib.eventFrame:UnregisterAllEvents()
 	wipe(lib.options)
 end
 
--- ----------------------------------------------------------------------------
--- Locals
--- ----------------------------------------------------------------------------
-
 local registry = lib.registry
 local options = lib.options
 local mixin = lib.mixin
 local upgrades = lib.upgrades
 
--- "Externals"
 local AceDB3 = LibStub('AceDB-3.0', true)
 local AceDBOptions3 = LibStub('AceDBOptions-3.0', true)
-local AceConfigRegistry3 = LibStub('AceConfigRegistry-3.0', true)
+local AceConfigRegistry3 = LibStub('AceConfigRegistry-3.0', true) or LibStub('AceConfigRegistry-3.0-ElvUI', true)
 
-local numSpecs = 2
-local specNames = {TALENT_SPEC_PRIMARY, TALENT_SPEC_SECONDARY}
+local pcall, type, format = pcall, type, format
+local C_Talent = _G.C_Talent
+local GetActiveTalentGroup = _G.GetActiveTalentGroup
+local GetNumTalentGroups = _G.GetNumTalentGroups
+local GREEN_FONT_COLOR = _G.GREEN_FONT_COLOR
 
-local GetActiveTalentGroup = GetActiveTalentGroup
+local MAX_SPECS = 10
 
--- ----------------------------------------------------------------------------
--- Localization
--- ----------------------------------------------------------------------------
+local function GetNumSpecs()
+	local num
+
+	if C_Talent and C_Talent.GetNumTalentGroups then
+		num = C_Talent.GetNumTalentGroups()
+	elseif GetNumTalentGroups then
+		num = GetNumTalentGroups()
+	end
+
+	if not num or num < 1 then num = 1 end
+	if num > MAX_SPECS then num = MAX_SPECS end
+
+	return num
+end
+
+local function GetCurrentSpec()
+	if C_Talent and C_Talent.GetActiveTalentGroup then
+		if C_Talent.IsSpecInfoLoaded and not C_Talent.IsSpecInfoLoaded() then
+			return 0
+		end
+
+		return C_Talent.GetActiveTalentGroup() or 0
+	end
+
+	return (GetActiveTalentGroup and GetActiveTalentGroup()) or 0
+end
 
 local L_ENABLED = "Enable spec profiles"
-local L_ENABLED_DESC = "When enabled, your profile will be set to the specified profile when you change specialization."
+local L_ENABLED_DESC = "When enabled, your profile will be set to the specified profile when you change talent set."
 local L_CURRENT = "%s - Active"
+local L_SPEC = "Talent set %d"
 
 do
 	local locale = GetLocale()
@@ -109,9 +127,10 @@ do
 		L_ENABLED_DESC = "Quando ativado, seu perfil será definido para o perfil especificado quando você alterar a especialização."
 		L_CURRENT = "%s – ativo"
 	elseif locale == "ruRU" then
-		L_ENABLED = "Включить профили специализации"
-		L_ENABLED_DESC = "Если включено, ваш профиль будет зависеть от выбранной специализации."
+		L_ENABLED = "Включить профили раскладки талантов"
+		L_ENABLED_DESC = "Если включено, ваш профиль будет зависеть от выбранного набора талантов."
 		L_CURRENT = "%s - активен"
+		L_SPEC = "Набор талантов %d"
 	elseif locale == "zhCN" then
 		L_ENABLED = "启用专精配置文件"
 		L_ENABLED_DESC = "当启用后，当切换专精时配置文件将设置为专精配置文件。"
@@ -123,65 +142,79 @@ do
 	end
 end
 
-local function WrapTextInColorCode(text, r, g, b, a)
-    a = a or 1
-    local colorHexString = ("ff%.2x%.2x%.2x"):format(r * 255, g * 255, b * 255)
-    return ("|c%s%s|r"):format(colorHexString, text)
+local function GetSpecName(index)
+	local getter = C_Talent and (C_Talent.GetTalentGroupSettings or C_Talent.GetTalentGroupNote)
+	if getter then
+		local ok, groupName = pcall(getter, index)
+		if ok and type(groupName) == "string" and groupName ~= "" then
+			return groupName
+		end
+	end
+
+	return format(L_SPEC, index)
 end
 
--- ----------------------------------------------------------------------------
--- Mixin
--- ----------------------------------------------------------------------------
+local points = {}
+local function GetSpecPoints(index)
+	local tab1, tab2, tab3 = 0, 0, 0
 
---- Get dual spec feature status.
--- @return (boolean) true is dual spec feature enabled.
--- @name enhancedDB:IsDualSpecEnabled
+	if C_Talent and C_Talent.GetTalentGroupPointSpent then
+		local ok, a, b, c = pcall(C_Talent.GetTalentGroupPointSpent, index)
+		if ok then
+			tab1, tab2, tab3 = a or 0, b or 0, c or 0
+		end
+	end
+
+	points[1], points[2], points[3] = tab1, tab2, tab3
+
+	local highPointsSpentIndex
+	for treeIndex = 1, 3 do
+		if points[treeIndex] > 0 and (not highPointsSpentIndex or points[treeIndex] > points[highPointsSpentIndex]) then
+			highPointsSpentIndex = treeIndex
+		end
+	end
+
+	if highPointsSpentIndex and GREEN_FONT_COLOR then
+		points[highPointsSpentIndex] = GREEN_FONT_COLOR:WrapTextInColorCode(points[highPointsSpentIndex])
+	end
+
+	return format("|cffffffff%s / %s / %s|r", points[1], points[2], points[3])
+end
+
 function mixin:IsDualSpecEnabled()
 	return lib.currentSpec > 0 and registry[self].db.char.enabled
 end
 
---- Enable/disabled dual spec feature.
--- @param enabled (boolean) true to enable dual spec feature, false to disable it.
--- @name enhancedDB:SetDualSpecEnabled
 function mixin:SetDualSpecEnabled(enabled)
 	local db = registry[self].db.char
 	db.enabled = not not enabled
 
-	local currentProfile = self:GetCurrentProfile()
-	for i = 1, numSpecs do
-		-- nil out entries on disable, set nil entries to the current profile on enable
-		db[i] = enabled and (db[i] or currentProfile) or nil
+	if enabled then
+		local currentProfile = self:GetCurrentProfile()
+		for i = 1, GetNumSpecs() do
+			db[i] = db[i] or currentProfile
+		end
+	else
+		for i = 1, MAX_SPECS do
+			db[i] = nil
+		end
 	end
 
 	self:CheckDualSpecState()
 end
 
---- Get the profile assigned to a specialization.
--- Defaults to the current profile.
--- @param spec (number) the specialization index.
--- @return (string) the profile name.
--- @name enhancedDB:GetDualSpecProfile
 function mixin:GetDualSpecProfile(spec)
 	return registry[self].db.char[spec or lib.currentSpec] or self:GetCurrentProfile()
 end
 
---- Set the profile assigned to a specialization.
--- No validation are done to ensure the profile is valid.
--- @param profileName (string) the profile name to use.
--- @param spec (number) the specialization index.
--- @name enhancedDB:SetDualSpecProfile
 function mixin:SetDualSpecProfile(profileName, spec)
 	spec = spec or lib.currentSpec
-	if spec < 1 or spec > numSpecs then return end
+	if spec < 1 or spec > GetNumSpecs() then return end
 
 	registry[self].db.char[spec] = profileName
 	self:CheckDualSpecState()
 end
 
---- Check if a profile swap should occur.
--- There is normally no reason to call this method directly as LibDualSpec
--- takes care of calling it at the appropriate time.
--- @name enhancedDB:CheckDualSpecState
 function mixin:CheckDualSpecState()
 	if not registry[self].db.char.enabled then return end
 	if lib.currentSpec == 0 then return end
@@ -192,19 +225,12 @@ function mixin:CheckDualSpecState()
 	end
 end
 
--- ----------------------------------------------------------------------------
--- AceDB-3.0 support
--- ----------------------------------------------------------------------------
-
 local function EmbedMixin(target)
 	for k,v in next, mixin do
 		rawset(target, k, v)
 	end
 end
 
--- Upgrade settings from current/alternate system.
--- This sets the current profile as the profile for your current spec and your
--- swapped profile as the profile for the rest of your specs.
 local function UpgradeDatabase(target)
 	if lib.currentSpec == 0 then
 		upgrades[target] = true
@@ -213,7 +239,7 @@ local function UpgradeDatabase(target)
 
 	local db = target:GetNamespace(MAJOR, true)
 	if db and db.char.profile then
-		for i = 1, numSpecs do
+		for i = 1, GetNumSpecs() do
 			if i == lib.currentSpec then
 				db.char[i] = target:GetCurrentProfile()
 			else
@@ -225,31 +251,23 @@ local function UpgradeDatabase(target)
 	end
 end
 
--- Reset a spec profile to the current one if its profile is deleted.
 function lib:OnProfileDeleted(event, target, profileName)
 	local db = registry[target].db.char
 	if not db.enabled then return end
 
-	for i = 1, numSpecs do
+	for i = 1, MAX_SPECS do
 		if db[i] == profileName then
 			db[i] = target:GetCurrentProfile()
 		end
 	end
 end
 
--- Actually enhance the database
--- This is used on first initialization and everytime the database is reset using :ResetDB
 function lib:_EnhanceDatabase(event, target)
 	registry[target].db = target:GetNamespace(MAJOR, true) or target:RegisterNamespace(MAJOR)
 	EmbedMixin(target)
 	target:CheckDualSpecState()
 end
 
---- Embed dual spec feature into an existing AceDB-3.0 database.
--- LibDualSpec specific methods are added to the instance.
--- @name LibDualSpec:EnhanceDatabase
--- @param target (table) the AceDB-3.0 instance.
--- @param name (string) a user-friendly name of the database (best bet is the addon name).
 function lib:EnhanceDatabase(target, name)
 	AceDB3 = AceDB3 or LibStub('AceDB-3.0', true)
 	if type(target) ~= "table" then
@@ -269,10 +287,6 @@ function lib:EnhanceDatabase(target, name)
 	target.RegisterCallback(lib, "OnDatabaseReset", "_EnhanceDatabase")
 	target.RegisterCallback(lib, "OnProfileDeleted")
 end
-
--- ----------------------------------------------------------------------------
--- AceDBOptions-3.0 support
--- ----------------------------------------------------------------------------
 
 options.new = {
 	name = "New",
@@ -314,42 +328,25 @@ options.enabled = {
 	disabled = function() return lib.currentSpec == 0 end,
 }
 
-local points = {}
-for i = 1, numSpecs do
-	options["specProfile" .. i] = {
+for i = 1, MAX_SPECS do
+	local specIndex = i
+	options["specProfile" .. specIndex] = {
 		type = "select",
-		name = function(info)
-			local specIndex = tonumber(info[#info]:sub(-1))
-			return lib.currentSpec == specIndex and L_CURRENT:format(specNames[specIndex]) or specNames[specIndex]
+		hidden = function()
+			return specIndex > GetNumSpecs()
 		end,
-		desc = function(info)
-			local specIndex = tonumber(info[#info]:sub(-1))
-			local highPointsSpentIndex = nil
-			for treeIndex = 1, 3 do
-				local name, pointsSpent, previewPointsSpent, _
-				name, _, pointsSpent, _, previewPointsSpent = GetTalentTabInfo(treeIndex, nil, nil, specIndex)
-				if name then
-					local displayPointsSpent = pointsSpent + previewPointsSpent
-					points[treeIndex] = displayPointsSpent
-					if displayPointsSpent > 0 and (not highPointsSpentIndex or displayPointsSpent > points[highPointsSpentIndex]) then
-						highPointsSpentIndex = treeIndex
-					end
-				else
-					points[treeIndex] = 0
-				end
-			end
-			if highPointsSpentIndex then
-				points[highPointsSpentIndex] = WrapTextInColorCode(points[highPointsSpentIndex], GREEN_FONT_COLOR.r, GREEN_FONT_COLOR.g, GREEN_FONT_COLOR.b)
-			end
-			return ("|cffffffff%s / %s / %s|r"):format(unpack(points))
-		end or nil,
-		order = 42 + i,
+		name = function()
+			local specName = GetSpecName(specIndex)
+			return lib.currentSpec == specIndex and format(L_CURRENT, specName) or specName
+		end,
+		desc = function()
+			return GetSpecPoints(specIndex)
+		end,
+		order = 41 + (specIndex / 100),
 		get = function(info)
-			local specIndex = tonumber(info[#info]:sub(-1))
 			return info.handler.db:GetDualSpecProfile(specIndex)
 		end,
 		set = function(info, value)
-			local specIndex = tonumber(info[#info]:sub(-1))
 			info.handler.db:SetDualSpecProfile(value, specIndex)
 		end,
 		values = "ListProfiles",
@@ -358,13 +355,9 @@ for i = 1, numSpecs do
 	}
 end
 
---- Embed dual spec options into an existing AceDBOptions-3.0 option table.
--- @name LibDualSpec:EnhanceOptions
--- @param optionTable (table) The option table returned by AceDBOptions-3.0.
--- @param target (table) The AceDB-3.0 the options operate on.
 function lib:EnhanceOptions(optionTable, target)
 	AceDBOptions3 = AceDBOptions3 or LibStub('AceDBOptions-3.0', true)
-	AceConfigRegistry3 = AceConfigRegistry3 or LibStub('AceConfigRegistry-3.0', true)
+	AceConfigRegistry3 = AceConfigRegistry3 or LibStub('AceConfigRegistry-3.0', true) or LibStub('AceConfigRegistry-3.0-ElvUI', true)
 	if type(optionTable) ~= "table" then
 		error("Usage: LibDualSpec:EnhanceOptions(optionTable, target): optionTable should be a table.", 2)
 	elseif type(target) ~= "table" then
@@ -377,22 +370,16 @@ function lib:EnhanceOptions(optionTable, target)
 		error("Usage: LibDualSpec:EnhanceOptions(optionTable, target): EnhanceDatabase should be called before EnhanceOptions(optionTable, target).", 2)
 	end
 
-	-- localize our replacements
 	options.new.name = optionTable.args.new.name
 	options.new.desc = optionTable.args.new.desc
 	options.choose.name = optionTable.args.choose.name
 	options.choose.desc = optionTable.args.choose.desc
 
-	-- add our new options
 	if not optionTable.plugins then
 		optionTable.plugins = {}
 	end
 	optionTable.plugins[MAJOR] = options
 end
-
--- ----------------------------------------------------------------------------
--- Upgrade existing
--- ----------------------------------------------------------------------------
 
 for target in next, registry do
 	UpgradeDatabase(target)
@@ -404,10 +391,6 @@ for target in next, registry do
 	end
 end
 
--- ----------------------------------------------------------------------------
--- Inspection
--- ----------------------------------------------------------------------------
-
 do
 	local function iterator(t, key)
 		local data
@@ -417,28 +400,25 @@ do
 		end
 	end
 
-	--- Iterate through enhanced AceDB3.0 instances.
-	-- The iterator returns (instance, name) pairs where instance and name are the
-	-- arguments that were provided to lib:EnhanceDatabase.
-	-- @name LibDualSpec:IterateDatabases
-	-- @return Values to be used in a for .. in .. do statement.
 	function lib:IterateDatabases()
 		return iterator, lib.registry
 	end
 end
 
--- ----------------------------------------------------------------------------
--- Switching logic
--- ----------------------------------------------------------------------------
+local function RegisterAnyEvent(frame, event)
+	pcall(frame.RegisterEvent, frame, event)
+
+	if frame.RegisterCustomEvent and not frame:IsEventRegistered(event) then
+		pcall(frame.RegisterCustomEvent, frame, event)
+	end
+end
 
 local function eventHandler(self, event)
-	local spec = GetActiveTalentGroup() or 0
+	local spec = GetCurrentSpec()
 	lib.currentSpec = spec
 
 	if event == "PLAYER_LOGIN" then
 		self:UnregisterEvent(event)
-		self:RegisterEvent("PLAYER_ENTERING_WORLD")
-		self:RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED")
 	end
 
 	if spec > 0 and next(upgrades) then
@@ -453,10 +433,6 @@ local function eventHandler(self, event)
 	end
 
 	if AceConfigRegistry3 and next(registry) then
-		-- Update the "Current" text in options
-		-- We don't get the key for the actual registered options table, and we can't
-		-- really check for our enhanced options without walking every options table,
-		-- so just refresh anything.
 		for appName in AceConfigRegistry3:IterateOptionsTables() do
 			AceConfigRegistry3:NotifyChange(appName)
 		end
@@ -464,6 +440,11 @@ local function eventHandler(self, event)
 end
 
 lib.eventFrame:SetScript("OnEvent", eventHandler)
+
+RegisterAnyEvent(lib.eventFrame, "PLAYER_ENTERING_WORLD")
+RegisterAnyEvent(lib.eventFrame, "ACTIVE_TALENT_GROUP_CHANGED")
+RegisterAnyEvent(lib.eventFrame, "PLAYER_TALENT_UPDATE_EX")
+
 if IsLoggedIn() then
 	eventHandler(lib.eventFrame, "PLAYER_LOGIN")
 else

@@ -37,11 +37,7 @@ function S:Ace3_SkinDropdown()
 			end
 
 			if pullout.slider then
-				pullout.slider:SetTemplate()
-				pullout.slider:SetThumbTexture(E.Media.Textures.White8x8)
-
-				local t = pullout.slider:GetThumbTexture()
-				t:SetVertexColor(1, .82, 0, 0.8)
+				S:HandleSirusScrollBar(pullout.slider)
 			end
 		end
 	end
@@ -92,11 +88,12 @@ end
 
 function S:Ace3_TabSetSelected(selected)
 	local bd = self.backdrop
-	if not bd then return end
+	local fill = self.backdropFill
+	if not (bd and fill) then return end
 
 	if selected then
 		bd:SetBackdropBorderColor(1, .82, 0, 1)
-		bd:SetBackdropColor(1, .82, 0, 0.4)
+		fill:SetVertexColor(1, .82, 0, 0.4)
 
 		if not self.wasRaised then
 			RaiseFrameLevel(self)
@@ -107,7 +104,7 @@ function S:Ace3_TabSetSelected(selected)
 		bd:SetBackdropBorderColor(br, bg, bb, 1)
 
 		local bdr, bdg, bdb = unpack(E.media.backdropcolor)
-		bd:SetBackdropColor(bdr, bdg, bdb, 1)
+		fill:SetVertexColor(bdr, bdg, bdb, 1)
 
 		if self.wasRaised then
 			LowerFrameLevel(self)
@@ -167,6 +164,13 @@ function S:Ace3_SkinTab(tab)
 		tab:CreateBackdrop(nil, true, true)
 		tab.backdrop:Point('TOPLEFT', 10, -3)
 		tab.backdrop:Point('BOTTOMRIGHT', -10, 0)
+		tab.backdrop:SetBackdropColor(0, 0, 0, 0)
+
+		local fill = tab:CreateTexture(nil, 'BACKGROUND')
+		fill:SetTexture(E.media.glossTex)
+		fill:SetInside(tab.backdrop, 1, 1)
+		fill:SetVertexColor(unpack(E.media.backdropcolor))
+		tab.backdropFill = fill
 
 		if tab.text and tab.text.Point then -- possible issue with Pally Power
 			tab.text:Point('LEFT', 14, -1)
@@ -198,7 +202,7 @@ function S:Ace3_RegisterAsWidget(widget)
 		local scrollbar = widget.scrollBar
 		if scrollbar then
 			S:HandleButton(widget.button)
-			S:HandleScrollBar(scrollbar)
+			S:HandleSirusScrollBar(scrollbar)
 
 			local bg = widget.scrollBG
 			if bg then
@@ -372,13 +376,7 @@ function S:Ace3_RegisterAsWidget(widget)
 
 		local slider = widget.slider
 		if slider then
-			slider:SetTemplate()
-			slider:SetThumbTexture(E.Media.Textures.White8x8)
-
-			local thumb = slider:GetThumbTexture()
-			if thumb then
-				thumb:SetVertexColor(1, .82, 0, 0.8)
-			end
+			S:HandleSirusScrollBar(slider)
 		end
 	end
 end
@@ -461,7 +459,7 @@ end
 function S:Ace3_RegisterAsContainer(widget)
 	local TYPE = widget.type
 	if TYPE == 'ScrollFrame' then
-		S:HandleScrollBar(widget.scrollbar)
+		S:HandleSirusScrollBar(widget.scrollbar)
 	elseif TYPE == 'InlineGroup' or TYPE == 'TreeGroup' or TYPE == 'TabGroup' or TYPE == 'Frame' or TYPE == 'DropdownGroup' or TYPE == 'Window' then
 		local frame = widget.content:GetParent()
 		if TYPE == 'Frame' then
@@ -505,7 +503,7 @@ function S:Ace3_RegisterAsContainer(widget)
 		end
 
 		if widget.scrollbar then
-			S:HandleScrollBar(widget.scrollbar)
+			S:HandleSirusScrollBar(widget.scrollbar)
 		end
 	end
 

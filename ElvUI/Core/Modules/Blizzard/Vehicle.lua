@@ -35,16 +35,6 @@ function BL:SetUpVehicle()
 	end
 end
 
-function BL:UnloadVehicleTextures() -- removes UIParent_ManageFramePositions()
-	self.BackgroundTexture:SetTexture()
-	self.currSkin = nil
-
-	self:HideButtons()
-	self:UpdateShownState()
-
-	_G.DurabilityFrame:SetAlerts()
-end
-
 function BL:UpdateVehicleFrame()
 	BL.SetUpVehicle(_G.VehicleSeatIndicator.currSkin)
 end

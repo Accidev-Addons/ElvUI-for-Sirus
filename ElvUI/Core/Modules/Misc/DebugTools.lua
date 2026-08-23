@@ -6,6 +6,7 @@ local format = string.format
 --WoW API / Variables
 local GetCVarBool = GetCVarBool
 local InCombatLockdown = InCombatLockdown
+local ReloadUI = ReloadUI
 
 function D:ModifyErrorFrame()
 	ScriptErrorsFrameScrollFrameText.cursorOffset = 0
@@ -27,7 +28,7 @@ function D:ModifyErrorFrame()
 
 		Orig_ScriptErrorsFrame_Update(...)
 
-		if GetCVarBool("scriptErrors") == 1 then
+		if GetCVarBool("scriptErrors") then
 			-- Stop text highlighting again
 			ScriptErrorsFrameScrollFrameText:HighlightText(0, 0)
 		end
@@ -50,7 +51,7 @@ function D:ModifyErrorFrame()
 	-- Add a first button
 	local firstButton = CreateFrame("Button", nil, ScriptErrorsFrame, "UIPanelButtonTemplate")
 	firstButton:SetPoint("BOTTOM", -((BUTTON_WIDTH + BUTTON_WIDTH/2) + (BUTTON_SPACING * 4)), 8)
-	firstButton:SetText("First")
+	firstButton:SetText(L["First"])
 	firstButton:SetHeight(BUTTON_HEIGHT)
 	firstButton:SetWidth(BUTTON_WIDTH)
 	firstButton:SetScript("OnClick", function()
@@ -59,12 +60,22 @@ function D:ModifyErrorFrame()
 	end)
 	ScriptErrorsFrame.firstButton = firstButton
 
+	local reloadButton = CreateFrame("Button", nil, ScriptErrorsFrame, "UIPanelButtonTemplate")
+	reloadButton:SetPoint("BOTTOMRIGHT", firstButton, "BOTTOMLEFT", -BUTTON_SPACING, 0)
+	reloadButton:SetText("R")
+	reloadButton:SetHeight(BUTTON_HEIGHT)
+	reloadButton:SetWidth(30)
+	reloadButton:SetScript("OnClick", function()
+		ReloadUI()
+	end)
+	ScriptErrorsFrame.reloadButton = reloadButton
+
 	-- Also add a Last button for errors
 	local lastButton = CreateFrame("Button", nil, ScriptErrorsFrame, "UIPanelButtonTemplate")
 	lastButton:SetPoint("BOTTOMLEFT", ScriptErrorsFrame.next, "BOTTOMRIGHT", BUTTON_SPACING, 0)
 	lastButton:SetHeight(BUTTON_HEIGHT)
 	lastButton:SetWidth(BUTTON_WIDTH)
-	lastButton:SetText("Last")
+	lastButton:SetText(L["Last"])
 	lastButton:SetScript("OnClick", function()
 		ScriptErrorsFrame.index = #(ScriptErrorsFrame.order)
 		ScriptErrorsFrame_Update()
@@ -92,29 +103,33 @@ end
 function D:ScriptErrorsFrame_UpdateButtons()
 	local numErrors = #ScriptErrorsFrame.order
 	local index = ScriptErrorsFrame.index
-	if index == 0 then
-		ScriptErrorsFrame.lastButton:Disable()
+	if numErrors == 0 then
 		ScriptErrorsFrame.firstButton:Disable()
+		ScriptErrorsFrame.lastButton:Disable()
 	else
-		if numErrors == 1 then
-			ScriptErrorsFrame.lastButton:Disable()
+		if index <= 1 then
 			ScriptErrorsFrame.firstButton:Disable()
 		else
-			ScriptErrorsFrame.lastButton:Enable()
 			ScriptErrorsFrame.firstButton:Enable()
+		end
+
+		if index >= numErrors then
+			ScriptErrorsFrame.lastButton:Disable()
+		else
+			ScriptErrorsFrame.lastButton:Enable()
 		end
 	end
 end
 
 function D:ScriptErrorsFrame_OnError(_, keepHidden)
-	if keepHidden or D.MessagePrinted or not InCombatLockdown() or GetCVarBool("scriptErrors") ~= 1 then return end
+	if keepHidden or D.MessagePrinted or not InCombatLockdown() or not GetCVarBool("scriptErrors") then return end
 
 	E:Print(L["|cFFE30000Lua error recieved. You can view the error message when you exit combat."])
 	D.MessagePrinted = true
 end
 
 function D:PLAYER_REGEN_ENABLED()
-	ScriptErrorsFrame:SetParent(UIParent)
+	ScriptErrorsFrame:SetParent(E.UIParent)
 	D.MessagePrinted = nil
 end
 
@@ -123,7 +138,7 @@ function D:PLAYER_REGEN_DISABLED()
 end
 
 function D:TaintError(event, addonName, addonFunc)
-	if GetCVarBool("scriptErrors") ~= 1 or E.db.general.taintLog ~= true then return end
+	if not GetCVarBool("scriptErrors") or E.db.general.taintLog ~= true then return end
 	ScriptErrorsFrame_OnError(format(L["%s: %s tried to call the protected function '%s'."], event, addonName or "<name>", addonFunc or "<func>"), false)
 end
 

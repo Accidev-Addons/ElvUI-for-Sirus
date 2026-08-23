@@ -11,7 +11,6 @@ local GetMaxCombatRatingBonus = GetMaxCombatRatingBonus
 
 local STAT_RESILIENCE = STAT_RESILIENCE
 local RESILIENCE_TOOLTIP = RESILIENCE_TOOLTIP
-local COMBAT_RATING_RESILIENCE_CRIT_TAKEN = COMBAT_RATING_RESILIENCE_CRIT_TAKEN
 local RESILIENCE_CRIT_CHANCE_TO_DAMAGE_REDUCTION_MULTIPLIER = RESILIENCE_CRIT_CHANCE_TO_DAMAGE_REDUCTION_MULTIPLIER
 local RESILIENCE_CRIT_CHANCE_TO_CONSTANT_DAMAGE_REDUCTION_MULTIPLIER = RESILIENCE_CRIT_CHANCE_TO_CONSTANT_DAMAGE_REDUCTION_MULTIPLIER
 
@@ -26,10 +25,10 @@ local function OnEvent(self)
 	local resilience = min(melee, ranged)
 	resilience = min(resilience, spell)
 
-	local lowestRating = CR_CRIT_TAKEN_MELEE
-	if ( melee == minResilience ) then
+	local lowestRating
+	if ( melee == resilience ) then
 		lowestRating = CR_CRIT_TAKEN_MELEE
-	elseif ( ranged == minResilience ) then
+	elseif ( ranged == resilience ) then
 		lowestRating = CR_CRIT_TAKEN_RANGED
 	else
 		lowestRating = CR_CRIT_TAKEN_SPELL

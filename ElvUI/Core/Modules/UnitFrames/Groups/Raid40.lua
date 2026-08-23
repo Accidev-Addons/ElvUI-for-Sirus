@@ -4,6 +4,7 @@ local ElvUF = E.oUF
 
 local CreateFrame = CreateFrame
 local GetInstanceInfo = GetInstanceInfo
+local GetInstanceID = GetInstanceID
 local InCombatLockdown = InCombatLockdown
 local RegisterStateDriver = RegisterStateDriver
 local UnregisterStateDriver = UnregisterStateDriver
@@ -36,8 +37,10 @@ function UF:Construct_Raid40Frames()
 	self.TargetGlow = UF:Construct_TargetGlow(self)
 	self.InfoPanel = UF:Construct_InfoPanel(self)
 	self.ThreatIndicator = UF:Construct_Threat(self)
+	self.GroupRoleIndicator = UF:Construct_RoleIcon(self)
 	self.RaidTargetIndicator = UF:Construct_RaidIcon(self)
 	self.ReadyCheckIndicator = UF:Construct_ReadyCheckIcon(self)
+	self.SummonIndicator = UF:Construct_SummonIcon(self)
 	self.HealCommBar = UF:Construct_HealComm(self)
 	self.GPS = UF:Construct_GPS(self)
 	self.Fader = UF:Construct_Fader()
@@ -69,7 +72,7 @@ function UF:Raid40SmartVisibility(event)
 		self.isInstanceForced = nil
 		local _, instanceType, _, _, maxPlayers = GetInstanceInfo()
 		if instanceType == "raid" or instanceType == "pvp" then
-			local mapID = GetCurrentMapAreaID()
+			local mapID = GetInstanceID()
 			if UF.instanceMapIDs[mapID] then
 				maxPlayers = UF.instanceMapIDs[mapID]
 			end
@@ -103,7 +106,7 @@ function UF:Raid40SmartVisibility(event)
 end
 
 function UF:Update_Raid40Header(header, db)
-	header:GetParent().db = db
+	header.db = db
 
 	local headerHolder = header:GetParent()
 	headerHolder.db = db
@@ -219,6 +222,9 @@ function UF:Update_Raid40Frames(frame, db)
 	--GPS Arrow
 	UF:Configure_GPS(frame)
 
+	--Role
+	UF:Configure_RoleIcon(frame)
+
 	--Raid Roles
 	UF:Configure_RaidRoleIcons(frame)
 
@@ -233,6 +239,8 @@ function UF:Update_Raid40Frames(frame, db)
 
 	--ReadyCheck
 	UF:Configure_ReadyCheckIcon(frame)
+
+	UF:Configure_SummonIcon(frame)
 
 	--CustomTexts
 	UF:Configure_CustomTexts(frame)

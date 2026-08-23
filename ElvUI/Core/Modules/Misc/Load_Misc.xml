@@ -2,11 +2,14 @@
 	<Script file='Misc.lua'/>
 	<Script file='DebugTools.lua'/>
 	<Script file='ChatBubbles.lua'/>
-	<Script file='Raidmarker.lua'/>
+	<Script file='RaidMarker.lua'/>
 	<Script file='Loot.lua'/>
 	<Script file='LootRoll.lua'/>
 	<Script file='TotemTracker.lua'/>
+	<Script file='AddonManager.lua'/>
+	<Script file='MinimapButtonGrabber.lua'/>
 	<Script file='InfoItemLevel.lua'/>
 	<Script file='RaidUtility.lua'/>
 	<Script file='AFK.lua'/>
+	<Script file='QueueStatus.lua'/>
 </Ui>

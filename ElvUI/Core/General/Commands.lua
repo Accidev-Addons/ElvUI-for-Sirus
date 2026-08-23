@@ -55,7 +55,7 @@ function E:LuaError(msg)
 		for i = 1, GetNumAddOns() do
 			local name = GetAddOnInfo(i)
 			if (not addon[name] and (switch == '1' or not bugsack[name])) and E:IsAddOnEnabled(name) then
-				DisableAddOn(name, E.myguid)
+				DisableAddOn(name, E.myname)
 				ElvDB.DisabledAddOns[name] = i
 			end
 		end
@@ -152,13 +152,6 @@ function E:DBConvertProfile()
 	E.db.dbConverted = nil
 	E:DBConversions()
 	ReloadUI()
-end
-
-function E:BGStats()
-	DT.ForceHideBGStats = nil
-	DT:LoadDataTexts()
-
-	E:Print(L["Battleground datatexts will now show again if you are inside a battleground."])
 end
 
 -- make this a locale later?
@@ -263,7 +256,6 @@ function E:LoadCommands()
 	E:RegisterChatCommand('ishd', 'HDCheck')
 
 	-- older commands
-	E:RegisterChatCommand('bgstats', 'BGStats')
 	E:RegisterChatCommand('cleanguild', 'MassGuildKick')
 	E:RegisterChatCommand('eblizzard', 'EnableBlizzardAddOns')
 

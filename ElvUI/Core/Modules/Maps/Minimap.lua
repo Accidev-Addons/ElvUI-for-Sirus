@@ -4,23 +4,21 @@ local AB = E:GetModule('ActionBars')
 local LSM = E.Libs.LSM
 
 local _G = _G
-local mod, floor = mod, math.floor
 local next = next
 local sort = sort
 local ipairs = ipairs
 local unpack = unpack
 local tinsert = tinsert
 local hooksecurefunc = hooksecurefunc
-local utf8sub = string.utf8sub
+local utf8sub = utf8.sub
 
 local CloseAllWindows = CloseAllWindows
 local CloseMenus = CloseMenus
 local CreateFrame = CreateFrame
+local GetInstanceInfo = _G.GetInstanceInfo
 local GetMinimapZoneText = GetMinimapZoneText
 local GetZonePVPInfo = GetZonePVPInfo
-local GetTime = GetTime
 local HideUIPanel = HideUIPanel
-local InCombatLockdown = InCombatLockdown
 local IsShiftKeyDown = IsShiftKeyDown
 local PlaySound = PlaySound
 local ShowUIPanel = ShowUIPanel
@@ -28,13 +26,12 @@ local ToggleFrame = ToggleFrame
 local UIParent = UIParent
 local EasyMenu = EasyMenu
 
-local MainMenuMicroButton_SetNormal = MainMenuMicroButton_SetNormal
 
-local WorldMapFrame = _G.WorldMapFrame
 local MinimapCluster = _G.MinimapCluster
 local Minimap = _G.Minimap
 
 local IconParents = {}
+local IconPoints = {}
 
 --Create the minimap micro menu
 local menuFrame = CreateFrame('Frame', 'MinimapRightClickMenu', E.UIParent, 'UIDropDownMenuTemplate')
@@ -85,7 +82,7 @@ tinsert(menuList, {
 			PlaySound(854) -- IG_MAINMENU_QUIT
 			HideUIPanel(_G.GameMenuFrame)
 
-			MainMenuMicroButton_SetNormal()
+			_G.MainMenuMicroButton:SetNormal()
 		end
 	end
 })
@@ -99,11 +96,21 @@ function M:SetScale(frame, scale)
 	frame:SetScale(scale)
 end
 
-function M:HandleTrackingButton()
+function M:HandleTrackingButton(cluster)
 	local tracking = _G.MiniMapTracking
 	if not tracking then return end
 
 	M:SaveIconParent(tracking)
+
+	if cluster then
+		M:SetIconParent(tracking)
+		M:SetScale(tracking, 1)
+
+		tracking:ClearAllPoints()
+		tracking:SetPoint('LEFT', M.ClusterHolder, 'LEFT', E:PixelSize(1, tracking), 0)
+
+		return
+	end
 
 	tracking:ClearAllPoints()
 
@@ -134,12 +141,6 @@ function M:HandleTrackingButton()
 			_G.MiniMapTrackingIcon:SetInside()
 		end
 	end
-end
-
-function M:HideNonInstancePanels()
-	if InCombatLockdown() or not WorldMapFrame:IsShown() then return end
-
-	HideUIPanel(WorldMapFrame)
 end
 
 function M:ADDON_LOADED(event, addon)
@@ -287,6 +288,10 @@ end
 function M:SaveIconParent(frame)
 	if not IconParents[frame] then -- only want the first one
 		IconParents[frame] = frame:GetParent()
+
+		if frame:GetNumPoints() > 0 then
+			IconPoints[frame] = { frame:GetPoint() }
+		end
 	end
 end
 
@@ -297,8 +302,69 @@ function M:SetIconParent(frame)
 	end
 end
 
+function M:RestoreIcon(frame)
+	M:SetIconParent(frame)
+
+	local point = IconPoints[frame]
+	if point then
+		frame:ClearAllPoints()
+		frame:SetPoint(unpack(point))
+	end
+
+	M:SetScale(frame, 1)
+end
+
+local function UpdateDifficultyArt()
+	local texture = _G.MiniMapInstanceDifficultyTexture
+	if not texture then return end
+
+	local _, instanceType, difficultyIndex, _, maxPlayers, playerDifficulty, isDynamic = GetInstanceInfo()
+	local isMythic = instanceType == 'party' and difficultyIndex == 3
+	local isHeroic
+	if instanceType == 'party' then
+		isHeroic = difficultyIndex == 2
+	elseif instanceType == 'raid' then
+		isHeroic = (isDynamic and playerDifficulty == 1) or (not isDynamic and difficultyIndex > 2)
+	end
+
+	texture:SetTexture([[Interface\Minimap\UI-DungeonDifficulty-Button]])
+	texture:SetSize(64, 46)
+	texture:ClearAllPoints()
+	texture:SetPoint('CENTER')
+
+	if isMythic then
+		texture:SetTexCoord(0.25, 0.5, 0.0703125, 0.4296875)
+	elseif isHeroic then
+		texture:SetTexCoord(0, 0.25, 0.0703125, 0.4140625)
+	else
+		texture:SetTexCoord(0, 0.25, 0.5703125, 0.9140625)
+	end
+
+	local text = _G.MiniMapInstanceDifficultyText
+	if text then
+		local xOffset = (maxPlayers and maxPlayers >= 10 and maxPlayers <= 19) and -1 or 0
+		text:ClearAllPoints()
+		text:SetPoint('CENTER', xOffset, (isMythic or isHeroic) and -9 or 5)
+	end
+end
+
 function M:HandleDifficulty(difficulty, cluster, hidden)
 	if not difficulty then return end
+
+	if not difficulty.classicArt then
+		difficulty.classicArt = true
+		difficulty:SetSize(38, 46)
+		if difficulty.Background then difficulty.Background:Kill() end
+		if difficulty.Border then difficulty.Border:Kill() end
+		difficulty:HookScript('OnEvent', UpdateDifficultyArt)
+		UpdateDifficultyArt()
+	end
+
+	local text = _G.MiniMapInstanceDifficultyText or difficulty.Text
+	if text then
+		text:FontTemplate(LSM:Fetch("font", E.db.general.minimap.locationFont), E.db.general.minimap.locationFontSize, E.db.general.minimap.locationFontOutline)
+		text:SetTextColor(1, 1, 1)
+	end
 
 	if cluster then
 		difficulty:ClearAllPoints()
@@ -321,14 +387,12 @@ function M:UpdateIcons()
 	local mailFrame = _G.MiniMapMailFrame
 	local difficulty = _G.MiniMapInstanceDifficulty
 	local battlefieldFrame = _G.MiniMapBattlefieldFrame
-	local lfgFrame = _G.MiniMapLFGFrame
 
 	if not next(IconParents) then
 		if gameTime then M:SaveIconParent(gameTime) end
 		if mailFrame then M:SaveIconParent(mailFrame) end
 		if battlefieldFrame then M:SaveIconParent(battlefieldFrame) end
 		if difficulty then M:SaveIconParent(difficulty) end
-		if lfgFrame then M:SaveIconParent(lfgFrame) end
 	end
 
 	local noCluster = E.db.general.minimap.clusterDisable
@@ -339,15 +403,17 @@ function M:UpdateIcons()
 
 		if difficulty then M:HandleDifficulty(difficulty, true) end
 
-		if gameTime then M:SetIconParent(gameTime) end
-		if mailFrame then M:SetIconParent(mailFrame) end
-		if battlefieldFrame then M:SetIconParent(battlefieldFrame) end
+		M:HandleTrackingButton(true)
+
+		if gameTime then M:RestoreIcon(gameTime) end
+		if mailFrame then M:RestoreIcon(mailFrame) end
+		if battlefieldFrame then M:RestoreIcon(battlefieldFrame) end
 	else
 		if M.ClusterHolder then
 			E:DisableMover(M.ClusterHolder.mover.name)
 		end
 
-		M.HandleTrackingButton()
+		M:HandleTrackingButton()
 
 		local hidden = not Minimap:IsShown()
 		if gameTime then
@@ -395,18 +461,6 @@ function M:UpdateIcons()
 		if difficulty then
 			M:HandleDifficulty(difficulty, false, hidden)
 		end
-
-		if lfgFrame then
-			if hidden then
-				lfgFrame:SetParent(E.HiddenFrame)
-			else
-				local scale, position, xOffset, yOffset = M:GetIconSettings('lfgEye')
-				lfgFrame:ClearAllPoints()
-				lfgFrame:Point(position, Minimap, xOffset, yOffset)
-				M:SetIconParent(lfgFrame)
-				M:SetScale(lfgFrame, scale)
-			end
-		end
 	end
 end
 
@@ -441,7 +495,7 @@ function M:UpdateSettings()
 		Minimap.location:SetShown(M.db.locationText == 'SHOW' and noCluster)
 	end
 
-	local classicBorder = _G.MinimapBorder
+	local classicBorder = _G.MinimapBorder and _G.MinimapBorder:GetTexture() and _G.MinimapBorder
 	local compassBorder = _G.MinimapCompassTexture
 	if classicBorder then
 		classicBorder:ClearAllPoints()
@@ -482,13 +536,13 @@ function M:UpdateSettings()
 
 	if _G.MiniMapMailIcon then
 		_G.MiniMapMailIcon:SetTexture(E.Media.MailIcons[M.db.icons.mail.texture] or E.Media.MailIcons.Mail3)
+		_G.MiniMapMailIcon:SetTexCoord(0, 1, 0, 1)
 		_G.MiniMapMailIcon:Size(20)
 	end
 
 	MinimapCluster:SetScale(mmScale)
 
-	local mcWidth = MinimapCluster:GetWidth()
-	local height, width = 20 * mmScale, (mcWidth - 30) * mmScale
+	local height, width = 20 * mmScale, mWidth
 	M.ClusterHolder:SetSize(width, height)
 	M.ClusterBackdrop:SetSize(width, height)
 	M.ClusterBackdrop:SetShown(M.db.clusterBackdrop and not noCluster)
@@ -544,12 +598,6 @@ function M:ClusterPoint(_, anchor)
 	end
 end
 
-function M:ContainerScale(scale)
-	if scale ~= 1 then
-		self:SetScale(1)
-	end
-end
-
 function M:SetMinimapMask(square)
 	if square then
 		Minimap:SetMaskTexture([[interface\chatframe\chatframebackground]])
@@ -562,6 +610,16 @@ function M:SetMinimapRotate()
 	E:SetCVar('rotateMinimap', M.db.rotate and 1 or 0)
 end
 
+function M:RaiseAddOnButtons()
+	local level = Minimap:GetFrameLevel()
+
+	for _, child in next, { Minimap:GetChildren() } do
+		if child.GetFrameLevel and child:GetFrameLevel() <= level then
+			child:SetFrameLevel(level + 2)
+		end
+	end
+end
+
 function M:PLAYER_ENTERING_WORLD()
 	local LFGIconBorder = _G.MiniMapLFGFrameBorder or _G.MiniMapLFGFrame
 	if LFGIconBorder then
@@ -571,6 +629,7 @@ function M:PLAYER_ENTERING_WORLD()
 	M:SetMinimapRotate()
 
 	M:Update_ZoneText()
+	M:RaiseAddOnButtons()
 end
 
 function M:GetMinimapShape()
@@ -598,9 +657,17 @@ function M:Initialize()
 		menu.notCheckable = true
 
 		if menu.microOffset then
-			local left, right, top, bottom = AB:GetMicroCoords(menu.microOffset, true)
+			local left, right, top, bottom, file = AB:GetMicroCoords(menu.microOffset)
 			menu.tCoordLeft, menu.tCoordRight, menu.tCoordTop, menu.tCoordBottom = left, right, top, bottom
-			menu.icon = menu.microOffset == 'PVPMicroButton' and ((E.myfaction == 'Horde' and E.Media.Textures.PVPHorde) or E.Media.Textures.PVPAlliance) or E.Media.Textures.MicroBar
+			if file then
+				menu.icon = file
+			elseif menu.microOffset == 'PVPMicroButton' then
+				local tex = E.Media.Textures
+				local pvpTex = (E.myfaction == 'Horde' and tex.PVPHorde) or (E.myfaction == 'Renegade' and tex.PVPRenegade)
+				menu.icon = pvpTex or tex.PVPAlliance
+			else
+				menu.icon = E.Media.Textures.MicroBar
+			end
 			menu.microOffset = nil
 		elseif menu.cropIcon then
 			local left = 0.02 * menu.cropIcon
@@ -635,9 +702,15 @@ function M:Initialize()
 
 	M:ClusterPoint()
 	MinimapCluster:EnableMouse(false)
+	MinimapCluster:SetFrameStrata('LOW')
 	MinimapCluster:SetFrameLevel(20) -- set before minimap itself
 	hooksecurefunc(MinimapCluster, 'SetPoint', M.ClusterPoint)
 	hooksecurefunc(MinimapCluster, 'SetSize', M.ClusterSize)
+
+	if Minimap:GetParent() ~= MinimapCluster then
+		Minimap.ignoreInLayout = true
+		Minimap:SetParent(MinimapCluster)
+	end
 
 	Minimap:EnableMouseWheel(true)
 	Minimap:SetFrameLevel(10)
@@ -673,7 +746,6 @@ function M:Initialize()
 	Minimap:HookScript('OnLeave', M.Minimap_OnLeave)
 
 	local killFrames = {
-		_G.MinimapBorder,
 		_G.MinimapBorderTop,
 		_G.MinimapCompassTexture,
 		_G.MiniMapMailBorder,
@@ -698,6 +770,7 @@ function M:Initialize()
 	end
 
 	M:RegisterEvent('ADDON_LOADED')
+
 	M:UpdateSettings()
 end
 

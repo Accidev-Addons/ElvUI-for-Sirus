@@ -1,9 +1,7 @@
 local E, L, V, P, G = unpack(ElvUI)
 local S = E:GetModule("Skins")
 
---Lua functions
 local _G = _G
---WoW API / Variables
 local CanQueueForWintergrasp = CanQueueForWintergrasp
 
 S:AddCallback("Skin_PvP", function()
@@ -20,8 +18,8 @@ S:AddCallback("Skin_PvP", function()
 
 	S:HandleCloseButton(PVPParentFrameCloseButton, PVPParentFrame.backdrop)
 
-	S:HandleTab(PVPParentFrameTab1)
-	S:HandleTab(PVPParentFrameTab2)
+	S:HandleSirusTab(PVPParentFrameTab1)
+	S:HandleSirusTab(PVPParentFrameTab2, PVPParentFrameTab1)
 
 	PVPFrame:StripTextures(true)
 
@@ -39,7 +37,6 @@ S:AddCallback("Skin_PvP", function()
 		_G["PVPTeam"..i.."Highlight"]:Kill()
 	end
 
-	-- PVP Team Details
 	PVPTeamDetails:StripTextures()
 	PVPTeamDetails:SetTemplate("Transparent")
 	PVPTeamDetails:Point("TOPLEFT", PVPFrame, "TOPRIGHT", -33, -81)
@@ -60,14 +57,13 @@ S:AddCallback("Skin_PvP", function()
 	PVPTeamDetailsAddTeamMember:Point("TOPLEFT", PVPTeamDetailsButton10, "BOTTOMLEFT", 5, -8)
 	PVPTeamDetailsToggleButton:Point("BOTTOMRIGHT", -20, 25)
 
-	-- PVP Battleground Frame
 	PVPBattlegroundFrame:StripTextures(true)
 
 	PVPBattlegroundFrameTypeScrollFrame:StripTextures()
-	S:HandleScrollBar(PVPBattlegroundFrameTypeScrollFrameScrollBar)
+	S:HandleSirusScrollBar(PVPBattlegroundFrameTypeScrollFrameScrollBar)
 
 	PVPBattlegroundFrameInfoScrollFrame:StripTextures()
-	S:HandleScrollBar(PVPBattlegroundFrameInfoScrollFrameScrollBar)
+	S:HandleSirusScrollBar(PVPBattlegroundFrameInfoScrollFrameScrollBar)
 
 	S:HandleButton(PVPBattlegroundFrameGroupJoinButton)
 	S:HandleButton(PVPBattlegroundFrameJoinButton)
@@ -102,15 +98,12 @@ S:AddCallback("Skin_PvP", function()
 
 	WintergraspTimer:HookScript("OnUpdate", function(self)
 		if CanQueueForWintergrasp() then
-			-- texWidth, texHeight, cropWidth, cropHeight, offsetX, offsetY = 32, 64, 20, 20, 6, 38
 			self.texture:SetTexCoord(0.1875, 0.8125, 0.59375, 0.90625)
 		else
-			-- texWidth, texHeight, cropWidth, cropHeight, offsetX, offsetY = 32, 64, 20, 20, 6, 6
 			self.texture:SetTexCoord(0.1875, 0.8125, 0.09375, 0.40625)
 		end
 	end)
 
-	-- Battlefield Frame
 	BattlefieldFrame:StripTextures(true)
 	BattlefieldFrame:CreateBackdrop("Transparent")
 	BattlefieldFrame.backdrop:Point("TOPLEFT", 11, -12)
@@ -122,8 +115,8 @@ S:AddCallback("Skin_PvP", function()
 	S:HandleCloseButton(BattlefieldFrameCloseButton, BattlefieldFrame.backdrop)
 
 	BattlefieldListScrollFrame:StripTextures()
-	S:HandleScrollBar(BattlefieldListScrollFrameScrollBar)
-	S:HandleScrollBar(BattlefieldFrameInfoScrollFrameScrollBar)
+	S:HandleSirusScrollBar(BattlefieldListScrollFrameScrollBar)
+	S:HandleSirusScrollBar(BattlefieldFrameInfoScrollFrameScrollBar)
 
 	BattlefieldFrameInfoScrollFrameChildFrameDescription:SetTextColor(1, 1, 1)
 	BattlefieldFrameInfoScrollFrameChildFrameRewardsInfoDescription:SetTextColor(1, 1, 1)

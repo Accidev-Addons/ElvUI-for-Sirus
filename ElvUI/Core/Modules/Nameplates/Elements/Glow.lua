@@ -25,8 +25,7 @@ function NP:Update_Glow(frame)
 	if frame.isTarget then
 		showIndicator = 1
 	elseif self.db.lowHealthThreshold > 0 then
-		local health = frame.oldHealthBar:GetValue()
-		local _, maxHealth = frame.oldHealthBar:GetMinMaxValues()
+		local health, maxHealth = NP:GetHealth(frame)
 		local perc = health / maxHealth
 
 		if health > 1 and perc <= self.db.lowHealthThreshold then
@@ -114,10 +113,22 @@ function NP:Update_Glow(frame)
 	end
 end
 
+local function GlowLayout(frame)
+	local healthIsShown = frame.Health:IsShown() and true or false
+	local nameExists = (frame.Name:IsShown() and frame.Name:GetText() ~= nil) and true or false
+
+	return NP.db.units.TARGET.glowStyle, healthIsShown, nameExists, frame.IconOnlyChanged and true or false
+end
+
+function NP:GlowLayoutStale(frame)
+	local glowStyle, healthIsShown, nameExists, iconOnly = GlowLayout(frame)
+
+	return frame.glowLayoutStyle ~= glowStyle or frame.glowLayoutHealth ~= healthIsShown or frame.glowLayoutName ~= nameExists or frame.glowLayoutIcon ~= iconOnly
+end
+
 function NP:Configure_Glow(frame)
-	local glowStyle = self.db.units.TARGET.glowStyle
-	local healthIsShown = frame.Health:IsShown()
-	local nameExists = frame.Name:IsShown() and frame.Name:GetText() ~= nil
+	local glowStyle, healthIsShown, nameExists, iconOnly = GlowLayout(frame)
+	frame.glowLayoutStyle, frame.glowLayoutHealth, frame.glowLayoutName, frame.glowLayoutIcon = glowStyle, healthIsShown, nameExists, iconOnly
 
 	if not healthIsShown and not frame.IconOnlyChanged and nameExists then
 		if glowStyle == "style1" then
@@ -185,7 +196,7 @@ function NP:Configure_Glow(frame)
 		frame.Spark:ClearAllPoints()
 
 		if glowStyle == "style1" or glowStyle == "style5" or glowStyle == "style7" then
-			frame.Shadow:SetOutside(frame.IconOnlyChanged and frame.IconFrame or frame.Health, E:Scale(E.PixelMode and 6 or 8), E:Scale(E.PixelMode and 6 or 8))
+			frame.Shadow:SetOutside(frame.IconOnlyChanged and frame.IconFrame or frame.Health, E.PixelMode and 6 or 8, E.PixelMode and 6 or 8)
 		elseif glowStyle == "style2" or glowStyle == "style6" or glowStyle == "style8" then
 			if healthIsShown then
 				local size = E.Border + 14
@@ -204,7 +215,7 @@ local Textures = {"Spark", "TopIndicator", "LeftIndicator", "RightIndicator"}
 function NP:Construct_Glow(frame)
 	frame.Shadow = CreateFrame("Frame", "$parentGlow", frame)
 	frame.Shadow:OffsetFrameLevel(-1, frame.Health)
-	frame.Shadow:SetBackdrop({edgeFile = LSM:Fetch("border", "ElvUI GlowBorder"), edgeSize = E:Scale(6)})
+	frame.Shadow:SetBackdrop({edgeFile = LSM:Fetch("border", "ElvUI GlowBorder"), edgeSize = E:Scale(6, frame.Shadow, 1)})
 	frame.Shadow:Hide()
 
 	for _, object in ipairs(Textures) do

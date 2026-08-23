@@ -186,19 +186,14 @@ function AFK:Chat_OnEvent(event, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8,
 	local chatType = strsub(event, 10)
 	local info = _G.ChatTypeInfo[chatType]
 
-	local coloredName
-	if event == 'CHAT_MSG_BN_WHISPER' then
-		coloredName = CH:GetBNFriendColor(arg2, arg13)
-	else
-		coloredName = CH:GetColoredName(event, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13)
-	end
+	local coloredName = CH:GetColoredName(event, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13)
 
 	local chatTarget
 	local chatGroup = Chat_GetChatCategory(chatType)
 	if chatGroup == 'BN_CONVERSATION' then
 		chatTarget = tostring(arg8)
 	elseif chatGroup == 'WHISPER' or chatGroup == 'BN_WHISPER' then
-		if not(strsub(arg2, 1, 2) == '|K') then
+		if strsub(arg2, 1, 2) ~= '|K' then
 			chatTarget = arg2:upper()
 		else
 			chatTarget = arg2
@@ -393,8 +388,6 @@ function AFK:Initialize()
 	bottom.model = model
 
 	AFK:Toggle()
-
-	AFK.isActive = false
 end
 
 E:RegisterModule(AFK:GetName())

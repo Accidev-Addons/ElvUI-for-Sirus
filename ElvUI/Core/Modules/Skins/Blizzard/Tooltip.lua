@@ -4,6 +4,29 @@ local TT = E:GetModule('Tooltip')
 
 local _G = _G
 local next = next
+local hooksecurefunc = hooksecurefunc
+
+local function RestyleTooltip(tt)
+	if tt.restyling or not tt.template then return end
+
+	tt.restyling = true
+	TT:SetStyle(tt)
+	tt.restyling = nil
+end
+
+local function ResetBackdropColor(tt, r, g, b)
+	local color = _G.TOOLTIP_DEFAULT_BACKGROUND_COLOR
+	if color and r == color.r and g == color.g and b == color.b then
+		RestyleTooltip(tt)
+	end
+end
+
+local function ResetBorderColor(tt, r, g, b)
+	local color = _G.TOOLTIP_DEFAULT_COLOR
+	if color and r == color.r and g == color.g and b == color.b then
+		RestyleTooltip(tt)
+	end
+end
 
 function S:StyleTooltips()
 	if not (E.private.skins.blizzard.enable and E.private.skins.blizzard.tooltip) then return end
@@ -48,6 +71,11 @@ function S:TooltipFrames()
 
 	S:StyleTooltips()
 	S:HandleCloseButton(_G.ItemRefCloseButton)
+
+	for _, tt in next, { _G.GameTooltip, _G.ItemRefTooltip, _G.WorldMapTooltip } do
+		hooksecurefunc(tt, 'SetBackdropColor', ResetBackdropColor)
+		hooksecurefunc(tt, 'SetBackdropBorderColor', ResetBorderColor)
+	end
 
 	-- Skin GameTooltip Status Bar
 	_G.GameTooltipStatusBar:SetStatusBarTexture(E.media.normTex)

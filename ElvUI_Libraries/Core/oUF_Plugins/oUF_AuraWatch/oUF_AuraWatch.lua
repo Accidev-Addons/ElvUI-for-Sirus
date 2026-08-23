@@ -116,6 +116,7 @@ assert(oUF, "oUF_AuraWatch was unable to locate oUF install")
 
 local next = next
 local pairs = pairs
+local wipe = wipe
 
 local CreateFrame = CreateFrame
 local GetSpellInfo = GetSpellInfo
@@ -133,7 +134,7 @@ local PLAYER_UNITS = {
 
 local setupGUID
 do
-	local cache = setmetatable({}, {__type = "k"})
+	local cache = setmetatable({}, {__mode = "k"})
 
 	local frame = CreateFrame("Frame")
 	frame:SetScript("OnEvent", function(self, event)
@@ -162,7 +163,7 @@ end
 local DAY, HOUR, MINUTE = 86400, 3600, 60
 local function formatTime(s, threshold)
 	if s >= DAY then
-		return format("%dd", ceil(s / HOUR))
+		return format("%dd", ceil(s / DAY))
 	elseif s >= HOUR then
 		return format("%dh", ceil(s / HOUR))
 	elseif s >= MINUTE then
@@ -257,6 +258,7 @@ local function expireIcon(icon, frame)
 end
 
 local found = {}
+local playerCast = {}
 local function Update(self, event, unit)
 	if not unit or self.unit ~= unit then return end
 
@@ -269,6 +271,30 @@ local function Update(self, event, unit)
 
 	local element = self.AuraWatch
 	local icons = element.watched
+
+	wipe(playerCast)
+
+	local mineFilter, mineIndex = "HELPFUL|PLAYER", 1
+	while true do
+		local mineName, _, mineTexture, _, _, _, _, _, _, _, mineSpellID = UnitAura(unit, mineIndex, mineFilter)
+
+		if not mineName then
+			if mineFilter == "HELPFUL|PLAYER" then
+				mineFilter = "HARMFUL|PLAYER"
+				mineIndex = 1
+			else
+				break
+			end
+		else
+			if element.strictMatching then
+				playerCast[mineSpellID] = true
+			else
+				playerCast[mineName..mineTexture] = true
+			end
+
+			mineIndex = mineIndex + 1
+		end
+	end
 
 	for _, icon in pairs(icons) do
 		if not icon.onlyShowMissing then
@@ -301,7 +327,7 @@ local function Update(self, event, unit)
 
 			icon = icons[key]
 
-			if icon and (icon.anyUnit or (caster and icon.fromUnits and icon.fromUnits[caster])) then
+			if icon and (icon.anyUnit or (caster and icon.fromUnits and icon.fromUnits[caster]) or (playerCast[key] and icon.fromUnits and icon.fromUnits.player)) then
 				resetIcon(icon, element, count, duration, remaining)
 				GUIDs[guid][key] = true
 				found[key] = true
@@ -317,9 +343,7 @@ local function Update(self, event, unit)
 		end
 	end
 
-	for k in pairs(found) do
-		found[k] = nil
-	end
+	wipe(found)
 end
 
 local function setupIcons(self)

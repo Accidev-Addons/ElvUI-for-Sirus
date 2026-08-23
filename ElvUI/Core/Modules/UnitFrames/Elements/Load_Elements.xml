@@ -12,6 +12,7 @@
 	<Script file="FrameGlow.lua"/>
 	<Script file="GPS.lua"/>
 	<Script file="Happiness.lua"/>
+	<Script file="HeadHuntingWanted.lua"/>
 	<Script file="HealComm.lua"/>
 	<Script file="Health.lua"/>
 	<Script file="InfoPanel.lua"/>
@@ -28,6 +29,7 @@
 	<Script file="RestingIndicator.lua"/>
 	<Script file="ResurrectionIcon.lua"/>
 	<Script file="RoleIcons.lua"/>
+	<Script file="SummonIcon.lua"/>
 	<Script file="Threat.lua"/>
 	<Script file="Trinket.lua"/>
 </Ui>

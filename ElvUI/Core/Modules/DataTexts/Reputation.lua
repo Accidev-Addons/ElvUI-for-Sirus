@@ -17,6 +17,10 @@ local function OnEvent(self)
 		return 	self.text:SetText(NOT_APPLICABLE)
 	end
 
+	if reaction == 0 then
+		reaction = 1
+	end
+
 	local standingLabel
 	local isCapped
 
@@ -62,6 +66,10 @@ end
 local function OnEnter()
 	local data = E:GetWatchedFactionInfo()
 	local name, reaction, min, max, value = data.name, data.reaction, data.currentReactionThreshold, data.nextReactionThreshold, data.currentStanding
+
+	if reaction == 0 then
+		reaction = 1
+	end
 
 	if name then
 		DT.tooltip:ClearLines()

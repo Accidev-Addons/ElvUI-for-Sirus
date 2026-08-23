@@ -3,6 +3,8 @@ local UF = E:GetModule("UnitFrames")
 
 --Lua functions
 --WoW API / Variables
+local IsRenegade = C_Unit and C_Unit.IsRenegade
+local IsNeutral = C_Unit and C_Unit.IsNeutral
 
 function UF:Construct_PvPIcon(frame)
 	local PvPIndicator = frame.RaisedElementParent.TextureParent:CreateTexture(nil, "ARTWORK")
@@ -51,6 +53,11 @@ function UF:UpdateOverridePvP(event, unit)
 
 		if factionGroup == "Alliance" then
 			element:SetTexCoord(0.545, 0.935, 0.070, 0.940)
+		elseif factionGroup == "Renegade" or (IsRenegade and IsRenegade(unit)) then
+			element:SetTexture(E.Media.Textures.PVPRenegade)
+			element:SetTexCoord(0, 1, 0, 1)
+		elseif factionGroup == "Neutral" or (IsNeutral and IsNeutral(unit)) then
+			element:SetTexCoord(0.100, 0.475, 0.070, 0.940)
 		else
 			element:SetTexCoord(0.100, 0.475, 0.070, 0.940)
 		end

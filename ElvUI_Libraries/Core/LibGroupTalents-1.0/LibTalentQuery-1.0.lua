@@ -27,7 +27,7 @@ Example Usage:
 	end
 ]]
 
-local MAJOR, MINOR = "LibTalentQuery-1.0", 90000 + tonumber(("$Rev: 84 $"):match("(%d+)"))
+local MAJOR, MINOR = "LibTalentQuery-1.0", 100084
 
 local lib = LibStub:NewLibrary(MAJOR, MINOR)
 if not lib then return end
@@ -38,7 +38,6 @@ if not lib.events then
 	lib.events = LibStub("CallbackHandler-1.0"):New(lib)
 end
 
-local validateTrees
 local enteredWorld = IsLoggedIn()
 local frame = lib.frame
 if not frame then
@@ -277,16 +276,6 @@ function lib:INSPECT_TALENT_READY()
 				self:Reset()
 				self:CheckInspectQueue()
 				return
-
-			elseif (validateTrees) then
-				-- Double checking here. Check the tree name matches what we expect for this class
-				local _, class = UnitClass(self.lastInspectUnit)
-				if (tree1 ~= validateTrees[class]) then
-					garbageQueue[self.lastInspectName] = self.lastInspectGUID
-					self:Reset()
-					self:CheckInspectQueue()
-					return
-				end
 			end
 
 			local tree2, _, spent2 = GetTalentTabInfo(2, isnotplayer, nil, group)
@@ -322,36 +311,6 @@ function lib:PLAYER_LEAVING_WORLD()
 end
 
 function lib:PLAYER_LOGIN()
-	validateTrees = {
-		DRUID = "Balance",
-		PRIEST = "Discipline",
-		ROGUE = "Assassination",
-		HUNTER = "Beast Mastery",
-		WARLOCK = "Affliction",
-		WARRIOR = "Arms",
-		DEATHKNIGHT = "Blood",
-		PALADIN = "Holy",
-		SHAMAN = "Elemental",
-		MAGE = "Arcane",
-	}
-
-	if (GetLocale() ~= "enUS" and GetLocale() ~= "enGB") then
-		-- LibBabble-TalentTree-3.0 only loaded if present and not enUS
-		local LBT = LibStub("LibBabble-TalentTree-3.0", true)
-		if (not LBT) then
-			LoadAddOn("LibBabble-TalentTree-3.0")
-			LBT = LibStub("LibBabble-TalentTree-3.0", true)
-		end
-		LBT = LBT and LBT:GetLookupTable()
-		if (LBT) then
-			for class,tree1 in pairs(validateTrees) do
-				validateTrees[class] = LBT[tree1]
-			end
-		else
-			validateTrees = nil
-		end
-	end
-
 	self.PLAYER_LOGIN = nil
 end
 

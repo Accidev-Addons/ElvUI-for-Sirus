@@ -1,8 +1,7 @@
 local E, L, V, P, G = unpack(ElvUI)
-local LC = E.Libs.Compat
 
 -- Credit: ls- (lightspark)
-local abs, next, Lerp = abs, next, LC.Lerp
+local abs, next, Lerp = abs, next, Lerp
 local tonumber, assert = tonumber, assert
 local activeObjects = {}
 local handledObjects = {}

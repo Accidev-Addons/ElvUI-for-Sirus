@@ -1,5 +1,4 @@
 local E, L, V, P, G = unpack(ElvUI)
-local LC = E.Libs.Compat
 
 local min, max, format = min, max, format
 
@@ -7,7 +6,10 @@ local UIParent = UIParent
 local GetScreenWidth = GetScreenWidth
 local GetScreenHeight = GetScreenHeight
 local InCombatLockdown = InCombatLockdown
-local GetPhysicalScreenSize = LC.GetPhysicalScreenSize
+local GetPhysicalScreenSize = GetPhysicalScreenSize
+
+local GetNearestPixelSize = PixelUtil.GetNearestPixelSize
+local GetPixelToUIUnitFactor = PixelUtil.GetPixelToUIUnitFactor
 
 function E:IsEyefinity(width, height)
 	if E.global.general.eyefinity and width >= 3840 then
@@ -79,7 +81,7 @@ function E:PixelBestSize()
 end
 
 function E:PixelScaleChanged(event)
-	if event == 'UI_SCALE_CHANGED' then
+	if event == 'DISPLAY_SIZE_CHANGED' then
 		E.physicalWidth, E.physicalHeight = GetPhysicalScreenSize()
 		E.resolution = format('%dx%d', E.physicalWidth, E.physicalHeight)
 		E.perfect = 768 / E.physicalHeight
@@ -88,15 +90,27 @@ function E:PixelScaleChanged(event)
 	E:UIMult()
 	E:UIScale()
 
+	E:UpdateFrameTemplates()
+
 	E:Config_UpdateSize(true) --Reposition config
 end
 
-function E:Scale(x)
-	local m = E.mult
-	if m == 1 or x == 0 then
-		return x
-	else
-		local y = m > 1 and m or -m
-		return x - x % (x < 0 and y or -y)
-	end
+function E:RegionScale(region)
+	local scale = region and region.GetEffectiveScale and region:GetParent() and region:GetEffectiveScale()
+	return (scale and scale > 0) and scale or E.uiscale
+end
+
+function E:Scale(x, region, minPixels)
+	local scale = (region and E:RegionScale(region)) or E.uiscale
+	if not scale then return x end
+
+	return GetNearestPixelSize(x, scale, minPixels)
+end
+
+-- exact size in physical pixels, unlike E:Scale which snaps a ui-unit size to the grid
+function E:PixelSize(pixels, region)
+	local scale = (region and E:RegionScale(region)) or E.uiscale
+	if not scale then return pixels end
+
+	return pixels * GetPixelToUIUnitFactor() / scale
 end

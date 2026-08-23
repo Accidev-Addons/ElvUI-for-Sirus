@@ -3,7 +3,6 @@ local NP = E:GetModule("NamePlates")
 local LSM = E.Libs.LSM
 
 --Lua functions
-local unpack = unpack
 local abs = math.abs
 --WoW API / Variables
 local CreateFrame = CreateFrame
@@ -50,7 +49,7 @@ function NP:Update_CastBarOnUpdate(elapsed)
 				elseif self.channelTimeFormat == "REMAINING" then
 					self.Time:SetFormattedText("%.1f |cffaf5050%.2f|r", self.value, self.delay)
 				elseif self.channelTimeFormat == "REMAININGMAX" then
-					self.Time:SetFormattedText("%.1f / %.2f |cffaf5050%.2f|r", self.value, self.max, self.max, self.delay)
+					self.Time:SetFormattedText("%.1f / %.2f |cffaf5050%.2f|r", self.value, self.max, self.delay)
 				end
 			else
 				if self.castTimeFormat == "CURRENT" then

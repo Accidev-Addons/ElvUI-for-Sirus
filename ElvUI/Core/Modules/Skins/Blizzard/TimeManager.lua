@@ -13,9 +13,7 @@ S:AddCallbackForAddon("Blizzard_TimeManager", "Skin_Blizzard_TimeManager", funct
 	E:CreateMover(TimeManagerFrame, "TimeManagerFrameMover", TIMEMANAGER_TITLE)
 	TimeManagerFrame.mover:OffsetFrameLevel(4, TimeManagerFrame)
 
-	S:HandleCloseButton(TimeManagerCloseButton, TimeManagerFrame)
-
-	TimeManagerStopwatchFrameBackground:SetTexture(nil)
+	S:HandleCloseButton(TimeManagerFrameCloseButton, TimeManagerFrame)
 
 	TimeManagerStopwatchCheck:SetTemplate("Default")
 	TimeManagerStopwatchCheck:StyleButton(nil, true)
@@ -39,8 +37,6 @@ S:AddCallbackForAddon("Blizzard_TimeManager", "Skin_Blizzard_TimeManager", funct
 	S:HandleCheckBox(TimeManagerLocalTimeCheck)
 
 	TimeManagerFrame:Size(186, 221)
-
-	select(7, TimeManagerFrame:GetRegions()):Point("TOP", 0, -5)
 
 	TimeManagerFrameTicker:Point("CENTER", TimeManagerGlobe, -4, 12)
 
@@ -76,22 +72,22 @@ S:AddCallbackForAddon("Blizzard_TimeManager", "Skin_Blizzard_TimeManager", funct
 
 	StopwatchResetButton:Size(16)
 	StopwatchResetButton:Point("BOTTOMRIGHT", -4, 4)
-	StopwatchResetButton:SetNormalTexture([[Interface\AddOns\ElvUI\Media\Textures\reset]])
+	StopwatchResetButton:SetNormalTexture([[Interface\AddOns\ElvUI\Core\Media\Textures\reset]])
 
 	StopwatchPlayPauseButton:Size(12)
 	StopwatchPlayPauseButton:Point("RIGHT", StopwatchResetButton, "LEFT", -5, 0)
 	StopwatchPlayPauseButton:CreateBackdrop("Default", true)
 	StopwatchPlayPauseButton.backdrop:SetOutside(StopwatchPlayPauseButton, 2, 2)
-	StopwatchPlayPauseButton:SetNormalTexture([[Interface\AddOns\ElvUI\Media\Textures\play]])
+	StopwatchPlayPauseButton:SetNormalTexture([[Interface\AddOns\ElvUI\Core\Media\Textures\play]])
 	StopwatchPlayPauseButton:SetHighlightTexture("")
 	StopwatchPlayPauseButton:HookScript("OnEnter", S.SetModifiedBackdrop)
 	StopwatchPlayPauseButton:HookScript("OnLeave", S.SetOriginalBackdrop)
 
 	local function SetPlayTexture()
-		StopwatchPlayPauseButton:SetNormalTexture([[Interface\AddOns\ElvUI\Media\Textures\play]])
+		StopwatchPlayPauseButton:SetNormalTexture([[Interface\AddOns\ElvUI\Core\Media\Textures\play]])
 	end
 	local function SetPauseTexture()
-		StopwatchPlayPauseButton:SetNormalTexture([[Interface\AddOns\ElvUI\Media\Textures\pause]])
+		StopwatchPlayPauseButton:SetNormalTexture([[Interface\AddOns\ElvUI\Core\Media\Textures\pause]])
 	end
 
 	hooksecurefunc("Stopwatch_Play", SetPauseTexture)

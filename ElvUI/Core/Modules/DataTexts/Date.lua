@@ -1,10 +1,9 @@
 local E, L, V, P, G = unpack(ElvUI)
 local DT = E:GetModule('DataTexts')
-local LC = E.Libs.Compat
 
 local _G = _G
 local date = date
-local FormatShortDate = LC.FormatShortDate
+local FormatShortDate = FormatShortDate
 
 local displayString
 
@@ -24,4 +23,4 @@ local function ApplySettings(_, hex)
 	displayString = hex..'%1|r'
 end
 
-DT:RegisterDatatext('Date', nil, { 'UPDATE_INSTANCE_INFO' }, OnEvent, nil, OnClick, nil, nil, nil, nil, ApplySettings)
+DT:RegisterDatatext('Date', nil, { 'UPDATE_INSTANCE_INFO' }, OnEvent, nil, OnClick, nil, nil, L["Date"], nil, ApplySettings)

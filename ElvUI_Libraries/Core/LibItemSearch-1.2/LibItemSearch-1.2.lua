@@ -13,18 +13,28 @@ else
 	return
 end
 
+local GetItemInfo, GetItemInfoInstant = GetItemInfo, GetItemInfoInstant
+
+local lastLink, n1, n2, n3, n4, n5, n6, n7, n8, n9, n10, n11
+local function ItemInfo(link)
+	if link ~= lastLink then
+		n1, n2, n3, n4, n5, n6, n7, n8, n9, n10, n11 = GetItemInfo(link)
+		lastLink = n1 and link or nil
+	end
+	return n1, n2, n3, n4, n5, n6, n7, n8, n9, n10, n11
+end
+
+local scannerName = Lib.Scanner:GetName()
+local scannerLines = setmetatable({}, {__index = function(t, i)
+	local v = _G[scannerName.."TextLeft"..i]
+	t[i] = v
+	return v
+end})
+
 --[[ User API ]]--
 
 function Lib:Matches(link, search)
 	return Search(link, search, self.Filters)
-end
-
-function Lib:Tooltip(link, search)
-	return link and self.Filters.tip:match(link, nil, search)
-end
-
-function Lib:TooltipPhrase(link, search)
-	return link and self.Filters.tipPhrases:match(link, nil, search)
 end
 
 function Lib:InSet(link, search)
@@ -97,14 +107,14 @@ Lib.Filters.name = {
 }
 
 Lib.Filters.type = {
-	tags = {"t", "type", "s", "slot"},
+	tags = {"t", "type", "slot"},
 
 	canSearch = function(self, operator, search)
 		return not operator and search
 	end,
 
 	match = function(self, item, _, search)
-		local type, subType, _, equipSlot = select(6, GetItemInfo(item))
+		local _, type, subType, equipSlot = GetItemInfoInstant(item)
 		return Search:Find(search, type, subType, _G[equipSlot])
 	end
 }
@@ -117,7 +127,7 @@ Lib.Filters.level = {
 	end,
 
 	match = function(self, link, operator, num)
-		local lvl = select(4, GetItemInfo(link))
+		local lvl = select(4, ItemInfo(link))
 		if lvl then
 			return Search:Compare(operator, lvl, num)
 		end
@@ -132,7 +142,7 @@ Lib.Filters.requiredlevel = {
 	end,
 
 	match = function(self, link, operator, num)
-		local lvl = select(5, GetItemInfo(link))
+		local lvl = select(5, ItemInfo(link))
 		if lvl then
 			return Search:Compare(operator, lvl, num)
 		end
@@ -164,7 +174,7 @@ Lib.Filters.quality = {
 	end,
 
 	match = function(self, link, operator, num)
-		local quality = select(3, GetItemInfo(link))
+		local quality = select(3, ItemInfo(link))
 		return Search:Compare(operator, quality, num)
 	end,
 }
@@ -179,7 +189,7 @@ Lib.Filters.items = {
 	keyword = ITEMS:lower(),
 
 	canSearch = function(self, operator, search)
-		return not operator and self.keyword:find(search)
+		return not operator and #search >= 3 and self.keyword:find(search)
 	end,
 
 	match = function(self, link)
@@ -191,13 +201,13 @@ Lib.Filters.usable = {
 	keyword = USABLE_ITEMS:lower(),
 
 	canSearch = function(self, operator, search)
-		return not operator and self.keyword:find(search)
+		return not operator and #search >= 3 and self.keyword:find(search)
 	end,
 
 	match = function(self, link)
-		if not Unfit:IsItemUnusable(link) then
-			local lvl = select(5, GetItemInfo(link))
-			return lvl and (lvl ~= 0 and lvl <= UnitLevel("player"))
+		local _, _, _, _, lvl, _, subclass, _, slot = ItemInfo(link)
+		if not Unfit:IsClassUnusable(subclass, slot) then
+			return lvl and (lvl == 0 or lvl <= UnitLevel("player"))
 		end
 	end
 }
@@ -213,17 +223,33 @@ Lib.Filters.tip = {
 	end,
 
 	match = function(self, link, _, search)
-		if link:find("item:") then
-			Lib.Scanner:SetOwner(UIParent, "ANCHOR_NONE")
-			Lib.Scanner:SetHyperlink(link)
+		local id = link:match("item:(%d+)")
+		if not id then
+			return
+		end
 
-			for i = 1, Lib.Scanner:NumLines() do
-				if Search:Find(search, _G[Lib.Scanner:GetName() .. "TextLeft" .. i]:GetText()) then
-					return true
-				end
+		local cached = self.cache[search][id]
+		if cached ~= nil then
+			return cached
+		end
+
+		Lib.Scanner:SetOwner(UIParent, "ANCHOR_NONE")
+		Lib.Scanner:SetHyperlink(link)
+
+		local matches = false
+		for i = 1, Lib.Scanner:NumLines() do
+			local line = scannerLines[i]
+			if line and Search:Find(search, line:GetText()) then
+				matches = true
+				break
 			end
 		end
-	end
+
+		self.cache[search][id] = matches
+		return matches
+	end,
+
+	cache = setmetatable({}, {__index = function(t, k) local v = {} t[k] = v return v end}),
 }
 
 Lib.Filters.tipPhrases = {
@@ -253,7 +279,8 @@ Lib.Filters.tipPhrases = {
 
 		local matches = false
 		for i = 1, Lib.Scanner:NumLines() do
-			if search == _G[Lib.Scanner:GetName() .. "TextLeft" .. i]:GetText() then
+			local line = scannerLines[i]
+			if line and search == line:GetText() then
 				matches = true
 				break
 			end

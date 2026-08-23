@@ -6,34 +6,12 @@ local LibDeflate = E.Libs.Deflate
 local ACH = E.Libs.ACH
 
 local wipe, pairs, strmatch = wipe, pairs, strmatch
-local next, sort, format = next, sort, format
+local next, format = next, format
 
 local filters = {}
 local exportList = {}
-local sortedClasses = E:CopyTable({}, CLASS_SORT_ORDER)
-sort(sortedClasses)
-
-C.StyleFilterSelected = nil
 
 local StyleFilters = E.Options.args.nameplates.args.filters.args
-local StyleFallback = NP:StyleFilterCopyDefaults()
-
-local function GetFilter(collect, profile)
-	local setting = (profile and E.db.nameplates.filters[C.StyleFilterSelected]) or E.global.nameplates.filters[C.StyleFilterSelected] or StyleFallback
-
-	if collect and setting then
-		return setting.triggers, setting.actions
-	else
-		return setting
-	end
-end
-C.StyleFilterGetFilter = GetFilter
-
-local function DisabledFilter()
-	local profileTriggers = GetFilter(true, true)
-	return not (profileTriggers and profileTriggers.enable)
-end
-C.StyleFilterDisabledFilter = DisabledFilter
 
 local function GetFilters(info)
 	wipe(filters)
@@ -58,14 +36,12 @@ local function GetFilters(info)
 end
 
 function C:StyleFilterSetConfig(filter)
-	C.StyleFilterSelected = filter
-
 	E.Libs.AceConfigDialog:SelectGroup('ElvUI', 'nameplates', 'filters', filter and 'triggers' or 'import')
 end
 
 local function validateString(_, value) return value and not strmatch(value, '^[%s%p]-$') end
 
-StyleFilters.removeFilter = ACH:Select(L["Delete Filter"], L["Delete a created filter, you cannot delete pre-existing filters, only custom ones."], 3, function() wipe(filters) for filterName in next, E.global.nameplates.filters do if not G.nameplates.filters[filterName] then filters[filterName] = filterName end end return filters end, true, nil, nil, function(_, value) for profile in pairs(E.data.profiles) do if E.data.profiles[profile].nameplates and E.data.profiles[profile].nameplates.filters then E.data.profiles[profile].nameplates.filters[value] = nil end end E.global.nameplates.filters[value] = nil exportList[value] = nil NP:ConfigureAll() C:StyleFilterSetConfig() end)
+StyleFilters.removeFilter = ACH:Select(L["Delete Filter"], L["Delete a created filter, you cannot delete pre-existing filters, only custom ones."], 3, function() wipe(filters) for filterName in next, E.global.nameplates.filters do if not G.nameplates.filters[filterName] then filters[filterName] = filterName end end return filters end, true, nil, nil, function(_, value) for profile in pairs(E.data.profiles) do if E.data.profiles[profile].nameplates and E.data.profiles[profile].nameplates.filters then E.data.profiles[profile].nameplates.filters[value] = nil end end E.global.nameplates.filters[value] = nil exportList[value] = nil NP:ConfigureAll() C:StyleFilterDeleted(value) C:StyleFilterSetConfig() end)
 
 -- Import / Export
 local function DecodeString(text)

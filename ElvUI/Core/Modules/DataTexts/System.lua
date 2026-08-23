@@ -3,13 +3,12 @@ local DT = E:GetModule('DataTexts')
 
 local collectgarbage = collectgarbage
 local tremove, tinsert, sort, wipe, type = tremove, tinsert, sort, wipe, type
-local ipairs, pairs, floor, format, strmatch = ipairs, pairs, floor, format, strmatch
+local ipairs, pairs, format, strmatch = ipairs, pairs, format, strmatch
 
 local GetAddOnCPUUsage = GetAddOnCPUUsage
 local GetAddOnInfo = GetAddOnInfo
 local GetAddOnMemoryUsage = GetAddOnMemoryUsage
 local GetCVar = GetCVar
-local GetFramerate = GetFramerate
 local GetNetStats = GetNetStats
 local GetNumAddOns = GetNumAddOns
 local InCombatLockdown = InCombatLockdown
@@ -64,24 +63,10 @@ end
 local infoTable = {}
 DT.SystemInfo = infoTable
 
-local function BuildAddonList()
-	local addOnCount = GetNumAddOns()
-	if addOnCount == #infoTable then return end
-
-	wipe(infoTable)
-
-	for i = 1, addOnCount do
-		local name, title, _, _, loadable, reason = GetAddOnInfo(i)
-		if loadable then
-			tinsert(infoTable, {name = name, index = i, title = title})
-		end
-	end
-end
-
 local function OnClick()
 	local shiftDown, ctrlDown = IsShiftKeyDown(), IsControlKeyDown()
 	if shiftDown and ctrlDown then
-		E:SetCVar('scriptProfile', GetCVar('scriptProfile'))
+		E:SetCVar('scriptProfile', GetCVar('scriptProfile') == '1' and '0' or '1')
 		ReloadUI()
 	elseif shiftDown and not ctrlDown then
 		collectgarbage('collect')
@@ -278,8 +263,6 @@ local function OnUpdate(self, elapsed)
 		local fps = E.FPS.rate or 0
 
 		self.text:SetFormattedText(db.NoLabel and '%s%d|r | %s%d|r' or 'FPS: %s%d|r MS: %s%d|r', statusColor(fps), fps, statusColor(nil, worldPing), worldPing)
-
-		if not enteredFrame then return end
 
 		if not enteredFrame then
 			return

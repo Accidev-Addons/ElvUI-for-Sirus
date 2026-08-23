@@ -10,24 +10,80 @@ local unpack = unpack
 local CreateFrame = CreateFrame
 local hooksecurefunc = hooksecurefunc
 
-S:AddCallback('Skin_Misc', function()
-	if not E.private.skins.blizzard.enable or not E.private.skins.blizzard.misc then return end
+local function GameMenuClearedHooks(button, script)
+	if script == 'OnEnter' then
+		button:HookScript('OnEnter', S.SetModifiedBackdrop)
+	elseif script == 'OnLeave' then
+		button:HookScript('OnLeave', S.SetOriginalBackdrop)
+	elseif script == 'OnDisable' then
+		button:HookScript('OnDisable', S.SetDisabledBackdrop)
+	end
+end
 
-	-- reskin all esc/menu buttons
+local function GameMenuSkinButton(button)
+	if not button or button.isSkinned then return end
+
+	S:HandleButton(button, nil, nil, nil, true)
+	if button.backdrop then
+		button.backdrop:SetInside(nil, 1, 1)
+	end
+
+	hooksecurefunc(button, 'SetScript', GameMenuClearedHooks)
+end
+
+local function GameMenuStyleButtons()
 	local GameMenuFrame = _G.GameMenuFrame
-	for _, Button in next, { GameMenuFrame:GetChildren() } do
+	if not GameMenuFrame then return end
+
+	for i = 1, GameMenuFrame:GetNumChildren() do
+		local Button = select(i, GameMenuFrame:GetChildren())
 		if Button.IsObjectType and Button:IsObjectType('Button') then
-			S:HandleButton(Button)
+			GameMenuSkinButton(Button)
 		end
 	end
 
+	if GameMenuFrame.ElvUI then
+		GameMenuSkinButton(GameMenuFrame.ElvUI)
+	end
+end
+
+S:AddCallback('Skin_GameMenu', function()
+
+	local GameMenuFrame = _G.GameMenuFrame
+	if not GameMenuFrame then return end
+
 	GameMenuFrame:StripTextures()
 	GameMenuFrame:SetTemplate('Transparent')
-	_G.GameMenuFrameHeader:SetTexture()
-	_G.GameMenuFrameHeader:ClearAllPoints()
-	_G.GameMenuFrameHeader:Point('TOP', GameMenuFrame, 0, 7)
 
-	-- Static Popups
+	local header = _G.GameMenuFrameHeader
+	if header then
+		header:SetTexture('')
+		header:ClearAllPoints()
+		header:Point('TOP', GameMenuFrame, 0, 7)
+	end
+
+	GameMenuStyleButtons()
+
+	local editMode = _G.GameMenuButtonEditMode
+	if editMode then
+		editMode:Hide()
+		editMode.Show = E.noop
+
+		local keybindings = _G.GameMenuButtonKeybindings
+		local uiOptions = _G.GameMenuButtonUIOptions
+		if keybindings and uiOptions then
+			keybindings:SetPoint('TOP', uiOptions, 'BOTTOM', 0, -1)
+		end
+	end
+
+	if GameMenuFrame_UpdateVisibleButtons then
+		hooksecurefunc('GameMenuFrame_UpdateVisibleButtons', GameMenuStyleButtons)
+	end
+end)
+
+S:AddCallback('Skin_Misc', function()
+	if not E.private.skins.blizzard.enable or not E.private.skins.blizzard.misc then return end
+
 	for i = 1, 4 do
 		local staticPopup = _G['StaticPopup'..i]
 		local itemFrame = _G['StaticPopup'..i..'ItemFrame']
@@ -94,26 +150,16 @@ S:AddCallback('Skin_Misc', function()
 		end
 	end
 
-	--DropDownMenu
 	S:SkinDropDownMenu('DropDownList')
 
-	-- Other Frames
 	_G.TicketStatusFrameButton:SetTemplate('Transparent')
 	_G.AutoCompleteBox:SetTemplate('Transparent')
 	_G.ConsolidatedBuffsTooltip:SetTemplate('Transparent')
 
-	-- Basic Script Errors
 	_G.BasicScriptErrors:SetScale(E.global.general.UIScale)
 	_G.BasicScriptErrors:SetTemplate('Transparent')
 	S:HandleButton(_G.BasicScriptErrorsButton)
 
-	-- BNToast Frame
-	_G.BNToastFrame:SetTemplate('Transparent')
-
-	_G.BNToastFrameCloseButton:Size(32)
-	S:HandleCloseButton(_G.BNToastFrameCloseButton, _G.BNToastFrame)
-
-	-- Ready Check Frame
 	local ReadyCheckFrame = _G.ReadyCheckFrame
 	ReadyCheckFrame:EnableMouse(true)
 	ReadyCheckFrame:SetTemplate('Transparent')
@@ -134,18 +180,15 @@ S:AddCallback('Skin_Misc', function()
 
 	_G.ReadyCheckListenerFrame:SetAlpha(0)
 
-	-- Coin PickUp Frame
 	_G.CoinPickupFrame:StripTextures()
 	_G.CoinPickupFrame:SetTemplate('Transparent')
 
 	S:HandleButton(_G.CoinPickupOkayButton)
 	S:HandleButton(_G.CoinPickupCancelButton)
 
-	-- Zone Text Frame
 	_G.ZoneTextFrame:ClearAllPoints()
 	_G.ZoneTextFrame:Point('TOP', 0, -128)
 
-	-- Stack Split Frame
 	local StackSplitFrame = _G.StackSplitFrame
 	StackSplitFrame:SetTemplate('Transparent')
 	StackSplitFrame:GetRegions():Hide()
@@ -160,13 +203,11 @@ S:AddCallback('Skin_Misc', function()
 	S:HandleButton(_G.StackSplitOkayButton)
 	S:HandleButton(_G.StackSplitCancelButton)
 
-	-- Opacity Frame
 	_G.OpacityFrame:StripTextures()
 	_G.OpacityFrame:SetTemplate('Transparent')
 
 	S:HandleSliderFrame(_G.OpacityFrameSlider)
 
-	-- Channel Pullout Frame
 	_G.ChannelPullout:SetTemplate('Transparent')
 
 	_G.ChannelPulloutBackground:Kill()
@@ -178,7 +219,6 @@ S:AddCallback('Skin_Misc', function()
 	S:HandleCloseButton(_G.ChannelPulloutCloseButton, _G.ChannelPullout)
 	_G.ChannelPulloutCloseButton:Size(32)
 
-	-- Chat Menu
 	do
 		local menuBackdrop = function(s)
 			s:SetTemplate('Transparent')
@@ -194,14 +234,15 @@ S:AddCallback('Skin_Misc', function()
 		for index, menu in next, { _G.ChatMenu, _G.EmoteMenu, _G.LanguageMenu, _G.VoiceMacroMenu } do
 			menu:StripTextures()
 
-			if index == 1 then -- ChatMenu
+			if index == 1 then
 				menu:HookScript('OnShow', chatMenuBackdrop)
 			else
 				menu:HookScript('OnShow', menuBackdrop)
 			end
 
 			local name = menu:GetName()
-			for _, child in next, { menu:GetChildren() } do
+			for i = 1, menu:GetNumChildren() do
+				local child = select(i, menu:GetChildren())
 				if child:GetName() and child:GetName():find(name..'Button') then
 					S:HandleButtonHighlight(child, unpack(E.media.rgbvaluecolor))
 				end
@@ -209,18 +250,24 @@ S:AddCallback('Skin_Misc', function()
 		end
 	end
 
-	-- Localization specific frames
-	if E.locale == 'koKR' then
-		S:HandleButton(_G.GameMenuButtonRatings)
+	local GhostFrame = _G.GhostFrame
+	if GhostFrame then
+		GhostFrame:StripTextures()
+		GhostFrame:SetTemplate('Transparent')
+		GhostFrame:StyleButton()
 
-		-- RatingMenuFrame
-		_G.RatingMenuFrame:SetTemplate('Transparent')
-		_G.RatingMenuFrameHeader:SetTexture()
-		S:HandleButton(_G.RatingMenuButtonOkay)
+		local icon = _G.GhostFrameContentsFrameIcon
+		if icon then
+			icon:SetTexCoords()
 
-		_G.RatingMenuButtonOkay:Point('BOTTOMRIGHT', -8, 8)
-	elseif E.locale == 'ruRU' then
-		-- Declension Frame
+			local iconBackdrop = CreateFrame('Frame', nil, GhostFrame)
+			iconBackdrop:OffsetFrameLevel(-1)
+			iconBackdrop:SetTemplate()
+			iconBackdrop:SetOutside(icon)
+		end
+	end
+
+	if E.locale == 'ruRU' then
 		local DeclensionFrame = _G.DeclensionFrame
 		DeclensionFrame:SetTemplate('Transparent')
 
@@ -239,4 +286,182 @@ S:AddCallback('Skin_Misc', function()
 			end
 		end)
 	end
+end)
+
+S:AddCallback("Skin_ChooseItem", function()
+	if not E.private.skins.blizzard.enable or not E.private.skins.blizzard.chooseitem then return end
+
+	local ChooseItemFrame = _G.ChooseItemFrame
+	if not ChooseItemFrame then return end
+
+	local function SkinOption(opt)
+		if opt.isSkinned then return end
+
+		if opt.ArtBackground then opt.ArtBackground:Kill() end
+
+		if opt.Header then
+			if opt.Header.Background then opt.Header.Background:Kill() end
+			if opt.Header.Text then
+				opt.Header.Text:SetTextColor(1, 0.82, 0)
+				opt.Header.Text:ClearAllPoints()
+				if opt.RoleBackground then
+					opt.Header.Text:Point("BOTTOM", opt.RoleBackground, "TOP", 0, 5)
+				end
+			end
+		end
+
+		opt:CreateBackdrop("Transparent")
+		opt.backdrop:Point("TOPLEFT", 5, -5)
+		opt.backdrop:Point("BOTTOMRIGHT", -5, 5)
+
+		S:HandleSirusButton(opt.OptionButton)
+
+		if opt.Item then
+			if opt.Item.Icon then
+				S:HandleSirusIconButton(opt.Item, opt.Item.Icon)
+			end
+			if opt.Item.IconBorder then opt.Item.IconBorder:Kill() end
+			if opt.Item.glow then opt.Item.glow:Kill() end
+		end
+
+		S:ApplyElvUIFont(opt)
+
+		opt.isSkinned = true
+	end
+
+	local function SkinFrame()
+		if ChooseItemFrame.isSkinned then return end
+
+		ChooseItemFrame:StripTextures()
+		ChooseItemFrame:CreateBackdrop("Transparent")
+		ChooseItemFrame.backdrop:Point("TOPLEFT", 15, -8)
+		ChooseItemFrame.backdrop:Point("BOTTOMRIGHT", -15, 15)
+
+		S:HandleSirusCloseButton(ChooseItemFrame.CloseButton)
+		S:ApplyElvUIFont(ChooseItemFrame)
+
+		for _, opt in ipairs(ChooseItemFrame.itemOptions) do
+			SkinOption(opt)
+		end
+
+		ChooseItemFrame.isSkinned = true
+	end
+
+	ChooseItemFrame:HookScript("OnShow", SkinFrame)
+
+	if ChooseItemFrame.Update then
+		hooksecurefunc(ChooseItemFrame, "Update", function(self)
+			for _, opt in ipairs(self.itemOptions) do
+				SkinOption(opt)
+			end
+		end)
+	elseif _G.ChooseItemFrameMixin and _G.ChooseItemFrameMixin.Update then
+		hooksecurefunc(_G.ChooseItemFrameMixin, "Update", function(self)
+			for _, opt in ipairs(self.itemOptions) do
+				SkinOption(opt)
+			end
+		end)
+	end
+end)
+
+S:AddCallback("Skin_ItemBrowser", function()
+	if not E.private.skins.blizzard.enable or not E.private.skins.blizzard.itembrowser then return end
+
+	local ItemBrowser = _G.ItemBrowser
+	if not ItemBrowser then return end
+
+	S:HandleSirusFrame(ItemBrowser)
+
+	if ItemBrowser.inset then
+		ItemBrowser.inset:StripTextures()
+		if ItemBrowser.inset.NineSlice then ItemBrowser.inset.NineSlice:Hide() end
+	end
+
+	if ItemBrowser.SearchBox then
+		S:HandleEditBox(ItemBrowser.SearchBox)
+		if ItemBrowser.SearchBox.clearButton then
+			S:HandleCloseButton(ItemBrowser.SearchBox.clearButton)
+		end
+	end
+
+	if ItemBrowser.SearchProgressBar then
+		ItemBrowser.SearchProgressBar:StripTextures()
+		ItemBrowser.SearchProgressBar:SetStatusBarTexture(E.media.normTex)
+		E:RegisterStatusBar(ItemBrowser.SearchProgressBar)
+	end
+
+	local Scroll = ItemBrowser.Scroll
+	if Scroll then
+		if Scroll.Background then Scroll.Background:SetAlpha(0) end
+		if Scroll.ScrollBar then
+			S:HandleSirusScrollBar(Scroll.ScrollBar)
+		end
+	end
+
+	local function SkinHeader(header)
+		if not header or header.isSkinned then return end
+
+		header:StripTextures()
+		header:SetTemplate("Transparent")
+
+		if header.ButtonText then
+			header.ButtonText:SetTextColor(1, 0.82, 0)
+		end
+
+		header.isSkinned = true
+	end
+
+	local function SkinRow(row)
+		if not row or row.isSkinned then return end
+
+		row:StripTextures()
+		row:SetTemplate("Default", true)
+		row:StyleButton(nil, true)
+
+		if row.cells then
+			for _, cell in ipairs(row.cells) do
+				if cell.Border then
+					cell.Border:SetTexture()
+					cell.Border:Hide()
+				end
+				if cell.Icon then
+					cell.Icon:SetDrawLayer("BORDER")
+					cell.Icon:SetTexCoord(unpack(E.TexCoords))
+					cell.Icon:SetSize(34, 34)
+					cell.Icon:CreateBackdrop("Default")
+					if cell.Icon.backdrop then
+						cell.Icon.backdrop:SetOutside(cell.Icon)
+					end
+				end
+			end
+		end
+
+		row.isSkinned = true
+	end
+
+	local function SkinList()
+		if ItemBrowser.HeaderHolder then
+			for i = 1, ItemBrowser.HeaderHolder:GetNumChildren() do
+				SkinHeader(select(i, ItemBrowser.HeaderHolder:GetChildren()))
+			end
+		end
+
+		if Scroll and Scroll.buttons then
+			for _, row in ipairs(Scroll.buttons) do
+				SkinRow(row)
+			end
+		end
+	end
+
+	if ItemBrowser.UpdateResultList then
+		hooksecurefunc(ItemBrowser, "UpdateResultList", SkinList)
+	end
+	SkinList()
+
+	S:HandleSirusTabs("ItemBrowserTab", 4)
+
+	S:ApplyElvUIFont(ItemBrowser)
+	ItemBrowser:HookScript("OnShow", function(self)
+		S:ApplyElvUIFont(self)
+	end)
 end)

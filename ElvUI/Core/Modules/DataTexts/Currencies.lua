@@ -1,18 +1,18 @@
 local E, L, V, P, G = unpack(ElvUI)
 local DT = E:GetModule('DataTexts')
-local LC = E.Libs.Compat
 
 local _G = _G
 local format, gsub, match, tonumber, wipe = format, string.gsub, string.match, tonumber, wipe
-local pairs, ipairs, unpack, tostring = pairs, ipairs, unpack, tostring
+local pairs, unpack, tostring = pairs, unpack, tostring
 
-local BreakUpLargeNumbers = LC.BreakUpLargeNumbers
+local BreakUpLargeNumbers = BreakUpLargeNumbers
 local GetMoney = GetMoney
 
 local GUILDCONTROL_OPTION16 = GUILDCONTROL_OPTION16
+local BACKPACK_TOOLTIP = BACKPACK_TOOLTIP
 
 local iconString, db = '|T%s:20:20:0:0:64:64:4:60:4:60|t'
-DT.CurrencyList = { GOLD = GUILDCONTROL_OPTION16, BACKPACK = 'Backpack' }
+DT.CurrencyList = { GOLD = GUILDCONTROL_OPTION16, BACKPACK = BACKPACK_TOOLTIP }
 
 local function OnClick()
 	_G.ToggleCharacter('TokenFrame')
@@ -23,7 +23,7 @@ local function AddInfo(id)
 	if name then
 		local textRight = '%s'
 		if db.maxCurrency and info.maxQuantity and info.maxQuantity > 0 then
-			textRight = '%s / '..E:ShortValue(BreakUpLargeNumbers(info.maxQuantity))
+			textRight = '%s / '..E:ShortValue(info.maxQuantity)
 		end
 
 		DT.tooltip:AddDoubleLine(format('%s %s', icon, name), format(textRight, BreakUpLargeNumbers(info.quantity)), 1, 1, 1, 1, 1, 1)
@@ -52,8 +52,8 @@ local function OnEvent(self)
 		for i = 1, 3 do
 			local info = DT:BackpackCurrencyInfo(i)
 			if info and info.quantity then
-				iconString = match(info and info.iconFileID or '', E.myfaction) ~= nil and gsub(iconString, '4:60:4:60', '4:38:2:36') or iconString
-				displayString = (i > 1 and displayString..' ' or '')..format('%s %s', format(iconString, info.iconFileID), E:ShortValue(info.quantity))
+				local texString = match(info.iconFileID or '', E.myfaction) ~= nil and gsub(iconString, '4:60:4:60', '4:38:2:36') or iconString
+				displayString = (i > 1 and displayString..' ' or '')..format('%s %s', format(texString, info.iconFileID), E:ShortValue(info.quantity))
 			end
 		end
 
@@ -83,12 +83,21 @@ local function OnEnter()
 
 	wipe(shownHeaders)
 	local addLine, addLine2
-	for _, info in ipairs(db.tooltipData) do
-		local _, id, header = unpack(info)
-		if id and db.idEnable[id] then
-			AddHeader(header, addLine)
-			AddInfo(id)
-			addLine = true
+
+	local maxIndex = 0
+	for index in pairs(db.tooltipData) do
+		if index > maxIndex then maxIndex = index end
+	end
+
+	for i = 1, maxIndex do
+		local info = db.tooltipData[i]
+		if info then
+			local _, id, header = unpack(info)
+			if id and db.idEnable[id] then
+				AddHeader(header, addLine)
+				AddInfo(id)
+				addLine = true
+			end
 		end
 	end
 
@@ -117,4 +126,4 @@ local function ApplySettings(self)
 	end
 end
 
-DT:RegisterDatatext('Currencies', nil, { 'PLAYER_MONEY', 'SEND_MAIL_MONEY_CHANGED', 'SEND_MAIL_COD_CHANGED', 'PLAYER_TRADE_MONEY', 'TRADE_MONEY_CHANGED', 'CHAT_MSG_CURRENCY', 'CURRENCY_DISPLAY_UPDATE' }, OnEvent, nil, OnClick, OnEnter, nil, _G.CURRENCY, nil, ApplySettings)
+DT:RegisterDatatext('Currencies', nil, { 'PLAYER_MONEY', 'SEND_MAIL_MONEY_CHANGED', 'SEND_MAIL_COD_CHANGED', 'PLAYER_TRADE_MONEY', 'TRADE_MONEY_CHANGED', 'CURRENCY_DISPLAY_UPDATE' }, OnEvent, nil, OnClick, OnEnter, nil, _G.CURRENCY, nil, ApplySettings)

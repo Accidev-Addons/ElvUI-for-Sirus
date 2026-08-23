@@ -102,7 +102,7 @@ do
 	-- 1 : v1.0.0
 	-- 2 : v1.0.1
 	-- 3 : v1.0.2
-	local _MINOR = 3
+	local _MINOR = 10003
 
 	local _COPYRIGHT =
 	"LibDeflate ".._VERSION
@@ -3076,7 +3076,7 @@ end
 local _addon_channel_codec
 
 local function GenerateWoWAddonChannelCodec()
-	return LibDeflate:CreateCodec("\000", "\001", "")
+	return LibDeflate:CreateCodec("\000\124", "\001", "")
 end
 
 --- Encode the string to make it ready to be transmitted in World of

@@ -1,7 +1,9 @@
 local E, L, V, P, G = unpack(ElvUI)
 
+local _G = _G
+local type, pairs, next = type, pairs, next
+
 local List = E.Filters.List
-local Aura = E.Filters.Aura
 
 -- These are debuffs that are some form of CC
 G.unitframe.aurafilters.CCDebuffs = {
@@ -459,11 +461,6 @@ G.unitframe.aurafilters.RaidDebuffs = {
 	},
 }
 
---Spells that we want to show the duration backwards
-E.ReverseTimer = {
-
-}
-
 -- BuffWatch: List of personal spells to show on unitframes as icon
 local function ClassBuff(id, point, color, anyUnit, onlyShowMissing, style, displayText, decimalThreshold, textColor, textThreshold, xOffset, yOffset, sizeOverride)
 	local r, g, b = unpack(color)
@@ -597,4 +594,58 @@ G.unitframe.specialFilters = {
 	blockNoDuration = true,
 	blockDispellable = true,
 	blockNotDispellable = true,
+}
+
+local function ServiceSpells(source, fallback)
+	local spells = {}
+
+	if type(source) == "table" then
+		for spellID in pairs(source) do
+			if type(spellID) == "number" then
+				spells[spellID] = List()
+			end
+		end
+	end
+
+	if not next(spells) and fallback then
+		for i = 1, #fallback do
+			spells[fallback[i]] = List()
+		end
+	end
+
+	return spells
+end
+
+G.unitframe.aurafilters.Sirus_Category = {
+	type = "Blacklist",
+	spells = ServiceSpells(_G.S_CATEGORY_SPELL_ID, {
+		90001, 90002, 90003, 90004, 90005, 90006, 90007, 90008, 90009, 90010,
+		90011, 90012, 90013, 90014, 90015, 90016, 90017, 90018, 90019, 90020,
+		90021, 90022, 90023, 90024, 90025, 90026, 90027, 90028, 90029, 90030,
+		90031, 90032, 90033, 90034, 90035, 90036,
+		302100, 302101, 302102, 302103, 302104, 302105, 302106, 302107
+	}),
+}
+
+G.unitframe.aurafilters.Sirus_Premium = {
+	type = "Blacklist",
+	spells = ServiceSpells(_G.S_PREMIUM_SPELL_ID, { 90037, 371930, 378467, 378471 }),
+}
+
+G.unitframe.aurafilters.Sirus_VIP = {
+	type = "Blacklist",
+	spells = ServiceSpells(_G.S_VIP_STATUS_DATA, {
+		90039, 90040, 90041, 90042, 90043, 90044, 90045,
+		308221, 308222, 308223, 308224, 308225, 308226, 308227
+	}),
+}
+
+G.unitframe.aurafilters.Sirus_Zodiac = {
+	type = "Blacklist",
+	spells = ServiceSpells(_G.ZODIAC_DEBUFFS),
+}
+
+G.unitframe.aurafilters.Sirus_Faction = {
+	type = "Blacklist",
+	spells = ServiceSpells(_G.FACTION_OVERRIDE_BY_DEBUFFS),
 }

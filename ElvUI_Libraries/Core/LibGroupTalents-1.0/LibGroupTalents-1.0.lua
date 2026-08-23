@@ -66,7 +66,7 @@ Events:
 
 local TalentQuery = LibStub("LibTalentQuery-1.0")
 
-local MAJOR, MINOR = "LibGroupTalents-1.0", tonumber(("$Rev: 65 $"):match("(%d+)"))
+local MAJOR, MINOR = "LibGroupTalents-1.0", 10065
 local lib = LibStub:NewLibrary(MAJOR, MINOR)
 if not lib then return end
 
@@ -91,7 +91,13 @@ end
 
 local specChangers = {}
 for index,spellid in ipairs(_G.TALENT_ACTIVATION_SPELLS) do
-	specChangers[GetSpellInfo(spellid)] = index
+	if (index > 2) then
+		break
+	end
+	local spellname = GetSpellInfo(spellid)
+	if (spellname) then
+		specChangers[spellname] = index
+	end
 end
 
 local frame = lib.frame
@@ -122,6 +128,7 @@ if not lib.events then
 end
 
 local next, select, pairs, type = next, select, pairs, type
+local min = math.min
 local new, del, deepDel
 do
 	local list = setmetatable({},{__mode='k'})
@@ -305,7 +312,11 @@ end
 
 -- UNIT_AURA
 function lib:UNIT_AURA(unit)
+	if not unit then return end
+
 	local guid = UnitGUID(unit)
+	if not guid then return end
+
 	if (not UnitIsVisible(unit) or (self.wasOffline and self.wasOffline[guid])) then
 		if (not self.outOfSight) then
 			self.outOfSight = {}
@@ -797,7 +808,7 @@ function lib:TalentQuery_Ready(e, name, realm, unit)
 
 		if (GetTalentTabInfo(1, isnotplayer)) then
 			local active = GetActiveTalentGroup(isnotplayer)
-			local numActive = GetNumTalentGroups(isnotplayer)
+			local numActive = min(GetNumTalentGroups(isnotplayer) or 1, 2)
 			local listUnspent, invalid
 			local talents = new()
 
@@ -1015,7 +1026,7 @@ function lib:RefreshPlayerGlyphs()
 
 	local glyphs = new()
 	local any
-	for talentGroup = 1,GetNumTalentGroups() do
+	for talentGroup = 1,min(GetNumTalentGroups() or 1, 2) do
 		local list = new()
 		for i = 1,GetNumGlyphSockets() do
 			local enabled, glyphType, glyphSpell, icon = GetGlyphSocketInfo(i, talentGroup)

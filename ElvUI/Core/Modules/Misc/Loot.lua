@@ -20,7 +20,6 @@
 local E, L, V, P, G = unpack(ElvUI)
 local M = E:GetModule('Misc')
 local LCG = E.Libs.CustomGlow
-local LC = E.Libs.Compat
 
 local _G = _G
 local tinsert = tinsert
@@ -35,7 +34,7 @@ local CursorUpdate = CursorUpdate
 local GameTooltip = GameTooltip
 local GetCursorPosition = GetCursorPosition
 local GetCVar = GetCVar
-local GetLootSlotInfo = LC.GetLootSlotInfo
+local GetLootSlotInfo = E.GetLootSlotInfo
 local GetLootSlotLink = GetLootSlotLink
 local GetNumLootItems = GetNumLootItems
 local IsFishingLoot = IsFishingLoot
@@ -207,10 +206,6 @@ end
 function M:LOOT_OPENED(_, autoloot)
 	lootFrame:Show()
 
-	if not lootFrame:IsShown() then
-		CloseLoot(not autoloot)
-	end
-
 	if IsFishingLoot() then
 		lootFrame.title:SetText(L["Fishy Loot"])
 	elseif not UnitIsFriend('player', 'target') and UnitIsDead('target') then
@@ -227,7 +222,6 @@ function M:LOOT_OPENED(_, autoloot)
 		local x, y = GetCursorPosition()
 
 		lootFrame:Point('TOPLEFT', UIParent, 'BOTTOMLEFT', (x / scale) - 40, (y / scale) + 20)
-		lootFrame:GetCenter()
 		lootFrame:Raise()
 		E:DisableMover('LootFrameMover')
 	else

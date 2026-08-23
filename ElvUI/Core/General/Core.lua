@@ -1,20 +1,18 @@
 local ElvUI = select(2, ...)
 ElvUI[2] = ElvUI[1].Libs.ACL:GetLocale('ElvUI', ElvUI[1]:GetLocale()) -- Locale doesn't exist yet, make it exist.
 local E, L, V, P, G = unpack(ElvUI)
-local LC = E.Libs.Compat
 
 local _G = _G
 local tonumber, pairs, ipairs, error, unpack, select, tostring = tonumber, pairs, ipairs, error, unpack, select, tostring
 local strjoin, wipe, sort, tinsert, tremove, tContains = strjoin, wipe, sort, tinsert, tremove, tContains
-local format, strfind, strrep, strlen, sub, gsub = format, strfind, strrep, strlen, strsub, gsub
-local assert, type, pcall, xpcall, next, print = assert, type, pcall, xpcall, next, print
+local format, strfind, strrep, gsub = format, strfind, strrep, gsub
+local type, pcall, xpcall, next, print = type, pcall, xpcall, next, print
 local rawget, rawset, setmetatable = rawget, rawset, setmetatable
 
 local CreateFrame = CreateFrame
 local GetBindingKey = GetBindingKey
 local GetCVar = GetCVar
 local GetCurrentBindingSet = GetCurrentBindingSet
-local GetSpellInfo = GetSpellInfo
 local InCombatLockdown = InCombatLockdown
 local IsInGuild = IsInGuild
 local IsInInstance = IsInInstance
@@ -25,15 +23,14 @@ local UIParent = UIParent
 local UnitFactionGroup = UnitFactionGroup
 local UnitGUID = UnitGUID
 
-local IsInRaid = LC.IsInRaid
-local IsInGroup = LC.IsInGroup
-local GetNumGroupMembers = LC.GetNumGroupMembers
-local GetSpecialization = LC.GetSpecialization
-local GetPhysicalScreenSize = LC.GetPhysicalScreenSize
+local IsInRaid = IsInRaid
+local IsInGroup = IsInGroup
+local GetNumGroupMembers = GetNumGroupMembers
+local GetSpecialization = E.GetSpecialization
+local GetPhysicalScreenSize = GetPhysicalScreenSize
 
 local DisableAddOn = DisableAddOn
 local SendAddonMessage = SendAddonMessage
-local GetAddOnMetadata = GetAddOnMetadata
 -- GLOBALS: ElvCharacterDB
 
 --Modules
@@ -41,7 +38,6 @@ local ActionBars = E:GetModule('ActionBars')
 local AFK = E:GetModule('AFK')
 local Auras = E:GetModule('Auras')
 local Bags = E:GetModule('Bags')
-local Blizzard = E:GetModule('Blizzard')
 local Chat = E:GetModule('Chat')
 local DataBars = E:GetModule('DataBars')
 local DataTexts = E:GetModule('DataTexts')
@@ -57,7 +53,6 @@ local LSM = E.Libs.LSM
 E.noop = function() end
 E.isMacClient = IsMacClient()
 E.title = format('%s%s|r', E.InfoColor, 'ElvUI')
-E.toc = tonumber(GetAddOnMetadata('ElvUI', 'X-Interface'))
 E.version, E.versionString = E:ParseVersionString('ElvUI')
 E.myfaction, E.myLocalizedFaction = UnitFactionGroup('player')
 E.myLocalizedClass, E.myclass = UnitClass('player')
@@ -72,8 +67,7 @@ E.screenWidth, E.screenHeight = GetScreenWidth(), GetScreenHeight()
 E.resolution = format('%dx%d', E.physicalWidth, E.physicalHeight)
 E.perfect = 768 / E.physicalHeight
 E.NewSign = [[|TInterface\OptionsFrame\UI-OptionsFrame-NewFeatureIcon:14:14|t]]
-E.NewSignNoWhatsNew = [[|TInterface\OptionsFrame\UI-OptionsFrame-NewFeatureIcon:14:14:0:0|t]]
-E.TexturePath = [[Interface\AddOns\ElvUI\Media\Textures\]] -- for plugins?
+E.TexturePath = [[Interface\AddOns\ElvUI\Core\Media\Textures\]] -- for plugins?
 E.ClearTexture = '' -- used to clear: Set (Normal, Disabled, Checked, Pushed, Highlight) Texture
 E.UserList = {}
 
@@ -98,7 +92,6 @@ E.valueColorUpdateFuncs = setmetatable({}, {
 })
 
 E.TexCoords = {0, 1, 0, 1}
-E.FrameLocks = {}
 E.VehicleLocks = {}
 E.CreditsList = {}
 E.ReverseTimer = {} -- Spells that we want to show the duration backwards (oUF_RaidDebuffs, ???)
@@ -160,13 +153,6 @@ E.HiddenFrame = CreateFrame('Frame', nil, UIParent)
 E.HiddenFrame:SetPoint('BOTTOM')
 E.HiddenFrame:SetSize(1,1)
 E.HiddenFrame:Hide()
-
-do -- used in Options
-	E.DEFAULT_FILTER = {}
-	for filter, tbl in pairs(G.unitframe.aurafilters) do
-		E.DEFAULT_FILTER[filter] = tbl.type
-	end
-end
 
 do
 	local a1, a2 = '', '[%s%-]'
@@ -302,18 +288,11 @@ function E:UpdateMedia(mediaType)
 	E.media.backdropfadecolor = E:SetColorTable(E.media.backdropfadecolor, E:UpdateClassColor(E.db.general.backdropfadecolor))
 
 	-- Custom Glow Color
-	-- E.media.customGlowColor = E:SetColorTable(E.media.customGlowColor, E:UpdateClassColor(E.db.general.customGlow.color))
+	E.media.customGlowColor = E:SetColorTable(E.media.customGlowColor, E:UpdateClassColor(E.db.general.customGlow.color))
 
 	local value = E:UpdateClassColor(E.db.general.valuecolor)
 	E.media.rgbvaluecolor = E:SetColorTable(E.media.rgbvaluecolor, value)
 	E.media.hexvaluecolor = E:RGBToHex(value.r, value.g, value.b)
-
---[[ 	if E.private.nameplates.enable then
-		-- Colors for Target Indicator
-		E:UpdateClassColor(E.db.nameplates.colors.glowColor)
-		E:UpdateClassColor(E.db.nameplates.colors.lowHealthColor)
-		E:UpdateClassColor(E.db.nameplates.colors.lowHealthHalf)
-	end ]]
 
 	if E.private.chat.enable then
 		-- Chat Tab Selector Color
@@ -383,87 +362,57 @@ function E:ValueFuncCall()
 	end
 end
 
-function E:UpdateFrameTemplates()
-	for frame in pairs(E.frames) do
+local function ForEachTemplateFrame(registry, callback, ...)
+	for frame in pairs(registry) do
 		if frame and frame.template then
-			if not (frame.ignoreUpdates or frame.ignoreFrameTemplates) then
-				frame:SetTemplate(frame.template, frame.glossTex, nil, frame.forcePixelMode)
-			end
+			callback(frame, ...)
 		else
-			E.frames[frame] = nil
-		end
-	end
-
-	for frame in pairs(E.unitFrameElements) do
-		if frame and frame.template then
-			if not (frame.ignoreUpdates or frame.ignoreFrameTemplates) then
-				frame:SetTemplate(frame.template, frame.glossTex, nil, frame.forcePixelMode, frame.isUnitFrameElement)
-			end
-		else
-			E.unitFrameElements[frame] = nil
+			registry[frame] = nil
 		end
 	end
 end
 
-function E:UpdateBorderColors()
-	local r, g, b = unpack(E.media.bordercolor)
-	for frame in pairs(E.frames) do
-		if frame and frame.template then
-			if not (frame.ignoreUpdates or frame.forcedBorderColors) and (frame.template == 'Default' or frame.template == 'Transparent') then
-				frame:SetBackdropBorderColor(r, g, b)
-			end
-		else
-			E.frames[frame] = nil
-		end
-	end
+local function ApplyTemplate(frame, isUnitFrameElement)
+	if frame.ignoreUpdates or frame.ignoreFrameTemplates then return end
 
-	local r2, g2, b2 = unpack(E.media.unitframeBorderColor)
-	for frame in pairs(E.unitFrameElements) do
-		if frame and frame.template then
-			if not (frame.ignoreUpdates or frame.forcedBorderColors) and (frame.template == 'Default' or frame.template == 'Transparent') then
-				frame:SetBackdropBorderColor(r2, g2, b2)
-			end
-		else
-			E.unitFrameElements[frame] = nil
-		end
+	frame:SetTemplate(frame.template, frame.glossTex, nil, frame.forcePixelMode, isUnitFrameElement and frame.isUnitFrameElement)
+end
+
+local function ApplyBorderColor(frame, r, g, b)
+	if frame.ignoreUpdates or frame.forcedBorderColors or frame.ignoreBorderColors then return end
+	if frame.template ~= 'Default' and frame.template ~= 'Transparent' then return end
+
+	frame:SetBackdropBorderColor(r, g, b)
+end
+
+local function ApplyBackdropColor(frame, r, g, b, r2, g2, b2, a2)
+	if frame.ignoreUpdates then return end
+
+	if frame.callbackBackdropColor then
+		frame:callbackBackdropColor()
+	elseif frame.template == 'Default' then
+		frame:SetBackdropColor(r, g, b)
+	elseif frame.template == 'Transparent' then
+		frame:SetBackdropColor(r2, g2, b2, frame.customBackdropAlpha or a2)
 	end
+end
+
+function E:UpdateFrameTemplates()
+	ForEachTemplateFrame(E.frames, ApplyTemplate)
+	ForEachTemplateFrame(E.unitFrameElements, ApplyTemplate, true)
+end
+
+function E:UpdateBorderColors()
+	ForEachTemplateFrame(E.frames, ApplyBorderColor, unpack(E.media.bordercolor))
+	ForEachTemplateFrame(E.unitFrameElements, ApplyBorderColor, unpack(E.media.unitframeBorderColor))
 end
 
 function E:UpdateBackdropColors()
 	local r, g, b = unpack(E.media.backdropcolor)
 	local r2, g2, b2, a2 = unpack(E.media.backdropfadecolor)
 
-	for frame in pairs(E.frames) do
-		if frame and frame.template then
-			if not frame.ignoreUpdates then
-				if frame.callbackBackdropColor then
-					frame:callbackBackdropColor()
-				elseif frame.template == 'Default' then
-					frame:SetBackdropColor(r, g, b)
-				elseif frame.template == 'Transparent' then
-					frame:SetBackdropColor(r2, g2, b2, frame.customBackdropAlpha or a2)
-				end
-			end
-		else
-			E.frames[frame] = nil
-		end
-	end
-
-	for frame in pairs(E.unitFrameElements) do
-		if frame and frame.template then
-			if not frame.ignoreUpdates then
-				if frame.callbackBackdropColor then
-					frame:callbackBackdropColor()
-				elseif frame.template == 'Default' then
-					frame:SetBackdropColor(r, g, b)
-				elseif frame.template == 'Transparent' then
-					frame:SetBackdropColor(r2, g2, b2, frame.customBackdropAlpha or a2)
-				end
-			end
-		else
-			E.unitFrameElements[frame] = nil
-		end
-	end
+	ForEachTemplateFrame(E.frames, ApplyBackdropColor, r, g, b, r2, g2, b2, a2)
+	ForEachTemplateFrame(E.unitFrameElements, ApplyBackdropColor, r, g, b, r2, g2, b2, a2)
 end
 
 function E:UpdateFontTemplates()
@@ -541,6 +490,14 @@ do
 			'Bartender4',
 			'Dominos'
 		},
+		Bags = {
+			info = {
+				enabled = function() return E.private.bags.enable end,
+				accept = function() E.private.bags.enable = false; ReloadUI() end,
+				name = 'ElvUI Bags'
+			},
+			'AdiBags'
+		},
 		Chat = {
 			info = {
 				enabled = function() return E.private.chat.enable end,
@@ -561,6 +518,24 @@ do
 			'Healers-Have-To-Die',
 			'Kui_Nameplates',
 			'Aloft'
+		},
+		RaidFrames = {
+			info = {
+				enabled = function()
+					if not E.private.unitframe.enable then return false end
+					local units = E.db.unitframe.units
+					return units.party.enable or units.raid.enable or units.raid40.enable
+				end,
+				accept = function()
+					local units = E.db.unitframe.units
+					units.party.enable = false
+					units.raid.enable = false
+					units.raid40.enable = false
+					ReloadUI()
+				end,
+				name = 'ElvUI Raid Frames'
+			},
+			'Cell'
 		},
 		ToolTip = {
 			info = {
@@ -860,51 +835,28 @@ do	--The code in this function is from WeakAuras, credit goes to Mirrored and th
 	end
 end
 
-do	--Split string by multi-character delimiter (the strsplit / string.split function provided by WoW doesn't allow multi-character delimiter)
-	local splitTable = {}
-	function E:SplitString(str, delim)
-		assert(type (delim) == 'string' and strlen(delim) > 0, 'bad delimiter')
-
-		local start = 1
-		wipe(splitTable) -- results table
-
-		-- find each instance of a string followed by the delimiter
-		while true do
-			local pos = strfind(str, delim, start, true) -- plain find
-			if not pos then break end
-
-			tinsert(splitTable, sub(str, start, pos - 1))
-			start = pos + strlen(delim)
-		end -- while
-
-		-- insert final one (after last delimiter)
-		tinsert(splitTable, sub(str, start))
-
-		return unpack(splitTable)
-	end
-end
-
 do
 	local SendMessageWaiting -- only allow 1 delay at a time regardless of eventing
+	local VERSION_PREFIX = 'ELVUI_VERSIONCHK9'
 	function E:SendMessage()
 		if IsInRaid() then
 			local _, instanceType = IsInInstance()
-			SendAddonMessage('ELVUI_VERSIONCHK', E.version, (instanceType == 'pvp' and 'BATTLEGROUND') or 'RAID')
+			SendAddonMessage(VERSION_PREFIX, E.version, (instanceType == 'pvp' and 'BATTLEGROUND') or 'RAID')
 		elseif IsInGroup() then
-			SendAddonMessage('ELVUI_VERSIONCHK', E.version, 'PARTY')
+			SendAddonMessage(VERSION_PREFIX, E.version, 'PARTY')
 		elseif IsInGuild() then
-			SendAddonMessage('ELVUI_VERSIONCHK', E.version, 'GUILD')
+			SendAddonMessage(VERSION_PREFIX, E.version, 'GUILD')
 		end
 
 		SendMessageWaiting = nil
 	end
 
 	local SendRecieveGroupSize = 0
-	local PLAYER_NAME = format('%s-%s', E.myname, E:ShortenRealm(E.myrealm))
+	local PLAYER_NAME = E.myname
 	local function SendRecieve(_, event, prefix, message, _, sender)
 		if event == 'CHAT_MSG_ADDON' then
 			if sender == PLAYER_NAME then return end
-			if prefix == 'ELVUI_VERSIONCHK' then
+			if prefix == VERSION_PREFIX then
 				local ver, msg, inCombat = E.version, tonumber(message), InCombatLockdown()
 
 				E.UserList[E:StripMyRealm(sender)] = msg
@@ -1041,9 +993,9 @@ do
 		if E.db.auras.fontSize then
 			local fontSize = E.db.auras.fontSize
 			E.db.auras.buffs.countFontSize = fontSize
-			E.db.auras.buffs.durationFontSize = fontSize
+			E.db.auras.buffs.timeFontSize = fontSize
 			E.db.auras.debuffs.countFontSize = fontSize
-			E.db.auras.debuffs.durationFontSize = fontSize
+			E.db.auras.debuffs.timeFontSize = fontSize
 			E.db.auras.fontSize = nil
 		end
 
@@ -1107,25 +1059,6 @@ do
 		if E.global.nameplatesResetInformed then E.global.nameplatesResetInformed = nil end
 		if E.global.userInformedNewChanges1 then E.global.userInformedNewChanges1 = nil end
 
-		-- cvar nameplate visibility stuff
-		if E.db.nameplates.units.FRIENDLY_NPC.showAlways ~= nil then
-			E.db.nameplates.visibility.friendly.npcs = E.db.nameplates.units.FRIENDLY_NPC.showAlways
-			E.db.nameplates.units.FRIENDLY_NPC.showAlways = nil
-		end
-		if E.db.nameplates.units.FRIENDLY_PLAYER.minions ~= nil then
-			E.db.nameplates.visibility.friendly.minions = E.db.nameplates.units.FRIENDLY_PLAYER.minions
-			E.db.nameplates.units.FRIENDLY_PLAYER.minions = nil
-		end
-		if E.db.nameplates.units.ENEMY_NPC.minors ~= nil then
-			E.db.nameplates.visibility.enemy.minus = E.db.nameplates.units.ENEMY_NPC.minors
-			E.db.nameplates.units.ENEMY_NPC.minors = nil
-		end
-		if E.db.nameplates.units.ENEMY_PLAYER.minions ~= nil or E.db.nameplates.units.ENEMY_NPC.minions ~= nil then
-			E.db.nameplates.visibility.enemy.minions = E.db.nameplates.units.ENEMY_PLAYER.minions or E.db.nameplates.units.ENEMY_NPC.minions
-			E.db.nameplates.units.ENEMY_PLAYER.minions = nil
-			E.db.nameplates.units.ENEMY_NPC.minions = nil
-		end
-
 		-- removed override stuff from aurawatch
 		if E.global.unitframe.buffwatch then
 			for _, spells in pairs(E.global.unitframe.buffwatch) do
@@ -1143,16 +1076,20 @@ do
 
 		-- fix aurabars colors
 		local auraBarColors = E.global.unitframe.AuraBarColors
-		for spell, info in pairs(auraBarColors) do
-			if type(spell) == 'string' then
-				local _, _, _, _, _, _, spellID = E:GetSpellInfo(spell)
-				if spellID and not auraBarColors[spellID] then
-					auraBarColors[spellID] = info
-					auraBarColors[spell] = nil
-					spell = spellID
-				end
+		local renamedColors = {}
+		for spell in pairs(auraBarColors) do
+			local spellID = type(spell) == 'string' and tonumber(spell)
+			if spellID and not auraBarColors[spellID] then
+				renamedColors[spell] = spellID
 			end
+		end
 
+		for spell, spellID in pairs(renamedColors) do
+			auraBarColors[spellID] = auraBarColors[spell]
+			auraBarColors[spell] = nil
+		end
+
+		for spell, info in pairs(auraBarColors) do
 			if type(info) == 'boolean' then
 				auraBarColors[spell] = { color = { r = 1, g = 1, b = 1 }, enable = info }
 			elseif type(info) == 'table' then
@@ -1224,6 +1161,33 @@ do
 		if E.db.actionbar.barPet.buttonspacing then
 			E.db.actionbar.barPet.buttonSpacing = E.db.actionbar.barPet.buttonspacing
 			E.db.actionbar.barPet.buttonspacing = nil
+		end
+
+		if not E.db.convertPages and E.db.movers then
+			local movers = E.db.movers
+			for _, rename in ipairs({{'TotemBarMover', 'TotemTrackerMover'}, {'ElvBar_Totem', 'TotemBarMover'}, {'ElvBar_Pet', 'PetAB'}, {'ElvTooltipMover', 'TooltipMover'}, {'MirrorTimer1Mover', 'MirrorTimerMover'}}) do
+				local old, new = movers[rename[1]], rename[2]
+				if old then
+					if not movers[new] then movers[new] = old end
+					movers[rename[1]] = nil
+				end
+			end
+		end
+
+		local panels = E.db.datatexts.panels
+		for _, name in ipairs({'LeftChatDataPanel', 'RightChatDataPanel'}) do
+			local panel = panels[name]
+			if type(panel) == 'table' and (panel.left or panel.middle or panel.right) then
+				panel[1], panel[2], panel[3] = panel.left or panel[1], panel.middle or panel[2], panel.right or panel[3]
+				panel.left, panel.middle, panel.right = nil, nil, nil
+			end
+		end
+		if type(panels.MinimapPanel) == 'table' then
+			if type(panels.LeftMiniPanel) == 'string' then panels.MinimapPanel[1] = panels.LeftMiniPanel end
+			if type(panels.RightMiniPanel) == 'string' then panels.MinimapPanel[2] = panels.RightMiniPanel end
+		end
+		for _, name in ipairs({'LeftMiniPanel', 'RightMiniPanel', 'TopMiniPanel', 'TopLeftMiniPanel', 'TopRightMiniPanel', 'BottomMiniPanel', 'BottomLeftMiniPanel', 'BottomRightMiniPanel'}) do
+			if type(panels[name]) == 'string' then panels[name] = nil end
 		end
 
 		-- Convert Pages
@@ -1298,6 +1262,8 @@ function E:DBConvertDev()
 		E:ConvertActionBarKeybinds()
 		ElvCharacterDB.ConvertKeybindings = true
 	end
+
+	E.db.actionbar.microbar.useIcons = nil
 
 	-- hide text -> hide name & hide time
 	for _, unit in ipairs({'player','target','focus','pet','boss','arena','party'}) do
@@ -1575,6 +1541,7 @@ end
 do
 	E.ObjectEventTable, E.ObjectEventFrame = {}, CreateFrame('Frame')
 	local eventFrame, eventTable = E.ObjectEventFrame, E.ObjectEventTable
+	local customEvents = {}
 
 	eventFrame:SetScript('OnEvent', function(_, event, ...)
 		local objs = eventTable[event]
@@ -1629,6 +1596,11 @@ do
 			objs = {}
 			eventTable[event] = objs
 			pcall(eventFrame.RegisterEvent, eventFrame, event)
+
+			if eventFrame.RegisterCustomEvent and not eventFrame:IsEventRegistered(event) then
+				customEvents[event] = true
+				eventFrame:RegisterCustomEvent(event)
+			end
 		end
 
 		local funcs = objs[object]
@@ -1664,9 +1636,17 @@ do
 				objs[object] = nil
 			end
 
-			if not next(funcs) then
+			if not next(objs) then
 				eventFrame:UnregisterEvent(event)
 				eventTable[event] = nil
+
+				if customEvents[event] then
+					customEvents[event] = nil
+
+					if eventFrame.UnregisterCustomEvent then
+						eventFrame:UnregisterCustomEvent(event)
+					end
+				end
 			end
 		end
 	end
@@ -1705,7 +1685,10 @@ do
 	end
 
 	function E:CallLoadFunc(func, ...)
-		xpcall(func, Errorhandler, ...)
+		local args = {...}
+		local count = select('#', ...)
+
+		xpcall(function() return func(unpack(args, 1, count)) end, Errorhandler)
 	end
 end
 
@@ -1759,6 +1742,53 @@ function E:InitializeModules()
 end
 
 function E:DBConversions()
+	local units = E.db.unitframe.units
+	local splitRaid = units.raid25 or units.raid10
+	if splitRaid then
+		splitRaid.numGroups, splitRaid.visibility = nil, nil
+		E:CopyTable(units.raid, splitRaid)
+		units.raid10, units.raid25 = nil, nil
+	end
+
+	local movers = E.db.movers
+	local splitMover = movers and (movers.ElvUF_Raid25Mover or movers.ElvUF_Raid10Mover)
+	if splitMover then
+		if not movers.ElvUF_RaidMover then movers.ElvUF_RaidMover = splitMover end
+		movers.ElvUF_Raid10Mover, movers.ElvUF_Raid25Mover = nil, nil
+	end
+
+	local skins = E.private.skins
+	if type(skins.ace3) == 'table' then
+		if skins.ace3.enable ~= nil then skins.ace3Enable = skins.ace3.enable end
+		skins.ace3 = nil
+	end
+	if type(skins.parchmentRemover) == 'table' then
+		if skins.parchmentRemover.enable ~= nil then skins.parchmentRemoverEnable = skins.parchmentRemover.enable end
+		skins.parchmentRemover = nil
+	end
+	if skins.blizzard.BlizzardOptions ~= nil then
+		skins.blizzard.blizzardOptions, skins.blizzard.BlizzardOptions = skins.blizzard.BlizzardOptions, nil
+	end
+	if skins.blizzard.WorldStateFrame ~= nil then
+		skins.blizzard.worldState, skins.blizzard.WorldStateFrame = skins.blizzard.WorldStateFrame, nil
+	end
+
+	for unit, data in next, E.db.nameplates.units do
+		local text = data.health and data.health.text
+		if text and text.format == '' then
+			local default = P.nameplates.units[unit]
+			text.format = default and default.health.text.format or nil
+		end
+	end
+
+	if E.db.general.lootRoll.statusBarTexture == 'Clean' then
+		E.db.general.lootRoll.statusBarTexture = P.general.lootRoll.statusBarTexture
+	end
+
+	if E.db.datatexts.panels.MinimapPanel[1] == 'DurabilityItemLevel' then
+		E.db.datatexts.panels.MinimapPanel[1] = 'Durability'
+	end
+
 	-- release converts, only one call per version
 	if E.db.dbConverted ~= E.version then
 		E.db.dbConverted = E.version
@@ -1863,11 +1893,11 @@ function E:Initialize()
 		E:LoadAPI()
 		E:LoadCommands()
 		E:InitializeModules()
-		E:LoadMovers()
 		E:UpdateMedia()
 		E:UpdateDispelColors()
 		E:UpdateCustomClassColors()
 		E:UpdateCooldownSettings('all')
+		E:UpdateFrameTemplates()
 
 		E.initialized = true
 

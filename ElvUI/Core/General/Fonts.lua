@@ -2,7 +2,7 @@ local E, L, V, P, G = unpack(ElvUI)
 local LSM = E.Libs.LSM
 
 local _G = _G
-local next = next
+local next, type = next, type
 local strsub = strsub
 local strmatch = strmatch
 
@@ -16,6 +16,7 @@ local FontMap = {
 	questtitle		= { object = _G.QuestTitleFont },
 	questtext		= { object = _G.QuestFont },
 	questsmall		= { object = _G.QuestFontNormalSmall },
+	objective		= { objects = { _G.ObjectiveTrackerFont12, _G.ObjectiveTrackerFont14, _G.ObjectiveTrackerLineFont } },
 	errortext		= { object = _G.ErrorFont, func = function(data, opt)
 		local x, y, w = 512, 60, 16 -- default sizes we scale from
 		local diff = (opt.size - w) / w -- calculate the difference
@@ -48,6 +49,9 @@ end
 function E:SetFont(obj, font, size, style, sR, sG, sB, sA, sX, sY, r, g, b, a)
 	if not obj then return end
 
+	-- 3.3.5a SetFont errors out on 0/negative/NaN and renders nothing on sub-pixel sizes
+	if type(size) ~= 'number' or size ~= size or size < 0.1 then size = E.db.general.fontSize or P.general.fontSize end
+
 	if style == 'NONE' or not style then style = '' end
 
 	local shadow = strsub(style, 0, 6) == 'SHADOW'
@@ -76,12 +80,7 @@ function E:UpdateBlizzardFonts()
 	local thick, outline = prefix..'THICKOUTLINE', prefix..'OUTLINE'
 
 	--> large fonts (over x2)
-	local yourmom	= size * 4.5 -- 54
-	local titanic	= size * 4.0 -- 48
-	local monstrous	= size * 3.5 -- 42
-	local colossal	= size * 3.0 -- 36
 	local massive	= size * 2.5 -- 30
-	local gigantic	= size * 2.0 -- 24
 
 	--> normal fonts
 	local enormous	= size * 1.9 -- 22.8
@@ -117,6 +116,7 @@ function E:UpdateBlizzardFonts()
 	local replaceFonts = db.replaceBlizzFonts
 	if replaceFonts then
 		E:MapFont(FontMap.questsmall,				NORMAL, (blizz and 12) or unscale or medium, 'NONE')
+		E:MapFont(FontMap.objective,				NORMAL, (blizz and 12) or unscale or medium, 'NONE')
 		E:MapFont(FontMap.questtext,				NORMAL, (blizz and 13) or unscale or medium, 'NONE')
 		E:MapFont(FontMap.mailbody,					NORMAL, (blizz and 15) or unscale or big, 'NONE')
 		E:MapFont(FontMap.cooldown,					NORMAL, (blizz and 16) or unscale or big, 'SHADOW')
@@ -159,7 +159,9 @@ function E:UpdateBlizzardFonts()
 		E:SetFont(_G.SystemFont_Outline_Small,				NUMBER, (blizz and 10) or unscale or small, 'OUTLINE')
 		E:SetFont(_G.NumberFont_OutlineThick_Mono_Small,	NUMBER, (blizz and 12) or unscale or size, 'OUTLINE')
 		E:SetFont(_G.NumberFont_Outline_Med,				NUMBER, (blizz and 14) or unscale or medium, 'OUTLINE')
+		E:SetFont(_G.NumberFontNormal,						NUMBER, (blizz and 14) or unscale or medium, 'OUTLINE')
 		E:SetFont(_G.NumberFont_Outline_Large,				NUMBER, (blizz and 16) or unscale or big, outline)
+		E:SetFont(_G.NumberFontNormalLarge,					NUMBER, (blizz and 16) or unscale or big, outline)
 		E:SetFont(_G.NumberFont_Outline_Huge,				NUMBER, (blizz and 30) or unscale or mega, thick)
 
 		-- quest fonts (shadow variants)
@@ -170,6 +172,9 @@ function E:UpdateBlizzardFonts()
 		E:SetFont(_G.SystemFont_Tiny,						NORMAL, (blizz and 9) or unscale or tiny)
 		E:SetFont(_G.AchievementFont_Small,					NORMAL, (blizz and 10) or unscale or small)
 		E:SetFont(_G.FriendsFont_Small,						NORMAL, (blizz and 10) or unscale or small, 'SHADOW')
+		E:SetFont(_G.GameFontHighlightSmall,				NORMAL, (blizz and 10) or unscale or small, 'SHADOW')
+		E:SetFont(_G.GameFontNormalSmall,					NORMAL, (blizz and 10) or unscale or small, 'SHADOW')
+		E:SetFont(_G.GameFontRedSmall,						NORMAL, (blizz and 10) or unscale or small, 'SHADOW')
 		E:SetFont(_G.InvoiceFont_Small,						NORMAL, (blizz and 10) or unscale or small)					-- Mail
 		E:SetFont(_G.ReputationDetailFont,					NORMAL, (blizz and 10) or unscale or small, 'SHADOW')		-- Rep Desc when clicking a rep
 		E:SetFont(_G.SpellFont_Small,						NORMAL, (blizz and 10) or unscale or small)
@@ -181,6 +186,17 @@ function E:UpdateBlizzardFonts()
 		E:SetFont(_G.FriendsFont_UserText,					NORMAL, (blizz and 11) or unscale or small, 'SHADOW')
 		E:SetFont(_G.GameFontHighlightSmall2,				NORMAL, (blizz and 11) or unscale or small, 'SHADOW')		-- Skill or Recipe description on TradeSkill frame
 		E:SetFont(_G.FriendsFont_Normal,					NORMAL, (blizz and 12) or unscale or size, 'SHADOW')
+		E:SetFont(_G.GameFontDisable,						NORMAL, (blizz and 12) or unscale or size, 'SHADOW')
+		E:SetFont(_G.GameFontDisableLeft,					NORMAL, (blizz and 12) or unscale or size, 'SHADOW')
+		E:SetFont(_G.GameFontHighlight,						NORMAL, (blizz and 12) or unscale or size, 'SHADOW')
+		E:SetFont(_G.GameFontHighlightLeft,					NORMAL, (blizz and 12) or unscale or size, 'SHADOW')
+		E:SetFont(_G.GameFontHighlight_NoShadow,			NORMAL, (blizz and 12) or unscale or size)
+		E:SetFont(_G.GameFontNormal,						NORMAL, (blizz and 12) or unscale or size, 'SHADOW')
+		E:SetFont(_G.GameFontNormalLeft,					NORMAL, (blizz and 12) or unscale or size, 'SHADOW')
+		E:SetFont(_G.GameFontNormalLeftGrey,				NORMAL, (blizz and 12) or unscale or size, 'SHADOW')
+		E:SetFont(_G.GameFontNormalLeftLightGreen,			NORMAL, (blizz and 12) or unscale or size, 'SHADOW')
+		E:SetFont(_G.GameFontNormalLeftOrange,				NORMAL, (blizz and 12) or unscale or size, 'SHADOW')
+		E:SetFont(_G.GameFontNormalLeftYellow,				NORMAL, (blizz and 12) or unscale or size, 'SHADOW')
 		E:SetFont(_G.InvoiceFont_Med,						NORMAL, (blizz and 12) or unscale or size)					-- Mail
 		E:SetFont(_G.NumberFont_Shadow_Small,				NORMAL, (blizz and 12) or unscale or size, 'SHADOW')
 		E:SetFont(_G.SystemFont_Med1,						NORMAL, (blizz and 12) or unscale or size)
@@ -190,6 +206,8 @@ function E:UpdateBlizzardFonts()
 		E:SetFont(_G.SystemFont_Med2,						NORMAL, (blizz and 13) or unscale or medium)
 		E:SetFont(_G.SystemFont_Outline,					NORMAL, (blizz and 13) or unscale or medium, outline)		-- WorldMap, Pet level
 		E:SetFont(_G.FriendsFont_Large,						NORMAL, (blizz and 14) or unscale or medium, 'SHADOW')
+		E:SetFont(_G.GameFontHighlightMed2,					NORMAL, (blizz and 14) or unscale or medium, 'SHADOW')
+		E:SetFont(_G.GameFontNormalMed2,					NORMAL, (blizz and 14) or unscale or medium, 'SHADOW')
 		E:SetFont(_G.GameFontNormalMed3,					NORMAL, (blizz and 14) or unscale or medium, 'SHADOW')
 		E:SetFont(_G.GameTooltipHeader,						NORMAL, (blizz and 14) or unscale or medium)
 		E:SetFont(_G.GameFontHighlightMedium,				NORMAL, (blizz and 14) or unscale or medium, 'SHADOW')		-- Fix QuestLog Title mouseover
@@ -216,5 +234,6 @@ function E:UpdateBlizzardFonts()
 		E:SetFont(_G.WorldMapTextFont,						NORMAL, (blizz and 32) or unscale or massive, outline)		-- WorldMap, MainZone
 		E:SetFont(_G.SystemFont_OutlineThick_Huge4,			NORMAL, (blizz and 26) or unscale or mega, thick)
 		E:SetFont(_G.SystemFont_OutlineThick_WTF,			NORMAL, (blizz and 32) or unscale or enormous, outline)		-- WorldMap
+		E:SetFont(_G.GameFont_Gigantic,						NORMAL, (blizz and 32) or unscale or massive, 'SHADOW')
 	end
 end

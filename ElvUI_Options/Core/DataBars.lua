@@ -25,13 +25,13 @@ SharedOptions.strataAndLevel.args.frameLevel = ACH:Range(L["Frame Level"], nil, 
 
 SharedOptions.sizeGroup.inline = true
 SharedOptions.sizeGroup.args.width = ACH:Range(L["Width"], nil, 1, { min = 5, max = ceil(E.screenWidth), step = 1 })
-SharedOptions.sizeGroup.args.height = ACH:Range(L["Height"], nil, 2, { min = 5, max = ceil(E.screenWidth), step = 1 })
+SharedOptions.sizeGroup.args.height = ACH:Range(L["Height"], nil, 2, { min = 5, max = ceil(E.screenHeight), step = 1 })
 SharedOptions.sizeGroup.args.orientation = ACH:Select(L["Statusbar Fill Orientation"], L["Direction the bar moves on gains/losses"], 3, { AUTOMATIC = L["Automatic"], HORIZONTAL = L["Horizontal"], VERTICAL = L["Vertical"] })
 
 SharedOptions.fontGroup.inline = true
 SharedOptions.fontGroup.args.font = ACH:SharedMediaFont(L["Font"], nil, 1)
 SharedOptions.fontGroup.args.fontSize = ACH:Range(L["Font Size"], nil, 2, C.Values.FontSize)
-SharedOptions.fontGroup.args.fontOutline = ACH:Select(L["Font Outline"], nil, 3, C.Values.FontFlags)
+SharedOptions.fontGroup.args.fontOutline = ACH:FontFlags(L["Font Outline"], nil, 3)
 SharedOptions.fontGroup.args.spacer = ACH:Spacer(4, 'full')
 SharedOptions.fontGroup.args.anchorPoint = ACH:Select(L["Anchor Point"], nil, 5, C.Values.AllPoints)
 SharedOptions.fontGroup.args.xOffset = ACH:Range(L["X-Offset"], nil, 6, { min = -300, max = 300, step = 1 })
@@ -50,6 +50,7 @@ DataBars.args.colorGroup.args.experience = ACH:Color(L["Experience"], nil, 1, tr
 DataBars.args.colorGroup.args.petExperience = ACH:Color(L["Pet Experience"], nil, 3, true, nil, nil, function(info, r, g, b, a) local t = E.db.databars.colors[info[#info]] t.r, t.g, t.b, t.a = r, g, b, a DB:PetExperienceBar_Update() end, nil, function() return E.myclass ~= 'HUNTER' end)
 DataBars.args.colorGroup.args.rested = ACH:Color(L["Rested Experience"], nil, 2, true, nil, nil, function(info, r, g, b, a) local t = E.db.databars.colors[info[#info]] t.r, t.g, t.b, t.a = r, g, b, a DB:ExperienceBar_Update() end)
 DataBars.args.colorGroup.args.quest = ACH:Color(L["Quest Experience"], nil, 3, true, nil, nil, function(info, r, g, b, a) local t = E.db.databars.colors[info[#info]] t.r, t.g, t.b, t.a = r, g, b, a DB:ExperienceBar_QuestXP() end)
+DataBars.args.colorGroup.args.honor = ACH:Color(L["Honor"], nil, 4, true, nil, nil, function(info, r, g, b, a) local t = E.db.databars.colors[info[#info]] t.r, t.g, t.b, t.a = r, g, b, a DB:HonorBar_Update() end)
 DataBars.args.colorGroup.args.useCustomFactionColors = ACH:Toggle(L["Custom Faction Colors"], L["Reputation"], 6, nil, nil, nil, function() return E.db.databars.colors.useCustomFactionColors end, function(_, value) E.db.databars.colors.useCustomFactionColors = value; DB:ReputationBar_Update() end)
 DataBars.args.colorGroup.args.reputationAlpha = ACH:Range(L["Reputation Alpha"], nil, 7, {min = 0, max = 1, step = 0.05, isPercent = true}, nil, function() return E.db.databars.colors.reputationAlpha end, function(_, value) E.db.databars.colors.reputationAlpha = value; DB:ReputationBar_Update() end, nil, function() return E.db.databars.colors.useCustomFactionColors end)
 
@@ -110,3 +111,17 @@ DataBars.args.threat.args.smoothbars = ACH:Toggle(L["Smooth Bars"], L["Bars will
 DataBars.args.threat.args.textFormat = nil
 DataBars.args.threat.args.conditionGroup = nil
 DataBars.args.threat.args.showBubbles = nil
+
+DataBars.args.honor = ACH:Group(L["Honor"], nil, 5, nil, function(info) return DB.db.honor[info[#info]] end, function(info, value) DB.db.honor[info[#info]] = value DB:HonorBar_Update() DB:UpdateAll() end)
+DataBars.args.honor.args = CopyTable(SharedOptions)
+DataBars.args.honor.args.showRank = ACH:Toggle(L["Rank"], nil, 6)
+DataBars.args.honor.args.enable.set = function(info, value) DB.db.honor[info[#info]] = value DB:HonorBar_Toggle() DB:UpdateAll() end
+DataBars.args.honor.args.textFormat.set = function(info, value) DB.db.honor[info[#info]] = value DB:HonorBar_Update() end
+DataBars.args.honor.args.conditionGroup.get = function(_, key) return DB.db.honor[key] end
+DataBars.args.honor.args.conditionGroup.set = function(_, key, value) DB.db.honor[key] = value DB:HonorBar_Update() DB:UpdateAll() end
+DataBars.args.honor.args.conditionGroup.values = {
+	hideOutsidePvP = L["Hide Outside PvP"],
+	hideBelowMaxLevel = L["Hide Below Max Level"],
+	hideInVehicle = L["Hide In Vehicle"],
+	hideInCombat = L["Hide In Combat"],
+}

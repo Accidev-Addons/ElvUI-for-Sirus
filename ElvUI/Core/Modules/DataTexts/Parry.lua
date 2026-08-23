@@ -5,6 +5,7 @@ local strjoin = strjoin
 local GetParryChance = GetParryChance
 
 local PARRY = PARRY
+local DEFENSE = DEFENSE
 
 local displayString, db = ''
 
@@ -20,5 +21,5 @@ local function ApplySettings(self, hex)
 	displayString = strjoin('', '%s: ', hex, '%.'..db.decimalLength..'f%%|r')
 end
 
-DT:RegisterDatatext('Parry', L["Defense"], { 'UNIT_STATS', 'UNIT_AURA', 'SKILL_LINES_CHANGED' }, OnEvent, nil, nil, nil, nil, PARRY, nil, ApplySettings)
+DT:RegisterDatatext('Parry', DEFENSE, { 'UNIT_STATS', 'UNIT_AURA', 'SKILL_LINES_CHANGED' }, OnEvent, nil, nil, nil, nil, PARRY, nil, ApplySettings)
 

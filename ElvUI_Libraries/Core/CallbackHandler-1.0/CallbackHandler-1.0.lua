@@ -1,5 +1,5 @@
 --[[ $Id: CallbackHandler-1.0.lua 18 2014-10-16 02:52:20Z mikk $ ]]
-local MAJOR, MINOR = "CallbackHandler-1.0", 6
+local MAJOR, MINOR = "CallbackHandler-1.0", 10007
 local CallbackHandler = LibStub:NewLibrary(MAJOR, MINOR)
 
 if not CallbackHandler then return end -- No upgrade needed
@@ -160,7 +160,6 @@ function CallbackHandler:New(target, RegisterName, UnregisterName, UnregisterAll
 
 
 		if events[eventname][self] or registry.recurse<1 then
-		-- if registry.recurse<1 then
 			-- we're overwriting an existing entry, or not currently recursing. just set it.
 			events[eventname][self] = regfunc
 			-- fire OnUsed callback?

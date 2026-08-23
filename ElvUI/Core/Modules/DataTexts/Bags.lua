@@ -15,7 +15,7 @@ local GetContainerNumSlots = GetContainerNumSlots
 local ContainerIDToInventoryID = ContainerIDToInventoryID
 
 local CURRENCY = CURRENCY
-local MAX_WATCHED_TOKENS = MAX_WATCHED_TOKENS or 3
+local MAX_WATCHED_TOKENS = MAX_WATCHED_TOKENS
 local NUM_BAG_SLOTS = NUM_BAG_SLOTS
 
 local displayString, db = ''
@@ -91,8 +91,8 @@ local function OnEnter()
 		end
 
 		if info.quantity then
-			iconString = match(info and info.iconFileID or '', E.myfaction) ~= nil and gsub(iconString, '4:60:4:60', '4:38:2:36') or iconString
-			DT.tooltip:AddDoubleLine(format(iconString, info.iconFileID, name), info.quantity, 1, 1, 1, 1, 1, 1)
+			local texString = match(info.iconFileID or '', E.myfaction) ~= nil and gsub(iconString, '4:60:4:60', '4:38:2:36') or iconString
+			DT.tooltip:AddDoubleLine(format(texString, info.iconFileID, name), info.quantity, 1, 1, 1, 1, 1, 1)
 		end
 	end
 

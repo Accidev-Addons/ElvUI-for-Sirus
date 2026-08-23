@@ -16,21 +16,9 @@ S:AddCallback("Skin_Taxi", function()
 	S:SetUIPanelWindowInfo(TaxiFrame, "width")
 	S:SetBackdropHitRect(TaxiFrame)
 
-	TaxiPortrait:Kill()
+	TaxiFramePortrait:Kill()
 
-	S:HandleCloseButton(TaxiCloseButton, TaxiFrame.backdrop)
+	S:HandleCloseButton(TaxiFrameCloseButton, TaxiFrame.backdrop)
 
 	TaxiRouteMap:CreateBackdrop("Default")
-
-	local TAXI_MAP_WIDTH = 331		-- orig 316
-	local TAXI_MAP_HEIGHT = 369		-- orig 352
-
-	_G.TAXI_MAP_WIDTH = TAXI_MAP_WIDTH
-	_G.TAXI_MAP_HEIGHT = TAXI_MAP_HEIGHT
-
-	TaxiMap:Size(TAXI_MAP_WIDTH, TAXI_MAP_HEIGHT)
-	TaxiRouteMap:Size(TAXI_MAP_WIDTH, TAXI_MAP_HEIGHT)
-
-	TaxiMap:Point("TOP", -11, -48)
-	TaxiRouteMap:Point("TOP", -11, -48)
 end)

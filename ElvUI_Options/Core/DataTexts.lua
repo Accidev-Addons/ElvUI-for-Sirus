@@ -62,16 +62,16 @@ end
 function DT:SetupPanelOptions(name, data)
 	if not data then data = DT.db.panels[name] end
 
-	local db = E.db.datatexts.panels[name]
+	local function db() return E.db.datatexts.panels[name] end
 	local custom = E.global.datatexts.customPanels[name]
 	local options = E.Options.args.datatexts.args.panels.args[name]
 	if not options then
-		options = ACH:Group(ColorizeName(name, not custom and 'ffffff'), nil, nil, nil, function(info) return db[info[#info]] end, function(info, value) db[info[#info]] = value DT:UpdatePanelInfo(name) end)
+		options = ACH:Group(ColorizeName(name, not custom and 'ffffff'), nil, nil, nil, function(info) return db()[info[#info]] end, function(info, value) db()[info[#info]] = value DT:UpdatePanelInfo(name) end)
 		E.Options.args.datatexts.args.panels.args[name] = options
 
 		if custom then
 			options.set = function(info, value)
-				db[info[#info]] = value
+				db()[info[#info]] = value
 				DT:UpdatePanelAttributes(name, custom)
 			end
 
@@ -112,12 +112,12 @@ function DT:SetupPanelOptions(name, data)
 
 	for i = 1, DTPanelOptions.numPoints.softMax do
 		if not options.args.dts then
-			options.args.dts = ACH:Group(' ', nil, 3, nil, function(info) return db[tonumber(info[#info])] or '' end, function(info, value) db[tonumber(info[#info])] = value DT:UpdatePanelInfo(name) end)
+			options.args.dts = ACH:Group(' ', nil, 3, nil, function(info) return db()[tonumber(info[#info])] or '' end, function(info, value) db()[tonumber(info[#info])] = value DT:UpdatePanelInfo(name) end)
 			options.args.dts.inline = true
 		end
 
 		local idx = tostring(i)
-		local hasPoint = i <= (custom and custom.numPoints or db.numPoints or 3)
+		local hasPoint = i <= (custom and custom.numPoints or db().numPoints or 3)
 		options.args.dts.args[idx] = hasPoint and ACH:Select('', nil, i, CopyList) or nil
 
 		if data and data.battleground ~= nil then
@@ -134,7 +134,7 @@ function DT:SetupPanelOptions(name, data)
 end
 
 local function escapeString(str, get)
-	return get == gsub(str, '|', '||') or gsub(str, '||', '|')
+	return get and gsub(str, '|', '||') or gsub(str, '||', '|')
 end
 
 local function CreateDTOptions(name, data)
@@ -191,11 +191,13 @@ local function CreateDTOptions(name, data)
 			elseif key == 'latency' then
 				optionTable.args[key] = ACH:Select(L["Latency"], nil, 20, { WORLD = L["World Latency"], HOME = L["Home Latency"] })
 			elseif key == 'school' then
-				optionTable.args[key] = ACH:Select(L["School"], nil, 20, { [0] = "Default", [1] = "Physical", [2] = "Holy", [3] = "Fire", [4] = "Nature", [5] = "Frost", [6] = "Shadow", [7] = "Arcane" })
+				optionTable.args[key] = ACH:Select(L["School"], nil, 20, { [0] = L["Default"], [1] = _G.SPELL_SCHOOL0_CAP, [2] = _G.DAMAGE_SCHOOL2, [3] = _G.DAMAGE_SCHOOL3, [4] = _G.DAMAGE_SCHOOL4, [5] = _G.DAMAGE_SCHOOL5, [6] = _G.DAMAGE_SCHOOL6, [7] = _G.DAMAGE_SCHOOL7 })
 			end
 		end
 
-		if name == 'Bags' then
+		if name == 'ArenaRating' then
+			optionTable.args.brackets = ACH:MultiSelect(_G.PVP_YOUR_RATING, nil, 1, { showSolo = L["Solo"], show2v2 = '2x2', show3v3 = '3x3', showRBG = 'RBG' }, nil, nil, function(_, key) return settings[key] end, function(_, key, value) settings[key] = value DT:ForceUpdate_DataText(name) end)
+		elseif name == 'Bags' then
 			optionTable.args.textFormat.values = { FREE = L["Only Free Slots"], USED = L["Only Used Slots"], FREE_TOTAL = L["Free/Total"], USED_TOTAL = L["Used/Total"] }
 		elseif name == 'Combat' then
 			optionTable.args.TimeFull = ACH:Toggle(L["Full Time"], nil, 5)
@@ -230,11 +232,8 @@ local function CreateDTOptions(name, data)
 		elseif name == 'Friends' then
 			optionTable.args.description = ACH:Description(L["Hide specific sections in the datatext tooltip."], 1)
 			optionTable.args.hideGroup1 = ACH:MultiSelect(L["Hide by Status"], nil, 5, { hideAFK = L["AFK"], hideDND = L["DND"] }, nil, nil, function(_, key) return settings[key] end, function(_, key, value) settings[key] = value; DT:ForceUpdate_DataText(name) end)
-			optionTable.args.hideGroup2 = ACH:MultiSelect(L["Hide by Application"], nil, 6, DT.clientFullName, nil, nil, function(_, key) return settings['hide'..key] end, function(_, key, value) settings['hide'..key] = value; DT:ForceUpdate_DataText(name) end)
-			optionTable.args.hideGroup2.sortByValue = true
 		elseif name == 'Item Level' then
 			optionTable.args.rarityColor = ACH:Toggle(L["Rarity Color"], nil, 1)
-			optionTable.args.onlyEquipped = ACH:Toggle(L["Only Equipped"], nil, 2)
 		elseif name == 'Location' then
 			optionTable.args.showContinent = ACH:Toggle(L["Show Continent"], nil, 1)
 			optionTable.args.showZone = ACH:Toggle(L["Show Zone"], nil, 2)
@@ -247,6 +246,7 @@ local function CreateDTOptions(name, data)
 		elseif name == 'Talent Specialization' then
 			optionTable.args.iconOnly = ACH:Toggle(L["Icons Only"], L["Only show icons instead of specialization names"], 2)
 			optionTable.args.iconSize = ACH:Range(L["Icon Size"], nil, 4, { min = 10, softMax = 24, step = 1})
+			optionTable.args.autoEquipmentSet = ACH:Toggle(L["Auto Equipment Set"], L["Automatically equip the equipment set whose name matches the name of the talent group after switching specialization."], 6)
 		elseif name == 'Time' then
 			optionTable.args.time24 = ACH:Toggle(L["24-Hour Time"], L["Toggle 24-hour mode for the time datatext."], 5)
 			optionTable.args.seconds = ACH:Toggle(L["Seconds"], L["Show seconds on the time display."], 6)
@@ -333,7 +333,7 @@ DataTexts.args.customCurrency = ACH:Group(L["Custom Currency"], nil, 6)
 DataTexts.args.customCurrency.args.description = ACH:Description(L["This allows you to create a new datatext which will track the currency with the supplied currency ID. The datatext can be added to a panel immediately after creation."], 0)
 DataTexts.args.customCurrency.args.add = ACH:Select(L["Add Currency"], nil, 1, getCurrencyList, nil, 'double', nil, addCurrency)
 DataTexts.args.customCurrency.args.addID = ACH:Input(L["Add Currency by ID"], nil, 2, nil, 'double', C.Blank, addCurrency)
-DataTexts.args.customCurrency.args.delete = ACH:Select(L["Delete"], nil, 2, function() wipe(currencyList) for currencyID, info in pairs(E.global.datatexts.customCurrencies) do currencyList[currencyID] = info.name end return currencyList end, nil, 'double', nil, function(_, value) local currencyName = E.global.datatexts.customCurrencies[value].name DT:RemoveCustomCurrency(currencyName) E.Options.args.datatexts.args.customCurrency.args[currencyName] = nil DT.RegisteredDataTexts[currencyName] = nil E.global.datatexts.customCurrencies[value] = nil dts[currencyName] = nil DT:LoadDataTexts() end, function() return not next(E.global.datatexts.customCurrencies) end)
+DataTexts.args.customCurrency.args.delete = ACH:Select(L["Delete"], nil, 2, function() wipe(currencyList) for currencyID, info in pairs(E.global.datatexts.customCurrencies) do currencyList[currencyID] = info.name end return currencyList end, nil, 'double', nil, function(_, value) local currencyName = E.global.datatexts.customCurrencies[value].name DT:RemoveCustomCurrency(value) E.Options.args.datatexts.args.customCurrency.args[currencyName] = nil E.global.datatexts.customCurrencies[value] = nil dts[value] = nil DT:LoadDataTexts() end, function() return not next(E.global.datatexts.customCurrencies) end)
 DataTexts.args.customCurrency.args.spacer = ACH:Spacer(4)
 
 DataTexts.args.settings = ACH:Group(L["Customization"], nil, 7)

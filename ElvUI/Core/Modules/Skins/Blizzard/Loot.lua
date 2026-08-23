@@ -1,23 +1,16 @@
 local E, L, V, P, G = unpack(ElvUI)
 local S = E:GetModule('Skins')
 local LCG = E.Libs.CustomGlow
-local LC = E.Libs.Compat
 
 local _G = _G
-local unpack, select = unpack, select
 
-local GetLootRollItemInfo = GetLootRollItemInfo
-local GetLootSlotInfo = LC.GetLootSlotInfo
+local GetLootSlotInfo = E.GetLootSlotInfo
 local IsFishingLoot = IsFishingLoot
-local LootSlotIsCoin = LootSlotIsCoin
-local LootSlotIsItem = LootSlotIsItem
 local UnitIsDead = UnitIsDead
 local UnitIsFriend = UnitIsFriend
 local UnitName = UnitName
 
-local ITEMS = ITEMS
 local LOOT = LOOT
-local LOOTFRAME_NUMBUTTONS = LOOTFRAME_NUMBUTTONS
 
 function S:LootFrame()
 	if E.private.general.loot then return end
@@ -26,13 +19,8 @@ function S:LootFrame()
 	local LootFrame = _G.LootFrame
 	S:HandleFrame(LootFrame, true)
 	LootFrame:Height(LootFrame:GetHeight() - 30)
-	_G.LootFramePortraitOverlay:SetParent(E.HiddenFrame)
 
-	for _, region in next, { LootFrame:GetRegions() } do
-		if region:IsObjectType('FontString') and region:GetText() == ITEMS then
-			LootFrame.Title = region
-		end
-	end
+	LootFrame.Title = LootFrame.TitleText
 
 	LootFrame.Title:ClearAllPoints()
 	LootFrame.Title:Point('TOPLEFT', LootFrame, 'TOPLEFT', 4, -4)
@@ -43,7 +31,6 @@ function S:LootFrame()
 		_G['LootButton'..i..'NameFrame']:Hide()
 
 		S:HandleItemButton(button, true)
-		S:HandleIconBorder(button.IconBorder, button.backdrop)
 
 		button:NudgePoint(nil, 30, nil, nil, true)
 	end

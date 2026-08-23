@@ -56,6 +56,10 @@ local GetTime = GetTime
 local UnitGUID = UnitGUID
 local UnitHealth = UnitHealth
 local UnitHealthMax = UnitHealthMax
+local UnitGetTotalAbsorbs = UnitGetTotalAbsorbs
+local UnitGetTotalHealAbsorbs = UnitGetTotalHealAbsorbs
+
+local hasAbsorbs = UnitGetTotalAbsorbs and true or false
 
 local HealComm = LibStub("LibHealComm-4.0")
 
@@ -106,16 +110,49 @@ local function Update(self)
 		element.otherBar:Show()
 	end
 
-	--[[ Callback: HealthPrediction:PostUpdate(unit, myIncomingHeal, otherIncomingHeal)
+	-- absorbs are fed by the server (UNIT_ABSORB_AMOUNT_CHANGED), LibHealComm knows nothing about them
+	local absorb, healAbsorb, hasOverAbsorb, hasOverHealAbsorb = 0, 0, false, false
+	if hasAbsorbs then
+		absorb = UnitGetTotalAbsorbs(unit) or 0
+		healAbsorb = (UnitGetTotalHealAbsorbs and UnitGetTotalHealAbsorbs(unit)) or 0
+
+		if healAbsorb > health then
+			hasOverHealAbsorb = true
+		end
+
+		if absorb > 0 and health + absorb >= maxHealth then
+			hasOverAbsorb = true
+		end
+
+		if element.absorbBar then
+			element.absorbBar:SetMinMaxValues(0, maxHealth)
+			element.absorbBar:SetValue(absorb)
+			element.absorbBar:Show()
+		end
+
+		if element.healAbsorbBar then
+			element.healAbsorbBar:SetMinMaxValues(0, maxHealth)
+			element.healAbsorbBar:SetValue(hasOverHealAbsorb and health or healAbsorb)
+			element.healAbsorbBar:Show()
+		end
+	end
+
+	--[[ Callback: HealthPrediction:PostUpdate(unit, myIncomingHeal, otherIncomingHeal, absorb, healAbsorb, hasOverAbsorb, hasOverHealAbsorb, health, maxHealth)
 	Called after the element has been updated.
 
-	* self              - the HealthPrediction element
-	* unit              - the unit for which the update has been triggered (string)
-	* myIncomingHeal    - the amount of incoming healing done by the player (number)
-	* otherIncomingHeal - the amount of incoming healing done by others (number)
+	* self               - the HealthPrediction element
+	* unit               - the unit for which the update has been triggered (string)
+	* myIncomingHeal     - the amount of incoming healing done by the player (number)
+	* otherIncomingHeal  - the amount of incoming healing done by others (number)
+	* absorb             - the amount of damage absorbs on the unit (number)
+	* healAbsorb         - the amount of heal absorbs on the unit (number)
+	* hasOverAbsorb      - whether the absorb reaches past the health bar (boolean)
+	* hasOverHealAbsorb  - whether the heal absorb is larger than the unit's health (boolean)
+	* health             - the unit's current health (number)
+	* maxHealth          - the unit's maximum health (number)
 	--]]
 	if element.PostUpdate then
-		return element:PostUpdate(unit, myIncomingHeal, otherIncomingHeal)
+		return element:PostUpdate(unit, myIncomingHeal, otherIncomingHeal, absorb, healAbsorb, hasOverAbsorb, hasOverHealAbsorb, health, maxHealth)
 	end
 end
 
@@ -186,6 +223,11 @@ local function Enable(self)
 		self:RegisterEvent("UNIT_HEALTH", Path)
 		self:RegisterEvent("UNIT_MAXHEALTH", Path)
 
+		if hasAbsorbs then
+			self:RegisterEvent("UNIT_ABSORB_AMOUNT_CHANGED", Path)
+			self:RegisterEvent("UNIT_HEAL_ABSORB_AMOUNT_CHANGED", Path)
+		end
+
 		if not element.maxOverflow then
 			element.maxOverflow = 1.05
 		end
@@ -196,6 +238,14 @@ local function Enable(self)
 
 		if element.otherBar and element.otherBar:IsObjectType("StatusBar") and not element.otherBar:GetStatusBarTexture() then
 			element.otherBar:SetStatusBarTexture([[Interface\TargetingFrame\UI-StatusBar]])
+		end
+
+		if element.absorbBar and element.absorbBar:IsObjectType("StatusBar") and not element.absorbBar:GetStatusBarTexture() then
+			element.absorbBar:SetStatusBarTexture([[Interface\TargetingFrame\UI-StatusBar]])
+		end
+
+		if element.healAbsorbBar and element.healAbsorbBar:IsObjectType("StatusBar") and not element.healAbsorbBar:GetStatusBarTexture() then
+			element.healAbsorbBar:SetStatusBarTexture([[Interface\TargetingFrame\UI-StatusBar]])
 		end
 
 		enabledUF[#enabledUF + 1] = self
@@ -217,8 +267,21 @@ local function Disable(self)
 			element.otherBar:Hide()
 		end
 
+		if element.absorbBar then
+			element.absorbBar:Hide()
+		end
+
+		if element.healAbsorbBar then
+			element.healAbsorbBar:Hide()
+		end
+
 		self:UnregisterEvent("UNIT_HEALTH", Path)
 		self:UnregisterEvent("UNIT_MAXHEALTH", Path)
+
+		if hasAbsorbs then
+			self:UnregisterEvent("UNIT_ABSORB_AMOUNT_CHANGED", Path)
+			self:UnregisterEvent("UNIT_HEAL_ABSORB_AMOUNT_CHANGED", Path)
+		end
 
 		for i = 1, #enabledUF do
 			if enabledUF[i] == self then

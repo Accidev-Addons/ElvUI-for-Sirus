@@ -1,5 +1,6 @@
 local E, L, V, P, G = unpack(ElvUI)
 local A = E:GetModule('Auras')
+local UF = E:GetModule('UnitFrames')
 local LSM = E.Libs.LSM
 local ElvUF = E.oUF
 
@@ -7,10 +8,13 @@ local _G = _G
 local unpack = unpack
 local floor = math.floor
 local tinsert = tinsert
-local strmatch = strmatch
-local tonumber = tonumber
+local split = string.split
 
 local UnitAura = UnitAura
+local UnitIsUnit = UnitIsUnit
+local GetCVar = GetCVar
+local hooksecurefunc = hooksecurefunc
+local strlower = strlower
 local CancelItemTempEnchantment = CancelItemTempEnchantment
 local CancelUnitBuff = CancelUnitBuff
 local GetInventoryItemQuality = GetInventoryItemQuality
@@ -20,12 +24,27 @@ local GameTooltip_Hide = GameTooltip_Hide
 local GameTooltip = GameTooltip
 local CreateFrame = CreateFrame
 local GetTime = GetTime
+local C_Timer = C_Timer
+
+local TICK_INTERVAL = 0.1
 
 local Masque = E.Masque or E.Libs.LBF
 local MasqueGroupBuffs = Masque and Masque:Group('ElvUI', 'Buffs')
 local MasqueGroupDebuffs = Masque and Masque:Group('ElvUI', 'Debuffs')
 
 local DebuffColors = DebuffTypeColor
+
+local function SetForcedBorderColor(region, r, g, b)
+	local fc = region.forcedBorderColors
+	if not fc then
+		fc = {}
+		region.forcedBorderColors = fc
+	end
+
+	fc[1], fc[2], fc[3] = r, g, b
+
+	region:SetBackdropBorderColor(r, g, b)
+end
 
 local DIRECTION_TO_POINT = {
 	DOWN_RIGHT = 'TOPLEFT',
@@ -87,8 +106,9 @@ local MasqueButtonData = {
 }
 
 local enchantableSlots = { [1] = 16, [2] = 17 }
-local weaponEnchantTime = {}
-A.EnchanData = weaponEnchantTime
+
+local CONSOLIDATED_PER_ROW = 4
+local CONSOLIDATED_MAX_BUTTONS = 32
 
 function A:MasqueData(texture, highlight)
 	local data = E:CopyTable({}, MasqueButtonData)
@@ -129,13 +149,6 @@ function A:CreateIcon(button)
 	button.auraType = (header.filter == 'HELPFUL' and 'buffs') or 'debuffs'
 
 	button.name = button:GetName()
-	button.enchantIndex = tonumber(strmatch(button.name or '', 'TempEnchant(%d)$'))
-	if button.enchantIndex then
-		header['enchant' .. button.enchantIndex] = button
-		header.enchantButtons[button.enchantIndex] = button
-	else
-		button.instant = true
-	end
 
 	button.texture = button:CreateTexture(nil, 'ARTWORK')
 	button.texture:SetInside()
@@ -159,12 +172,9 @@ function A:CreateIcon(button)
 
 	button:RegisterForClicks('RightButtonUp')
 
-	button:SetScript('OnUpdate', A.Button_OnUpdate)
 	button:SetScript('OnClick', A.Button_OnClick)
 	button:SetScript('OnEnter', A.Button_OnEnter)
 	button:SetScript('OnLeave', A.Button_OnLeave)
-	button:SetScript('OnHide', A.Button_OnHide)
-	button:SetScript('OnShow', A.Button_OnShow)
 
 	-- support cooldown override
 	if not button.isRegisteredCooldown then
@@ -256,7 +266,6 @@ function A:SetAuraTime(button, expiration, duration, modRate)
 	end
 
 	A:UpdateTime(button, expiration, modRate)
-	button.elapsed = 0
 end
 
 function A:ClearAuraTime(button, expired)
@@ -288,6 +297,12 @@ function A:UpdateAura(button, index)
 	if not name then return end
 
 	local db = A.db[button.auraType]
+
+	if button.consolidateStyled then
+		button.consolidateStyled = nil
+		A:UpdateIcon(button, true)
+	end
+
 	button:Show()
 	button.text:SetShown(db.showDuration)
 	button.statusBar:SetShown((db.barShow and duration > 0) or (db.barShow and db.barNoDuration and duration == 0))
@@ -297,9 +312,17 @@ function A:UpdateAura(button, index)
 
 	local dtype = dispelType or 'none'
 	if button.debuffType ~= dtype then
-		local color = (button.filter == 'HARMFUL' and A.db.colorDebuffs and DebuffColors[dtype]) or E.db.general.bordercolor
-		button:SetBackdropBorderColor(color.r, color.g, color.b)
-		button.statusBar.backdrop:SetBackdropBorderColor(color.r, color.g, color.b)
+		local debuffColor = button.filter == 'HARMFUL' and A.db.colorDebuffs and DebuffColors[dtype]
+		local color = debuffColor or E.db.general.bordercolor
+		if debuffColor then
+			SetForcedBorderColor(button, color.r, color.g, color.b)
+			SetForcedBorderColor(button.statusBar.backdrop, color.r, color.g, color.b)
+		else
+			button.forcedBorderColors = nil
+			button.statusBar.backdrop.forcedBorderColors = nil
+			button:SetBackdropBorderColor(color.r, color.g, color.b)
+			button.statusBar.backdrop:SetBackdropBorderColor(color.r, color.g, color.b)
+		end
 		button.debuffType = dtype
 	end
 
@@ -312,6 +335,13 @@ end
 
 function A:UpdateTempEnchant(button, index, expiration)
 	local db = A.db[button.auraType]
+
+	if button.consolidateStyled then
+		button.consolidateStyled = nil
+		A:UpdateIcon(button, true)
+	end
+
+	button.count:SetText('')
 	button.text:SetShown(db.showDuration)
 	button.statusBar:SetShown((db.barShow and expiration) or (db.barShow and db.barNoDuration and not expiration))
 
@@ -321,8 +351,8 @@ function A:UpdateTempEnchant(button, index, expiration)
 		local quality = A.db.colorEnchants and GetInventoryItemQuality('player', index)
 		local r, g, b = E:GetItemQualityColor(quality and quality > 1 and quality)
 
-		button:SetBackdropBorderColor(r, g, b)
-		button.statusBar.backdrop:SetBackdropBorderColor(r, g, b)
+		SetForcedBorderColor(button, r, g, b)
+		SetForcedBorderColor(button.statusBar.backdrop, r, g, b)
 
 		local remaining = (expiration * 0.001) or 0
 		A:SetAuraTime(button, remaining + GetTime(), (remaining <= 3600 and remaining > 1800) and 3600 or (remaining <= 1800 and remaining > 600) and 1800 or 600)
@@ -348,13 +378,20 @@ function A:Button_OnLeave()
 end
 
 function A:Button_OnEnter()
+	if self.consolidated then
+		local holder = self.header and self.header.consolidatedHolder
+		if holder then
+			holder.hideTimer = 0
+			holder:Show()
+		end
+
+		return
+	end
+
 	local db = A.db[self.auraType]
 	GameTooltip:SetOwner(self, db.tooltipAnchorType or 'ANCHOR_BOTTOMLEFT', db.tooltipAnchorX or -5, db.tooltipAnchorY or-5)
 
-	-- Immediately set the tooltip instead of waiting for next frame
-    A:SetTooltip(self)
-
-	self.elapsed = 1 -- let the tooltip update next frame
+	A:SetTooltip(self)
 end
 
 function A:Button_OnClick()
@@ -362,21 +399,6 @@ function A:Button_OnClick()
 		CancelItemTempEnchantment(self.enchantIndex)
 	elseif self.auraIndex then
 		CancelUnitBuff('player', self.auraIndex, self.filter)
-	end
-end
-
-function A:Button_OnShow()
-	if self.enchantIndex then
-		self.header.enchants[self.enchantIndex] = self
-		self.header.elapsedEnchants = 1 -- let the enchant update next frame
-	end
-end
-
-function A:Button_OnHide()
-	if self.enchantIndex then
-		self.header.enchants[self.enchantIndex] = nil
-	else
-		self.instant = true
 	end
 end
 
@@ -390,40 +412,73 @@ function A:UpdateTime(button, expiration, modRate)
 	end
 end
 
-function A:Button_OnUpdate(elapsed)
-	local xpr = self.endTime
+function A:Button_Tick(button)
+	local xpr = button.endTime
 	if xpr then
-		E.Cooldown_OnUpdate(self, elapsed)
+		E.Cooldown_OnUpdate(button, TICK_INTERVAL)
 	end
 
-	if self.elapsed and self.elapsed > 0.1 then
-		if GameTooltip:IsOwned(self) then
-			A:SetTooltip(self)
-		end
-
-		if xpr then
-			A:UpdateTime(self, xpr, self.modRate)
-		end
-
-		self.elapsed = 0
-	else
-		self.elapsed = (self.elapsed or 0) + elapsed
+	if GameTooltip:IsOwned(button) then
+		A:SetTooltip(button)
 	end
+
+	if xpr then
+		A:UpdateTime(button, xpr, button.modRate)
+	end
+end
+
+function A:Header_Tick(header)
+	local buttons = header.buttons
+	if not buttons then return end
+
+	for i = 1, #buttons do
+		local button = buttons[i]
+		if button:IsShown() then
+			A:Button_Tick(button)
+		end
+	end
+
+	if header.consolidatedHolder and header.consolidatedHolder:IsShown() then
+		for i = 1, #header.consolidated do
+			local button = header.consolidated[i]
+			if button:IsShown() then
+				A:Button_Tick(button)
+			end
+		end
+	end
+
+	if header.consolidateExit and header.consolidateExit <= GetTime() then
+		A:UpdateAllAuras(header)
+	end
+end
+
+function A:Header_StopTicker(header)
+	if header.ticker then
+		header.ticker:Cancel()
+		header.ticker = nil
+	end
+end
+
+function A:Header_StartTicker(header)
+	if header.ticker then return end
+
+	header.ticker = C_Timer:NewTicker(TICK_INTERVAL, function()
+		A:Header_Tick(header)
+	end)
+end
+
+function A:Header_OnShow()
+	A:Header_StartTicker(self)
+end
+
+function A:Header_OnHide()
+	A:Header_StopTicker(self)
 end
 
 function A:Header_OnEvent(event, unit, ...)
 	if event == 'PLAYER_ENTERING_WORLD' then
 		A:UpdateAllAuras(self)
-	-- elseif event == 'COMBAT_LOG_EVENT_UNFILTERED' and unit == 'player' and self.filter == 'HELPFUL' then
-	-- 	local subevent, sourceGUID = ...
-	-- 	if subevent == 'ENCHANT_APPLIED' and sourceGUID == E.myguid then
-	-- 		A:UpdateAllAuras(self)
-	-- 	end
 	elseif (event == 'UNIT_AURA' or event == 'UNIT_INVENTORY_CHANGED') and unit == 'player' then
-		if self.MasqueGroup then
-			A:UpdateMasque(self)
-		end
-
 		A:UpdateAllAuras(self)
 	end
 end
@@ -444,6 +499,7 @@ function A:UpdateAllAuras(header)
     for i = 1, #header.buttons do
         header.buttons[i].auraIndex = nil
         header.buttons[i].enchantIndex = nil
+        header.buttons[i].consolidated = nil
     end
 
 	local buttonIndex = 1
@@ -469,16 +525,77 @@ function A:UpdateAllAuras(header)
 		end
 	end
 
+	local consolidate = header.consolidatedHolder and GetCVar('consolidateBuffs') == '1'
+	local consolidatedMap
+	local numConsolidated = 0
+
+	if header.consolidatedHolder then
+		wipe(header.consolidatedList)
+		header.consolidateExit = nil
+	end
+
+	if consolidate then
+		consolidatedMap = {}
+
+		local now = GetTime()
+		local cIndex = 1
+		while true do
+			local name, _, _, _, _, duration, expiration, _, _, shouldConsolidate = UnitAura('player', cIndex, 'HELPFUL')
+			if not name then break end
+
+			if shouldConsolidate then
+				local exitTime
+				if duration and duration > 30 and expiration and expiration > 0 then
+					exitTime = expiration - max(10, duration / 10)
+				end
+
+				if not exitTime or exitTime > now then
+					tinsert(header.consolidatedList, cIndex)
+					consolidatedMap[cIndex] = true
+
+					if exitTime and (not header.consolidateExit or exitTime < header.consolidateExit) then
+						header.consolidateExit = exitTime
+					end
+				end
+			end
+
+			cIndex = cIndex + 1
+		end
+
+		numConsolidated = #header.consolidatedList
+		if numConsolidated > 0 then
+			header.consolidateButton = header.buttons[buttonIndex]
+			if header.consolidateButton then
+				buttonIndex = buttonIndex + 1
+			else
+				numConsolidated = 0
+			end
+		end
+	end
+
 	-- Scan all auras
+	local db = A.db[header.auraType]
+	local priority = (db and db.priority and db.priority ~= '') and { split(',', db.priority) } or nil
 	local index = 1
 	while buttonIndex <= #header.buttons do
-		local name = UnitAura('player', index, header.filter)
+		local name, rank, icon, count, debuffType, duration, expirationTime, caster, isStealable, shouldConsolidate, spellID = UnitAura('player', index, header.filter)
 		if not name then break end
 
-		local button = header.buttons[buttonIndex]
-		if button then
-			A:UpdateAura(button, index)
-			buttonIndex = buttonIndex + 1
+		local allow = true
+		if priority then
+			local isPlayer = (caster == 'player' or caster == 'vehicle')
+			local isUnit = caster and UnitIsUnit('player', caster)
+			local noDuration = (not duration or duration == 0)
+			local canDispell = (header.filter == 'HELPFUL' and isStealable) or (header.filter == 'HARMFUL' and debuffType and E:IsDispellableByMe(debuffType))
+			allow = UF:CheckFilter(name, caster, spellID, true, isPlayer, isUnit, true, noDuration, canDispell, unpack(priority))
+		end
+
+		if allow and not (consolidatedMap and consolidatedMap[index]) then
+			local button = header.buttons[buttonIndex]
+			if button then
+				A:UpdateAura(button, index)
+				buttonIndex = buttonIndex + 1
+			end
 		end
 
 		index = index + 1
@@ -491,8 +608,130 @@ function A:UpdateAllAuras(header)
 		header.buttons[i].enchantIndex = nil
 	end
 
+	A:UpdateConsolidate(header, numConsolidated)
+
 	-- Position buttons
 	A:PositionButtons(header)
+end
+
+function A:UpdateConsolidate(header, numConsolidated)
+	local holder = header.consolidatedHolder
+	if not holder then return end
+
+	local db = A.db.buffs
+	local button = header.consolidateButton
+
+	if numConsolidated == 0 then
+		if button then
+			button.consolidated = nil
+
+			if button.consolidateStyled then
+				button.consolidateStyled = nil
+				A:UpdateIcon(button, true)
+			end
+
+			header.consolidateButton = nil
+		end
+
+		holder:Hide()
+		return
+	end
+
+	A:ClearAuraTime(button)
+	button.consolidated = true
+	button.consolidateStyled = true
+	button.auraIndex = nil
+	button.enchantIndex = nil
+
+	local iconWidth = db.consolidateIconSize or db.size
+	local iconHeight = (db.keepSizeRatio and iconWidth) or (iconWidth * db.height / db.size)
+	button:SetSize(iconWidth, iconHeight)
+
+	local left, right, top, bottom = 0.1, 0.4, 0.2, 0.8
+	if not db.keepSizeRatio then
+		local ratio = iconWidth / iconHeight
+		if ratio > 1 then
+			local trim = (bottom - top) * (1 - 1 / ratio) * 0.5
+			top, bottom = top + trim, bottom - trim
+		elseif ratio < 1 then
+			local trim = (right - left) * (1 - ratio) * 0.5
+			left, right = left + trim, right - trim
+		end
+	end
+
+	button.texture:SetTexture([[Interface\Buttons\BuffConsolidation]])
+	button.texture:SetTexCoord(left, right, top, bottom)
+	button.count:SetText(numConsolidated)
+	button.statusBar:Hide()
+	button:Show()
+
+	local list = header.consolidatedList
+	local maxButtons = math.min(db.consolidateMax or CONSOLIDATED_MAX_BUTTONS, CONSOLIDATED_MAX_BUTTONS)
+	local shown = 0
+	for i = 1, math.min(#list, maxButtons) do
+		local popupButton = header.consolidated[i]
+		if not popupButton then break end
+		shown = shown + 1
+		A:UpdateAura(popupButton, list[i])
+		popupButton.statusBar:Hide()
+	end
+
+	for i = shown + 1, #header.consolidated do
+		header.consolidated[i]:Hide()
+	end
+
+	local size = db.consolidateSize or 24
+	local popupHeight = (db.keepSizeRatio and size) or (size * db.height / db.size)
+	local hSpacing = db.horizontalSpacing
+	local vSpacing = db.verticalSpacing
+	local direction = db.consolidateDirection or 'RIGHT_DOWN'
+	local point = DIRECTION_TO_POINT[direction]
+	local isHorizontal = IS_HORIZONTAL_GROWTH[direction]
+	local hMult = DIRECTION_TO_HORIZONTAL_SPACING_MULTIPLIER[direction]
+	local vMult = DIRECTION_TO_VERTICAL_SPACING_MULTIPLIER[direction]
+
+	local rows = math.ceil(shown / CONSOLIDATED_PER_ROW)
+	local cols = math.min(shown, CONSOLIDATED_PER_ROW)
+	if not isHorizontal then
+		cols, rows = rows, cols
+	end
+
+	local pad = E.Border + 2
+	holder:SetSize(cols * size + (cols - 1) * hSpacing + pad * 2, rows * popupHeight + (rows - 1) * vSpacing + pad * 2)
+
+	for i = 1, shown do
+		local popupButton = header.consolidated[i]
+		popupButton:SetSize(size, popupHeight)
+
+		local wrap = floor((i - 1) / CONSOLIDATED_PER_ROW)
+		local slot = (i - 1) % CONSOLIDATED_PER_ROW
+		local row, col
+		if isHorizontal then
+			row, col = wrap, slot
+		else
+			col, row = wrap, slot
+		end
+
+		popupButton:ClearAllPoints()
+		popupButton:Point(point, holder, point, (col * (size + hSpacing) + pad) * hMult, (row * (popupHeight + vSpacing) + pad) * vMult)
+	end
+
+	local upFirst = direction == 'UP_RIGHT' or direction == 'UP_LEFT'
+	local leftFirst = direction == 'LEFT_DOWN' or direction == 'LEFT_UP'
+
+	local holderPoint, buttonPoint
+	if upFirst then
+		holderPoint = leftFirst and 'BOTTOMRIGHT' or 'BOTTOMLEFT'
+		buttonPoint = leftFirst and 'TOPRIGHT' or 'TOPLEFT'
+	else
+		holderPoint = leftFirst and 'TOPRIGHT' or 'TOPLEFT'
+		buttonPoint = leftFirst and 'BOTTOMRIGHT' or 'BOTTOMLEFT'
+	end
+
+	holder:ClearAllPoints()
+	holder:Point(holderPoint, button, buttonPoint, 0, 0)
+	holder:SetFrameStrata(button:GetFrameStrata())
+	holder:SetFrameLevel(button:GetFrameLevel() + 5)
 end
 
 function A:PositionButtons(header)
@@ -502,8 +741,8 @@ function A:PositionButtons(header)
 	local db = A.db[header.auraType]
 	local width, height = db.size, (db.keepSizeRatio and db.size) or db.height
 	local point = DIRECTION_TO_POINT[db.growthDirection]
-	local wrapAfter = db.wrapAfter
-	local maxWraps = db.maxWraps
+	local wrapAfter = db.wrapAfter or 8
+	local maxWraps = db.maxWraps or 5
 	local hSpacing = db.horizontalSpacing
 	local vSpacing = db.verticalSpacing
 	local isHorizontal = IS_HORIZONTAL_GROWTH[db.growthDirection]
@@ -514,22 +753,25 @@ function A:PositionButtons(header)
 	for i = 1, #header.buttons do
 		local button = header.buttons[i]
 		if button:IsShown() then
-			button:ClearAllPoints()
-
-			local row, col
-			if isHorizontal then
-				row = floor(visibleIndex / wrapAfter)
-				col = visibleIndex % wrapAfter
+			local wrap = floor(visibleIndex / wrapAfter)
+			if wrap >= maxWraps then
+				button:Hide()
 			else
-				col = floor(visibleIndex / wrapAfter)
-				row = visibleIndex % wrapAfter
+				button:ClearAllPoints()
+
+				local row, col
+				if isHorizontal then
+					row, col = wrap, visibleIndex % wrapAfter
+				else
+					col, row = wrap, visibleIndex % wrapAfter
+				end
+
+				local xOffset = col * (width + hSpacing) * hMult
+				local yOffset = row * (height + vSpacing) * vMult
+
+				button:Point(point, header, point, xOffset, yOffset)
+				visibleIndex = visibleIndex + 1
 			end
-
-			local xOffset = col * (width + hSpacing) * hMult
-			local yOffset = row * (height + vSpacing) * vMult
-
-			button:Point(point, header, point, xOffset, yOffset)
-			visibleIndex = visibleIndex + 1
 		end
 	end
 end
@@ -543,8 +785,8 @@ function A:UpdateHeader(header)
 	E:UpdateClassColor(db.barColor)
 
 	-- Calculate actual rows/columns needed based on button count
-	local maxButtons = 32
-	local iconsPerRow = db.wrapAfter
+	local iconsPerRow = db.wrapAfter or 8
+	local maxButtons = iconsPerRow * (db.maxWraps or 5)
 
 	local numRows = math.ceil(maxButtons / iconsPerRow)  -- Calculate rows needed
 
@@ -564,11 +806,29 @@ function A:UpdateHeader(header)
 	header:SetSize(headerWidth, headerHeight)
 
 	if header.buttons then
+		for i = #header.buttons + 1, maxButtons do
+			local button = CreateFrame('Button', header.name..'Button'..i, header)
+			button:SetID(i)
+			button:Hide()
+			A:CreateIcon(button)
+			header.buttons[i] = button
+		end
+
 		for i = 1, #header.buttons do
 			local button = header.buttons[i]
 			if button then
 				A:Update_CooldownOptions(button)
 				A:UpdateIcon(button, true)
+			end
+		end
+
+		if header.consolidated then
+			for i = 1, #header.consolidated do
+				local button = header.consolidated[i]
+				if button then
+					A:Update_CooldownOptions(button)
+					A:UpdateIcon(button, true)
+				end
 			end
 		end
 	end
@@ -593,20 +853,49 @@ function A:CreateAuraHeader(filter)
 	header.name = name
 
 	header.buttons = {}
-	header.enchants = {}
-	header.enchantButtons = {}
 
 	local db = A.db[auraType]
 	local numButtons = (db.wrapAfter or 8) * (db.maxWraps or 5)
 
-	-- Only create buttons if they don't exist
-	if #header.buttons == 0 then
-		for i = 1, numButtons do
-			local button = CreateFrame('Button', name .. 'Button' .. i, header)
+	for i = 1, numButtons do
+		local button = CreateFrame('Button', name .. 'Button' .. i, header)
+		button:SetID(i)
+		button:Hide()
+		A:CreateIcon(button)
+		header.buttons[i] = button
+	end
+
+	if filter == 'HELPFUL' then
+		header.consolidatedList = {}
+
+		local holder = CreateFrame('Frame', name .. 'ConsolidatedHolder', header)
+		holder:SetClampedToScreen(true)
+		holder:SetTemplate()
+		holder:EnableMouse(true)
+		holder:Hide()
+		holder.filter = header.filter
+		holder.auraType = header.auraType
+
+		holder:SetScript('OnUpdate', function(hldr, elapsed)
+			if hldr:IsMouseOver(2, -2, -2, 2) or (header.consolidateButton and header.consolidateButton:IsMouseOver(2, -2, -2, 2)) then
+				hldr.hideTimer = 0
+			else
+				hldr.hideTimer = (hldr.hideTimer or 0) + elapsed
+				if hldr.hideTimer > 0.3 then
+					hldr:Hide()
+				end
+			end
+		end)
+
+		header.consolidatedHolder = holder
+		header.consolidated = {}
+
+		for i = 1, CONSOLIDATED_MAX_BUTTONS do
+			local button = CreateFrame('Button', name .. 'ConsolidatedButton' .. i, holder)
 			button:SetID(i)
 			button:Hide()
 			A:CreateIcon(button)
-			header.buttons[i] = button
+			header.consolidated[i] = button
 		end
 	end
 
@@ -615,12 +904,9 @@ function A:CreateAuraHeader(filter)
 	header:RegisterEvent('UNIT_INVENTORY_CHANGED')
 	header:RegisterEvent('PLAYER_ENTERING_WORLD')
 
-	-- NEW: Register for COMBAT_LOG_EVENT_UNFILTERED for enchant detection
-	if filter == 'HELPFUL' then
-		header:RegisterEvent('COMBAT_LOG_EVENT_UNFILTERED')
-	end
-
 	header:HookScript('OnEvent', A.Header_OnEvent)
+	header:SetScript('OnShow', A.Header_OnShow)
+	header:SetScript('OnHide', A.Header_OnHide)
 
 	if filter == 'HELPFUL' then
 		if MasqueGroupBuffs and E.private.auras.masque.buffs then
@@ -632,6 +918,8 @@ function A:CreateAuraHeader(filter)
 
 	header:Show()
 
+	A:Header_StartTicker(header)
+
 	return header
 end
 
@@ -639,6 +927,10 @@ function A:Initialize()
 	if E.private.auras.disableBlizzard then
 		BuffFrame:Kill()
 		TemporaryEnchantFrame:Kill()
+
+		if _G.DebuffFrame then
+			_G.DebuffFrame:Kill()
+		end
 
 		if ConsolidatedBuffs then
 			ConsolidatedBuffs:Kill()
@@ -661,6 +953,12 @@ function A:Initialize()
 		A.BuffFrame:Point('TOPRIGHT', _G.ElvUI_MinimapHolder or _G.Minimap, 'TOPLEFT', xoffset, -E.Spacing)
 
 		E:CreateMover(A.BuffFrame, 'BuffsMover', L["Player Buffs"], nil, nil, nil, nil, nil, 'auras,buffs')
+
+		hooksecurefunc('SetCVar', function(cvar)
+			if cvar and strlower(cvar) == 'consolidatebuffs' and A.BuffFrame then
+				A:UpdateAllAuras(A.BuffFrame)
+			end
+		end)
 	end
 
 	if E.private.auras.debuffsHeader then

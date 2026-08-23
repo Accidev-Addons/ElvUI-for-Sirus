@@ -8,9 +8,38 @@ local isUnitEvent = Private.isUnitEvent
 local frame_metatable = Private.frame_metatable
 
 -- Original event methods
-local registerEvent = frame_metatable.__index.RegisterEvent
-local unregisterEvent = frame_metatable.__index.UnregisterEvent
+local rawRegisterEvent = frame_metatable.__index.RegisterEvent
+local registerUnitEvent = frame_metatable.__index.RegisterUnitEvent
+local rawUnregisterEvent = frame_metatable.__index.UnregisterEvent
 local isEventRegistered = frame_metatable.__index.IsEventRegistered
+local registerCustomEvent = frame_metatable.__index.RegisterCustomEvent
+local unregisterCustomEvent = frame_metatable.__index.UnregisterCustomEvent
+
+local function unitEventKey(unit1, unit2)
+	return unit1 .. '\0' .. (unit2 or '')
+end
+
+local function registerEvent(frame, event, unit1, unit2)
+	if registerCustomEvent and not validateEvent(event) then
+		registerCustomEvent(frame, event)
+	elseif(unit1 and unit1 ~= '') then
+		if(not pcall(registerUnitEvent, frame, event, unit1, unit2)) then
+			rawRegisterEvent(frame, event)
+		end
+	else
+		rawRegisterEvent(frame, event)
+	end
+end
+
+local function unregisterEvent(frame, event)
+	if registerCustomEvent and not validateEvent(event) then
+		if unregisterCustomEvent then
+			unregisterCustomEvent(frame, event)
+		end
+	else
+		rawUnregisterEvent(frame, event)
+	end
+end
 
 local next, type, assert = next, type, assert
 local format, tinsert = format, tinsert
@@ -40,17 +69,20 @@ function Private.UpdateUnits(frame, unit, realUnit)
 		if frame.unitEvents then
 			local resetRealUnit = false
 
-			for event in next, frame.unitEvents do
+			for event, storedUnits in next, frame.unitEvents do
 				if(not realUnit and secondaryUnits[event]) then
 					realUnit = secondaryUnits[event][unit]
 					resetRealUnit = true
 				end
 
-				local registered, unit1, unit2 = isEventRegistered(frame, event)
+				local registered = isEventRegistered(frame, event)
+				local key = unitEventKey(unit, realUnit)
 				-- we don't want to re-register unitless/shared events in case
 				-- someone added them by hand to the unitEvents table
-				if(not registered or unit1 and (unit1 ~= unit or unit2 ~= realUnit)) then
+				if(not registered or (storedUnits ~= true and storedUnits ~= key)) then
 					registerEvent(frame, event, unit, realUnit)
+
+					frame.unitEvents[event] = key
 				end
 
 				if(resetRealUnit) then
@@ -102,6 +134,13 @@ function frame_metatable.__index:RegisterEvent(event, func, unitless)
 	argcheck(event, 2, 'string')
 	argcheck(func, 3, 'function')
 
+	local isValid = validateEvent(event)
+	if(not isValid) then
+		if(not registerCustomEvent) then return end
+
+		unitless = true
+	end
+
 	local curev = self[event]
 	if(curev) then
 		local kind = type(curev)
@@ -123,7 +162,7 @@ function frame_metatable.__index:RegisterEvent(event, func, unitless)
 				self.unitEvents[event] = nil
 			end
 		end
-	elseif(validateEvent(event)) then
+	else
 		self[event] = func
 
 		if(not self:GetScript('OnEvent')) then
@@ -149,6 +188,8 @@ function frame_metatable.__index:RegisterEvent(event, func, unitless)
 				assert(isUnitEvent(event, unit1), format('Event "%s" is not an unit event', event))
 
 				registerEvent(self, event, unit1, unit2 or '')
+
+				self.unitEvents[event] = unitEventKey(unit1, unit2)
 			end
 		end
 	end

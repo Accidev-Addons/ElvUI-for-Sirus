@@ -26,18 +26,11 @@ local _, ns = ...
 local oUF = ns.oUF
 assert(oUF, "oUF_ResComm was unable to locate oUF install")
 
-local LRC = LibStub("LibResComm-1.0")
+local UnitHasIncomingResurrection = UnitHasIncomingResurrection
 
-local tremove = table.remove
-
-local UnitIsDead = UnitIsDead
-local UnitIsGhost = UnitIsGhost
-local UnitName = UnitName
-
-local enabledUF, enabled = {}
-
-local function Update(self, event, unit, succeeded)
-	if not unit or self.unit ~= unit then return end
+local function Update(self, event)
+	local unit = self.unit
+	if not unit then return end
 
 	local element = self.ResurrectIndicator
 
@@ -50,19 +43,9 @@ local function Update(self, event, unit, succeeded)
 		element:PreUpdate()
 	end
 
-	local incomingResurrect
-	if UnitIsDead(unit) or UnitIsGhost(unit) then
-		if event == "ResComm_ResStart" or event == "ResComm_CanRes" or event == "ResComm_Ressed" or (event == "ResComm_ResEnd" and succeeded) then
-			if event ~= "ResComm_ResStart" then
-				element.ressed = true
-			end
-
-			element:Show()
-			incomingResurrect = true
-		elseif (event == "ResComm_ResEnd" and not succeeded and not element.ressed) or event == "ResComm_ResExpired" then
-			element:Hide()
-			element.ressed = nil
-		end
+	local incomingResurrect = UnitHasIncomingResurrection(unit)
+	if incomingResurrect then
+		element:Show()
 	else
 		element:Hide()
 	end
@@ -90,47 +73,7 @@ local function Path(self, ...)
 end
 
 local function ForceUpdate(element)
-	return Path(element.__owner, "ForceUpdate", element.__owner.unit)
-end
-
-local function ResComm_Update(event, ...)
-	local sender, endTime, target, succeeded
-
-	if event == "ResComm_ResStart" then
-		sender, endTime, target = ...
-	elseif event == "ResComm_ResEnd" then
-		sender, target, succeeded = ...
-	else
-		target = ...
-	end
-
-	for i = 1, #enabledUF do
-		local frame = enabledUF[i]
-
-		if frame.unit and UnitName(frame.unit) == target then
-			Path(frame, event, frame.unit, succeeded)
-		end
-	end
-end
-
-local function ToggleCallbacks(toggle)
-	if toggle and not enabled and #enabledUF > 0 then
-		LRC.RegisterCallback("oUF_ResComm", "ResComm_CanRes", ResComm_Update)
-		LRC.RegisterCallback("oUF_ResComm", "ResComm_Ressed", ResComm_Update)
-		LRC.RegisterCallback("oUF_ResComm", "ResComm_ResExpired", ResComm_Update)
-		LRC.RegisterCallback("oUF_ResComm", "ResComm_ResStart", ResComm_Update)
-		LRC.RegisterCallback("oUF_ResComm", "ResComm_ResEnd", ResComm_Update)
-
-		enabled = true
-	elseif not toggle and enabled and #enabledUF == 0 then
-		LRC.UnregisterCallback("oUF_ResComm", "ResComm_CanRes")
-		LRC.UnregisterCallback("oUF_ResComm", "ResComm_Ressed")
-		LRC.UnregisterCallback("oUF_ResComm", "ResComm_ResExpired")
-		LRC.UnregisterCallback("oUF_ResComm", "ResComm_ResStart")
-		LRC.UnregisterCallback("oUF_ResComm", "ResComm_ResEnd")
-
-		enabled = nil
-	end
+	return Path(element.__owner, "ForceUpdate")
 end
 
 local function Enable(self)
@@ -140,14 +83,12 @@ local function Enable(self)
 		element.__owner = self
 		element.ForceUpdate = ForceUpdate
 
+		self:RegisterEvent("INCOMING_RESURRECT_CHANGED", Path, true)
 		self:RegisterEvent("UNIT_HEALTH", Path)
 
 		if element:IsObjectType("Texture") and not element:GetTexture() then
 			element:SetTexture([[Interface\Icons\Spell_Holy_Resurrection]])
 		end
-
-		enabledUF[#enabledUF + 1] = self
-		ToggleCallbacks(true)
 
 		return true
 	end
@@ -159,16 +100,8 @@ local function Disable(self)
 	if element then
 		element:Hide()
 
+		self:UnregisterEvent("INCOMING_RESURRECT_CHANGED", Path)
 		self:UnregisterEvent("UNIT_HEALTH", Path)
-
-		for i = 1, #enabledUF do
-			if enabledUF[i] == self then
-				tremove(enabledUF, i)
-				break
-			end
-		end
-
-		ToggleCallbacks(false)
 	end
 end
 

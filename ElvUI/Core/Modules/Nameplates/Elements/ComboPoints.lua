@@ -6,6 +6,7 @@ local LSM = E.Libs.LSM
 --WoW API / Variables
 local CreateFrame = CreateFrame
 local GetComboPoints = GetComboPoints
+local UnitHasVehicleUI = UnitHasVehicleUI
 local MAX_COMBO_POINTS = MAX_COMBO_POINTS
 
 function NP:Update_CPoints(frame)
@@ -14,7 +15,7 @@ function NP:Update_CPoints(frame)
 
 	local numPoints
 	if frame.isTarget then
-		numPoints = GetComboPoints("player", "target")
+		numPoints = GetComboPoints(UnitHasVehicleUI("player") and "vehicle" or "player", "target")
 	end
 
 	if numPoints and numPoints > 0 then

@@ -1,0 +1,59 @@
+name: Auto Release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'ElvUI/ElvUI.toc'
+      - 'ElvUI_Libraries/ElvUI_Libraries.toc'
+      - 'ElvUI_Options/ElvUI_Options.toc'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract Version
+        id: get_version
+        run: |
+          VERSION=$(grep -i "^## Version:" ElvUI/ElvUI.toc | sed 's/.*: *//' | tr -d '\r' | xargs | sed 's/^[vV]//')
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Found version: $VERSION"
+
+      - name: Check if tag already exists
+        id: check_tag
+        run: |
+          if git ls-remote --tags origin | grep -q "refs/tags/v${{ env.VERSION }}$"; then
+            echo "Tag v${{ env.VERSION }} already exists."
+            echo "EXISTS=true" >> $GITHUB_ENV
+          else
+            echo "Tag v${{ env.VERSION }} does not exist."
+            echo "EXISTS=false" >> $GITHUB_ENV
+          fi
+
+      - name: Create Archive
+        if: env.EXISTS == 'false'
+        run: |
+          mkdir -p release
+          git archive HEAD ElvUI ElvUI_Libraries ElvUI_Options | tar -x -C release
+          cd release
+          zip -r ../ElvUI-v${{ env.VERSION }}.zip ElvUI ElvUI_Libraries ElvUI_Options
+          cp ../ElvUI-v${{ env.VERSION }}.zip ../ElvUI-latest.zip
+          cd ..
+
+      - name: Create Release
+        if: env.EXISTS == 'false'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "v${{ env.VERSION }}"
+          name: "Release v${{ env.VERSION }}"
+          files: |
+            ElvUI-v${{ env.VERSION }}.zip
+            ElvUI-latest.zip
+          generate_release_notes: true

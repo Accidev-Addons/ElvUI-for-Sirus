@@ -1,64 +1,56 @@
 local E, L, V, P, G = unpack(ElvUI)
 local NP = E:GetModule("NamePlates")
-local LSM = E.Libs.LSM
-local LAI = E.Libs.LAI
-local ElvUF = E.oUF
 
 --Lua functions
 local _G = _G
-local pcall = pcall
 local type = type
-local select, unpack, pairs, next, tonumber = select, unpack, pairs, next, tonumber
-local floor, random = math.floor, math.random
-local format, gsub, match, split = string.format, string.gsub, string.match, string.split
+local tonumber = tonumber
+local select, unpack, pairs, next = select, unpack, pairs, next
+local random, abs = math.random, math.abs
+local format, gsub, match = string.format, string.gsub, string.match
 local twipe = table.wipe
 --WoW API / Variables
+local CompactUnitFrame_UnregisterEvents = CompactUnitFrame_UnregisterEvents
 local CreateFrame = CreateFrame
 local GetBattlefieldScore = GetBattlefieldScore
 local GetNumBattlefieldScores = GetNumBattlefieldScores
-local GetNumPartyMembers, GetNumRaidMembers = GetNumPartyMembers, GetNumRaidMembers
-local GetPlayerInfoByGUID = GetPlayerInfoByGUID
+local hooksecurefunc = hooksecurefunc
 local InCombatLockdown = InCombatLockdown
 local IsInInstance = IsInInstance
+local RequestBattlefieldScoreData = RequestBattlefieldScoreData
 local UnitClass = UnitClass
+local UnitClassification = UnitClassification
 local UnitExists = UnitExists
 local UnitFactionGroup = UnitFactionGroup
 local UnitGUID = UnitGUID
+local UnitHealth = UnitHealth
 local UnitHealthMax = UnitHealthMax
 local UnitIsFriend = UnitIsFriend
 local UnitIsPlayer = UnitIsPlayer
 local UnitIsUnit = UnitIsUnit
+local UnitLevel = UnitLevel
 local UnitReaction = UnitReaction
 local UnitName = UnitName
-local WorldFrame = WorldFrame
-local WorldGetChildren = WorldFrame.GetChildren
-local WorldGetNumChildren = WorldFrame.GetNumChildren
+local UnitThreatSituation = UnitThreatSituation
+local GetRaidTargetIndex = GetRaidTargetIndex
+local C_NamePlate_GetNamePlateForUnit = C_NamePlate.GetNamePlateForUnit
+local C_NamePlate_GetNamePlates = C_NamePlate.GetNamePlates
+local C_NamePlate_SetNamePlateEnemySize = C_NamePlate.SetNamePlateEnemySize
+local C_NamePlate_SetNamePlateFriendlySize = C_NamePlate.SetNamePlateFriendlySize
 
-local RAID_CLASS_COLORS = RAID_CLASS_COLORS
-
-local lastChildern, numChildren, hasTarget = 0, 0
-local OVERLAY = [=[Interface\TargetingFrame\UI-TargetingFrame-Flash]=]
+local hasTarget
 local FSPAT = "%s*"..(gsub(gsub(_G.FOREIGN_SERVER_LABEL, "^%s", ""), "[%*()]", "%%%1")).."$"
 
-local RaidIconCoordinate = {
-	[0] = {[0] = "STAR", [0.25] = "MOON"},
-	[0.25] = {[0] = "CIRCLE", [0.25] = "SQUARE"},
-	[0.5] = {[0] = "DIAMOND", [0.25] = "CROSS"},
-	[0.75] = {[0] = "TRIANGLE", [0.25] = "SKULL"}
+local RaidIconIndex = {
+	[1] = "STAR", [2] = "CIRCLE", [3] = "DIAMOND", [4] = "TRIANGLE",
+	[5] = "MOON", [6] = "SQUARE", [7] = "CROSS", [8] = "SKULL"
 }
 
 NP.CreatedPlates = {}
 NP.VisiblePlates = {}
 NP.Healers = {}
 
-NP.GUIDList = {}
-
-NP.UnitByName = {}
 NP.NameByUnit = {}
-NP.ENEMY_PLAYER = {}
-NP.FRIENDLY_PLAYER = {}
-NP.ENEMY_NPC = {}
-NP.FRIENDLY_NPC = {}
 
 NP.ResizeQueue = {}
 
@@ -66,6 +58,8 @@ NP.Totems = {}
 NP.UniqueUnits = {}
 
 function NP:CheckBGHealers()
+	RequestBattlefieldScoreData()
+
 	local name, _, classToken, damageDone, healingDone
 	for i = 1, GetNumBattlefieldScores() do
 		name, _, _, _, _, _, _, _, _, classToken, damageDone, healingDone = GetBattlefieldScore(i)
@@ -78,6 +72,8 @@ function NP:CheckBGHealers()
 			end
 		end
 	end
+
+	NP:ForEachVisiblePlate("Update_HealerIcon")
 end
 
 function NP:SetFrameScale(frame, scale, noPlayAnimation)
@@ -110,10 +106,12 @@ function NP:SetPlateFrameLevel(frame, level, isTarget)
 		end
 
 		frame:SetFrameLevel(level+1)
---		frame.Glow:OffsetFrameLevel(-1, frame)
 		frame.Shadow:OffsetFrameLevel(-1, frame)
 		frame.Buffs:SetFrameLevel(level+1)
 		frame.Debuffs:SetFrameLevel(level+1)
+		if frame.RaidIcon then
+			frame.RaidIcon:GetParent():SetFrameLevel(level+2)
+		end
 	end
 end
 
@@ -130,7 +128,7 @@ end
 
 function NP:StyleFrame(parent, noBackdrop, point)
 	point = point or parent
-	local noscalemult = E.mult * E.uiscale
+	local noscalemult = E:PixelSize(1, parent)
 
 	if point.bordertop then return end
 
@@ -222,92 +220,66 @@ function NP:StyleFrameColor(frame, r, g, b)
 	frame.borderright:SetTexture(r, g, b)
 end
 
-function NP:GetUnitByName(frame, unitType)
-	local unit = NP.UnitByName[frame.UnitName] or NP[unitType][frame.UnitName]
-	if unit then
-		return unit
-	end
-end
-
-function NP:GetUnitClassByGUID(frame, guid)
-	if not guid then
-		guid = NP:GetGUIDByName(frame.UnitName, frame.UnitType)
+function NP:GetHealth(frame)
+	if frame.testHealth then
+		return frame.testHealth, frame.testMaxHealth or 1
 	end
 
-	if guid then
-		local _, _, class = pcall(GetPlayerInfoByGUID, guid)
-		return class
+	local unit = frame.unit
+	if not unit then return 0, 1 end
+
+	return UnitHealth(unit) or 0, UnitHealthMax(unit) or 1
+end
+
+function NP:UnitClass(frame)
+	if frame.testUnitType then
+		return frame.testClass
 	end
-end
 
-local grenColorToClass = {}
-for class, color in pairs(RAID_CLASS_COLORS) do
-	grenColorToClass[color.g] = class
-end
+	local unit = frame.unit
+	if not unit then return end
 
-function NP:UnitClass(frame, unitType)
-	if unitType == "FRIENDLY_PLAYER" then
-		if frame.unit then
-			local _, class = UnitClass(frame.unit)
-			if class then
-				return class
-			end
-		else
-			return NP:GetUnitClassByGUID(frame, frame.guid)
-		end
-	elseif unitType == "ENEMY_PLAYER" then
-		local _, g = frame.oldHealthBar:GetStatusBarColor()
-		return grenColorToClass[floor(g*100 + 0.5) / 100]
+	if UnitIsPlayer(unit) then
+		return select(2, UnitClass(unit))
 	end
 end
 
 function NP:UnitDetailedThreatSituation(frame)
-	if not frame.Threat:IsShown() then
-		if frame.UnitType == "ENEMY_NPC" then
-			local r, g = frame.oldName:GetTextColor()
-			return (r > 0.5 and g < 0.5) and 0 or nil
-		end
-	else
-		local r, g, b = frame.Threat:GetVertexColor()
-		if r > 0 then
-			if g > 0 then
-				if b > 0 then return 1 end
-				return 2
-			end
-			return 3
-		end
-	end
+	if not frame.unit then return end
+
+	return UnitThreatSituation("player", frame.unit)
 end
 
 function NP:UnitLevel(frame)
-	local level, boss = frame.oldLevel:IsObjectType("FontString") and tonumber(frame.oldLevel:GetText()) or false, frame.BossIcon:IsShown()
-	if boss or not level then
-		return "??", 0.9, 0, 0
-	else
-		return level, frame.oldLevel:GetTextColor()
+	if frame.testUnitType then
+		return E.mylevel, 1, 1, 1
 	end
+
+	local unit = frame.unit
+	if not unit then return "??", 0.9, 0, 0 end
+
+	local level = UnitLevel(unit)
+	local classification = UnitClassification(unit)
+	if not level or level < 0 or classification == "worldboss" then
+		return "??", 0.9, 0, 0
+	end
+
+	local color = GetQuestDifficultyColor(level)
+
+	return level, color.r, color.g, color.b
 end
 
 function NP:GetUnitInfo(frame)
-	local r, g, b = frame.oldHealthBar:GetStatusBarColor()
-	if r < 0.01 then
-		if b < 0.01 and g > 0.99 then
-			return 5, "FRIENDLY_NPC"
-		elseif b > 0.99 and g < 0.01 then
-			return 5, "FRIENDLY_PLAYER"
-		end
-	elseif r > 0.99 then
-		if b < 0.01 and g > 0.99 then
-			return 4, "ENEMY_NPC"
-		elseif b < 0.01 and g < 0.01 then
-			return 2, "ENEMY_NPC"
-		end
-	elseif r > 0.5 and r < 0.6 then
-		if g > 0.5 and g < 0.6 and b > 0.5 and b < 0.6 then
-			return 1, "ENEMY_NPC"
-		end
+	if frame.testUnitType then
+		return frame.testUnitType == "ENEMY_NPC" and 2 or 5, frame.testUnitType
 	end
-	return 3, "ENEMY_PLAYER"
+
+	local unit = frame.unit
+	if not unit then return 3, "ENEMY_PLAYER" end
+
+	local reaction = UnitReaction("player", unit) or 4
+
+	return reaction, NP:GetUnitTypeFromUnit(unit)
 end
 
 function NP:GetUnitTypeFromUnit(unit)
@@ -316,7 +288,7 @@ function NP:GetUnitTypeFromUnit(unit)
 
 	if isPlayer and UnitIsFriend("player", unit) and reaction and reaction >= 5 then
 		return "FRIENDLY_PLAYER"
-	elseif not isPlayer and (reaction and reaction >= 5) or UnitFactionGroup(unit) == "Neutral" then
+	elseif not isPlayer and ((reaction and reaction >= 5) or UnitFactionGroup(unit) == "Neutral") then
 		return "FRIENDLY_NPC"
 	elseif not isPlayer and (reaction and reaction <= 4) then
 		return "ENEMY_NPC"
@@ -325,38 +297,31 @@ function NP:GetUnitTypeFromUnit(unit)
 	end
 end
 
-function NP:GetGUIDByName(name, unitType)
-	for guid, info in pairs(NP.GUIDList) do
-		if info.name == name and info.unitType == unitType then
-			return guid
-		end
-	end
-end
+function NP:OnShow(isConfig, dontHideHighlight, unitToken)
+	local frame = self.ElvUIFrame
+	if not frame then return end
 
-function NP:OnShow(isConfig, dontHideHighlight)
-	local frame = self.UnitFrame
+	NP:DisableBlizzard(self)
+
+	local unit = unitToken or self.namePlateUnitToken
+	frame.unit = unit
+	frame.guid = unit and UnitGUID(unit)
+
+	NP.VisiblePlates[frame] = 1
+
 	NP:CheckRaidIcon(frame)
 
-	if self:IsShown() then
-		NP.VisiblePlates[frame] = 1
+	if frame.testUnitType then
+		frame.unit, frame.guid = nil, nil
 	end
 
-	frame.UnitName = gsub(frame.oldName:GetText() or "", FSPAT, "")
+	frame.UnitName = frame.testUnitType and (L[frame.testUnitType] or frame.testUnitType) or gsub((unit and UnitName(unit)) or "", FSPAT, "")
 	local reaction, unitType = NP:GetUnitInfo(frame)
 	local oldUnitType = frame.UnitType
 	frame.UnitType = unitType
 	frame.UnitReaction = reaction
 
-	local unit = NP:GetUnitByName(frame, unitType)
-	if unit then
-		frame.unit = unit
-		frame.isGroupUnit = true
-		frame.guid = UnitGUID(unit)
-	else
-		frame.guid = NP:GetGUIDByName(frame.UnitName, unitType)
-	end
-
-	frame.UnitClass = NP:UnitClass(frame, unitType)
+	frame.UnitClass = NP:UnitClass(frame)
 
 	if unitType ~= oldUnitType or isConfig then
 		NP:Update_HealthBar(frame)
@@ -369,7 +334,7 @@ function NP:OnShow(isConfig, dontHideHighlight)
 		NP:Configure_Auras(frame, "Buffs")
 		NP:Configure_Auras(frame, "Debuffs")
 
-		if NP.db.units[unitType].health.enable or NP.db.alwaysShowTargetHealth then
+		if NP.db.units[unitType].health.enable or (frame.isTarget and NP.db.alwaysShowTargetHealth) then
 			NP:Configure_HealthBar(frame, true)
 			NP:Configure_CastBar(frame, true)
 		end
@@ -399,12 +364,13 @@ function NP:OnShow(isConfig, dontHideHighlight)
 	NP:ForEachVisiblePlate("ResetNameplateFrameLevel") --keep this after `StyleFilterUpdate`
 end
 
-function NP:OnHide(isConfig, dontHideHighlight)
-	local frame = self.UnitFrame
+function NP:OnHide(isConfig)
+	local frame = self.ElvUIFrame
+	if not frame then return end
+
 	NP.VisiblePlates[frame] = nil
 
 	frame.unit = nil
-	frame.isGroupUnit = nil
 
 	for i = 1, #frame.Buffs do
 		frame.Buffs[i]:SetScript("OnUpdate", nil)
@@ -430,7 +396,7 @@ function NP:OnHide(isConfig, dontHideHighlight)
 	end
 
 	if frame.isEventsRegistered then
-		NP:UnregisterAllEvents(frame)
+		NP:UnregisterFrameEvents(frame)
 	end
 
 	frame.TopIndicator:Hide()
@@ -454,15 +420,11 @@ function NP:OnHide(isConfig, dontHideHighlight)
 	frame.IconFrame:Hide()
 	frame:Hide()
 	frame.isTarget = nil
-	frame.isTargetChanged = false
 	frame.isMouseover = nil
 	frame.currentScale = nil
 	frame.UnitName = nil
 	frame.UnitClass = nil
 	frame.UnitReaction = nil
-	frame.TopLevelFrame = nil
-	frame.TopOffset = nil
-	frame.ThreatReaction = nil
 	frame.guid = nil
 	frame.alpha = nil
 	frame.isAlphaChanged = nil
@@ -470,17 +432,13 @@ function NP:OnHide(isConfig, dontHideHighlight)
 	frame.ThreatScale = nil
 	frame.ThreatStatus = nil
 
-	if not dontHideHighlight then
-		frame.oldHighlight:Hide()
-	end
-
-	NP:StyleFilterClearVariables(self)
+	NP:StyleFilterClearVariables(frame)
 end
 
 function NP:UpdateAllFrame(frame, isConfig, dontHideHighlight)
 	frame = frame:GetParent()
 
-	NP.OnHide(frame, isConfig, dontHideHighlight)
+	NP.OnHide(frame, isConfig)
 	NP.OnShow(frame, isConfig, dontHideHighlight)
 end
 
@@ -490,12 +448,13 @@ function NP:ConfigureAll()
 	NP:StyleFilterConfigure()
 	NP:ForEachPlate("UpdateAllFrame", true, true)
 	NP:SetCVars()
+	NP:UpdateClickableSizes()
 end
 
 function NP:ForEachPlate(functionToRun, ...)
 	for frame in pairs(NP.CreatedPlates) do
-		if frame and frame.UnitFrame then
-			NP[functionToRun](NP, frame.UnitFrame, ...)
+		if frame and frame.ElvUIFrame then
+			NP[functionToRun](NP, frame.ElvUIFrame, ...)
 		end
 	end
 
@@ -507,6 +466,10 @@ end
 function NP:ForEachVisiblePlate(functionToRun, ...)
 	for frame in pairs(NP.VisiblePlates) do
 		NP[functionToRun](NP, frame, ...)
+	end
+
+	if functionToRun == "ResetNameplateFrameLevel" then
+		NP.CollectedFrameLevelCount = 1
 	end
 end
 
@@ -549,8 +512,8 @@ function NP:SetSize(frame)
 	if InCombatLockdown() then
 		NP.ResizeQueue[frame] = true
 	else
-		local unitFrame = frame.UnitFrame
-		local unitType = unitFrame.UnitType
+		local unitFrame = frame.ElvUIFrame
+		local unitType = unitFrame and unitFrame.UnitType
 		unitType = (unitType == "FRIENDLY_PLAYER" or unitType == "FRIENDLY_NPC") and "friendly" or "enemy"
 
 		if NP.db.clickThrough[unitType] then
@@ -567,16 +530,71 @@ function NP:SetSize(frame)
 	end
 end
 
+function NP:UpdateClickableSizes()
+	if InCombatLockdown() then
+		NP.ClickableSizeQueued = true
+	else
+		NP.ClickableSizeQueued = nil
+		C_NamePlate_SetNamePlateEnemySize(NP.db.plateSize.enemyWidth, NP.db.plateSize.enemyHeight)
+		C_NamePlate_SetNamePlateFriendlySize(NP.db.plateSize.friendlyWidth, NP.db.plateSize.friendlyHeight)
+	end
+end
+
+local blizzardRegions = { "healthBar", "castBar", "BuffFrame", "ClassificationFrame", "RaidTargetFrame", "aggroHighlight", "selectionHighlight", "classificationIndicator", "name" }
+
+local function muteBlizzardPlate(blizz)
+	blizz:SetAlpha(0)
+
+	for _, key in next, blizzardRegions do
+		local region = blizz[key]
+		if region then
+			region:SetAlpha(0)
+		end
+	end
+
+	local castBar = blizz.castBar
+	if castBar then
+		if castBar.Icon then castBar.Icon:SetAlpha(0) end
+		if castBar.BorderShield then castBar.BorderShield:SetAlpha(0) end
+	end
+
+	if CompactUnitFrame_UnregisterEvents then
+		CompactUnitFrame_UnregisterEvents(blizz)
+	end
+end
+
+function NP:DisableBlizzard(plate)
+	if not plate then return end
+
+	local blizz = plate.UnitFrame
+	if not (blizz and blizz.isNamePlate) then return end
+
+	plate.BlizzardFrame = blizz
+
+	muteBlizzardPlate(blizz)
+end
+
+local function neutralizeDriverPlate(plate)
+	local blizz = plate.UnitFrame
+	if not blizz then return end
+
+	if CompactUnitFrame_UnregisterEvents then
+		CompactUnitFrame_UnregisterEvents(blizz)
+	end
+
+	if blizz.BuffFrame and blizz.BuffFrame.SetActive then
+		blizz.BuffFrame:SetActive(false)
+	end
+end
+
 local plateID = 0
 function NP:OnCreated(frame)
 	plateID = plateID + 1
-	local Health, CastBar = frame:GetChildren()
-	local Threat, Border, CastBarBorder, CastBarShield, CastBarIcon, Highlight, Name, Level, BossIcon, RaidIcon, EliteIcon = frame:GetRegions()
 
 	local unitFrame = CreateFrame("Frame", format("ElvUI_NamePlate%d", plateID), frame)
-	frame.UnitFrame = unitFrame
+	frame.ElvUIFrame = unitFrame
 	unitFrame:Hide()
-	unitFrame:SetAllPoints()
+	unitFrame:SetAllPoints(frame)
 	unitFrame:SetScript("OnEvent", NP.OnEvent)
 	unitFrame:SetScale(NP.db.plateScale and E.uiscale or 1)
 	unitFrame.plateID = plateID
@@ -593,76 +611,103 @@ function NP:OnCreated(frame)
 	unitFrame.HealerIcon = NP:Construct_HealerIcon(unitFrame)
 	unitFrame.CPoints = NP:Construct_CPoints(unitFrame)
 	unitFrame.IconFrame = NP:Construct_IconFrame(unitFrame)
+	unitFrame.RaidIcon = NP:Construct_RaidIcon(unitFrame)
 	NP:Construct_Glow(unitFrame)
 
-	NP:QueueObject(Health)
-	NP:QueueObject(CastBar)
-	NP:QueueObject(Level)
-	NP:QueueObject(Name)
-	NP:QueueObject(Threat)
-	NP:QueueObject(Border)
-	NP:QueueObject(CastBarBorder)
-	NP:QueueObject(CastBarShield)
-	NP:QueueObject(Highlight)
-	BossIcon:SetAlpha(0)
-	EliteIcon:SetAlpha(0)
+	NP:DisableBlizzard(frame)
 
-	unitFrame.oldHealthBar = Health
-	unitFrame.oldCastBar = CastBar
-	unitFrame.oldCastBar.Shield = CastBarShield
-	unitFrame.oldCastBar.Icon = CastBarIcon
-	unitFrame.oldName = Name
-	unitFrame.oldHighlight = Highlight
-	unitFrame.oldLevel = Level
+	unitFrame.UnitType = "ENEMY_NPC"
+	NP:Configure_Level(unitFrame)
+	NP:Configure_Name(unitFrame)
+	NP:Configure_CastBar(unitFrame, true)
+	NP:Configure_HealthBar(unitFrame, true)
 
-	unitFrame.Threat = Threat
-	RaidIcon:SetParent(unitFrame)
-	unitFrame.RaidIcon = RaidIcon
-
-	unitFrame.BossIcon = BossIcon
-	unitFrame.EliteIcon = EliteIcon
-
-	NP.OnShow(frame, true)
 	NP:SetSize(frame)
 
-	frame:HookScript("OnShow", NP.OnShow)
-	frame:HookScript("OnHide", NP.OnHide)
-	Health:HookScript("OnValueChanged", NP.Update_HealthOnValueChanged)
-
 	NP.CreatedPlates[frame] = true
-	NP.VisiblePlates[unitFrame] = 1
 end
+
+local healthEvents = {
+	UNIT_HEALTH = true,
+	UNIT_MAXHEALTH = true
+}
 
 function NP:OnEvent(event, unit, ...)
 	if not unit and not self.unit then return end
-	if self.unit ~= unit then return end
+	if unit and self.unit ~= unit then return end
+
+	if healthEvents[event] then
+		NP:Update_Health(self)
+		NP:Update_HealthColor(self)
+		NP:Update_Glow(self)
+		NP:StyleFilterUpdate(self, "UNIT_HEALTH")
+		return
+	end
+
+	if event == "UNIT_AURA" then
+		NP:UpdateElement_Auras(self)
+		return
+	end
+
+	if event == "UNIT_FACTION" then
+		local reaction, unitType = NP:GetUnitInfo(self)
+		if unitType == self.UnitType then
+			self.UnitReaction = reaction
+
+			NP:Update_HealthColor(self)
+			NP:Update_Name(self)
+			return
+		end
+	end
+
+	if event == "UNIT_NAME_UPDATE" or event == "UNIT_LEVEL" or event == "UNIT_FACTION" then
+		NP:UpdateAllFrame(self, nil, true)
+		return
+	end
 
 	NP:Update_CastBar(self, event, unit, ...)
+end
+
+local function registerUnitEvent(frame, event)
+	frame:RegisterUnitEvent(event, frame.unit)
 end
 
 function NP:RegisterEvents(frame)
 	if not frame.unit then return end
 
+	registerUnitEvent(frame, "UNIT_HEALTH")
+	registerUnitEvent(frame, "UNIT_MAXHEALTH")
+	registerUnitEvent(frame, "UNIT_NAME_UPDATE")
+	registerUnitEvent(frame, "UNIT_LEVEL")
+	registerUnitEvent(frame, "UNIT_FACTION")
+	registerUnitEvent(frame, "UNIT_AURA")
+	frame.isEventsRegistered = true
+
 	if NP.db.units[frame.UnitType].health.enable or (frame.isTarget and NP.db.alwaysShowTargetHealth) then
 		if NP.db.units[frame.UnitType].castbar.enable then
-			frame:RegisterEvent("UNIT_SPELLCAST_INTERRUPTED")
-			frame:RegisterEvent("UNIT_SPELLCAST_DELAYED")
-			frame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_START")
-			frame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_UPDATE")
-			frame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_STOP")
-			frame:RegisterEvent("UNIT_SPELLCAST_INTERRUPTIBLE")
-			frame:RegisterEvent("UNIT_SPELLCAST_NOT_INTERRUPTIBLE")
-			frame:RegisterEvent("UNIT_SPELLCAST_START")
-			frame:RegisterEvent("UNIT_SPELLCAST_STOP")
-			frame:RegisterEvent("UNIT_SPELLCAST_FAILED")
-			frame.isEventsRegistered = true
+			registerUnitEvent(frame, "UNIT_SPELLCAST_INTERRUPTED")
+			registerUnitEvent(frame, "UNIT_SPELLCAST_DELAYED")
+			registerUnitEvent(frame, "UNIT_SPELLCAST_CHANNEL_START")
+			registerUnitEvent(frame, "UNIT_SPELLCAST_CHANNEL_UPDATE")
+			registerUnitEvent(frame, "UNIT_SPELLCAST_CHANNEL_STOP")
+			registerUnitEvent(frame, "UNIT_SPELLCAST_INTERRUPTIBLE")
+			registerUnitEvent(frame, "UNIT_SPELLCAST_NOT_INTERRUPTIBLE")
+			registerUnitEvent(frame, "UNIT_SPELLCAST_START")
+			registerUnitEvent(frame, "UNIT_SPELLCAST_STOP")
+			registerUnitEvent(frame, "UNIT_SPELLCAST_FAILED")
 		end
 
 		NP.OnEvent(frame, nil, frame.unit)
 	end
 end
 
-function NP:UnregisterAllEvents(frame)
+function NP:UnregisterFrameEvents(frame)
+	frame:UnregisterEvent("UNIT_HEALTH")
+	frame:UnregisterEvent("UNIT_MAXHEALTH")
+	frame:UnregisterEvent("UNIT_NAME_UPDATE")
+	frame:UnregisterEvent("UNIT_LEVEL")
+	frame:UnregisterEvent("UNIT_FACTION")
+	frame:UnregisterEvent("UNIT_AURA")
 	frame:UnregisterEvent("UNIT_SPELLCAST_INTERRUPTED")
 	frame:UnregisterEvent("UNIT_SPELLCAST_DELAYED")
 	frame:UnregisterEvent("UNIT_SPELLCAST_CHANNEL_START")
@@ -674,19 +719,6 @@ function NP:UnregisterAllEvents(frame)
 	frame:UnregisterEvent("UNIT_SPELLCAST_STOP")
 	frame:UnregisterEvent("UNIT_SPELLCAST_FAILED")
 	frame.isEventsRegistered = nil
-end
-
-function NP:QueueObject(object)
-	local objectType = object:GetObjectType()
-	if objectType == "Texture" then
-		object:SetTexture("")
-		object:SetTexCoord(0, 0, 0, 0)
-	elseif objectType == "FontString" then
-		object:SetWidth(0.001)
-	elseif objectType == "StatusBar" then
-		object:SetStatusBarTexture("")
-	end
-	object:Hide()
 end
 
 function NP:PlateFade(nameplate, timeToFade, startAlpha, endAlpha)
@@ -710,7 +742,7 @@ function NP:PlateFade(nameplate, timeToFade, startAlpha, endAlpha)
 end
 
 function NP:SetTargetFrame(frame)
-	if hasTarget and frame.alpha == 1 then
+	if hasTarget and frame.unit and UnitIsUnit(frame.unit, "target") then
 		if not frame.isTarget then
 			frame.isTarget = true
 
@@ -718,13 +750,6 @@ function NP:SetTargetFrame(frame)
 
 			if NP.db.useTargetScale then
 				NP:SetFrameScale(frame, (frame.ThreatScale or 1) * NP.db.targetScale)
-			end
-
-			if not frame.isGroupUnit then
-				frame.unit = "target"
-				frame.guid = UnitGUID("target")
-
-				NP:RegisterEvents(frame)
 			end
 
 			NP:UpdateElement_Auras(frame)
@@ -758,14 +783,6 @@ function NP:SetTargetFrame(frame)
 			NP:SetFrameScale(frame, (frame.ThreatScale or 1))
 		end
 
-		if not frame.isGroupUnit then
-			frame.unit = nil
-
-			if frame.isEventsRegistered then
-				NP:UnregisterAllEvents(frame)
-				NP:Update_CastBar(frame)
-			end
-		end
 
 		if not NP.db.units[frame.UnitType].health.enable then
 			NP:UpdateAllFrame(frame, nil, true)
@@ -803,70 +820,97 @@ function NP:SetTargetFrame(frame)
 		end
 	end
 
-	NP:Configure_Glow(frame)
+	if NP:GlowLayoutStale(frame) then
+		NP:Configure_Glow(frame)
+	end
+
 	NP:Update_Glow(frame)
 end
 
+-- UPDATE_MOUSEOVER_UNIT only fires when the unit is acquired, never when it is dropped
+local mouseoverWatcher = CreateFrame("Frame")
+mouseoverWatcher:Hide()
+mouseoverWatcher.elapsed = 0
+mouseoverWatcher:SetScript("OnUpdate", function(self, elapsed)
+	self.elapsed = self.elapsed + elapsed
+	if self.elapsed < 0.1 then return end
+	self.elapsed = 0
+
+	if not UnitExists("mouseover") then
+		self:Hide()
+
+		NP:UpdateVisiblePlates()
+	end
+end)
+
 function NP:SetMouseoverFrame(frame)
-	if frame.oldHighlight:IsShown() then
+	if frame.unit and UnitIsUnit(frame.unit, "mouseover") then
 		if not frame.isMouseover then
 			frame.isMouseover = true
 
+			mouseoverWatcher.elapsed = 0
+			mouseoverWatcher:Show()
+
 			NP:Update_Highlight(frame)
-
-			if not frame.isGroupUnit then
-				frame.unit = "mouseover"
-				frame.guid = UnitGUID("mouseover")
-
-				NP:Update_CastBar(frame, nil, frame.unit)
-			end
-
 			NP:UpdateElement_Auras(frame)
 		end
 	elseif frame.isMouseover then
 		frame.isMouseover = nil
 
 		NP:Update_Highlight(frame)
-
-		if not frame.isGroupUnit then
-			frame.unit = nil
-
-			NP:Update_CastBar(frame)
-		end
 	end
 end
 
-local function findNewPlate(...)
-	for i = lastChildern + 1, numChildren do
-		local frame = select(i, ...)
-		local region = frame:GetRegions()
-		if region and region:IsObjectType("Texture") and region:GetTexture() == OVERLAY and not NP.CreatedPlates[frame] then
-			NP:OnCreated(frame)
-		end
-	end
+-- the engine places plates on fractional pixels, which smears the 1px border over two rows
+function NP:PixelSnap(frame)
+	local health = frame.Health
+	local left, top = health:GetLeft(), health:GetTop()
+	if not left or not top then return end
+
+	local pixel = E.perfect / health:GetEffectiveScale()
+	local x, y = (left / pixel) % 1, (top / pixel) % 1
+	if x > 0.5 then x = x - 1 end
+	if y > 0.5 then y = y - 1 end
+
+	if abs(x) < 0.02 and abs(y) < 0.02 then return end
+
+	local offsetX = (frame.snapX or 0) - x * pixel
+	local offsetY = (frame.snapY or 0) - y * pixel
+	frame.snapX = (offsetX > pixel and pixel) or (offsetX < -pixel and -pixel) or offsetX
+	frame.snapY = (offsetY > pixel and pixel) or (offsetY < -pixel and -pixel) or offsetY
+
+	health:SetPoint("TOP", frame, "TOP", frame.snapX, frame.snapY)
 end
 
-function NP:OnUpdate()
-	numChildren = WorldGetNumChildren(WorldFrame)
-	if lastChildern ~= numChildren then
-		findNewPlate(WorldGetChildren(WorldFrame))
-		lastChildern = numChildren
-	end
+local pixelSnapper = CreateFrame("Frame")
+local healthElapsed = 0
+pixelSnapper:SetScript("OnUpdate", function(_, elapsed)
+	if not next(NP.VisiblePlates) then return end
+
+	healthElapsed = healthElapsed + elapsed
+
+	local pollHealth = healthElapsed > 0.2
+	if pollHealth then healthElapsed = 0 end
 
 	for frame in pairs(NP.VisiblePlates) do
-		if hasTarget then
-			frame.alpha = frame:GetParent():GetAlpha()
-			frame:GetParent():SetAlpha(1)
-		else
-			frame.alpha = 1
-		end
+		NP:PixelSnap(frame)
 
+		if pollHealth and frame.unit then
+			local health, maxHealth = NP:GetHealth(frame)
+			if frame.polledHealth ~= health or frame.polledMaxHealth ~= maxHealth then
+				frame.polledHealth, frame.polledMaxHealth = health, maxHealth
+
+				NP:Update_Health(frame)
+				NP:Update_HealthColor(frame)
+			end
+		end
+	end
+end)
+
+function NP:UpdateVisiblePlates()
+	for frame in pairs(NP.VisiblePlates) do
 		NP:SetMouseoverFrame(frame)
 		NP:SetTargetFrame(frame)
-
-		if frame.UnitReaction ~= NP:GetUnitInfo(frame) then
-			NP:UpdateAllFrame(frame, nil, true)
-		end
 
 		local status = NP:UnitDetailedThreatSituation(frame)
 		if frame.ThreatStatus ~= status then
@@ -878,48 +922,9 @@ function NP:OnUpdate()
 end
 
 function NP:CheckRaidIcon(frame)
-	if frame.RaidIcon:IsShown() then
-		local ux, uy = frame.RaidIcon:GetTexCoord()
-		frame.RaidIconType = RaidIconCoordinate[ux][uy]
-	else
-		frame.RaidIconType = nil
-	end
-end
-
-function NP:SearchNameplateByGUID(guid)
-	for frame in pairs(NP.VisiblePlates) do
-		if frame.guid == guid then
-			return frame
-		end
-	end
-end
-
-function NP:SearchNameplateByName(sourceName)
-	if not sourceName then return end
-	local SearchFor = split("-", sourceName)
-	for frame in pairs(NP.VisiblePlates) do
-		if frame.UnitName == SearchFor and RAID_CLASS_COLORS[frame.UnitClass] then
-			return frame
-		end
-	end
-end
-
-function NP:SearchNameplateByIconName(raidIcon)
-	for frame in pairs(NP.VisiblePlates) do
-		NP:CheckRaidIcon(frame)
-		if frame.RaidIcon:IsShown() and (frame.RaidIconType == raidIcon) then
-			return frame
-		end
-	end
-end
-
-function NP:SearchForFrame(guid, raidIcon, name)
-	local frame
-	if guid then frame = NP:SearchNameplateByGUID(guid) end
-	if (not frame) and name then frame = NP:SearchNameplateByName(name) end
-	if (not frame) and raidIcon then frame = NP:SearchNameplateByIconName(raidIcon) end
-
-	return frame
+	local index = frame.testRaidIcon or (frame.unit and GetRaidTargetIndex(frame.unit))
+	frame.RaidIconIndex = index
+	frame.RaidIconType = index and RaidIconIndex[index] or nil
 end
 
 local function CopySettings(from, to)
@@ -960,6 +965,9 @@ end
 
 function NP:PLAYER_ENTERING_WORLD()
 	twipe(NP.Healers)
+
+	NP:AcquireExistingPlates()
+
 	local inInstance, instanceType = IsInInstance()
 	if inInstance and (instanceType == "pvp") and NP.db.units.ENEMY_PLAYER.markHealers then
 		NP:RegisterEvent("UPDATE_BATTLEFIELD_SCORE", "CheckBGHealers")
@@ -971,24 +979,69 @@ function NP:PLAYER_ENTERING_WORLD()
 			NP.CheckHealerTimer = nil;
 		end
 	end
+
+	NP:PLAYER_TARGET_CHANGED()
+end
+
+function NP:AcquireExistingPlates()
+	for _, plate in ipairs(C_NamePlate_GetNamePlates()) do
+		local unit = plate.namePlateUnitToken
+		if unit and UnitExists(unit) then
+			NP:NAME_PLATE_UNIT_ADDED(nil, unit)
+		end
+	end
+end
+
+function NP:NAME_PLATE_CREATED(_, plate)
+	if plate and not NP.CreatedPlates[plate] then
+		NP:OnCreated(plate)
+	end
+end
+
+function NP:NAME_PLATE_UNIT_ADDED(_, unit)
+	if not unit then return end
+
+	local plate = C_NamePlate_GetNamePlateForUnit(unit)
+	if not plate then return end
+
+	if not NP.CreatedPlates[plate] then
+		NP:OnCreated(plate)
+	end
+
+	NP.OnShow(plate, nil, nil, unit)
+
+	neutralizeDriverPlate(plate)
+end
+
+function NP:NAME_PLATE_UNIT_REMOVED(_, unit)
+	if not unit then return end
+
+	local plate = C_NamePlate_GetNamePlateForUnit(unit)
+	if plate and NP.CreatedPlates[plate] then
+		NP.OnHide(plate)
+	end
 end
 
 function NP:PLAYER_TARGET_CHANGED()
-	hasTarget = UnitExists("target") == 1
+	hasTarget = UnitExists("target") and true or false
+
+	NP:UpdateVisiblePlates()
 end
 
 function NP:UPDATE_MOUSEOVER_UNIT()
-	if not UnitIsUnit("mouseover", "player") and UnitIsPlayer("mouseover") then
-		local name = UnitName("mouseover")
-		local guid = UnitGUID("mouseover")
-		local unitType = NP:GetUnitTypeFromUnit("mouseover")
-		for frame in pairs(NP.VisiblePlates) do
-			if frame.UnitName == name and frame.UnitType == unitType then
-				if not NP.GUIDList[guid] then
-					NP.GUIDList[guid] = {name = name, unitType = frame.UnitType}
-					NP.OnShow(frame:GetParent(), nil, true)
-					break
-				end
+	NP:UpdateVisiblePlates()
+end
+
+function NP:UNIT_THREAT_LIST_UPDATE(_, unit)
+	if not unit then return end
+
+	for frame in pairs(NP.VisiblePlates) do
+		if frame.unit and UnitIsUnit(frame.unit, unit) then
+			local status = NP:UnitDetailedThreatSituation(frame)
+			if frame.ThreatStatus ~= status then
+				frame.ThreatStatus = status
+
+				NP:Update_HealthColor(frame)
 			end
 		end
 	end
@@ -999,18 +1052,11 @@ function NP:PLAYER_FOCUS_CHANGED()
 
 	if UnitIsPlayer("focus") and not UnitIsUnit("focus", "player") then
 		local name = UnitName("focus")
-		local guid = UnitGUID("focus")
 
-		NP.UnitByName[name] = "focus"
 		NP.NameByUnit.focus = name
-
-		if not NP.GUIDList[guid] then
-			NP.GUIDList[guid] = {name = name, unitType = NP:GetUnitTypeFromUnit("focus")}
-		end
 
 		unitName = name
 	elseif NP.NameByUnit.focus then
-		NP.UnitByName[NP.NameByUnit.focus] = nil
 		unitName = NP.NameByUnit.focus
 		NP.NameByUnit.focus = nil
 	end
@@ -1027,6 +1073,7 @@ function NP:PLAYER_FOCUS_CHANGED()
 end
 
 function NP:SetCVars()
+	E:SetCVar('nameplateMaxDistance', NP.db.loadDistance or 41)
 	E:SetCVar('ShowClassColorInNameplate', 1)
 	E:SetCVar('showVKeyCastbar', 0)
 	E:SetCVar('nameplateAllowOverlap', NP.db.motionType == 'STACKED' and 0 or 1)
@@ -1063,6 +1110,10 @@ function NP:PLAYER_REGEN_ENABLED()
 		end
 	end
 
+	if NP.ClickableSizeQueued then
+		NP:UpdateClickableSizes()
+	end
+
 	if NP.db.showFriendlyCombat == 'TOGGLE_ON' then
 		E:SetCVar('nameplateShowFriends', 0)
 	elseif NP.db.showFriendlyCombat == 'TOGGLE_OFF' then
@@ -1084,29 +1135,12 @@ function NP:UNIT_COMBO_POINTS(_, unit)
 	end
 end
 
-function NP:UNIT_HEALTH(_, unit)
-	if unit ~= "player" then return end
-	NP:ForEachVisiblePlate("StyleFilterUpdate", "UNIT_HEALTH")
-end
+for _, powerEvent in pairs({"UNIT_HEALTH", "UNIT_MANA", "UNIT_ENERGY", "UNIT_FOCUS", "UNIT_RAGE", "UNIT_RUNIC_POWER", "UNIT_DISPLAYPOWER"}) do
+	NP[powerEvent] = function(_, _, unit)
+		if unit ~= "player" then return end
 
-function NP:UNIT_MANA(_, unit)
-	if unit ~= "player" then return end
-	NP:ForEachVisiblePlate("StyleFilterUpdate", "UNIT_MANA")
-end
-
-function NP:UNIT_ENERGY(_, unit)
-	if unit ~= "player" then return end
-	NP:ForEachVisiblePlate("StyleFilterUpdate", "UNIT_ENERGY")
-end
-
-function NP:UNIT_FOCUS(_, unit)
-	if unit ~= "player" then return end
-	NP:ForEachVisiblePlate("StyleFilterUpdate", "UNIT_FOCUS")
-end
-
-function NP:UNIT_RAGE(_, unit)
-	if unit ~= "player" then return end
-	NP:ForEachVisiblePlate("StyleFilterUpdate", "UNIT_RAGE")
+		NP:ForEachVisiblePlate("StyleFilterUpdate", powerEvent)
+	end
 end
 
 function NP:SPELL_UPDATE_COOLDOWN(...)
@@ -1120,98 +1154,23 @@ end
 function NP:RAID_TARGET_UPDATE()
 	for frame in pairs(NP.VisiblePlates) do
 		NP:CheckRaidIcon(frame)
+		NP:Update_RaidIcon(frame)
 		NP:StyleFilterUpdate(frame, "RAID_TARGET_UPDATE")
 	end
 end
 
-function NP:CacheArenaUnits()
-	twipe(NP.ENEMY_PLAYER)
-	twipe(NP.ENEMY_NPC)
-
-	for i = 1, 5 do
-		if UnitExists("arena"..i) then
-			local unit = format("arena%d", i)
-			NP.ENEMY_PLAYER[UnitName(unit)] = unit
-		end
-		if UnitExists("arenapet"..i) then
-			local unit = format("arenapet%d", i)
-			NP.ENEMY_NPC[UnitName(unit)] = unit
-		end
-	end
-end
-
-function NP:CacheGroupUnits()
-	twipe(NP.FRIENDLY_PLAYER)
-
-	if GetNumRaidMembers() > 0 then
-		for i = 1, 40 do
-			if UnitExists("raid"..i) then
-				local unit = format("raid%d", i)
-				NP.FRIENDLY_PLAYER[UnitName(unit)] = unit
-			end
-		end
-	elseif GetNumPartyMembers() > 0 then
-		for i = 1, 5 do
-			if UnitExists("party"..i) then
-				local unit = format("party%d", i)
-				NP.FRIENDLY_PLAYER[UnitName(unit)] = unit
-			end
-		end
-	end
-end
-
-function NP:CacheGroupPetUnits()
-	twipe(NP.FRIENDLY_NPC)
-	twipe(NP.ENEMY_NPC)
-
-	for i = 1, 5 do
-		if UnitExists("arenapet"..i) then
-			local unit = format("arenapet%d", i)
-			NP.ENEMY_NPC[UnitName(unit)] = unit
-		end
-	end
-	if GetNumRaidMembers() > 0 then
-		for i = 1, 40 do
-			if UnitExists("raidpet"..i) then
-				local unit = format("raidpet%d", i)
-				NP.FRIENDLY_NPC[UnitName(unit)] = unit
-			end
-		end
-	elseif GetNumPartyMembers() > 0 then
-		for i = 1, 5 do
-			if UnitExists("partypet"..i) then
-				local unit = format("partypet%d", i)
-				NP.FRIENDLY_NPC[UnitName(unit)] = unit
-			end
-		end
-	end
-end
-
 function NP:TogleTestFrame(unitType)
-	local unitFrame = ElvNP_Test.UnitFrame
+	local unitFrame = ElvNP_Test.ElvUIFrame
 	if not ElvNP_Test:IsShown() or unitFrame.UnitType ~= unitType then
-		if unitType == "ENEMY_NPC" then
-			unitFrame.oldHealthBar:SetStatusBarColor(1, 0, 0)
-		elseif unitType == "FRIENDLY_NPC" then
-			unitFrame.oldHealthBar:SetStatusBarColor(0, 1, 0)
-		elseif unitType == "FRIENDLY_PLAYER" then
-			unitFrame.oldHealthBar:SetStatusBarColor(0, 0, 1)
-		else
-			local color = RAID_CLASS_COLORS[E.myclass]
-			unitFrame.oldHealthBar:SetStatusBarColor(color.r, color.g, color.b)
-		end
-
 		local maxHealth = UnitHealthMax("player")
-		unitFrame.oldHealthBar:SetMinMaxValues(0, maxHealth)
-		unitFrame.oldHealthBar:SetValue(random(1, maxHealth))
+		unitFrame.testUnitType = unitType
+		unitFrame.testMaxHealth = maxHealth
+		unitFrame.testHealth = random(1, maxHealth)
+		unitFrame.testClass = (unitType == "ENEMY_PLAYER" or unitType == "FRIENDLY_PLAYER") and E.myclass or nil
+		unitFrame.testRaidIcon = random(1, 8)
 
-		unitFrame.oldName:SetText(L[unitType])
-		unitFrame.oldLevel:SetText(E.mylevel)
 		unitFrame.Buffs.forceShow = true
 		unitFrame.Debuffs.forceShow = true
-		unitFrame.RaidIcon:SetTexture([[Interface\TargetingFrame\UI-RaidTargetingIcons]])
-		SetRaidTargetIconTexture(unitFrame.RaidIcon, random(1, 8))
-		unitFrame.RaidIcon:Show()
 
 		if not ElvNP_Test:IsShown() then
 			ElvNP_Test:Show()
@@ -1240,6 +1199,18 @@ function NP:Initialize()
 
 	NP:SetCVars()
 
+	NP:UpdateClickableSizes()
+
+	if _G.NamePlateDriverFrame then
+		hooksecurefunc(_G.NamePlateDriverFrame, "UpdateNamePlateOptions", function()
+			NP:UpdateClickableSizes()
+
+			for _, plate in ipairs(C_NamePlate_GetNamePlates()) do
+				neutralizeDriverPlate(plate)
+			end
+		end)
+	end
+
 	local ElvNP_Test = CreateFrame("Button", "ElvNP_Test")
 	ElvNP_Test:SetScale(1)
 	ElvNP_Test:ClearAllPoints()
@@ -1248,23 +1219,20 @@ function NP:Initialize()
 	ElvNP_Test:RegisterForDrag("LeftButton", "RightButton")
 	ElvNP_Test:SetScript("OnDragStart", function() ElvNP_Test:StartMoving() end)
 	ElvNP_Test:SetScript("OnDragStop", function() ElvNP_Test:StopMovingOrSizing() end)
-	ElvNP_Test.frameType = 'PLAYER'
 
-	CreateFrame("StatusBar", nil, ElvNP_Test)
-	CreateFrame("StatusBar", nil, ElvNP_Test)
-
-	for i = 1, 11 do
-		if i == 7 or i == 8 then
-			ElvNP_Test:CreateFontString(nil, "OVERLAY", "GameFontNormal"):SetText("Empty")
-		else
-			ElvNP_Test:CreateTexture():Hide()
-		end
-	end
-
-	NP:StyleFrame(ElvNP_Test, true)
 	NP:OnCreated(ElvNP_Test)
-	local castbar = ElvNP_Test.UnitFrame.CastBar
-	castbar:SetParent(ElvNP_Test.UnitFrame.Health)
+
+	ElvNP_Test.isTestFrame = true
+	ElvNP_Test.ElvUIFrame.testUnitType = "ENEMY_NPC"
+	ElvNP_Test.ElvUIFrame.testMaxHealth = 100
+	ElvNP_Test.ElvUIFrame.testHealth = 70
+	NP.OnShow(ElvNP_Test, true, true)
+
+	NP:Configure_HealthBar(ElvNP_Test.ElvUIFrame, true)
+	NP:Configure_CastBar(ElvNP_Test.ElvUIFrame, true)
+
+	local castbar = ElvNP_Test.ElvUIFrame.CastBar
+	castbar:SetParent(ElvNP_Test.ElvUIFrame.Health)
 	castbar.Hide = castbar.Show
 	castbar:Show()
 	castbar.Name:SetText("Casting")
@@ -1273,7 +1241,10 @@ function NP:Initialize()
 	castbar:SetStatusBarColor(NP.db.colors.castColor.r, NP.db.colors.castColor.g, NP.db.colors.castColor.b)
 	ElvNP_Test:Hide()
 
-	NP.Frame = CreateFrame("Frame"):SetScript("OnUpdate", NP.OnUpdate)
+	NP:RegisterEvent("NAME_PLATE_CREATED")
+	NP:RegisterEvent("NAME_PLATE_UNIT_ADDED")
+	NP:RegisterEvent("NAME_PLATE_UNIT_REMOVED")
+	NP:RegisterEvent("UNIT_THREAT_LIST_UPDATE")
 
 	NP:RegisterEvent("PLAYER_ENTERING_WORLD")
 	NP:RegisterEvent("PLAYER_REGEN_ENABLED")
@@ -1286,30 +1257,6 @@ function NP:Initialize()
 	NP:RegisterEvent("RAID_TARGET_UPDATE")
 	NP:RegisterEvent("UPDATE_MOUSEOVER_UNIT")
 	NP:RegisterEvent("UNIT_COMBO_POINTS")
-	NP:RegisterEvent("UNIT_HEALTH")
-	NP:RegisterEvent("UNIT_MANA")
-	NP:RegisterEvent("UNIT_ENERGY")
-	NP:RegisterEvent("UNIT_FOCUS")
-	NP:RegisterEvent("UNIT_RAGE")
-
-	-- Arena & Arena Pets
-	NP:CacheArenaUnits()
-	NP:RegisterEvent("ARENA_OPPONENT_UPDATE", "CacheArenaUnits")
-	-- Group
-	NP:CacheGroupUnits()
-	NP:RegisterEvent("PARTY_MEMBERS_CHANGED", "CacheGroupUnits")
-	NP:RegisterEvent("RAID_ROSTER_UPDATE", "CacheGroupUnits")
-	-- Group Pets
-	NP:CacheGroupPetUnits()
-	NP:RegisterEvent("UNIT_NAME_UPDATE", "CacheGroupPetUnits")
-
-	LAI.UnregisterAllCallbacks(NP)
-	LAI.RegisterCallback(NP, "LibAuraInfo_AURA_APPLIED")
-	LAI.RegisterCallback(NP, "LibAuraInfo_AURA_REMOVED")
-	LAI.RegisterCallback(NP, "LibAuraInfo_AURA_REFRESH")
-	LAI.RegisterCallback(NP, "LibAuraInfo_AURA_APPLIED_DOSE")
-	LAI.RegisterCallback(NP, "LibAuraInfo_AURA_CLEAR")
-	LAI.RegisterCallback(NP, "LibAuraInfo_UNIT_AURA")
 end
 
 E:RegisterModule(NP:GetName())

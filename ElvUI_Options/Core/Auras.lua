@@ -2,10 +2,14 @@ local E, _, V, P, G = unpack(ElvUI)
 local C, L = unpack(E.Config)
 local A = E:GetModule('Auras')
 local ACH = E.Libs.ACH
+local ACD = E.Libs.AceConfigDialog
 
+local next, pairs, ipairs = next, pairs, ipairs
+local tremove, tinsert, tconcat = tremove, tinsert, table.concat
+local format, gsub, match, strsplit = string.format, string.gsub, string.match, strsplit
 local CopyTable = CopyTable
+local GetCVar = GetCVar
 
--- local DebuffColors = E.Libs.Dispel:GetDebuffTypeColor()
 local DebuffColors = DebuffTypeColor
 
 local SharedOptions = {
@@ -73,21 +77,33 @@ do
 	Auras.args.debuffColors.args.spacer1 = ACH:Spacer(10, 'full')
 	Auras.args.debuffColors.inline = true
 
-	local order = { none = 0, Magic = 1, Curse = 2, Disease = 3, Poison = 4, EnemyNPC = 11, BadDispel = 12, Bleed = 13, Stealable = 14 }
+	local order = { none = 0, Magic = 1, Curse = 2, Disease = 3, Poison = 4 }
 	for key in next, DebuffColors do
 		if key ~= '' then -- this is a reference to none
-			Auras.args.debuffColors.args[key] = ACH:Color(key == 'none' and 'None' or key, nil, order[key] or -1, nil, 120)
+			Auras.args.debuffColors.args[key] = ACH:Color(L[key == 'none' and 'None' or key], nil, order[key] or -1, nil, 120)
 		end
 	end
 end
 
 Auras.args.buffs = ACH:Group(L["Buffs"], nil, 10, nil, function(info) return E.db.auras.buffs[info[#info]] end, function(info, value) E.db.auras.buffs[info[#info]] = value; A:UpdateHeader(A.BuffFrame) end, function() return not E.private.auras.buffsHeader end)
 Auras.args.buffs.args = CopyTable(SharedOptions)
+do
+	local consolidateDisabled = function() return GetCVar('consolidateBuffs') ~= '1' end
+	local consolidateGroup = ACH:Group(L["Consolidate Buffs"], nil, -4)
+	consolidateGroup.args.description = ACH:Description(L["Buff consolidation is toggled by the 'Consolidate Buffs' checkbox in the game's Interface options."], 1)
+	consolidateGroup.args.consolidateMax = ACH:Range(L["Max Consolidated"], L["Maximum amount of consolidated buffs shown in the popup."], 2, { min = 4, max = 32, step = 1 }, nil, nil, nil, consolidateDisabled)
+	consolidateGroup.args.consolidateDirection = ACH:Select(L["Consolidate Direction"], L["The direction the consolidated buffs will grow."], 3, C.Values.GrowthDirection, nil, nil, nil, nil, consolidateDisabled)
+	consolidateGroup.args.consolidateSize = ACH:Range(L["Consolidate Size"], L["Set the size of the icons in the consolidated buffs popup."], 4, { min = 12, max = 64, step = 1 }, nil, nil, nil, consolidateDisabled)
+	consolidateGroup.args.consolidateIconSize = ACH:Range(L["Consolidate Icon Size"], L["Set the size of the buff consolidation button."], 5, { min = 12, max = 64, step = 1 }, nil, nil, nil, consolidateDisabled)
+
+	Auras.args.buffs.args.consolidateGroup = consolidateGroup
+end
+
 Auras.args.buffs.args.size.name = function() return E.db.auras.buffs.keepSizeRatio and L["Size"] or L["Width"] end
 Auras.args.buffs.args.height.hidden = function() return E.db.auras.buffs.keepSizeRatio end
 Auras.args.buffs.args.statusBar.args.barColor.get = function() local t = E.db.auras.buffs.barColor local d = P.auras.buffs.barColor return t.r, t.g, t.b, t.a, d.r, d.g, d.b, d.a end
 Auras.args.buffs.args.statusBar.args.barColor.set = function(_, r, g, b) local t = E.db.auras.buffs.barColor t.r, t.g, t.b = r, g, b end
-Auras.args.buffs.args.statusBar.args.barColor.disabled = function() return not E.db.auras.buffs.barShow or (E.db.auras.buffs.barColorGradient or not E.db.auras.buffs.barShow) end
+Auras.args.buffs.args.statusBar.args.barColor.disabled = function() return not E.db.auras.buffs.barShow or E.db.auras.buffs.barColorGradient end
 
 Auras.args.debuffs = ACH:Group(L["Debuffs"], nil, 11, nil, function(info) return E.db.auras.debuffs[info[#info]] end, function(info, value) E.db.auras.debuffs[info[#info]] = value; A:UpdateHeader(A.DebuffFrame) end, function() return not E.private.auras.debuffsHeader end)
 Auras.args.debuffs.args = CopyTable(SharedOptions)
@@ -95,7 +111,154 @@ Auras.args.debuffs.args.size.name = function() return E.db.auras.debuffs.keepSiz
 Auras.args.debuffs.args.height.hidden = function() return E.db.auras.debuffs.keepSizeRatio end
 Auras.args.debuffs.args.statusBar.args.barColor.get = function() local t = E.db.auras.debuffs.barColor local d = P.auras.debuffs.barColor return t.r, t.g, t.b, t.a, d.r, d.g, d.b, d.a end
 Auras.args.debuffs.args.statusBar.args.barColor.set = function(_, r, g, b) local t = E.db.auras.debuffs.barColor t.r, t.g, t.b = r, g, b end
-Auras.args.debuffs.args.statusBar.args.barColor.disabled = function() return not E.db.auras.debuffs.barShow or (E.db.auras.debuffs.barColorGradient or not E.db.auras.debuffs.barShow) end
+Auras.args.debuffs.args.statusBar.args.barColor.disabled = function() return not E.db.auras.debuffs.barShow or E.db.auras.debuffs.barColorGradient end
+
+local carryFilterFrom, carryFilterTo
+
+local function filterMatch(s, v)
+	local m1, m2, m3, m4 = '^'..v..'$', '^'..v..',', ','..v..'$', ','..v..','
+	return (match(s, m1) and m1) or (match(s, m2) and m2) or (match(s, m3) and m3) or (match(s, m4) and v..',')
+end
+
+local function filterPriority(auraType, value, remove, movehere)
+	if not auraType or not value then return end
+	local filter = E.db.auras[auraType] and E.db.auras[auraType].priority
+	if not filter then return end
+	local found = filterMatch(filter, E:EscapeString(value))
+	if found and movehere then
+		local tbl, sv, sm = {strsplit(',', filter)}
+		for i in ipairs(tbl) do
+			if tbl[i] == value then sv = i elseif tbl[i] == movehere then sm = i end
+			if sv and sm then break end
+		end
+		tremove(tbl, sm)
+		tinsert(tbl, sv, movehere)
+		E.db.auras[auraType].priority = tconcat(tbl, ',')
+	elseif found and remove then
+		E.db.auras[auraType].priority = gsub(filter, found, '')
+	elseif not found and not remove then
+		E.db.auras[auraType].priority = (filter == '' and value) or (filter..','..value)
+	end
+end
+
+local function UpdateAuraFrames()
+	if A.BuffFrame then A:UpdateAllAuras(A.BuffFrame) end
+	if A.DebuffFrame then A:UpdateAllAuras(A.DebuffFrame) end
+end
+
+local function GetFilterGroup(auraType)
+	return {
+		order = 30,
+		type = 'group',
+		name = L["Filters"],
+		guiInline = true,
+		args = {
+			jumpToFilter = {
+				order = 1,
+				type = 'execute',
+				name = L["Filters Page"],
+				desc = L["Shortcut to global filters."],
+				func = function() ACD:SelectGroup('ElvUI', 'filters') end
+			},
+			specialFilters = {
+				order = 2,
+				type = 'select',
+				sortByValue = true,
+				name = L["Add Special Filter"],
+				desc = L["These filters don't use a list of spells like the regular filters. Instead they use the WoW API and some code logic to determine if an aura should be allowed or blocked."],
+				values = function()
+					local filters = {}
+					local list = E.global.unitframe.specialFilters
+					if not (list and next(list)) then return filters end
+					for filter in pairs(list) do
+						filters[filter] = L[filter]
+					end
+					return filters
+				end,
+				set = function(_, value)
+					filterPriority(auraType, value)
+					UpdateAuraFrames()
+				end
+			},
+			filter = {
+				order = 3,
+				type = 'select',
+				name = L["Add Regular Filter"],
+				desc = L["These filters use a list of spells to determine if an aura should be allowed or blocked. The content of these filters can be modified in the 'Filters' section of the config."],
+				values = function()
+					local filters = {}
+					local list = E.global.unitframe.aurafilters
+					if not (list and next(list)) then return filters end
+					for filter in pairs(list) do
+						filters[filter] = filter
+					end
+					return filters
+				end,
+				set = function(_, value)
+					filterPriority(auraType, value)
+					UpdateAuraFrames()
+				end
+			},
+			resetPriority = {
+				order = 4,
+				type = 'execute',
+				name = L["Reset Priority"],
+				desc = L["Reset filter priority to the default state."],
+				func = function()
+					E.db.auras[auraType].priority = P.auras[auraType].priority
+					UpdateAuraFrames()
+				end
+			},
+			filterPriority = {
+				order = 5,
+				type = 'multiselect',
+				dragdrop = true,
+				name = L["Filter Priority"],
+				dragOnLeave = E.noop,
+				dragOnEnter = function(info)
+					carryFilterTo = info.obj.value
+				end,
+				dragOnMouseDown = function(info)
+					carryFilterFrom, carryFilterTo = info.obj.value, nil
+				end,
+				dragOnMouseUp = function()
+					filterPriority(auraType, carryFilterTo, nil, carryFilterFrom)
+					carryFilterFrom, carryFilterTo = nil, nil
+				end,
+				dragOnClick = function()
+					filterPriority(auraType, carryFilterFrom, true)
+				end,
+				stateSwitchGetText = function(_, text)
+					local SF, localized = E.global.unitframe.specialFilters[text], L[text]
+					local blockText = SF and localized and text:match('^block') and localized:gsub('^%[.-]%s?', '')
+					return (blockText and format('|cFF999999%s|r %s', L["BLOCK"], blockText)) or localized or text
+				end,
+				values = function()
+					local str = E.db.auras[auraType].priority
+					if str == '' then return {} end
+					return {strsplit(',', str)}
+				end,
+				get = function(_, value)
+					local str = E.db.auras[auraType].priority
+					if str == '' then return end
+					local tbl = {strsplit(',', str)}
+					return tbl[value]
+				end,
+				set = function()
+					UpdateAuraFrames()
+				end
+			},
+			spacer1 = {
+				order = 6,
+				type = 'description',
+				name = L["Use drag and drop to rearrange filter priority or right click to remove a filter."]
+			}
+		}
+	}
+end
+
+Auras.args.buffs.args.filtersGroup = GetFilterGroup('buffs')
+Auras.args.debuffs.args.filtersGroup = GetFilterGroup('debuffs')
 
 Auras.args.masqueGroup = ACH:Group(L["Masque"], nil, 13, nil, nil, nil, function() return not E.Masque or not E.private.auras.enable end)
 Auras.args.masqueGroup.args.masque = ACH:MultiSelect(L["Masque Support"], L["Allow Masque to handle the skinning of this element."], 10, { buffs = L["Buffs"], debuffs = L["Debuffs"] }, nil, nil, function(_, key) return E.private.auras.masque[key] end, function(_, key, value) E.private.auras.masque[key] = value; E.ShowPopup = true end)

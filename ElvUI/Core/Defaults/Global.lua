@@ -2,13 +2,12 @@ local E, L, V, P, G = unpack(ElvUI)
 
 --Global Settings
 G.general = {
-	UIScale = 0.64,
+	UIScale = 0.71,
 	locale = E:GetLocale(),
 	eyefinity = false,
 	ultrawide = false,
 	smallerWorldMap = true,
 	allowDistributor = false,
-	smallerWorldMapScale = 0.9,
 	fadeMapWhenMoving = true,
 	mapAlphaWhenMoving = 0.2,
 	fadeMapDuration = 0.2,
@@ -21,18 +20,17 @@ G.general = {
 	AceGUI = {
 		width = 1024,
 		height = 768
-	},
-	disableTutorialButtons = true
+	}
 }
-
-G.classtimer = {}
 
 G.chat = {
 	classColorMentionExcludedNames = {}
 }
 
 G.bags = {
-	ignoredItems = {}
+	ignoredItems = {},
+	deconstructBlacklist = {},
+	lockBlacklist = {}
 }
 
 G.datatexts = {
@@ -40,8 +38,8 @@ G.datatexts = {
 	customCurrencies = {},
 	settings = {
 		Agility = { Label = '', NoLabel = false },
+		ArenaRating = { showSolo = false, show2v2 = true, show3v3 = false, showRBG = false },
 		Armor = { Label = '', NoLabel = false },
-		['Attack Power'] = { Label = '', NoLabel = false },
 		Avoidance = { Label = '', NoLabel = false, decimalLength = 1 },
 		Bags = { textFormat = 'USED_TOTAL', Label = '', NoLabel = false },
 		CallToArms = { Label = '', NoLabel = false },
@@ -50,9 +48,7 @@ G.datatexts = {
 		Currencies = { goldFormat = 'BLIZZARD', goldCoins = true, displayedCurrency = 'BACKPACK', displayStyle = 'ICON', tooltipData = {}, idEnable = {}, headers = true, maxCurrency = false },
 		Crit = { Label = '', NoLabel = false, decimalLength = 1 },
 		Durability = { Label = '', NoLabel = false, percThreshold = 30, goldFormat = 'BLIZZARD', goldCoins = true },
-		DualSpecialization = { NoLabel = false },
 		ElvUI = { Label = '' },
-		['Equipment Sets'] = { Label = '', NoLabel = false, NoIcon = false },
 		Experience = { textFormat = 'CUR' },
 		Friends = {
 			Label = '', NoLabel = false,
@@ -65,26 +61,21 @@ G.datatexts = {
 		Haste = { Label = '', NoLabel = false, decimalLength = 1 },
 		Hit = { Label = '', NoLabel = false, decimalLength = 1 },
 		Intellect = { Label = '', NoLabel = false},
-		['Item Level'] = { onlyEquipped = false, rarityColor = true },
+		['Item Level'] = { rarityColor = true },
 		Location = { showZone = true, showSubZone = true, showContinent = false, color = 'REACTION', customColor = {r = 1, g = 1, b = 1} },
-		Mastery = { Label = '', NoLabel = false, decimalLength = 1 },
 		MovementSpeed = { Label = '', NoLabel = false, decimalLength = 1 },
 		Reputation = { textFormat = 'CUR' },
-		['Talent Specialization'] = { iconSize = 16, iconOnly = false },
+		['Talent Specialization'] = { iconSize = 16, iconOnly = false, autoEquipmentSet = false },
 		SpellPower = { school = 0 },
 		['Spell Crit Chance'] = { school = 0 },
 		Speed = { Label = '', NoLabel = false, decimalLength = 1 },
 		Stamina = { Label = '', NoLabel = false },
 		Strength = { Label = '', NoLabel = false },
-		System = { NoLabel = false, ShowOthers = true, latency = 'WORLD', showTooltip = true },
+		System = { NoLabel = false, ShowOthers = true, showTooltip = true },
 		Time = { time24 = _G.GetCVar('portal') ~= 'en', localTime = true, flashInvite = true },
-		Versatility = { Label = '', NoLabel = false, decimalLength = 1 },
 		Dodge = { decimalLength = 1 },
 		Parry = { decimalLength = 1 },
-		Block = { decimalLength = 1 },
-		['Mana Regen'] = { Label = '', NoLabel = false, decimalLength = 1 },
-		HealPower = { Label = '', NoLabel = false },
-		['Spell Hit'] = { Label = '', NoLabel = false, decimalLength = 0 }
+		Block = { decimalLength = 1 }
 	},
 	newPanelInfo = {
 		growth = 'HORIZONTAL',

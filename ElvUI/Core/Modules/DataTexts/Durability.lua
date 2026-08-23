@@ -2,7 +2,7 @@ local E, L, V, P, G = unpack(ElvUI)
 local DT = E:GetModule('DataTexts')
 
 local _G = _G
-local format, pairs, wipe = format, pairs, wipe
+local format, pairs, wipe, select = format, pairs, wipe, select
 
 local ToggleCharacter = ToggleCharacter
 local GetInventoryItemDurability = GetInventoryItemDurability
@@ -47,8 +47,9 @@ local function OnEvent(self)
 				totalDurability = perc
 			end
 
-			local data = E.ScanTooltip:GetInventoryInfo('player', index)
-			repairCost = data and data.repairCost
+			E.ScanTooltip:SetOwner(_G.UIParent, 'ANCHOR_NONE')
+			repairCost = select(3, E.ScanTooltip:SetInventoryItem('player', index))
+			E.ScanTooltip:Hide()
 
 			totalRepairCost = totalRepairCost + (repairCost or 0)
 		end

@@ -1,7 +1,6 @@
 local E, L, V, P, G = unpack(ElvUI)
 local DT = E:GetModule('DataTexts')
 local B = E:GetModule('Bags')
-local LC = E.Libs.Compat
 -- GLOBALS: ElvDB
 
 local type, wipe, pairs, ipairs, sort = type, wipe, pairs, ipairs, sort
@@ -14,7 +13,7 @@ local IsLoggedIn = IsLoggedIn
 local IsShiftKeyDown = IsShiftKeyDown
 local IsControlKeyDown = IsControlKeyDown
 
-local BreakUpLargeNumbers = LC.BreakUpLargeNumbers
+local BreakUpLargeNumbers = BreakUpLargeNumbers
 
 local Profit, Spent = 0, 0
 local resetCountersFormatter = strjoin('', '|cffaaaaaa', L["Reset Session Data: Hold Ctrl + Right Click"], '|r')
@@ -24,8 +23,9 @@ local PRIEST_COLOR = RAID_CLASS_COLORS.PRIEST
 local CURRENCY = CURRENCY
 
 local menuList, myGold = {}, {}
-local totalGold, totalHorde, totalAlliance = 0, 0, 0
+local totalGold, totalHorde, totalAlliance, totalRenegade = 0, 0, 0, 0
 local iconString = '|T%s:20:20:0:0:64:64:4:60:4:60|t'
+local factionIconString = '|T%s:24|t '
 local db
 
 local function sortFunction(a, b)
@@ -45,6 +45,8 @@ local function updateTotal(faction, change)
 		totalAlliance = totalAlliance + change
 	elseif faction == 'Horde' then
 		totalHorde = totalHorde + change
+	elseif faction == 'Renegade' then
+		totalRenegade = totalRenegade + change
 	end
 
 	totalGold = totalGold + change
@@ -58,10 +60,10 @@ local function updateGold(self, updateAll, goldChange)
 		wipe(myGold)
 		wipe(menuList)
 
-		totalGold, totalHorde, totalAlliance = 0, 0, 0
+		totalGold, totalHorde, totalAlliance, totalRenegade = 0, 0, 0, 0
 
 		tinsert(menuList, { text = '', isTitle = true, notCheckable = true })
-		tinsert(menuList, { text = 'Delete Character', isTitle = true, notCheckable = true })
+		tinsert(menuList, { text = L["Delete Character"], isTitle = true, notCheckable = true })
 
 		for name in pairs(ElvDB.gold[E.myrealm]) do
 			local faction = ElvDB.faction[E.myrealm][name]
@@ -89,17 +91,8 @@ local function updateGold(self, updateAll, goldChange)
 			end
 		end
 
-		for _, info in ipairs(myGold) do
-			if info.name == E.myname and info.realm == E.myrealm then
-				info.amount = ElvDB.gold[E.myrealm][E.myname]
-				info.amountText = E:FormatMoney(ElvDB.gold[E.myrealm][E.myname], style, textOnly)
-
-				break
-			end
-		end
-
 		if goldChange then
-			updateTotal(E.myfaction, goldChange)
+			updateTotal(DT.GetPlayerFaction(), goldChange)
 		end
 	end
 end
@@ -170,8 +163,10 @@ local function OnEnter()
 
 	for _, g in ipairs(myGold) do
 		local nameLine = ''
-		if g.faction ~= '' and g.faction ~= 'Neutral' then
-			nameLine = format([[|TInterface\FriendsFrame\PlusManz-%s:24|t ]], g.faction)
+		if g.faction == 'Renegade' then
+			nameLine = format(factionIconString, E.Media.Textures.PVPRenegade)
+		elseif g.faction ~= '' and g.faction ~= 'Neutral' then
+			nameLine = format(factionIconString, format([[Interface\FriendsFrame\PlusManz-%s]], g.faction))
 		end
 
 		local toonName = format('%s%s%s', nameLine, g.name, (g.realm and g.realm ~= E.myrealm and ' - '..g.realm) or '')
@@ -180,9 +175,13 @@ local function OnEnter()
 
 	DT.tooltip:AddLine(' ')
 	DT.tooltip:AddLine(L["Server: "])
-	if totalAlliance > 0 and totalHorde > 0 then
+	local factionCount = (totalAlliance > 0 and 1 or 0) + (totalHorde > 0 and 1 or 0) + (totalRenegade > 0 and 1 or 0)
+	if factionCount > 1 then
 		if totalAlliance ~= 0 then DT.tooltip:AddDoubleLine(L["Alliance: "], E:FormatMoney(totalAlliance, style, textOnly), 0, .376, 1, 1, 1, 1) end
 		if totalHorde ~= 0 then DT.tooltip:AddDoubleLine(L["Horde: "], E:FormatMoney(totalHorde, style, textOnly), 1, .2, .2, 1, 1, 1) end
+		if totalRenegade ~= 0 then
+			DT.tooltip:AddDoubleLine(L["Renegade: "], E:FormatMoney(totalRenegade, style, textOnly), 1, .44, 0, 1, 1, 1)
+		end
 		DT.tooltip:AddLine(' ')
 	end
 	DT.tooltip:AddDoubleLine(L["Total: "], E:FormatMoney(totalGold, style, textOnly), 1, 1, 1, 1, 1, 1)
@@ -197,8 +196,8 @@ local function OnEnter()
 		end
 
 		if info.quantity then
-			iconString = match(info and info.iconFileID or '', E.myfaction) ~= nil and gsub(iconString, '4:60:4:60', '4:38:2:36') or iconString
-			DT.tooltip:AddDoubleLine(format('%s %s', format(iconString, info.iconFileID), name), BreakUpLargeNumbers(info.quantity), 1, 1, 1, 1, 1, 1)
+			local texString = match(info.iconFileID or '', E.myfaction) ~= nil and gsub(iconString, '4:60:4:60', '4:38:2:36') or iconString
+			DT.tooltip:AddDoubleLine(format('%s %s', format(texString, info.iconFileID), name), BreakUpLargeNumbers(info.quantity), 1, 1, 1, 1, 1, 1)
 		end
 
 		index = index + 1

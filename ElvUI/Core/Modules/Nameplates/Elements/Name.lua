@@ -7,8 +7,8 @@ local format = string.format
 local gmatch = gmatch
 local gsub = gsub
 local match = string.match
-local utf8lower = string.utf8lower
-local utf8sub = string.utf8sub
+local utf8lower = utf8.lower
+local utf8sub = utf8.sub
 --WoW API / Variables
 local RAID_CLASS_COLORS = RAID_CLASS_COLORS
 local UNKNOWN = UNKNOWN
@@ -58,7 +58,7 @@ function NP:Update_Name(frame, triggered)
 		useClassColor = self.db.units[frame.UnitType].name and self.db.units[frame.UnitType].name.useClassColor
 	end
 
-	if useClassColor and (frame.UnitType == "FRIENDLY_PLAYER" or frame.UnitType == "ENEMY_PLAYER") then
+	if useClassColor and classColor and (frame.UnitType == "FRIENDLY_PLAYER" or frame.UnitType == "ENEMY_PLAYER") then
 		r, g, b = classColor.r, classColor.g, classColor.b
 	elseif triggered or (not self.db.units[frame.UnitType].health.enable and not frame.isTarget) then
 		local reactionType = frame.UnitReaction

@@ -6,9 +6,9 @@ local LSM = E.Libs.LSM
 local unpack = unpack
 
 local _G = _G
+local C_Item = C_Item
 local GetCurrentGuildBankTab = GetCurrentGuildBankTab
 local GetGuildBankItemLink = GetGuildBankItemLink
-local GetItemInfo = GetItemInfo
 local hooksecurefunc = hooksecurefunc
 
 local NUM_SLOTS_PER_GUILDBANK_GROUP = 14
@@ -30,7 +30,8 @@ function BL:GuildBank_ItemLevel(button)
 	local tab = db.itemLevel and GetCurrentGuildBankTab()
 	local itemlink = tab and GetGuildBankItemLink(tab, button:GetID())
 	if itemlink then
-		local _, _, rarity, itemLevel, _, _, _, _, itemEquipLoc, _, _, classID, subclassID = GetItemInfo(itemlink)
+		local name, _, rarity, itemLevel, _, _, _, _, itemEquipLoc, _, _, _, classID, subClassID = C_Item.GetItemInfo(itemlink)
+		if not name then rarity, itemLevel, itemEquipLoc, classID, subClassID = nil, nil, nil, nil, nil end
         if rarity and rarity > 1 then
             r, g, b = E:GetItemQualityColor(rarity)
         end
@@ -41,7 +42,7 @@ function BL:GuildBank_ItemLevel(button)
             button:SetBackdropBorderColor(unpack(E.media.bordercolor))
         end
 
-		local canShowItemLevel = B:IsItemEligibleForItemLevelDisplay(classID, subclassID, itemEquipLoc, rarity)
+		local canShowItemLevel = B:IsItemEligibleForItemLevelDisplay(classID, subClassID, itemEquipLoc, rarity)
 		if canShowItemLevel and db.itemLevel then
 			local custom = db.itemLevelCustomColorEnable and db.itemLevelCustomColor
 			if custom  then
@@ -75,12 +76,13 @@ function BL:GuildBank_Update()
 	local frame = _G.GuildBankFrame
 	if not frame or not frame:IsShown() then return end
 
+    if frame.inset then
+        frame.inset:Point('BOTTOMRIGHT', frame.mode ~= 'bank' and -29 or -8, 62)
+    end
+
     if frame.mode ~= 'bank' then
-        frame.inset:Point('BOTTOMRIGHT', -29, 62)
         return
     else
-        frame.inset:Point('BOTTOMRIGHT', -8, 62)
-
         _G.GuildBankColumn1:Point('TOPLEFT', 20, -70)
     end
 

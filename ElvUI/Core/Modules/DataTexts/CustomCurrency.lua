@@ -4,8 +4,6 @@ local DT = E:GetModule('DataTexts')
 local _G = _G
 local pairs, strjoin = pairs, strjoin
 
-local GetCurrencyListSize = GetCurrencyListSize
-local GetCurrencyListInfo = GetCurrencyListInfo
 
 local defaults = { showIcon = true, nameStyle = 'full', showMax = true, currencyTooltip = true }
 
@@ -44,7 +42,7 @@ local function OnEnter(self)
 	DT.tooltip:Show()
 end
 
-local currencyEvents = { 'CHAT_MSG_CURRENCY', 'CURRENCY_DISPLAY_UPDATE' }
+local currencyEvents = { 'CURRENCY_DISPLAY_UPDATE' }
 local function RegisterDT(currencyID, name, update)
 	local data = DT:RegisterDatatext(currencyID, _G.CURRENCY, currencyEvents, OnEvent, nil, nil, OnEnter, nil, name)
 	data.isCurrency = true
@@ -64,13 +62,14 @@ function DT:RegisterCustomCurrencyDT(currencyID)
 		if not name then return end
 
 		G.datatexts.customCurrencies[currencyID] = defaults
-		E.global.datatexts.customCurrencies[currencyID] = E:CopyTable({ name = info.name }, defaults)
+		E.global.datatexts.customCurrencies[currencyID] = E:CopyTable({ name = info.name, ID = currencyID }, defaults)
 
 		return RegisterDT(currencyID, info.name, true)
 	else --We called this in DT:Initialize, so load all the stored currency datatexts
 		for id, info in pairs(E.global.datatexts.customCurrencies) do
 			G.datatexts.customCurrencies[id] = defaults
 			info = E:CopyTable(info, defaults, true)
+			info.ID = id
 
 			RegisterDT(id, info.name)
 		end

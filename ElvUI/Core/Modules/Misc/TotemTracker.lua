@@ -11,7 +11,7 @@ local MAX_TOTEMS = MAX_TOTEMS
 function TM:UpdateButton(button, totem)
 	if not (button and totem) then return end
 
-	local haveTotem, _, startTime, duration, icon = GetTotemInfo(totem:GetID() or totem.slot)
+	local haveTotem, _, startTime, duration, icon = GetTotemInfo(totem.slot)
 	button:SetShown(haveTotem and duration > 0)
 
 	if haveTotem then
@@ -27,9 +27,16 @@ function TM:UpdateButton(button, totem)
 end
 
 function TM:Update()
-	local priority = _G.TOTEM_PRIORITIES
 	for i = 1, MAX_TOTEMS do
-		TM:UpdateButton(TM.bar[priority[i]], _G['TotemFrameTotem'..i])
+		TM.bar[i]:Hide()
+	end
+
+	for i = 1, MAX_TOTEMS do
+		local totem = _G['TotemFrameTotem'..i]
+		local slot = totem and totem.slot
+		if slot and slot > 0 then
+			TM:UpdateButton(TM.bar[slot], totem)
+		end
 	end
 end
 

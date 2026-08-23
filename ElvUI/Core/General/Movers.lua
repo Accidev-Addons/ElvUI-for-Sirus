@@ -2,8 +2,10 @@ local E, L, V, P, G = unpack(ElvUI)
 local Sticky = E.Libs.SimpleSticky
 
 local _G = _G
+local abs = abs
 local type, unpack, pairs, error, ipairs = type, unpack, pairs, error, ipairs
 local format, split, find, strupper = format, strsplit, strfind, strupper
+local GetPixelToUIUnitFactor = PixelUtil.GetPixelToUIUnitFactor
 
 local UIParent = UIParent
 local CreateFrame = CreateFrame
@@ -14,11 +16,11 @@ local hooksecurefunc = hooksecurefunc
 
 E.CreatedMovers = {}
 E.DisabledMovers = {}
-E.ConnectedMovers = {}
 
 local function SizeChanged(frame, width, height)
 	if InCombatLockdown() then return end
 	frame.mover:SetSize(width, height)
+	E:SnapMover(frame.mover)
 end
 
 local function WidthChanged(frame, width)
@@ -29,6 +31,55 @@ end
 local function HeightChanged(frame, height)
 	if InCombatLockdown() then return end
 	frame.mover:SetHeight(height)
+end
+
+local snapPending, snapScheduled = {}, false
+
+local function SnapMoverToPixels(mover)
+	local region = mover.parent or mover
+	local left, bottom = region:GetLeft(), region:GetBottom()
+	if not left or not bottom then return end
+
+	local scale = region:GetEffectiveScale()
+	if not scale or scale <= 0 then return end
+
+	local factor = GetPixelToUIUnitFactor()
+	local offsetX = (left * scale / factor) % 1
+	local offsetY = (bottom * scale / factor) % 1
+	if offsetX > 0.5 then offsetX = offsetX - 1 end
+	if offsetY > 0.5 then offsetY = offsetY - 1 end
+	if abs(offsetX) < 0.01 and abs(offsetY) < 0.01 then return end
+
+	local point, anchor, relativePoint, x, y = mover:GetPoint()
+	if not point or not x or not y then return end
+
+	local pixel = factor / scale
+	mover:ClearAllPoints()
+	mover:SetPoint(point, anchor, relativePoint, x - (offsetX * pixel), y - (offsetY * pixel))
+end
+
+local function FlushMoverSnaps()
+	snapScheduled = false
+
+	if InCombatLockdown() then return end
+
+	for mover in pairs(snapPending) do
+		snapPending[mover] = nil
+
+		SnapMoverToPixels(mover)
+	end
+end
+
+function E:SnapMover(mover)
+	if not mover or InCombatLockdown() then return end
+
+	snapPending[mover] = true
+
+	if not snapScheduled then
+		snapScheduled = true
+
+		E:Delay(0, FlushMoverSnaps)
+	end
 end
 
 local function GetPoint(obj)
@@ -72,8 +123,12 @@ function E:SetMoverPoints(name, parent)
 
 	if parent then
 		parent:ClearAllPoints()
-		parent:SetPoint(point1, parent.mover, nil, 0, 0)
+		if point1 then
+			parent:SetPoint(point1, parent.mover, 0, 0)
+		end
 	end
+
+	E:SnapMover(holder.mover)
 end
 
 local isDragging = false
@@ -91,24 +146,18 @@ local function HandlePostDrag(self, event)
 	end
 end
 
-local function StartMoving(frame, anchor)
-	Sticky:StartMoving(frame, E.db.general.stickyFrames and E.snapBars, frame.snapOffset, frame.snapOffset, frame.snapOffset, frame.snapOffset, anchor)
+local function StartMoving(frame)
+	Sticky:StartMoving(frame, E.db.general.stickyFrames and E.snapBars, frame.snapOffset, frame.snapOffset, frame.snapOffset, frame.snapOffset)
 end
 
-local function OnDragStart(frame, anchor)
+local function OnDragStart(frame)
 	if E:AlertCombat() then return end
 
 	if _G.ElvUIGrid then
 		E:UIFrameFadeIn(_G.ElvUIGrid, 0.75, _G.ElvUIGrid:GetAlpha(), 1)
 	end
 
-	if next(E.ConnectedMovers) then
-		for mover in next, E.ConnectedMovers do
-			StartMoving(mover, frame)
-		end
-	else
-		StartMoving(frame)
-	end
+	StartMoving(frame)
 
 	coordFrame.child = frame
 	coordFrame:Show()
@@ -122,6 +171,7 @@ local function StopMoving(frame)
 	frame:ClearAllPoints()
 	frame:SetPoint(p2, UIParent, p2, x2, y2)
 
+	E:SnapMover(frame)
 	E:SaveMoverPosition(frame.name)
 
 	HandlePostDrag(frame)
@@ -140,20 +190,7 @@ local function OnDragStop(frame)
 	coordFrame:Hide()
 	isDragging = false
 
-	if next(E.ConnectedMovers) then
-		local r, g, b = unpack(E.media.rgbvaluecolor)
-		for mover in next, E.ConnectedMovers do
-			StopMoving(mover)
-
-			mover.text:SetTextColor(r, g, b)
-			mover:SetBackdropBorderColor(r, g, b)
-
-			mover.IsConnected = nil
-			E.ConnectedMovers[mover] = nil
-		end
-	else
-		StopMoving(frame)
-	end
+	StopMoving(frame)
 end
 
 local function OnEnter(self)
@@ -171,9 +208,7 @@ local function OnEnter(self)
 	coordFrame.child = self
 	coordFrame:GetScript('OnUpdate')(coordFrame)
 
-	if not self.IsConnected then
-		self.text:SetTextColor(1, 1, 1)
-	end
+	self.text:SetTextColor(1, 1, 1)
 end
 
 local function OnLeave(self)
@@ -186,9 +221,7 @@ local function OnLeave(self)
 		end
 	end
 
-	if not self.IsConnected then
-		self.text:SetTextColor(unpack(E.media.rgbvaluecolor))
-	end
+	self.text:SetTextColor(unpack(E.media.rgbvaluecolor))
 end
 
 local function OnMouseUp(_, button)
@@ -208,12 +241,6 @@ local function OnMouseDown(self, button)
 		elseif self.configString then
 			E:ToggleOptions(self.configString) --OpenConfig
 		end
-	elseif IsShiftKeyDown() then
-	--	E.ConnectedMovers[self] = true
-	--	self.IsConnected = true
-
-	--	self.text:SetTextColor(1, 0.3, 0.3)
-	--	self:SetBackdropBorderColor(1, 0.3, 0.3)
 	end
 end
 
@@ -382,6 +409,7 @@ function E:CreateMover(parent, name, textString, overlay, snapoffset, postdrag, 
 
 		holder.parent = parent
 		holder.originPoint = { parent:GetPoint() }
+		holder.shouldDisable = shouldDisable
 
 		E.CreatedMovers[name] = holder
 	end
@@ -398,9 +426,6 @@ function E:ToggleMovers(show, which)
 	for _, holder in pairs(E.CreatedMovers) do
 		local isName = (holder.mover.name == which) or strupper(holder.mover.textString) == upperText
 		holder.mover:SetShown(show and (isName or holder.types[upperText]))
-
-		holder.mover.IsConnected = nil
-		E.ConnectedMovers[holder.mover] = nil
 	end
 end
 
@@ -492,11 +517,5 @@ end
 function E:SetMoversClampedToScreen(value)
 	for _, holder in pairs(E.CreatedMovers) do
 		holder.mover:SetClampedToScreen(value)
-	end
-end
-
-function E:LoadMovers()
-	for n, t in pairs(E.CreatedMovers) do
-		UpdateMover(n, t.parent, t.textString, t.overlay, t.snapoffset, t.postdrag, t.shouldDisable, t.configString, t.ignoreSizeChanged)
 	end
 end
