@@ -1,6 +1,7 @@
 local E, L, V, P, G = unpack(ElvUI)
 local UF = E:GetModule("UnitFrames")
 local ElvUF = E.oUF
+local LSM = E.Libs.LSM
 
 local abs, min = math.abs, math.min
 
@@ -147,7 +148,9 @@ function UF:Configure_Castbar(frame)
 				else
 					castbar.Icon.bg:Size(db.castbar.height - frame.SPACING*2)
 				end
+			end
 
+			if db.castbar.iconAttached then
 				castbar:Width(db.castbar.width - castbar.Icon.bg:GetWidth() - (frame.BORDER + frame.SPACING*5))
 			end
 
@@ -244,6 +247,13 @@ function UF:Configure_Castbar(frame)
 
 		castbar.custom_backdrop = UF.db.colors.customcastbarbackdrop and UF.db.colors.castbar_backdrop
 		UF:ToggleTransparentStatusBar(UF.db.colors.transparentCastbar, castbar, castbar.bg, nil, UF.db.colors.invertCastbar)
+
+		--Castbar specific font settings
+		if db.castbar.font then
+			local font = LSM:Fetch("font", db.castbar.font)
+			castbar.Time:FontTemplate(font, db.castbar.fontSize, db.castbar.fontOutline)
+			castbar.Text:FontTemplate(font, db.castbar.fontSize, db.castbar.fontOutline)
+		end
 	else
 		if not db.castbar.enable and frame:IsElementEnabled("Castbar") then
 			frame:DisableElement("Castbar")

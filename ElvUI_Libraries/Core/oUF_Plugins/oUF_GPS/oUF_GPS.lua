@@ -10,6 +10,7 @@ local pi2 = math.pi / 2
 
 local GetPlayerFacing = GetPlayerFacing
 local GetPlayerMapPosition = GetPlayerMapPosition
+local GetTime = GetTime
 local SetMapToCurrentZone = SetMapToCurrentZone
 local UnitInParty = UnitInParty
 local UnitInRaid = UnitInRaid
@@ -57,21 +58,30 @@ end
 
 local _FRAMES = {}
 local ListUpdateFrame
+local _lastMapUpdate = 0
+local _MAP_THROTTLE = 2
+
+local function TryRefreshMap()
+	if WorldMapFrame:IsShown() then return end
+	local now = GetTime()
+	if (now - _lastMapUpdate) > _MAP_THROTTLE then
+		_lastMapUpdate = now
+		SetMapToCurrentZone()
+	end
+end
 
 local function OnUpdateList(self, elapsed)
 	self.elapsed = self.elapsed + elapsed
 
-	if self.elapsed < 0.0333 then return end
+	if self.elapsed < 0.1 then return end
 
 	self.elapsed = 0
-
-	if WorldMapFrame:IsShown() then return end
-	SetMapToCurrentZone()
 
 	for i = 1, #_FRAMES do
 		local object = _FRAMES[i]
 
 		if object:IsShown() then
+			TryRefreshMap()
 			UpdateElement(object.GPS, object.unit)
 		end
 	end
@@ -79,13 +89,11 @@ end
 local function OnUpdateFrame(self, elapsed)
 	self.__elapsed = self.__elapsed + elapsed
 
-	if self.__elapsed < 0.0333 then return end
+	if self.__elapsed < 0.25 then return end
 
 	self.__elapsed = 0
 
-	if WorldMapFrame:IsShown() then return end
-	SetMapToCurrentZone()
-
+	TryRefreshMap()
 	UpdateElement(self.GPS, self.unit)
 end
 

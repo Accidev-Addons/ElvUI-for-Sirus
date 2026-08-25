@@ -103,6 +103,19 @@ S:AddCallback('Skin_Misc', function()
 		S:HandleEditBox(_G['StaticPopup'..i..'MoneyInputFrameGold'])
 		S:HandleEditBox(_G['StaticPopup'..i..'MoneyInputFrameSilver'])
 		S:HandleEditBox(_G['StaticPopup'..i..'MoneyInputFrameCopper'])
+		for _, box in next, { _G['StaticPopup'..i..'MoneyInputFrameGold'], _G['StaticPopup'..i..'MoneyInputFrameSilver'], _G['StaticPopup'..i..'MoneyInputFrameCopper'] } do
+			if box and box.backdrop then
+				box.backdrop:ClearAllPoints()
+				box.backdrop:SetPoint("TOPLEFT", box, "TOPLEFT", -4, 0)
+				box.backdrop:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", 4, 0)
+			end
+		end
+		local moneyBg = _G['StaticPopup'..i..'MoneyBg']
+		if moneyBg then moneyBg:Kill() end
+		local moneyInset = _G['StaticPopup'..i..'MoneyInputFrameInset']
+		if moneyInset then moneyInset:StripTextures() end
+		local moneyInputFrame = _G['StaticPopup'..i..'MoneyInputFrame']
+		if moneyInputFrame then moneyInputFrame:StripTextures() end
 
 		for j = 1, itemFrameBox:GetNumRegions() do
 			local region = select(j, itemFrameBox:GetRegions())

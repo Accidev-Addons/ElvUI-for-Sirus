@@ -1329,6 +1329,21 @@ function E:LoadStaticPopups()
 			S:HandleEditBox(moneyInputFrame.gold)
 			S:HandleEditBox(moneyInputFrame.silver)
 			S:HandleEditBox(moneyInputFrame.copper)
+
+			local dialogName = popup:GetName()
+			local moneyBg = _G[dialogName..'MoneyBg']
+			if moneyBg then moneyBg:Kill() end
+			local moneyInset = _G[dialogName..'MoneyInputFrameInset']
+			if moneyInset then moneyInset:StripTextures() end
+			moneyInputFrame:StripTextures()
+
+			for _, box in next, { moneyInputFrame.gold, moneyInputFrame.silver, moneyInputFrame.copper } do
+				if box and box.backdrop then
+					box.backdrop:ClearAllPoints()
+					box.backdrop:SetPoint('TOPLEFT', box, 'TOPLEFT', -4, 0)
+					box.backdrop:SetPoint('BOTTOMRIGHT', box, 'BOTTOMRIGHT', 4, 0)
+				end
+			end
 		end
 
 		local editBox = popup.editBox

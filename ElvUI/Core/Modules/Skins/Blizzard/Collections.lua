@@ -107,8 +107,8 @@ local function LoadSkin()
 
 	MountJournal.MountDisplay.ShadowOverlay:Hide()
 
-	S:HandleRotateButton(MountDisplayModelSceneRotateLeftButton)
-	S:HandleRotateButton(MountDisplayModelSceneRotateRightButton)
+	S:HandleModelRotateButton(MountDisplayModelSceneRotateLeftButton, 0.015625, 0.265625)
+	S:HandleModelRotateButton(MountDisplayModelSceneRotateRightButton, 0.578125, 0.828125)
 	S:HandleCheckBox(MountDisplayModelSceneTogglePlayer)
 
 	S:HandleItemButton(MountJournal.SummonRandomFavoriteButton)

@@ -701,16 +701,12 @@ function M:Initialize()
 	M.ClusterBackdrop = clusterBackdrop
 
 	M:ClusterPoint()
+	MinimapCluster:SetIgnoreParentAlpha(true)
 	MinimapCluster:EnableMouse(false)
 	MinimapCluster:SetFrameStrata('LOW')
 	MinimapCluster:SetFrameLevel(20) -- set before minimap itself
 	hooksecurefunc(MinimapCluster, 'SetPoint', M.ClusterPoint)
 	hooksecurefunc(MinimapCluster, 'SetSize', M.ClusterSize)
-
-	if Minimap:GetParent() ~= MinimapCluster then
-		Minimap.ignoreInLayout = true
-		Minimap:SetParent(MinimapCluster)
-	end
 
 	Minimap:EnableMouseWheel(true)
 	Minimap:SetFrameLevel(10)

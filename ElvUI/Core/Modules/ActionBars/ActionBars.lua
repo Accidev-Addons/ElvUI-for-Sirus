@@ -1164,6 +1164,43 @@ function AB:ToggleCooldownOptions()
 	end
 end
 
+do
+	local LCG = E.Libs.CustomGlow
+	local spellOverlayFrame, spellOverlayElapsed
+
+	function AB.SpellOverlay_OnUpdate(_, e)
+		spellOverlayElapsed = spellOverlayElapsed + e
+		if spellOverlayElapsed < 0.25 then return end
+		spellOverlayElapsed = 0
+
+		for _, bar in pairs(AB.handledBars) do
+			for _, button in ipairs(bar.buttons) do
+				if button:IsShown() then
+					local action = tonumber(button:GetAttribute('action'))
+					if action and AB.db.handleOverlay then
+						local spellID = C_ActionBar.GetSpellID(action)
+						if spellID and IsSpellOverlayed(spellID) then
+							LCG.ShowOverlayGlow(button)
+						else
+							LCG.HideOverlayGlow(button)
+						end
+					else
+						LCG.HideOverlayGlow(button)
+					end
+				end
+			end
+		end
+	end
+
+	function AB.SetupSpellOverlay()
+		if not IsSpellOverlayed then return end
+
+		spellOverlayFrame = CreateFrame('Frame')
+		spellOverlayElapsed = 0
+		spellOverlayFrame:SetScript('OnUpdate', AB.SpellOverlay_OnUpdate)
+	end
+end
+
 function AB:SetButtonDesaturation(button, duration)
 	if AB.db.desaturateOnCooldown and (duration and duration > 1.5) then
 		button.icon:SetDesaturated(true)
@@ -1290,6 +1327,7 @@ function AB:Initialize()
 	AB:UpdateButtonSettings()
 	AB:UpdatePetCooldownSettings()
 	AB:ToggleCooldownOptions()
+	AB.SetupSpellOverlay()
 	AB:LoadKeyBinder()
 
 	if not IsAddOnLoaded('Blizzard_MacroUI') then

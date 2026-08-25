@@ -216,6 +216,7 @@ local function SetOutside(obj, anchor, xOffset, yOffset, anchor2, noScale)
 
 	if not xOffset then xOffset = E.Border end
 	if not yOffset then yOffset = E.Border end
+
 	local x = (noScale and xOffset) or E:Scale(xOffset, obj)
 	local y = (noScale and yOffset) or E:Scale(yOffset, obj)
 
@@ -232,6 +233,7 @@ local function SetInside(obj, anchor, xOffset, yOffset, anchor2, noScale)
 
 	if not xOffset then xOffset = E.Border end
 	if not yOffset then yOffset = E.Border end
+
 	local x = (noScale and xOffset) or E:Scale(xOffset, obj)
 	local y = (noScale and yOffset) or E:Scale(yOffset, obj)
 

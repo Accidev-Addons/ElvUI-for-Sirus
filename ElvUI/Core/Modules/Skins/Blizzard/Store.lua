@@ -146,21 +146,27 @@ local function SkinStoreBagButton(btn)
 	if btn._ElvBagSkinned then return end
 	btn._ElvBagSkinned = true
 
-	local function clearChrome(b)
-		if b.SetPushedTexture then b:SetPushedTexture("") end
-		if b.SetDisabledTexture then b:SetDisabledTexture("") end
-		if b.SetHighlightTexture then b:SetHighlightTexture("") end
-		if b.SetCheckedTexture then b:SetCheckedTexture("") end
-		if b.SetDisabledCheckedTexture then b:SetDisabledCheckedTexture("") end
-	end
-
-	clearChrome(btn)
+	if btn.Left then btn.Left:SetAlpha(0) end
+	if btn.Right then btn.Right:SetAlpha(0) end
+	if btn.Center then btn.Center:SetAlpha(0) end
+	if btn.LeftHighlight then btn.LeftHighlight:SetAlpha(0) end
+	if btn.RightHighlight then btn.RightHighlight:SetAlpha(0) end
+	if btn.CenterHighlight then btn.CenterHighlight:SetAlpha(0) end
+	if btn.Glow then btn.Glow:Hide() end
 
 	if not btn._ElvBagHooked then
 		btn._ElvBagHooked = true
-		for _, method in ipairs({ "SetPushedAtlas", "SetDisabledAtlas", "SetHighlightAtlas", "SetCheckedAtlas", "SetDisabledCheckedAtlas" }) do
+		for _, method in ipairs({ 'SetPushedAtlas', 'SetDisabledAtlas', 'SetHighlightAtlas', 'SetCheckedAtlas', 'SetDisabledCheckedAtlas' }) do
 			if btn[method] then
-				hooksecurefunc(btn, method, function(self) clearChrome(self) end)
+				hooksecurefunc(btn, method, function(self)
+					if self.Left then self.Left:SetAlpha(0) end
+					if self.Right then self.Right:SetAlpha(0) end
+					if self.Center then self.Center:SetAlpha(0) end
+					if self.LeftHighlight then self.LeftHighlight:SetAlpha(0) end
+					if self.RightHighlight then self.RightHighlight:SetAlpha(0) end
+					if self.CenterHighlight then self.CenterHighlight:SetAlpha(0) end
+					if self.Glow then self.Glow:Hide() end
+				end)
 			end
 		end
 	end

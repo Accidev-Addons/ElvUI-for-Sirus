@@ -7,6 +7,8 @@ local unpack, next, mod, floor = unpack, next, mod, floor
 local strsub, format, gsub, tostring, type = strsub, format, gsub, tostring, type
 local strfind, tinsert, wipe, sort = strfind, tinsert, wipe, sort
 
+local LGT = _G.LibStub('LibGroupTalents-1.0')
+
 local CloseDropDownMenus = CloseDropDownMenus
 local ConvertToRaid = ConvertToRaid
 local CreateFrame = CreateFrame
@@ -22,13 +24,14 @@ local SendChatMessage = SendChatMessage
 local SecureHandlerSetFrameRef = SecureHandlerSetFrameRef
 local SecureHandler_OnClick = SecureHandler_OnClick
 local ToggleFriendsFrame = ToggleFriendsFrame
-local UnitGroupRolesAssigned = UnitGroupRolesAssigned
 local SetDungeonDifficulty = SetDungeonDifficulty
 local SetRaidDifficulty = SetRaidDifficulty
 local SetRaidTarget = SetRaidTarget
 local ResetInstances = ResetInstances
 local UnitClass = UnitClass
 local UnitExists = UnitExists
+local UnitGUID = UnitGUID
+local UnitIsUnit = UnitIsUnit
 local UnitName = UnitName
 
 local IsInGroup = IsInGroup
@@ -171,13 +174,14 @@ function RU:CreateDropdown(name, parent, template, width, point, relativeto, poi
 		dropdown.label:FontTemplate(nil, E.db.general.fontSize, 'SHADOW')
 
 		S:HandleDropDownBox(dropdown, width)
+		dropdown:Size(width, BUTTON_HEIGHT)
 
 		func(dropdown)
     end
 
     if not dropdown.text then -- stuff to do once
         dropdown.text = dropdown:CreateFontString(nil, 'OVERLAY', 'GameFontNormal')
-        dropdown.text:SetPoint('CENTER', dropdown, 'CENTER', 4, 3)
+        dropdown.text:SetPoint('CENTER', dropdown, 'CENTER', 0, -1)
 		dropdown.text:SetTextColor(1, 1, 1)
 		dropdown.text:SetText(text or '')
 		dropdown.text:FontTemplate(nil, E.db.general.fontSize, 'SHADOW')
@@ -260,6 +264,7 @@ function RU:CreateRoleIcons()
 	RoleIcons:SetTemplate('Transparent')
 	RoleIcons:RegisterEvent('PLAYER_ENTERING_WORLD')
 	RoleIcons:RegisterEvent('RAID_ROSTER_UPDATE')
+	RoleIcons:RegisterEvent('PARTY_MEMBERS_CHANGED')
 	RoleIcons:SetScript('OnEvent', RU.OnEvent_RoleIcons)
 	RoleIcons.icons = {}
 
@@ -295,6 +300,14 @@ function RU:CreateRoleIcons()
 
 		RoleIcons.icons[data.role] = frame
 	end
+
+	local function OnRoleLearned()
+		E:GroupRosterUpdate()
+		RU.OnEvent_RoleIcons(RoleIcons)
+	end
+
+	LGT.RegisterCallback(RoleIcons, 'LibGroupTalents_Update', OnRoleLearned)
+	LGT.RegisterCallback(RoleIcons, 'LibGroupTalents_RoleChange', OnRoleLearned)
 
 	return RoleIcons
 end
@@ -569,8 +582,7 @@ end
 function RU:RoleIcons_AddPartyUnit(unit, iconRole)
 	local name = UnitExists(unit) and UnitName(unit)
 	if not name then return end
-	local isTank, isHealer, isDamage = UnitGroupRolesAssigned(unit)
-	local unitRole = (isTank and 'TANK') or (isHealer and 'HEALER') or (isDamage and 'DAMAGER')
+	local unitRole = (UnitIsUnit(unit, 'player') and E.myrole) or E.GroupRoles[UnitGUID(unit)]
 	if unitRole == iconRole then
 		local _, unitClass = UnitClass(unit)
 		RU:RoleIcons_AddNames(roleRoster[0], name, unitClass)
@@ -594,8 +606,7 @@ function RU:OnEnter_Role()
 	for i = 1, GetNumGroupMembers() do
 		if isRaid then
 			local name, _, group, _, _, unitClass = GetRaidRosterInfo(i)
-			local isTank, isHealer, isDamage = UnitGroupRolesAssigned('raid'..i)
-			local unitRole = (isTank and 'TANK') or (isHealer and 'HEALER') or (isDamage and 'DAMAGER')
+			local unitRole = E.GroupRoles[UnitGUID('raid'..i)]
 
 			if name and unitRole == iconRole then
 				RU:RoleIcons_AddNames(roleRoster[group], name, unitClass)
@@ -657,29 +668,27 @@ function RU:PositionSections()
 	RU:ReanchorSection(_G.RaidUtilityRoleIcons, bottom, _G.RaidUtilityTargetIcons)
 end
 
-function RU:OnEvent_RoleIcons(event)
+function RU:OnEvent_RoleIcons()
 	RU:PositionSections()
 
-	if event ~= 'PLAYER_ENTERING_WORLD' then
-		wipe(roleCount)
+	wipe(roleCount)
 
-		-- lets populate the counter
-		for _, role in next, E.GroupRoles do
-			if role ~= 'NONE' then
-				roleCount[role] = (roleCount[role] or 0) + 1
-			end
+	-- lets populate the counter
+	for _, role in next, E.GroupRoles do
+		if role ~= 'NONE' then
+			roleCount[role] = (roleCount[role] or 0) + 1
 		end
+	end
 
-		-- we only need to add this when not in a raid
-		local myrole = IsInGroup() and not IsInRaid() and E.myrole
-		if myrole and myrole ~= 'NONE' then
-			roleCount[myrole] = (roleCount[myrole] or 0) + 1
-		end
+	-- we only need to add this when not in a raid
+	local myrole = IsInGroup() and not IsInRaid() and E.myrole
+	if myrole and myrole ~= 'NONE' then
+		roleCount[myrole] = (roleCount[myrole] or 0) + 1
+	end
 
-		-- update the text
-		for role, icon in next, _G.RaidUtilityRoleIcons.icons do
-			icon.count:SetText(roleCount[role] or 0)
-		end
+	-- update the text
+	for role, icon in next, _G.RaidUtilityRoleIcons.icons do
+		icon.count:SetText(roleCount[role] or 0)
 	end
 end
 
@@ -724,38 +733,29 @@ function RU:DoCountdown(duration)
 end
 
 function RU:GetRoleCount()
-	local tanks, healers, damage = 0, 0, 0
-    local numMembers = GetNumGroupMembers()
-    local isRaid = (numMembers > 0) and IsInRaid()
+	local tank, healer, damage = 0, 0, 0
 
-    local function checkRole(unit)
-        if GetPartyAssignment('MAINTANK', unit) then
-            tanks = tanks + 1
-        elseif GetPartyAssignment('MAINASSIST', unit) then
-            tanks = tanks + 1  -- Often, main assist is a second tank
-        else
-            -- Check if it's a healer class
-            local _, class = UnitClass(unit)
-            if class == 'PRIEST' or class == 'DRUID' or class == 'SHAMAN' or class == 'PALADIN' then
-                healers = healers + 1
-            else
-                damage = damage + 1
-            end
-        end
-    end
+	for _, role in next, E.GroupRoles do
+		if role == 'TANK' then
+			tank = tank + 1
+		elseif role == 'HEALER' then
+			healer = healer + 1
+		elseif role == 'DAMAGER' then
+			damage = damage + 1
+		end
+	end
 
-    if isRaid then
-        for i = 1, numMembers do
-            checkRole('raid'..i)
-        end
-    else
-        for i = 1, numMembers do
-            checkRole('party'..i)
-        end
-        checkRole('player')  -- Don't forget to check the player in a party
-    end
+	if IsInGroup() and not IsInRaid() then
+		if E.myrole == 'TANK' then
+			tank = tank + 1
+		elseif E.myrole == 'HEALER' then
+			healer = healer + 1
+		elseif E.myrole == 'DAMAGER' then
+			damage = damage + 1
+		end
+	end
 
-    return tanks, healers, damage
+	return tank, healer, damage
 end
 
 function RU:Initialize()
@@ -769,7 +769,7 @@ function RU:Initialize()
 	local RaidUtilityPanel = CreateFrame('Frame', 'RaidUtilityPanel', E.UIParent, 'SecureHandlerBaseTemplate')
 	RaidUtilityPanel:SetScript('OnMouseUp', RU.OnClick_RaidUtilityPanel)
 	RaidUtilityPanel:SetTemplate('Transparent')
-	RaidUtilityPanel:Size(PANEL_WIDTH, PANEL_HEIGHT - 25)
+	RaidUtilityPanel:Size(PANEL_WIDTH, PANEL_HEIGHT - 18)
 	RaidUtilityPanel:Point('TOP', E.UIParent, 'TOP', -400, 1)
 	RaidUtilityPanel:SetFrameLevel(3)
 	RaidUtilityPanel.toggled = false
@@ -833,7 +833,7 @@ function RU:Initialize()
 	RU:CreateRoleIcons()
 
 	local menuList = IsInRaid() and raidMenuList or groupMenuList
-	RU:CreateDropdown('RaidUtility_DungeonDifficulty', RaidUtilityPanel, 'UIDropDownMenuTemplate', BUTTON_WIDTH * 0.5 + 28.5, 'TOPLEFT', RaidCountdownButton, 'BOTTOMLEFT', -20, -2, L["Difficulty"], E:GetDifficultyText(IsInRaid()), { 'CHAT_MSG_SYSTEM', 'RAID_ROSTER_UPDATE' }, RU.OnEvent_DungeonDifficulty, RU.OnSelect_DungeonDifficulty, menuList)
+	RU:CreateDropdown('RaidUtility_DungeonDifficulty', RaidUtilityPanel, 'UIDropDownMenuTemplate', BUTTON_WIDTH * 0.5 + 28.5, 'TOPLEFT', RaidCountdownButton, 'BOTTOMLEFT', 0, -5, L["Difficulty"], E:GetDifficultyText(IsInRaid()), { 'CHAT_MSG_SYSTEM', 'RAID_ROSTER_UPDATE' }, RU.OnEvent_DungeonDifficulty, RU.OnSelect_DungeonDifficulty, menuList)
 	RU:UpdateDifficultyDropdown() -- Ensure the correct menu is set initially
 
 	-- Automatically show/hide the frame if we have RaidLeader or RaidOfficer

@@ -93,9 +93,7 @@ function M:CreateQueueStatusText()
 	local queueButton = M:GetQueueStatusButton()
 	if not queueButton then return end
 
-	local display = CreateFrame('Frame', 'ElvUIQueueStatusDisplay', queueButton)
-	display:SetIgnoreParentScale(true)
-	display:SetScale(E.uiscale)
+	local display = CreateFrame('Frame', 'ElvUIQueueStatusDisplay', M.QueueStatus)
 	display.text = display:CreateFontString(nil, 'OVERLAY')
 	display.text:FontTemplate()
 
@@ -154,22 +152,20 @@ function M:HandleQueueStatus(creation)
 	end
 
 	local db = E.db.general.queueStatus
-	local s = db.scale or 1
+	local s = (db.scale and db.scale > 0 and db.scale) or 1
 
 	local width, height = queueButton:GetSize()
-	if width and height then
+	if width and height and width > 0 and height > 0 then
 		M.QueueStatus:SetSize(width, height)
-	end
-	M.QueueStatus:SetScale(s)
-	M.QueueStatus:SetFrameStrata(db.frameStrata)
-	M.QueueStatus:SetFrameLevel(db.frameLevel)
 
-	if width and height then
 		local mover = M.QueueStatus.mover
 		if mover then
 			mover:SetSize(width * s, height * s)
 		end
 	end
+	M.QueueStatus:SetScale(s)
+	M.QueueStatus:SetFrameStrata(db.frameStrata)
+	M.QueueStatus:SetFrameLevel(db.frameLevel)
 
 	local queueDisplay = M.QueueStatusDisplay
 	if queueDisplay then

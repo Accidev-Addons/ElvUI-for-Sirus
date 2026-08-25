@@ -448,6 +448,8 @@ function TT:GameTooltip_OnTooltipSetUnit(data)
 		end
 	end
 
+	TT:SetStyle(self)
+
 	local isPlayerUnit = UnitIsPlayer(unit)
 
 	TT:RemoveTrashLines(self) --keep an eye on this may be buggy

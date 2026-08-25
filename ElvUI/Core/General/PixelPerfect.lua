@@ -40,7 +40,8 @@ function E:IsUltrawide(width, height)
 end
 
 function E:UIMult()
-	E.mult = E.perfect / E.global.general.UIScale
+	E.uiscale = E.global.general.UIScale
+	E.mult = E.perfect / E.uiscale
 end
 
 function E:UIScale()
@@ -49,7 +50,6 @@ function E:UIScale()
 	else -- E.Initialize
 		UIParent:SetScale(E.global.general.UIScale)
 
-		E.uiscale = UIParent:GetScale()
 		E.screenWidth, E.screenHeight = GetScreenWidth(), GetScreenHeight()
 
 		local width, height = E.physicalWidth, E.physicalHeight
@@ -80,6 +80,7 @@ function E:PixelBestSize()
 	return max(0.4, min(1.15, E.perfect))
 end
 
+local lastMult
 function E:PixelScaleChanged(event)
 	if event == 'DISPLAY_SIZE_CHANGED' then
 		E.physicalWidth, E.physicalHeight = GetPhysicalScreenSize()
@@ -90,27 +91,29 @@ function E:PixelScaleChanged(event)
 	E:UIMult()
 	E:UIScale()
 
-	E:UpdateFrameTemplates()
+	if E.mult ~= lastMult then
+		lastMult = E.mult
+
+		E:UpdateFrameTemplates()
+
+		local UF = E:GetModule('UnitFrames', true)
+		if UF and UF.Initialized and not InCombatLockdown() then
+			UF:Update_AllFrames()
+		end
+	end
 
 	E:Config_UpdateSize(true) --Reposition config
 end
 
 function E:RegionScale(region)
-	local scale = region and region.GetEffectiveScale and region:GetParent() and region:GetEffectiveScale()
-	return (scale and scale > 0) and scale or E.uiscale
+	return E.uiscale or G.general.UIScale
 end
 
 function E:Scale(x, region, minPixels)
-	local scale = (region and E:RegionScale(region)) or E.uiscale
-	if not scale then return x end
-
-	return GetNearestPixelSize(x, scale, minPixels)
+	return GetNearestPixelSize(x, E.uiscale or G.general.UIScale, minPixels)
 end
 
 -- exact size in physical pixels, unlike E:Scale which snaps a ui-unit size to the grid
 function E:PixelSize(pixels, region)
-	local scale = (region and E:RegionScale(region)) or E.uiscale
-	if not scale then return pixels end
-
-	return pixels * GetPixelToUIUnitFactor() / scale
+	return pixels * GetPixelToUIUnitFactor() / (E.uiscale or G.general.UIScale)
 end

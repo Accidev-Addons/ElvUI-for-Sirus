@@ -1423,68 +1423,101 @@ local function GetOptionsTable_Castbar(hasTicks, updateFunc, groupName, numUnits
 				desc = L["Display the castbar inside the information panel, the icon will be displayed outside the main unitframe."],
 				disabled = function() return not E.db.unitframe.units[groupName].infoPanel or not E.db.unitframe.units[groupName].infoPanel.enable end
 			},
-			iconSettings = {
-				order = 13,
-				type = "group",
-				name = L["Icon"],
-				guiInline = true,
-				get = function(info) return E.db.unitframe.units[groupName].castbar[info[#info]] end,
-				set = function(info, value) E.db.unitframe.units[groupName].castbar[info[#info]] = value updateFunc(UF, groupName, numUnits) end,
-				args = {
-					icon = {
-						order = 1,
-						type = "toggle",
-						name = L["Enable"]
-					},
-					iconAttached = {
-						order = 2,
-						type = "toggle",
-						name = L["Icon Inside Castbar"],
-						desc = L["Display the castbar icon inside the castbar."]
-					},
-					iconSize = {
-						order = 3,
-						type = "range",
-						name = L["Icon Size"],
-						desc = L["This dictates the size of the icon when it is not attached to the castbar."],
-						min = 8, max = 150, step = 1,
-						disabled = function() return E.db.unitframe.units[groupName].castbar.iconAttached end
-					},
-					iconAttachedTo = {
-						order = 4,
-						type = "select",
-						name = L["Attach To"],
-						disabled = function() return E.db.unitframe.units[groupName].castbar.iconAttached end,
-						values = {
-							["Frame"] = L["Frame"],
-							["Castbar"] = L["Castbar"]
-						}
-					},
-					iconPosition = {
-						order = 5,
-						type = "select",
-						name = L["Position"],
-						values = positionValues,
-						disabled = function() return E.db.unitframe.units[groupName].castbar.iconAttached end
-					},
-					iconXOffset = {
-						order = 6,
-						type = "range",
-						name = L["X-Offset"],
-						min = -300, max = 300, step = 1,
-						disabled = function() return E.db.unitframe.units[groupName].castbar.iconAttached end
-					},
-					iconYOffset = {
-						order = 7,
-						type = "range",
-						name = L["Y-Offset"],
-						min = -300, max = 300, step = 1,
-						disabled = function() return E.db.unitframe.units[groupName].castbar.iconAttached end
+		iconSettings = {
+			order = 13,
+			type = "group",
+			name = L["Icon"],
+			guiInline = true,
+			get = function(info) return E.db.unitframe.units[groupName].castbar[info[#info]] end,
+			set = function(info, value) E.db.unitframe.units[groupName].castbar[info[#info]] = value updateFunc(UF, groupName, numUnits) end,
+			disabled = function() return not E.db.unitframe.units[groupName].castbar.enable end,
+			args = {
+				icon = {
+					order = 1,
+					type = "toggle",
+					name = L["Enable"]
+				},
+				iconAttached = {
+					order = 2,
+					type = "toggle",
+					name = L["Icon Inside Castbar"],
+					desc = L["Display the castbar icon inside the castbar."],
+					disabled = function() return not E.db.unitframe.units[groupName].castbar.icon end
+				},
+				iconSize = {
+					order = 3,
+					type = "range",
+					name = L["Icon Size"],
+					desc = L["This dictates the size of the icon when it is not attached to the castbar."],
+					min = 8, max = 150, step = 1,
+					disabled = function() return not E.db.unitframe.units[groupName].castbar.icon or E.db.unitframe.units[groupName].castbar.iconAttached end
+				},
+				iconAttachedTo = {
+					order = 4,
+					type = "select",
+					name = L["Attach To"],
+					disabled = function() return not E.db.unitframe.units[groupName].castbar.icon or E.db.unitframe.units[groupName].castbar.iconAttached end,
+					values = {
+						["Frame"] = L["Frame"],
+						["Castbar"] = L["Castbar"]
 					}
+				},
+				iconPosition = {
+					order = 5,
+					type = "select",
+					name = L["Position"],
+					values = positionValues,
+					disabled = function() return not E.db.unitframe.units[groupName].castbar.icon or E.db.unitframe.units[groupName].castbar.iconAttached end
+				},
+				iconXOffset = {
+					order = 6,
+					type = "range",
+					name = L["X-Offset"],
+					min = -300, max = 300, step = 1,
+					disabled = function() return not E.db.unitframe.units[groupName].castbar.icon or E.db.unitframe.units[groupName].castbar.iconAttached end
+				},
+				iconYOffset = {
+					order = 7,
+					type = "range",
+					name = L["Y-Offset"],
+					min = -300, max = 300, step = 1,
+					disabled = function() return not E.db.unitframe.units[groupName].castbar.icon or E.db.unitframe.units[groupName].castbar.iconAttached end
 				}
-			},
-			strataAndLevel = {
-				order = 14,
+			}
+		},
+		fontGroup = {
+			order = 14,
+			type = "group",
+			name = L["Fonts"],
+			guiInline = true,
+			get = function(info) return E.db.unitframe.units[groupName].castbar[info[#info]] end,
+			set = function(info, value) E.db.unitframe.units[groupName].castbar[info[#info]] = value updateFunc(UF, groupName, numUnits) end,
+			disabled = function() return not E.db.unitframe.units[groupName].castbar.enable end,
+			args = {
+				font = {
+					order = 1,
+					type = "select",
+					dialogControl = 'LSM30_Font',
+					name = L["Font"],
+					values = AceGUIWidgetLSMlists.font
+				},
+				fontSize = {
+					order = 2,
+					type = "range",
+					name = L["Font Size"],
+					min = 6, max = 40, step = 1
+				},
+				fontOutline = {
+					order = 3,
+					type = "select",
+					name = L["Font Outline"],
+					values = C.Values.FontFlags,
+					sorting = C.Values.FontSorting
+				}
+			}
+		},
+		strataAndLevel = {
+			order = 15,
 				type = "group",
 				name = L["Strata and Level"],
 				get = function(info) return E.db.unitframe.units[groupName].castbar.strataAndLevel[info[#info]] end,

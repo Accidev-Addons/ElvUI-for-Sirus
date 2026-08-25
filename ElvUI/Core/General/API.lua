@@ -48,6 +48,9 @@ local GetSpecializationInfo = E.GetSpecializationInfo
 local GetSpecializationInfoByID = E.GetSpecializationInfoByID
 local GetInspectSpecialization = E.GetInspectSpecialization
 
+local LGT = _G.LibStub('LibGroupTalents-1.0')
+local LGT_ROLES = { tank = 'TANK', healer = 'HEALER', melee = 'DAMAGER', caster = 'DAMAGER' }
+
 local NONE = NONE
 
 local ERR_NOT_IN_COMBAT = ERR_NOT_IN_COMBAT
@@ -1051,6 +1054,10 @@ function E:GroupRosterUpdate()
 			local guid = UnitGUID(unit)
 			local isTank, isHealer, isDamage = UnitGroupRolesAssigned(unit)
 			local role = guid and ((GetPartyAssignment('MAINTANK', unit) and 'TANK') or (isTank and 'TANK') or (isHealer and 'HEALER') or (isDamage and 'DAMAGER') or 'NONE')
+			if role == 'NONE' then
+				role = LGT_ROLES[LGT:GetUnitRole(unit)] or 'NONE'
+			end
+
 			if role then
 				E.GroupRoles[guid] = role
 				E.GroupUnitsByRole[role][guid] = unit
@@ -1067,6 +1074,9 @@ function E:LoadAPI()
 	E:RegisterEvent('PLAYER_REGEN_ENABLED')
 	E:RegisterEvent('PLAYER_REGEN_DISABLED')
 	E:RegisterEvent('DISPLAY_SIZE_CHANGED', 'PixelScaleChanged')
+
+	LGT.RegisterCallback(E, 'LibGroupTalents_Update', 'GroupRosterUpdate')
+	LGT.RegisterCallback(E, 'LibGroupTalents_RoleChange', 'GroupRosterUpdate')
 
 	E:GroupRosterUpdate()
 	E:SetupGameMenu()
