@@ -74,7 +74,7 @@ E.Skins = E:NewModule('Skins','AceTimer-3.0','AceHook-3.0','AceEvent-3.0')
 E.Tooltip = E:NewModule('Tooltip','AceTimer-3.0','AceHook-3.0','AceEvent-3.0')
 E.TotemTracker = E:NewModule('TotemTracker','AceEvent-3.0')
 E.AddonManager = E:NewModule('AddonManager')
-E.MinimapButtonGrabber = E:NewModule('MinimapButtonGrabber')
+E.MinimapButtonGrabber = E:NewModule('MinimapButtonGrabber','AceTimer-3.0')
 E.UnitFrames = E:NewModule('UnitFrames','AceTimer-3.0','AceEvent-3.0','AceHook-3.0')
 E.WorldMap = E:NewModule('WorldMap','AceHook-3.0','AceEvent-3.0','AceTimer-3.0')
 
@@ -138,7 +138,6 @@ do
 	E:AddLib('Deflate', 'LibDeflate')
 	E:AddLib('Masque', 'Masque', true)
 	E:AddLib('Translit', 'LibTranslit-1.0')
-	E:AddLib('DualSpec', 'LibDualSpec-1.0')
 
 	-- libraries used for options are registered by ElvUI_Options when it loads
 

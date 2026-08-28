@@ -172,6 +172,22 @@ P.general = {
 			}
 		}
 	},
+	minimapButtonGrabber = {
+		backdrop = false,
+		backdropSpacing = 1,
+		mouseover = false,
+		alpha = 1,
+		buttonSize = 22,
+		buttonSpacing = 0,
+		buttonsPerRow = 1,
+		growFrom = 'TOPLEFT',
+		insideMinimap = {
+			enable = true,
+			position = 'TOPLEFT',
+			xOffset = -1,
+			yOffset = 1,
+		},
+	},
 	queueStatus = {
 		enable = true,
 		scale = 0.5,
@@ -1143,7 +1159,6 @@ P.auras.debuffs.maxWraps = 1
 P.auras.buffs.consolidateMax = 32
 P.auras.buffs.consolidateDirection = 'RIGHT_DOWN'
 P.auras.buffs.consolidateSize = 24
-P.auras.buffs.consolidateIconSize = 32
 
 --Chat
 P.chat = {

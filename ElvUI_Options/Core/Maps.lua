@@ -19,6 +19,13 @@ local buttonPositions = {
 	BOTTOMRIGHT = L["Bottom Right"],
 }
 
+local growthPoints = {
+	TOPLEFT = L["Top Left"],
+	TOPRIGHT = L["Top Right"],
+	BOTTOMLEFT = L["Bottom Left"],
+	BOTTOMRIGHT = L["Bottom Right"],
+}
+
 local textFontSize = { min = 6, max = 42, step = 1 }
 local buttonScale = { min = 0.5, max = 3, step = 0.05 }
 local buttonOffsets = { min = -60, max = 60, step = 1 }
@@ -121,11 +128,21 @@ Maps.args.minimap.args.icons.args.difficulty.args.scale = ACH:Range(L["Scale"], 
 Maps.args.minimap.args.icons.args.difficulty.args.xOffset = ACH:Range(L["X-Offset"], nil, 3, buttonOffsets)
 Maps.args.minimap.args.icons.args.difficulty.args.yOffset = ACH:Range(L["Y-Offset"], nil, 4, buttonOffsets)
 
-Maps.args.minimap.args.buttonGrabber = ACH:Group(L["Minimap Button Grabber"], nil, 45, nil, function(info) return E.private.general.minimapButtonGrabber[info[#info]] end, function(info, value) E.private.general.minimapButtonGrabber[info[#info]] = value; if MBG and MBG.UpdateSettings then MBG:UpdateSettings() end end, function() return not E.private.general.minimap.enable end)
+Maps.args.minimap.args.buttonGrabber = ACH:Group(L["Minimap Button Grabber"], nil, 45, nil, function(info) return E.db.general.minimapButtonGrabber[info[#info]] end, function(info, value) E.db.general.minimapButtonGrabber[info[#info]] = value; MBG:UpdateSettings() end, function() return not E.private.general.minimap.enable end)
 Maps.args.minimap.args.buttonGrabber.args.enable = ACH:Toggle(L["Enable"], nil, 1, nil, nil, nil, function() return E.private.general.minimapButtonGrabber.enable end, function(_, value) E.private.general.minimapButtonGrabber.enable = value; E.ShowPopup = true end)
 Maps.args.minimap.args.buttonGrabber.args.spacer = ACH:Spacer(2, 'full')
-Maps.args.minimap.args.buttonGrabber.args.mouseover = ACH:Toggle(L["Show On Mouseover"], L["Hide the grabber button until you mouse over the minimap."], 3, nil, nil, nil, nil, nil, function() return not E.private.general.minimapButtonGrabber.enable end)
-Maps.args.minimap.args.buttonGrabber.args.showNames = ACH:Toggle(L["Show Addon Names"], L["Show addon names in the list. When disabled, only icons are shown."], 4, nil, nil, nil, nil, nil, function() return not E.private.general.minimapButtonGrabber.enable end)
-Maps.args.minimap.args.buttonGrabber.args.position = ACH:Select(L["Position"], nil, 5, buttonPositions, nil, nil, nil, nil, function() return not E.private.general.minimapButtonGrabber.enable end)
-Maps.args.minimap.args.buttonGrabber.args.xOffset = ACH:Range(L["X-Offset"], nil, 6, buttonOffsets, nil, nil, nil, function() return not E.private.general.minimapButtonGrabber.enable end)
-Maps.args.minimap.args.buttonGrabber.args.yOffset = ACH:Range(L["Y-Offset"], nil, 7, buttonOffsets, nil, nil, nil, function() return not E.private.general.minimapButtonGrabber.enable end)
+Maps.args.minimap.args.buttonGrabber.args.growFrom = ACH:Select(L["Growth Direction"], nil, 3, growthPoints, nil, nil, nil, nil, function() return not E.private.general.minimapButtonGrabber.enable end)
+Maps.args.minimap.args.buttonGrabber.args.buttonsPerRow = ACH:Range(L["Buttons Per Row"], L["The amount of buttons to display per row."], 4, { min = 1, max = 12, step = 1 }, nil, nil, nil, function() return not E.private.general.minimapButtonGrabber.enable end)
+Maps.args.minimap.args.buttonGrabber.args.buttonSize = ACH:Range(L["Button Size"], nil, 5, { min = 16, max = 48, step = 1 }, nil, nil, nil, function() return not E.private.general.minimapButtonGrabber.enable end)
+Maps.args.minimap.args.buttonGrabber.args.buttonSpacing = ACH:Range(L["Button Spacing"], L["The spacing between buttons."], 6, { min = 0, max = 10, step = 1 }, nil, nil, nil, function() return not E.private.general.minimapButtonGrabber.enable end)
+Maps.args.minimap.args.buttonGrabber.args.backdrop = ACH:Toggle(L["Backdrop"], nil, 7, nil, nil, nil, nil, nil, function() return not E.private.general.minimapButtonGrabber.enable end)
+Maps.args.minimap.args.buttonGrabber.args.backdropSpacing = ACH:Range(L["Backdrop Spacing"], L["The spacing between the backdrop and the buttons."], 8, { min = 0, max = 10, step = 1 }, nil, nil, nil, function() return not E.private.general.minimapButtonGrabber.enable or not E.db.general.minimapButtonGrabber.backdrop end)
+Maps.args.minimap.args.buttonGrabber.args.mouseover = ACH:Toggle(L["Mouseover"], L["The frame is not shown unless you mouse over the frame."], 9, nil, nil, nil, nil, nil, function() return not E.private.general.minimapButtonGrabber.enable end)
+Maps.args.minimap.args.buttonGrabber.args.alpha = ACH:Range(L["Alpha"], nil, 10, { min = .1, max = 1, step = .05, isPercent = true }, nil, nil, nil, function() return not E.private.general.minimapButtonGrabber.enable end)
+
+Maps.args.minimap.args.buttonGrabber.args.insideMinimap = ACH:Group(L["Inside Minimap"], nil, 11, nil, function(info) return E.db.general.minimapButtonGrabber.insideMinimap[info[#info]] end, function(info, value) E.db.general.minimapButtonGrabber.insideMinimap[info[#info]] = value; MBG:UpdateSettings() end, function() return not E.private.general.minimapButtonGrabber.enable end)
+Maps.args.minimap.args.buttonGrabber.args.insideMinimap.inline = true
+Maps.args.minimap.args.buttonGrabber.args.insideMinimap.args.enable = ACH:Toggle(L["Enable"], nil, 1)
+Maps.args.minimap.args.buttonGrabber.args.insideMinimap.args.position = ACH:Select(L["Position"], nil, 2, buttonPositions, nil, nil, nil, nil, function() return not E.private.general.minimapButtonGrabber.enable or not E.db.general.minimapButtonGrabber.insideMinimap.enable end)
+Maps.args.minimap.args.buttonGrabber.args.insideMinimap.args.xOffset = ACH:Range(L["X-Offset"], nil, 3, buttonOffsets, nil, nil, nil, function() return not E.private.general.minimapButtonGrabber.enable or not E.db.general.minimapButtonGrabber.insideMinimap.enable end)
+Maps.args.minimap.args.buttonGrabber.args.insideMinimap.args.yOffset = ACH:Range(L["Y-Offset"], nil, 4, buttonOffsets, nil, nil, nil, function() return not E.private.general.minimapButtonGrabber.enable or not E.db.general.minimapButtonGrabber.insideMinimap.enable end)

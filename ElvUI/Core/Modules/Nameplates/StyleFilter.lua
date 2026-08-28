@@ -389,6 +389,7 @@ function NP:StyleFilterClearChanges(frame, HealthColorChanged, BorderChanged, Fl
 	end
 	if FrameLevelChanged then
 		frame.FrameLevelChanged = nil
+		frame.isFrameLeveled = nil
 	end
 	if HealthColorChanged then
 		frame.HealthColorChanged = nil

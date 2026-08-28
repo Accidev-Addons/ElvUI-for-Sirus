@@ -115,5 +115,6 @@ end
 
 -- exact size in physical pixels, unlike E:Scale which snaps a ui-unit size to the grid
 function E:PixelSize(pixels, region)
-	return pixels * GetPixelToUIUnitFactor() / (E.uiscale or G.general.UIScale)
+	local scale = region and region.GetEffectiveScale and region:GetEffectiveScale() or E.uiscale or G.general.UIScale
+	return pixels * GetPixelToUIUnitFactor() / scale
 end

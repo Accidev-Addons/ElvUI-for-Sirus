@@ -214,19 +214,11 @@ local function HandleTabs(arg1)
 	local frame = _G.AuctionHouseFrame
 	if not arg1 or arg1 ~= frame then return end
 
-	local lastTab
-	for index, tab in next, frame.Tabs do
+	for _, tab in next, frame.Tabs do
 		local blizzTab = tab == _G.AuctionHouseFrameBuyTab or tab == _G.AuctionHouseFrameSellTab or tab == _G.AuctionHouseFrameAuctionsTab
 		if blizzTab then
-			S:HandleSirusTab(tab, lastTab)
-
-			if index == 1 then
-				tab:ClearAllPoints()
-				tab:Point("BOTTOMLEFT", frame, "BOTTOMLEFT", -3, -32)
-			end
+			S:HandleSirusTab(tab)
 		end
-
-		lastTab = tab
 	end
 end
 
@@ -279,6 +271,25 @@ local function LoadSkin()
 		end
 	end)
 
+	local LevelRangeFrame = _G.AuctionHouseFrameSearchBarFilterButtonLevelRangeFrame
+	if LevelRangeFrame then
+		local LevelRangeFrames = {
+			_G.AuctionHouseFrameSearchBarFilterButtonLevelRangeFrameMinLevel,
+			_G.AuctionHouseFrameSearchBarFilterButtonLevelRangeFrameMaxLevel,
+		}
+
+		local function HandleLevelRangeFrame()
+			for _, editBox in ipairs(LevelRangeFrames) do
+				if editBox and not editBox.IsSkinned then
+					S:HandleEditBox(editBox)
+					editBox.IsSkinned = true
+				end
+			end
+		end
+
+		LevelRangeFrame:HookScript("OnShow", HandleLevelRangeFrame)
+	end
+
 	local Browse = Frame.BrowseResultsFrame
 
 	S:ApplyElvUIFontForce(Browse)
@@ -324,11 +335,24 @@ local function LoadSkin()
 		S:HandleSirusScrollBar(CommoditiesBuyScrollBar)
 	end
 
+	hooksecurefunc(CommoditiesBuyList, "RefreshScrollFrame", HandleHeaders)
+	if CommoditiesBuyList.ScrollFrame then
+		S:ApplyElvUIFontForce(CommoditiesBuyList.ScrollFrame)
+	end
+	CommoditiesBuyList:HookScript("OnShow", function(self)
+		if self.ScrollFrame then
+			S:ApplyElvUIFontForce(self.ScrollFrame)
+		end
+	end)
+
 	local BuyDisplay = Frame.CommoditiesBuyFrame.BuyDisplay
 	S:HandleEditBox(BuyDisplay.QuantityInput.InputBox)
 	S:HandleButton(BuyDisplay.BuyButton)
 
 	SkinItemDisplay(BuyDisplay)
+	BuyDisplay:HookScript("OnShow", function(self)
+		S:ApplyElvUIFontForce(self)
+	end)
 
 	local ItemBuyFrame = Frame.ItemBuyFrame
 	S:HandleButton(ItemBuyFrame.BackButton)
@@ -439,6 +463,10 @@ local function LoadSkin()
 	if Frame.BuyDialog then
 		Frame.BuyDialog:StripTextures()
 		Frame.BuyDialog:SetTemplate("Transparent")
+		S:ApplyElvUIFontForce(Frame.BuyDialog)
+		Frame.BuyDialog:HookScript("OnShow", function(self)
+			S:ApplyElvUIFontForce(self)
+		end)
 		if Frame.BuyDialog.BuyNowButton then S:HandleButton(Frame.BuyDialog.BuyNowButton) end
 		if Frame.BuyDialog.CancelButton then S:HandleButton(Frame.BuyDialog.CancelButton) end
 	end

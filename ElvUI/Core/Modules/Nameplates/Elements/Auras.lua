@@ -199,11 +199,11 @@ function NP:UpdateElement_AuraIcons(frame, unit, filter, limit, isDebuff)
 		local playerFilter = playerFilters[filter]
 		local i = 1
 		while true do
-			local name, _, _, _, _, _, _, _, _, _, spellID = UnitAura(unit, i, playerFilter)
+			local name, _, _, _, _, _, expiration, _, _, _, spellID = UnitAura(unit, i, playerFilter)
 			if not name then break end
 
 			if spellID then
-				playerSpells[spellID] = true
+				playerSpells[spellID] = expiration
 			end
 
 			i = i + 1
@@ -366,7 +366,7 @@ function NP:AuraFilter(unit, button, name, texture, count, debuffType, duration,
 	local db = NP.db.units[parent:GetParent().UnitType][parentType]
 	if not db then return true end
 
-	local isPlayer = (spells and spells[spellID]) or false
+	local isPlayer = (spells and spells[spellID] == expiration) or caster == "player"
 
 	button.expirationTime = expiration
 	button.name = name

@@ -276,7 +276,7 @@ local function Update(self, event, unit)
 
 	local mineFilter, mineIndex = "HELPFUL|PLAYER", 1
 	while true do
-		local mineName, _, mineTexture, _, _, _, _, _, _, _, mineSpellID = UnitAura(unit, mineIndex, mineFilter)
+		local mineName, _, mineTexture, _, _, _, mineRemaining, _, _, _, mineSpellID = UnitAura(unit, mineIndex, mineFilter)
 
 		if not mineName then
 			if mineFilter == "HELPFUL|PLAYER" then
@@ -287,9 +287,9 @@ local function Update(self, event, unit)
 			end
 		else
 			if element.strictMatching then
-				playerCast[mineSpellID] = true
+				playerCast[mineSpellID] = mineRemaining
 			else
-				playerCast[mineName..mineTexture] = true
+				playerCast[mineName..mineTexture] = mineRemaining
 			end
 
 			mineIndex = mineIndex + 1
@@ -327,7 +327,7 @@ local function Update(self, event, unit)
 
 			icon = icons[key]
 
-			if icon and (icon.anyUnit or (caster and icon.fromUnits and icon.fromUnits[caster]) or (playerCast[key] and icon.fromUnits and icon.fromUnits.player)) then
+			if icon and (icon.anyUnit or (caster and icon.fromUnits and icon.fromUnits[caster]) or (playerCast[key] == remaining and icon.fromUnits and icon.fromUnits.player)) then
 				resetIcon(icon, element, count, duration, remaining)
 				GUIDs[guid][key] = true
 				found[key] = true

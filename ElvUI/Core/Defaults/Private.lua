@@ -30,11 +30,6 @@ V.general = {
 	addonManager = true,
 	minimapButtonGrabber = {
 		enable = true,
-		mouseover = false,
-		showNames = true,
-		position = 'TOPRIGHT',
-		xOffset = -3,
-		yOffset = -30,
 	},
 	classColors = false,
 	minimap = {

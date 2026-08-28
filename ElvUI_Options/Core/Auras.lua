@@ -94,13 +94,13 @@ do
 	consolidateGroup.args.consolidateMax = ACH:Range(L["Max Consolidated"], L["Maximum amount of consolidated buffs shown in the popup."], 2, { min = 4, max = 32, step = 1 }, nil, nil, nil, consolidateDisabled)
 	consolidateGroup.args.consolidateDirection = ACH:Select(L["Consolidate Direction"], L["The direction the consolidated buffs will grow."], 3, C.Values.GrowthDirection, nil, nil, nil, nil, consolidateDisabled)
 	consolidateGroup.args.consolidateSize = ACH:Range(L["Consolidate Size"], L["Set the size of the icons in the consolidated buffs popup."], 4, { min = 12, max = 64, step = 1 }, nil, nil, nil, consolidateDisabled)
-	consolidateGroup.args.consolidateIconSize = ACH:Range(L["Consolidate Icon Size"], L["Set the size of the buff consolidation button."], 5, { min = 12, max = 64, step = 1 }, nil, nil, nil, consolidateDisabled)
 
 	Auras.args.buffs.args.consolidateGroup = consolidateGroup
 end
 
 Auras.args.buffs.args.size.name = function() return E.db.auras.buffs.keepSizeRatio and L["Size"] or L["Width"] end
 Auras.args.buffs.args.height.hidden = function() return E.db.auras.buffs.keepSizeRatio end
+Auras.args.buffs.args.keepSizeRatio.set = function(_, value) E.db.auras.buffs.keepSizeRatio = value if not value then E.db.auras.buffs.height = E.db.auras.buffs.size end A:UpdateHeader(A.BuffFrame) end
 Auras.args.buffs.args.statusBar.args.barColor.get = function() local t = E.db.auras.buffs.barColor local d = P.auras.buffs.barColor return t.r, t.g, t.b, t.a, d.r, d.g, d.b, d.a end
 Auras.args.buffs.args.statusBar.args.barColor.set = function(_, r, g, b) local t = E.db.auras.buffs.barColor t.r, t.g, t.b = r, g, b end
 Auras.args.buffs.args.statusBar.args.barColor.disabled = function() return not E.db.auras.buffs.barShow or E.db.auras.buffs.barColorGradient end
@@ -109,6 +109,7 @@ Auras.args.debuffs = ACH:Group(L["Debuffs"], nil, 11, nil, function(info) return
 Auras.args.debuffs.args = CopyTable(SharedOptions)
 Auras.args.debuffs.args.size.name = function() return E.db.auras.debuffs.keepSizeRatio and L["Size"] or L["Width"] end
 Auras.args.debuffs.args.height.hidden = function() return E.db.auras.debuffs.keepSizeRatio end
+Auras.args.debuffs.args.keepSizeRatio.set = function(_, value) E.db.auras.debuffs.keepSizeRatio = value if not value then E.db.auras.debuffs.height = E.db.auras.debuffs.size end A:UpdateHeader(A.DebuffFrame) end
 Auras.args.debuffs.args.statusBar.args.barColor.get = function() local t = E.db.auras.debuffs.barColor local d = P.auras.debuffs.barColor return t.r, t.g, t.b, t.a, d.r, d.g, d.b, d.a end
 Auras.args.debuffs.args.statusBar.args.barColor.set = function(_, r, g, b) local t = E.db.auras.debuffs.barColor t.r, t.g, t.b = r, g, b end
 Auras.args.debuffs.args.statusBar.args.barColor.disabled = function() return not E.db.auras.debuffs.barShow or E.db.auras.debuffs.barColorGradient end
