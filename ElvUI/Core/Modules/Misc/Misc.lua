@@ -25,6 +25,7 @@ local GetQuestItemInfo = GetQuestItemInfo
 local GetNumGuildMembers = GetNumGuildMembers
 local GetRaidRosterInfo = GetRaidRosterInfo
 local GetRepairAllCost = GetRepairAllCost
+local HideUIPanel = HideUIPanel
 local InCombatLockdown = InCombatLockdown
 local IsAddOnLoaded = IsAddOnLoaded
 local IsShiftKeyDown = IsShiftKeyDown
@@ -366,6 +367,20 @@ function M:DelayTutorialFrames()
 	E:Delay(2, M.HideTutorialFrames, M)
 end
 
+function M:HideServerNews(frame)
+	if M.serverNewsUserOpened then
+		M.serverNewsUserOpened = nil
+		return
+	end
+
+	if not E.db.general.hideServerNews then return end
+
+	frame = frame or _G.ServerNewsFrame
+	if frame and frame:IsShown() then
+		HideUIPanel(frame)
+	end
+end
+
 function M:Initialize()
 	M.Initialized = true
 
@@ -391,6 +406,21 @@ function M:Initialize()
 	M:RegisterEvent('PLAYER_ENTERING_WORLD')
 
 	M:DelayTutorialFrames()
+
+	hooksecurefunc('ShowUIPanel', function(panel)
+		if panel == _G.ServerNewsFrame then
+			M:HideServerNews(panel)
+		end
+	end)
+
+	local whatsNew = _G.GameMenuButtonWhatsNew
+	if whatsNew then
+		whatsNew:HookScript('OnClick', function()
+			M.serverNewsUserOpened = true
+		end)
+	end
+
+	M:HideServerNews()
 
 	for _, addon in next, { 'Blizzard_InspectUI' } do
 		if IsAddOnLoaded(addon) then

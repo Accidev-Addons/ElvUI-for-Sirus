@@ -52,15 +52,15 @@ function NP:Update_Name(frame, triggered)
 	local r, g, b = 1, 1, 1
 	local class = frame.UnitClass
 
-	local classColor, useClassColor
-	if class then
-		classColor = CUSTOM_CLASS_COLORS and CUSTOM_CLASS_COLORS[class] or RAID_CLASS_COLORS[class]
-		useClassColor = self.db.units[frame.UnitType].name and self.db.units[frame.UnitType].name.useClassColor
-	end
+	local nameDB = self.db.units[frame.UnitType].name
+	local useClassColor = nameDB and nameDB.useClassColor
+	local classColor = class and (CUSTOM_CLASS_COLORS and CUSTOM_CLASS_COLORS[class] or RAID_CLASS_COLORS[class])
+	local isPlayerType = frame.UnitType == "FRIENDLY_PLAYER" or frame.UnitType == "ENEMY_PLAYER"
+	local fallbackToReaction = isPlayerType and useClassColor and not classColor
 
-	if useClassColor and classColor and (frame.UnitType == "FRIENDLY_PLAYER" or frame.UnitType == "ENEMY_PLAYER") then
+	if useClassColor and classColor and isPlayerType then
 		r, g, b = classColor.r, classColor.g, classColor.b
-	elseif triggered or (not self.db.units[frame.UnitType].health.enable and not frame.isTarget) then
+	elseif triggered or fallbackToReaction or (not self.db.units[frame.UnitType].health.enable and not frame.isTarget) then
 		local reactionType = frame.UnitReaction
 		if reactionType then
 			local db = self.db.colors

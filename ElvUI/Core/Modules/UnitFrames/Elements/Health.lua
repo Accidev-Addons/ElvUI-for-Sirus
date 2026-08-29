@@ -71,6 +71,7 @@ function UF:Configure_HealthBar(frame)
 		local attachPoint = self:GetObjectAnchorPoint(frame, db.health.attachTextTo)
 		health.value:ClearAllPoints()
 		health.value:Point(db.health.position, attachPoint, db.health.position, db.health.xOffset, db.health.yOffset)
+		health.value.frequentUpdates = db.health.text_format ~= "" and 0.2 or nil
 		frame:Tag(health.value, db.health.text_format)
 	end
 
@@ -274,7 +275,6 @@ end
 function UF:PostUpdateHealth(_, _, max)
 	local parent = self:GetParent()
 	if parent.isForced then
-		-- random() throws "interval is empty" when the server hands us a zero max health
 		local cur = random(1, (type(max) == "number" and max >= 1) and max or 100)
 		parent.forcedHealth = cur
 		self:SetValue(cur)

@@ -315,6 +315,8 @@ function NP:Configure_Auras(frame, auraType)
 	local auras = frame[auraType]
 	local db = self.db.units[frame.UnitType][auras.type]
 
+	auras.anchoredIcons = 0
+
 	auras:SetWidth(db.perrow * db.size + ((db.perrow - 1) * db.spacing))
 	auras:SetHeight(db.numrows * db.size + ((db.numrows - 1) * db.spacing))
 	auras:ClearAllPoints()

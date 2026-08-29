@@ -1194,6 +1194,7 @@ function NP:TogleTestFrame(unitType)
 
 		NP:UpdateAllFrame(unitFrame, true, true)
 	else
+		NP.OnHide(ElvNP_Test, true)
 		ElvNP_Test:Hide()
 	end
 end
@@ -1255,6 +1256,7 @@ function NP:Initialize()
 	castbar.Time:SetText("3.1")
 	castbar.Icon.texture:SetTexture([[Interface\Icons\Spell_Holy_Penance]])
 	castbar:SetStatusBarColor(NP.db.colors.castColor.r, NP.db.colors.castColor.g, NP.db.colors.castColor.b)
+	NP.OnHide(ElvNP_Test, true)
 	ElvNP_Test:Hide()
 
 	NP:RegisterEvent("NAME_PLATE_CREATED")
