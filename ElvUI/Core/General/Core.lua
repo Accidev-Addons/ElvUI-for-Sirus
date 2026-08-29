@@ -43,6 +43,7 @@ local DataBars = E:GetModule('DataBars')
 local DataTexts = E:GetModule('DataTexts')
 local Layout = E:GetModule('Layout')
 local Minimap = E:GetModule('Minimap')
+local MinimapButtonGrabber = E:GetModule('MinimapButtonGrabber')
 local NamePlates = E:GetModule('NamePlates')
 local Tooltip = E:GetModule('Tooltip')
 local TotemTracker = E:GetModule('TotemTracker')
@@ -1417,6 +1418,7 @@ function E:UpdateMisc(skipCallback)
 	AFK:Toggle()
 	TotemTracker:PositionAndSize()
 	ActionBars:PositionAndSizeTotemBar()
+	MinimapButtonGrabber:UpdateSettings()
 
 	if not skipCallback then
 		E.callbacks:Fire('StaggeredUpdate')
@@ -1902,8 +1904,6 @@ function E:Initialize()
 		E.initialized = true
 
 		E:Tutorials()
-
-		E.Libs.DualSpec:EnhanceDatabase(E.data, 'ElvUI')
 
 		if E.db.general.tagUpdateRate and (E.db.general.tagUpdateRate ~= P.general.tagUpdateRate) then
 			E:TagUpdateRate(E.db.general.tagUpdateRate)

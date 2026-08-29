@@ -326,8 +326,6 @@ E.Options.args.profiles.args.private.order = 2
 
 E.Libs.AceConfig:RegisterOptionsTable('ElvProfiles', E.Options.args.profiles.args.profile)
 
-E.Libs.DualSpec:EnhanceOptions(E.Options.args.profiles.args.profile, E.data)
-
 E.Libs.AceConfig:RegisterOptionsTable('ElvPrivates', E.Options.args.profiles.args.private)
 
 E.Options.args.profiles.args.private.args.choose.confirm = function(info, value)

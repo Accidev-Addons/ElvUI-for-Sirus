@@ -17,6 +17,13 @@ function UF:Configure_ClassBar(frame)
 	bars.Holder = frame.ClassBarHolder
 	bars.origParent = frame
 
+	if not frame.USE_CLASSBAR then
+		if bars and bars.Holder then
+			bars.Holder:Hide()
+		end
+		return
+	end
+
 	--Fix height in case it is lower than the theme allows, or in case it's higher than 30px when not detached
 	if (not self.thinBorders and not E.PixelMode) and frame.CLASSBAR_HEIGHT > 0 and frame.CLASSBAR_HEIGHT < 7 then --A height of 7 means 6px for borders and just 1px for the actual power statusbar
 		frame.CLASSBAR_HEIGHT = 7
@@ -194,12 +201,18 @@ function UF:Configure_ClassBar(frame)
 		if frame.Runes and not frame:IsElementEnabled("Runes") then
 			frame:EnableElement("Runes")
 		end
+		if bars.Holder then
+			bars.Holder:Show()
+		end
 	else
 		if frame.AdditionalPower and frame:IsElementEnabled("AdditionalPower") then
 			frame:DisableElement("AdditionalPower")
 		end
 		if frame.Runes and frame:IsElementEnabled("Runes") then
 			frame:DisableElement("Runes")
+		end
+		if bars.Holder then
+			bars.Holder:Hide()
 		end
 	end
 end

@@ -74,6 +74,10 @@ function S:Ace3_EditBoxSetTextInsets(l, r, t, b)
 	if l == 0 then self:SetTextInsets(3, r, t, b) end
 end
 
+function S:Ace3_SliderSetText()
+	self:SetCursorPosition(0)
+end
+
 function S:Ace3_EditBoxSetPoint(a, b, c, d, e)
 	if d == 7 then
 		self:Point(a, b, c, 0, e)
@@ -312,6 +316,10 @@ function S:Ace3_RegisterAsWidget(widget)
 			editbox:SetTemplate()
 			editbox:Height(15)
 			editbox:Point('TOP', slider, 'BOTTOM', 0, -1)
+
+			if TYPE == 'Slider' then
+				hooksecurefunc(editbox, 'SetText', S.Ace3_SliderSetText)
+			end
 		end
 
 		local lowtext = widget.lowtext

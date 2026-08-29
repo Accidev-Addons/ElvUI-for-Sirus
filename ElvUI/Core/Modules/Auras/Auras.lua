@@ -7,7 +7,9 @@ local ElvUF = E.oUF
 local _G = _G
 local unpack = unpack
 local floor = math.floor
+local huge = math.huge
 local tinsert = tinsert
+local sort = table.sort
 local split = string.split
 
 local UnitAura = UnitAura
@@ -106,6 +108,27 @@ local MasqueButtonData = {
 }
 
 local enchantableSlots = { [1] = 16, [2] = 17 }
+
+local sortList, sortPool = {}, {}
+local consolidateSortEntries, consolidateSortPool = {}, {}
+local sortKey, sortReverse, sortSeparate = 'index', false, 0
+
+local function AuraSort(a, b)
+	if sortSeparate ~= 0 and a.isPlayer ~= b.isPlayer then
+		return a.isPlayer == (sortSeparate > 0)
+	end
+
+	local av, bv = a[sortKey], b[sortKey]
+	if av ~= bv then
+		if sortReverse then
+			return av > bv
+		end
+
+		return av < bv
+	end
+
+	return a.index < b.index
+end
 
 local CONSOLIDATED_PER_ROW = 4
 local CONSOLIDATED_MAX_BUTTONS = 32
@@ -576,29 +599,60 @@ function A:UpdateAllAuras(header)
 	-- Scan all auras
 	local db = A.db[header.auraType]
 	local priority = (db and db.priority and db.priority ~= '') and { split(',', db.priority) } or nil
-	local index = 1
-	while buttonIndex <= #header.buttons do
-		local name, rank, icon, count, debuffType, duration, expirationTime, caster, isStealable, shouldConsolidate, spellID = UnitAura('player', index, header.filter)
-		if not name then break end
 
-		local allow = true
-		if priority then
-			local isPlayer = (caster == 'player' or caster == 'vehicle')
-			local isUnit = caster and UnitIsUnit('player', caster)
-			local noDuration = (not duration or duration == 0)
-			local canDispell = (header.filter == 'HELPFUL' and isStealable) or (header.filter == 'HARMFUL' and debuffType and E:IsDispellableByMe(debuffType))
-			allow = UF:CheckFilter(name, caster, spellID, true, isPlayer, isUnit, true, noDuration, canDispell, unpack(priority))
-		end
+	local method = db.sortMethod
+	sortKey = (method == 'TIME' and 'expiration') or (method == 'NAME' and 'name') or 'index'
+	sortReverse = db.sortDir == '-'
+	sortSeparate = tonumber(db.seperateOwn) or 0
 
-		if allow and not (consolidatedMap and consolidatedMap[index]) then
-			local button = header.buttons[buttonIndex]
-			if button then
-				A:UpdateAura(button, index)
-				buttonIndex = buttonIndex + 1
+	wipe(sortList)
+
+	if buttonIndex <= #header.buttons then
+		local index = 1
+		while true do
+			local name, _, _, _, debuffType, duration, expirationTime, caster, isStealable, _, spellID = UnitAura('player', index, header.filter)
+			if not name then break end
+
+			local isPlayer = caster == 'player' or caster == 'vehicle'
+
+			local allow = true
+			if priority then
+				local isUnit = caster and UnitIsUnit('player', caster)
+				local noDuration = (not duration or duration == 0)
+				local canDispell = (header.filter == 'HELPFUL' and isStealable) or (header.filter == 'HARMFUL' and debuffType and E:IsDispellableByMe(debuffType))
+				allow = UF:CheckFilter(name, caster, spellID, true, isPlayer, isUnit, true, noDuration, canDispell, unpack(priority))
 			end
+
+			if allow and not (consolidatedMap and consolidatedMap[index]) then
+				local slot = #sortList + 1
+				local entry = sortPool[slot]
+				if not entry then
+					entry = {}
+					sortPool[slot] = entry
+				end
+
+				entry.index = index
+				entry.name = name
+				entry.expiration = (expirationTime and expirationTime > 0) and expirationTime or huge
+				entry.isPlayer = isPlayer
+
+				sortList[slot] = entry
+			end
+
+			index = index + 1
 		end
 
-		index = index + 1
+		if sortSeparate ~= 0 or sortReverse or sortKey ~= 'index' then
+			sort(sortList, AuraSort)
+		end
+
+		for i = 1, #sortList do
+			local button = header.buttons[buttonIndex]
+			if not button then break end
+
+			A:UpdateAura(button, sortList[i].index)
+			buttonIndex = buttonIndex + 1
+		end
 	end
 
 	-- Hide unused buttons
@@ -643,8 +697,8 @@ function A:UpdateConsolidate(header, numConsolidated)
 	button.auraIndex = nil
 	button.enchantIndex = nil
 
-	local iconWidth = db.consolidateIconSize or db.size
-	local iconHeight = (db.keepSizeRatio and iconWidth) or (iconWidth * db.height / db.size)
+	local iconWidth = db.size
+	local iconHeight = (db.keepSizeRatio and iconWidth) or db.height
 	button:SetSize(iconWidth, iconHeight)
 
 	local left, right, top, bottom = 0.1, 0.4, 0.2, 0.8
@@ -666,6 +720,29 @@ function A:UpdateConsolidate(header, numConsolidated)
 	button:Show()
 
 	local list = header.consolidatedList
+
+	if sortSeparate ~= 0 or sortReverse or sortKey ~= 'index' then
+		wipe(consolidateSortEntries)
+		for i = 1, #list do
+			local cIndex = list[i]
+			local name, _, _, _, _, _, expiration, caster = UnitAura('player', cIndex, 'HELPFUL')
+			local entry = consolidateSortPool[i]
+			if not entry then
+				entry = {}
+				consolidateSortPool[i] = entry
+			end
+			entry.index = cIndex
+			entry.name = name or ''
+			entry.expiration = (expiration and expiration > 0) and expiration or huge
+			entry.isPlayer = caster == 'player' or caster == 'vehicle'
+			consolidateSortEntries[i] = entry
+		end
+		sort(consolidateSortEntries, AuraSort)
+		for i = 1, #consolidateSortEntries do
+			list[i] = consolidateSortEntries[i].index
+		end
+	end
+
 	local maxButtons = math.min(db.consolidateMax or CONSOLIDATED_MAX_BUTTONS, CONSOLIDATED_MAX_BUTTONS)
 	local shown = 0
 	for i = 1, math.min(#list, maxButtons) do

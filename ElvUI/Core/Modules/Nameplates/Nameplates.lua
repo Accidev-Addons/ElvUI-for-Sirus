@@ -122,7 +122,10 @@ function NP:ResetNameplateFrameLevel(frame)
 		if frame.FrameLevelChanged then --keep how many plates we change, this is reset to 1 post-ResetNameplateFrameLevel
 			NP.CollectedFrameLevelCount = (NP.CollectedFrameLevelCount and NP.CollectedFrameLevelCount + 1) or 1
 		end
-		NP:SetPlateFrameLevel(frame, plateLevel, isTarget)
+		if isTarget or frame.FrameLevelChanged or not frame.isFrameLeveled then
+			NP:SetPlateFrameLevel(frame, plateLevel, isTarget)
+			frame.isFrameLeveled = true
+		end
 	end
 end
 
@@ -361,6 +364,7 @@ function NP:OnShow(isConfig, dontHideHighlight, unitToken)
 	frame:Show()
 
 	NP:StyleFilterUpdate(frame, "NAME_PLATE_UNIT_ADDED")
+	NP:PixelSnap(frame)
 	NP:ForEachVisiblePlate("ResetNameplateFrameLevel") --keep this after `StyleFilterUpdate`
 end
 
@@ -421,6 +425,7 @@ function NP:OnHide(isConfig)
 	frame:Hide()
 	frame.isTarget = nil
 	frame.isMouseover = nil
+	frame.isFrameLeveled = nil
 	frame.currentScale = nil
 	frame.UnitName = nil
 	frame.UnitClass = nil
@@ -431,6 +436,8 @@ function NP:OnHide(isConfig)
 	frame.RaidIconType = nil
 	frame.ThreatScale = nil
 	frame.ThreatStatus = nil
+	frame.snapX = nil
+	frame.snapY = nil
 
 	NP:StyleFilterClearVariables(frame)
 end
@@ -519,10 +526,11 @@ function NP:SetSize(frame)
 		if NP.db.clickThrough[unitType] then
 			frame:SetSize(0.001, 0.001)
 		else
+			local mult = NP.db.plateScale and E.uiscale or 1
 			if unitType == "friendly" then
-				frame:SetSize(NP.db.plateSize.friendlyWidth, NP.db.plateSize.friendlyHeight)
+				frame:SetSize(NP.db.plateSize.friendlyWidth * mult, NP.db.plateSize.friendlyHeight * mult)
 			else
-				frame:SetSize(NP.db.plateSize.enemyWidth, NP.db.plateSize.enemyHeight)
+				frame:SetSize(NP.db.plateSize.enemyWidth * mult, NP.db.plateSize.enemyHeight * mult)
 			end
 		end
 
@@ -535,8 +543,9 @@ function NP:UpdateClickableSizes()
 		NP.ClickableSizeQueued = true
 	else
 		NP.ClickableSizeQueued = nil
-		C_NamePlate_SetNamePlateEnemySize(NP.db.plateSize.enemyWidth, NP.db.plateSize.enemyHeight)
-		C_NamePlate_SetNamePlateFriendlySize(NP.db.plateSize.friendlyWidth, NP.db.plateSize.friendlyHeight)
+		local mult = NP.db.plateScale and E.uiscale or 1
+		C_NamePlate_SetNamePlateEnemySize(NP.db.plateSize.enemyWidth * mult, NP.db.plateSize.enemyHeight * mult)
+		C_NamePlate_SetNamePlateFriendlySize(NP.db.plateSize.friendlyWidth * mult, NP.db.plateSize.friendlyHeight * mult)
 	end
 end
 
@@ -884,18 +893,25 @@ end
 
 local pixelSnapper = CreateFrame("Frame")
 local healthElapsed = 0
+local snapElapsed = 0
 pixelSnapper:SetScript("OnUpdate", function(_, elapsed)
 	if not next(NP.VisiblePlates) then return end
 
 	healthElapsed = healthElapsed + elapsed
+	snapElapsed = snapElapsed + elapsed
 
 	local pollHealth = healthElapsed > 0.2
 	if pollHealth then healthElapsed = 0 end
 
-	for frame in pairs(NP.VisiblePlates) do
-		NP:PixelSnap(frame)
+	local doSnap = snapElapsed > 0.333
+	if doSnap then snapElapsed = 0 end
 
-		if pollHealth and frame.unit then
+	for frame in pairs(NP.VisiblePlates) do
+		if doSnap then
+			NP:PixelSnap(frame)
+		end
+
+		if pollHealth and frame.unit and frame.Health:IsShown() then
 			local health, maxHealth = NP:GetHealth(frame)
 			if frame.polledHealth ~= health or frame.polledMaxHealth ~= maxHealth then
 				frame.polledHealth, frame.polledMaxHealth = health, maxHealth

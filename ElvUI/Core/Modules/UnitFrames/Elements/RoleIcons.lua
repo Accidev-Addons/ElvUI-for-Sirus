@@ -5,6 +5,7 @@ local UF = E:GetModule("UnitFrames")
 local random = math.random
 --WoW API / Variables
 local UnitGroupRolesAssigned = UnitGroupRolesAssigned
+local UnitGUID = UnitGUID
 local UnitIsConnected = UnitIsConnected
 
 function UF:Construct_RoleIcon(frame)
@@ -14,6 +15,7 @@ function UF:Construct_RoleIcon(frame)
 	tex.Override = UF.UpdateRoleIcon
 	frame:RegisterEvent("PARTY_MEMBER_ENABLE", UF.UpdateRoleIcon, true)
 	frame:RegisterEvent("PARTY_MEMBER_DISABLE", UF.UpdateRoleIcon, true)
+	frame:RegisterEvent("RAID_ROSTER_UPDATE", UF.UpdateRoleIcon, true)
 
 	return tex
 end
@@ -36,6 +38,9 @@ function UF:UpdateRoleIcon(event)
 
 	local isTank, isHealer, isDamage = UnitGroupRolesAssigned(self.unit)
 	local role = isTank and "TANK" or isHealer and "HEALER" or isDamage and "DAMAGER" or "NONE"
+	if role == "NONE" then
+		role = E.GroupRoles[UnitGUID(self.unit)] or "NONE"
+	end
 	if self.isForced and role == "NONE" then
 		local rnd = random(1, 3)
 		role = rnd == 1 and "TANK" or (rnd == 2 and "HEALER" or (rnd == 3 and "DAMAGER"))

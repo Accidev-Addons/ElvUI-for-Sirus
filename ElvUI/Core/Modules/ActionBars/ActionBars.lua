@@ -829,6 +829,30 @@ do
 		PossessBarFrame = false
 	}
 
+	local editModeRightBars = { 'MultiBarRight', 'MultiBarLeft' }
+	local editModeHooked = {}
+
+	local function ClearEditModeDefault(bar)
+		local info = bar.systemInfo
+		if info and info.isInDefaultPosition then
+			info.isInDefaultPosition = false
+		end
+	end
+
+	function AB:UnanchorEditModeRightBars()
+		for _, name in next, editModeRightBars do
+			local bar = _G[name]
+			if bar and bar.UpdateSystem then
+				if not editModeHooked[bar] then
+					editModeHooked[bar] = true
+					hooksecurefunc(bar, 'UpdateSystem', ClearEditModeDefault)
+				end
+
+				ClearEditModeDefault(bar)
+			end
+		end
+	end
+
 	local currencyWatcher
 
 	local function CurrencyTab_Pulse()
@@ -899,6 +923,8 @@ do
 				end
 			end
 		end
+
+		AB:UnanchorEditModeRightBars()
 
 		if not currencyWatcher then
 			currencyWatcher = CreateFrame('Frame', 'Elv_CurrencyTabWatcher', E.HiddenFrame)
