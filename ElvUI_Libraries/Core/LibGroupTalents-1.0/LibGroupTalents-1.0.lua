@@ -66,7 +66,7 @@ Events:
 
 local TalentQuery = LibStub("LibTalentQuery-1.0")
 
-local MAJOR, MINOR = "LibGroupTalents-1.0", 10065
+local MAJOR, MINOR = "LibGroupTalents-1.0", 10066
 local lib = LibStub:NewLibrary(MAJOR, MINOR)
 if not lib then return end
 
@@ -315,11 +315,11 @@ function lib:UNIT_AURA(unit)
 	if not unit then return end
 
 	local guid = UnitGUID(unit)
-	if not guid then return end
+	if not guid or not self.roster[guid] then return end
 
 	if (not UnitIsVisible(unit) or (self.wasOffline and self.wasOffline[guid])) then
 		if (not self.outOfSight) then
-			self.outOfSight = {}
+			self.outOfSight = new()
 		end
 		self.outOfSight[guid] = true
 		self:RefreshTalentsByGUID(guid)

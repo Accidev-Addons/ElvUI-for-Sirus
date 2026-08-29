@@ -1163,16 +1163,22 @@ function B:SetBagAssignments(holder, skip)
 		end
 
 		local containerID = holder.index - 1
-		if containerID > GetNumBankSlots() then
+		local purchased = containerID <= GetNumBankSlots()
+
+		holder.shownIcon:SetShown(purchased)
+
+		if purchased then
+			SetItemButtonTextureVertexColor(holder, 1, 1, 1)
+			holder.tooltipText = ''
+
+			B:SetBagShownTexture(holder.shownIcon, B:IsBagShown(holder.BagID))
+		else
 			SetItemButtonTextureVertexColor(holder, 1, .1, .1)
 			holder.tooltipText = _G.BANK_BAG_PURCHASE
 
 			if not frame.notPurchased[containerID] then
 				frame.notPurchased[containerID] = holder
 			end
-		else
-			SetItemButtonTextureVertexColor(holder, 1, 1, 1)
-			holder.tooltipText = ''
 		end
 	end
 end
@@ -1208,10 +1214,10 @@ end
 
 function B:Container_OnEvent(event, ...)
 	if event == 'PLAYERBANKBAGSLOTS_CHANGED' then
-		local containerID, holder = next(self.notPurchased)
-		if containerID then
-			B:SetBagAssignments(holder, true)
+		for containerID, holder in next, self.notPurchased do
 			self.notPurchased[containerID] = nil
+
+			B:SetBagAssignments(holder, true)
 		end
 	elseif event == 'PLAYERBANKSLOTS_CHANGED' then
 		local slotID = ...

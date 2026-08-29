@@ -16,6 +16,7 @@ local GetItemInfoInstant = GetItemInfoInstant
 local GetLootRollItemInfo = GetLootRollItemInfo
 local GetLootRollItemLink = GetLootRollItemLink
 local GetLootRollTimeLeft = GetLootRollTimeLeft
+local GetTime = GetTime
 local IsModifiedClick = IsModifiedClick
 local IsShiftKeyDown = IsShiftKeyDown
 local RollOnLoot = RollOnLoot
@@ -108,7 +109,11 @@ local function StatusUpdate(status, elapsed)
 	end
 
 	if status.elapsed and status.elapsed > 0.1 then
-		local timeLeft = GetLootRollTimeLeft(rollID)
+		local timeLeft = GetLootRollTimeLeft(rollID) or 0
+		if bar.expires and GetTime() >= bar.expires then
+			timeLeft = 0
+		end
+
 		if timeLeft <= 0 then -- workaround for other addons auto-passing loot
 			M.CANCEL_LOOT_ROLL(bar, 'OnUpdate', rollID)
 		else
@@ -296,6 +301,11 @@ end
 function M:LootRoll_ClearBar(bar, event)
 	bar.rollID = nil
 	bar.time = nil
+	bar.expires = nil
+
+	bar:Hide()
+
+	_G.AlertFrame_FixAnchors()
 
 	if next(waitingRolls) then
 		local newRoll = waitingRolls[1]
@@ -341,6 +351,7 @@ function M:START_LOOT_ROLL(event, rollID, rollTime)
 
 	bar.rollID = rollID
 	bar.time = rollTime
+	bar.expires = GetTime() + rollTime / 1000
 
 	bar.button.link = itemLink
 	bar.button.rollID = rollID

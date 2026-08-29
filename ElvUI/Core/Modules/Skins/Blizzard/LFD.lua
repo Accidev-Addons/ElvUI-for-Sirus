@@ -7,7 +7,6 @@ local select, unpack = select, unpack
 local GetItemInfo = C_Item.GetItemInfo
 local GetItemQualityColor = GetItemQualityColor
 local GetLFGDungeonRewardLink = GetLFGDungeonRewardLink
-local GetLFGDungeonRewards = GetLFGDungeonRewards
 local GetLFGDungeonShortageRewardInfo = GetLFGDungeonShortageRewardInfo
 local hooksecurefunc = hooksecurefunc
 local find = string.find
@@ -107,6 +106,8 @@ local function LoadSkin()
 		end
 	end
 
+	local rewardSize, rewardGap, nameInset = 16, 4, 69
+
 	for i = 1, 3 do
 		local button = _G["LFDParentFrameGroupButton" .. i]
 		if button then
@@ -120,10 +121,18 @@ local function LoadSkin()
 			button.icon:CreateBackdrop()
 			button.icon:SetParent(button.icon.backdrop)
 			button.icon.backdrop:SetFrameLevel(button:GetFrameLevel() + 2)
+
+			local name = button.name
+			if name then
+				name:SetJustifyV("MIDDLE")
+				name:SetHeight(button:GetHeight())
+				name:ClearAllPoints()
+				name:Point("LEFT", button.icon, "RIGHT", 8, 0)
+				name:Point("RIGHT", button, "RIGHT", -6, 0)
+				name:SetWidth(button:GetWidth() - nameInset)
+			end
 		end
 	end
-
-	local rewardSize, rewardGap = 16, 4
 
 	local function SkinGroupButtonReward(frame, rewardIndex)
 		if not frame.isSkinned then
@@ -167,26 +176,14 @@ local function LoadSkin()
 			frame = _G[rewardName .. index]
 		end
 
-		local nameText = _G[button:GetName() .. "Name"]
-		if nameText then
-			if #shown == 0 then
-				nameText:SetWidth(0)
-			else
-				local nameLeft, btnLeft = nameText:GetLeft(), button:GetLeft()
-				local nameOffset = (nameLeft and btnLeft and (nameLeft - btnLeft)) or 83
-				nameText:Width(button:GetWidth() - nameOffset - rewardSize - rewardGap * 2)
-			end
-		end
-
 		if #shown == 0 then return end
 
-		local offset = (button:GetHeight() - (#shown * rewardSize + (#shown - 1) * rewardGap)) / 2
 		for i = 1, #shown do
 			shown[i]:ClearAllPoints()
 			if i == 1 then
-				shown[i]:Point("TOPRIGHT", button, "TOPRIGHT", -4, -offset)
+				shown[i]:Point("TOPRIGHT", button, "TOPRIGHT", -4, -4)
 			else
-				shown[i]:Point("TOP", shown[i - 1], "BOTTOM", 0, -rewardGap)
+				shown[i]:Point("RIGHT", shown[i - 1], "LEFT", -rewardGap, 0)
 			end
 		end
 	end
@@ -213,6 +210,36 @@ local function LoadSkin()
 	LFDQueueFrameRoleButtonDPS.checkButton:SetFrameLevel(LFDQueueFrameRoleButtonDPS.checkButton:GetFrameLevel() + 2)
 	S:HandleCheckBox(LFDQueueFrameRoleButtonLeader.checkButton)
 	LFDQueueFrameRoleButtonLeader.checkButton:SetFrameLevel(LFDQueueFrameRoleButtonLeader.checkButton:GetFrameLevel() + 2)
+
+	for _, roleButton in next, { LFDQueueFrameRoleButtonTank, LFDQueueFrameRoleButtonHealer, LFDQueueFrameRoleButtonDPS, LFDQueueFrameRoleButtonLeader } do
+		local incentive = roleButton.incentiveIcon
+		if incentive then
+			incentive.border:Kill()
+			incentive:CreateBackdrop("Default")
+			incentive.backdrop:SetOutside(incentive.texture)
+			incentive.texture:SetParent(incentive.backdrop)
+			incentive:ClearAllPoints()
+			incentive:Point("TOPRIGHT", roleButton, "TOPRIGHT", 4, 4)
+		end
+		if roleButton.shortageBorder then
+			roleButton.shortageBorder:Kill()
+		end
+	end
+
+	local incentiveTextures = {
+		[LFG_ROLE_SHORTAGE_RARE] = "Interface\\Icons\\INV_Misc_Coin_17",
+		[LFG_ROLE_SHORTAGE_UNCOMMON] = "Interface\\Icons\\INV_Misc_Coin_18",
+		[LFG_ROLE_SHORTAGE_PLENTIFUL] = "Interface\\Icons\\INV_Misc_Coin_19",
+	}
+	hooksecurefunc("LFG_SetRoleIconIncentive", function(roleButton, incentiveIndex)
+		local incentive = roleButton.incentiveIcon
+		local tex = incentiveIndex and incentiveTextures[incentiveIndex]
+		if not (tex and incentive and incentive.backdrop) then return end
+		SetPortraitToTexture(incentive.texture, "")
+		incentive.texture:SetTexture(tex)
+		incentive.texture:SetTexCoord(unpack(E.TexCoords))
+	end)
+	LFDQueueFrame_UpdateRoleButtons()
 
 	S:HandleDropDownBox(LFDQueueFrameTypeDropDown, 150)
 	LFDQueueFrameTypeDropDown:ClearAllPoints()
@@ -242,6 +269,20 @@ local function LoadSkin()
 		nameFrame:SetSize(118, 39)
 
 		count:SetParent(frame.backdrop)
+
+		local shortageBorder = _G[frame:GetName() .. "ShortageBorder"]
+		if shortageBorder then
+			shortageBorder:Kill()
+		end
+
+		for r = 1, 2 do
+			local roleIcon = _G[frame:GetName() .. "RoleIcon" .. r]
+			if roleIcon then
+				roleIcon:SetParent(frame.backdrop)
+				roleIcon:SetFrameLevel(frame.backdrop:GetFrameLevel() + 2)
+			end
+		end
+
 		frame.isSkinned = true
 	end
 
@@ -264,24 +305,27 @@ local function LoadSkin()
 		local dungeonID = LFDQueueFrame.type
 		if type(dungeonID) ~= "number" then return end
 
-		local _, _, _, _, _, numRewards = GetLFGDungeonRewards(dungeonID)
-		for i = 1, numRewards do
-			local frame = _G["LFDQueueFrameRandomScrollFrameChildFrameItem" .. i]
-			local name = _G["LFDQueueFrameRandomScrollFrameChildFrameItem" .. i .. "Name"]
-			SkinLFDRandomDungeonLoot(frame)
+		local i = 1
+		local frame = _G["LFDQueueFrameRandomScrollFrameChildFrameItem" .. i]
+		while frame do
+			if frame:IsShown() then
+				local name = _G["LFDQueueFrameRandomScrollFrameChildFrameItem" .. i .. "Name"]
+				SkinLFDRandomDungeonLoot(frame)
 
-			local link = GetLFGDungeonRewardLinkFix(dungeonID, i)
-			if link then
-				local _, _, quality, _, _, _, _, _, _, texture = GetItemInfo(link)
-				if quality then
-					_G["LFDQueueFrameRandomScrollFrameChildFrameItem" .. i .. "IconTexture"]:SetTexture(texture)
-					frame.backdrop:SetBackdropBorderColor(GetItemQualityColor(quality))
-					name:SetTextColor(GetItemQualityColor(quality))
+				local link = GetLFGDungeonRewardLinkFix(dungeonID, i)
+				if link then
+					local _, _, quality = GetItemInfo(link)
+					if quality then
+						frame.backdrop:SetBackdropBorderColor(GetItemQualityColor(quality))
+						name:SetTextColor(GetItemQualityColor(quality))
+					end
+				else
+					frame.backdrop:SetBackdropBorderColor(unpack(E.media.bordercolor))
+					name:SetTextColor(1, 1, 1)
 				end
-			else
-				frame.backdrop:SetBackdropBorderColor(unpack(E.media.bordercolor))
-				name:SetTextColor(1, 1, 1)
 			end
+			i = i + 1
+			frame = _G["LFDQueueFrameRandomScrollFrameChildFrameItem" .. i]
 		end
 	end)
 

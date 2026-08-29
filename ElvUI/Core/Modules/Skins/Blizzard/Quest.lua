@@ -728,6 +728,14 @@ end
 local function SkinTrackerBar(bar, color)
 	if not bar or bar.isSkinned then return end
 
+	if bar.BarFrame then
+		local parent = bar:GetParent()
+
+		bar:ClearAllPoints()
+		bar:Point("RIGHT", parent, "RIGHT", 15, 0)
+		bar:Size(180, 15)
+	end
+
 	S:HandleStatusBar(bar, color, "Transparent")
 
 	bar.isSkinned = true
@@ -768,14 +776,6 @@ local function TrackerProgressBar(module, key)
 
 	local _, maxValue = bar:GetMinMaxValues()
 	S:StatusBarColorGradient(bar, bar:GetValue(), maxValue)
-
-	local icon = bar.Icon
-	if icon and icon:IsShown() and not icon.backdrop then
-		S:HandleIcon(icon, true)
-
-		icon:ClearAllPoints()
-		icon:Point("LEFT", bar, "RIGHT", E.PixelMode and 3 or 7, 0)
-	end
 
 	local label = bar.Label
 	if label then

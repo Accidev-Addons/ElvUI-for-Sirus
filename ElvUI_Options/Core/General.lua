@@ -211,6 +211,7 @@ blizz.general.args.resurrectSound = ACH:Toggle(L["Resurrect Sound"], L["Enable t
 blizz.general.args.loot = ACH:Toggle(L["Loot Frame"], L["Enable/Disable the loot frame."], 7, nil, nil, nil, function(info) return E.private.general[info[#info]] end, function(info, value) E.private.general[info[#info]] = value E.ShowPopup = true end)
 blizz.general.args.hideZoneText = ACH:Toggle(L["Hide Zone Text"], L["Enable/Disable the on-screen zone text when you change zones."], 8, nil, nil, nil, function(info) return E.db.general[info[#info]] end, function(info, value) E.db.general[info[#info]] = value; M:ZoneTextToggle() end)
 blizz.general.args.hideTutorialFrames = ACH:Toggle(L["Hide Tutorial Frames"], L["Hides the Sirus tutorial hints, help tips and the Battle Pass splash screen."], 9, nil, nil, nil, function(info) return E.db.general[info[#info]] end, function(info, value) E.db.general[info[#info]] = value; M:HideTutorialFrames() end)
+blizz.general.args.hideServerNews = ACH:Toggle(L["Hide Server News"], L["Automatically hide the server news popup when it appears."], 10, nil, nil, nil, function(info) return E.db.general[info[#info]] end, function(info, value) E.db.general[info[#info]] = value; M:HideServerNews() end)
 blizz.general.args.spacer1 = ACH:Spacer(14, 'full')
 blizz.general.args.vehicleSeatIndicatorSize = ACH:Range(L["Vehicle Seat Indicator Size"], nil, 15, { min = 64, max = 128, step = 4 }, nil, nil, function(info, value) E.db.general[info[#info]] = value BL:UpdateVehicleFrame() end)
 blizz.general.inline = true

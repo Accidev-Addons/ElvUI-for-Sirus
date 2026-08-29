@@ -17,7 +17,7 @@
 -- @name AceTimer-3.0
 -- @release $Id$
 
-local MAJOR, MINOR = "AceTimer-3.0", 1019 -- Bump minor on changes
+local MAJOR, MINOR = "AceTimer-3.0", 1020 -- Bump minor on changes
 local AceTimer, oldminor = LibStub:NewLibrary(MAJOR, MINOR)
 
 if not AceTimer then return end -- No upgrade needed
@@ -87,12 +87,17 @@ local function new(self, loop, func, delay, ...)
 		looping = loop,
 		argsCount = select("#", ...),
 		delay = delay,
-		timeleft = delay,
 		ends = GetTime() + delay,
 		...
 	}
 
 	activeTimers[timer] = timer
+
+	local frame = AceTimer.frame
+	if not frame.nextFire or timer.ends < frame.nextFire then
+		frame.nextFire = timer.ends
+	end
+	frame:Show()
 
 	return timer
 end
@@ -173,6 +178,10 @@ function AceTimer:CancelTimer(id)
 	else
 		timer.cancelled = true
 		activeTimers[id] = nil
+		if not next(activeTimers) then
+			AceTimer.frame.nextFire = nil
+			AceTimer.frame:Hide()
+		end
 		return true
 	end
 end
@@ -309,7 +318,6 @@ elseif oldminor then
 				local newTimer
 				if timer.looping then
 					newTimer = AceTimer.ScheduleRepeatingTimer(object, func, delay, unpack(timer, 1, argsCount))
-					newTimer.timeleft = left
 					newTimer.ends = GetTime() + left
 				else
 					newTimer = AceTimer.ScheduleTimer(object, func, left, unpack(timer, 1, argsCount))
@@ -360,7 +368,12 @@ end
 -- single frame OnUpdate, compensating each repeating timer's delay to
 -- maintain a consistent average fire rate regardless of framerate.
 local pending = {}
-AceTimer.frame:SetScript("OnUpdate", function(self, elapsed)
+AceTimer.frame:SetScript("OnUpdate", function(self)
+	local now = GetTime()
+	if self.nextFire and now < self.nextFire then
+		return
+	end
+
 	local count = 0
 	for handle in next, activeTimers do
 		count = count + 1
@@ -372,31 +385,54 @@ AceTimer.frame:SetScript("OnUpdate", function(self, elapsed)
 		pending[i] = nil
 
 		local timer = activeTimers[handle]
-		if timer and not timer.cancelled then
-			if timer.timeleft > elapsed then
-				timer.timeleft = timer.timeleft - elapsed
+		if timer and not timer.cancelled and timer.ends <= now then
+			if type(timer.func) == "string" then
+				-- We manually set the unpack count to prevent issues with an arg set that contains nil and ends with nil
+				-- e.g. local t = {1, 2, nil, 3, nil} print(#t) will result in 2, instead of 5. This fixes said issue.
+				safecall(timer.object[timer.func], timer.object, unpack(timer, 1, timer.argsCount))
 			else
-				if type(timer.func) == "string" then
-					-- We manually set the unpack count to prevent issues with an arg set that contains nil and ends with nil
-					-- e.g. local t = {1, 2, nil, 3, nil} print(#t) will result in 2, instead of 5. This fixes said issue.
-					safecall(timer.object[timer.func], timer.object, unpack(timer, 1, timer.argsCount))
-				else
-					safecall(timer.func, unpack(timer, 1, timer.argsCount))
-				end
+				safecall(timer.func, unpack(timer, 1, timer.argsCount))
+			end
 
-				if timer.looping and not timer.cancelled then
-					-- Compensate delay to get a perfect average delay, even if individual times don't match up perfectly
-					-- due to fps differences
-					local time = GetTime()
-					local delay = timer.delay - (time - timer.ends)
-					-- Ensure the delay doesn't go below the threshold
-					if delay < 0.01 then delay = 0.01 end
-					timer.ends = time + delay
-					timer.timeleft = delay
-				else
-					activeTimers[timer.handle or timer] = nil
-				end
+			if timer.looping and not timer.cancelled then
+				-- Compensate delay to get a perfect average delay, even if individual times don't match up perfectly
+				-- due to fps differences
+				local time = GetTime()
+				local delay = timer.delay - (time - timer.ends)
+				-- Ensure the delay doesn't go below the threshold
+				if delay < 0.01 then delay = 0.01 end
+				timer.ends = time + delay
+			else
+				activeTimers[timer.handle or timer] = nil
 			end
 		end
 	end
+
+	local earliest
+	for _, timer in next, activeTimers do
+		if not timer.cancelled and (not earliest or timer.ends < earliest) then
+			earliest = timer.ends
+		end
+	end
+
+	self.nextFire = earliest
+
+	if not next(activeTimers) then
+		self:Hide()
+	end
 end)
+
+local earliest
+for _, timer in next, activeTimers do
+	if not timer.cancelled and (not earliest or timer.ends < earliest) then
+		earliest = timer.ends
+	end
+end
+
+AceTimer.frame.nextFire = earliest
+
+if next(activeTimers) then
+	AceTimer.frame:Show()
+else
+	AceTimer.frame:Hide()
+end

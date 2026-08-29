@@ -22,6 +22,7 @@ P.general = {
 	hideErrorFrame = true,
 	hideZoneText = false,
 	hideTutorialFrames = false,
+	hideServerNews = false,
 	enhancedPvpMessages = true,
 	objectiveFrameHeight = 480,
 	objectiveFrameAutoHide = true,
