@@ -1,1 +1,1 @@
-Not supported by Paul Volovik
+ТОЛЬНО ДЛЯ DF UI клиента!
