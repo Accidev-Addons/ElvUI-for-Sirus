@@ -195,8 +195,8 @@ local function SkinButtonRegions(button)
 
 				region:ClearAllPoints()
 				region:SetInside()
-				region:SetTexCoord(unpack(E.TexCoords))
-				button:HookScript('OnLeave', function() region:SetTexCoord(unpack(E.TexCoords)) end)
+				region:SetTexCoords()
+				button:HookScript('OnLeave', function() region:SetTexCoords() end)
 
 				region:SetDrawLayer('ARTWORK')
 				region.SetPoint = E.noop

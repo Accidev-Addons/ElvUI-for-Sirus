@@ -11,12 +11,15 @@ local GetAddOnMemoryUsage = GetAddOnMemoryUsage
 local GetCVar = GetCVar
 local GetNetStats = GetNetStats
 local GetNumAddOns = GetNumAddOns
+local HideUIPanel = HideUIPanel
 local InCombatLockdown = InCombatLockdown
 local IsAddOnLoaded = IsAddOnLoaded
 local IsControlKeyDown = IsControlKeyDown
 local IsShiftKeyDown = IsShiftKeyDown
+local PlaySound = PlaySound
 local ReloadUI = ReloadUI
 local ResetCPUUsage = ResetCPUUsage
+local ShowUIPanel = ShowUIPanel
 local UpdateAddOnCPUUsage = UpdateAddOnCPUUsage
 local UpdateAddOnMemoryUsage = UpdateAddOnMemoryUsage
 
@@ -71,6 +74,14 @@ local function OnClick()
 	elseif shiftDown and not ctrlDown then
 		collectgarbage('collect')
 		ResetCPUUsage()
+	elseif not shiftDown and not ctrlDown then
+		if GameMenuFrame:IsShown() then
+			PlaySound('igMainMenuQuit')
+			HideUIPanel(GameMenuFrame)
+		else
+			PlaySound('igMainMenuOpen')
+			ShowUIPanel(GameMenuFrame)
+		end
 	end
 end
 

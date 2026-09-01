@@ -14,15 +14,17 @@ local function SkinRows(frame)
 			button.Background:SetAlpha(0)
 
 			button:CreateBackdrop('Transparent')
+			button.backdrop.customBackdropAlpha = 0
+			button.backdrop:SetBackdropColor(0, 0, 0, 0)
 			button.backdrop:Point('TOPLEFT', 42, 0)
 			button.backdrop:Point('BOTTOMRIGHT', 0, 0)
 
 			S:HandleIcon(button.Icon, true)
+			button.Icon:SetParent(button.Icon.backdrop)
 
 			button.HighlightTexture:SetTexture(E.media.blankTex)
 			button.HighlightTexture:SetVertexColor(1, 1, 1, 0.12)
-			button.HighlightTexture:ClearAllPoints()
-			button.HighlightTexture:SetAllPoints(button)
+			button.HighlightTexture:SetInside(button.backdrop)
 
 			button.isSkinned = true
 		end

@@ -73,17 +73,17 @@ function UF:Configure_RoleIcon(frame)
 		role:Size(db.roleIcon.size)
 
 		if db.roleIcon.combatHide then
-			E:RegisterEventForObject("PLAYER_REGEN_ENABLED", frame, UF.UpdateRoleIcon)
-			E:RegisterEventForObject("PLAYER_REGEN_DISABLED", frame, UF.UpdateRoleIcon)
+			frame:RegisterEvent("PLAYER_REGEN_ENABLED", UF.UpdateRoleIcon, true)
+			frame:RegisterEvent("PLAYER_REGEN_DISABLED", UF.UpdateRoleIcon, true)
 		else
-			E:UnregisterEventForObject("PLAYER_REGEN_ENABLED", frame, UF.UpdateRoleIcon)
-			E:UnregisterEventForObject("PLAYER_REGEN_DISABLED", frame, UF.UpdateRoleIcon)
+			frame:UnregisterEvent("PLAYER_REGEN_ENABLED", UF.UpdateRoleIcon)
+			frame:UnregisterEvent("PLAYER_REGEN_DISABLED", UF.UpdateRoleIcon)
 		end
 	else
 		frame:DisableElement("GroupRoleIndicator")
 		role:Hide()
 		--Unregister combat hide events
-		E:UnregisterEventForObject("PLAYER_REGEN_ENABLED", frame, UF.UpdateRoleIcon)
-		E:UnregisterEventForObject("PLAYER_REGEN_DISABLED", frame, UF.UpdateRoleIcon)
+		frame:UnregisterEvent("PLAYER_REGEN_ENABLED", UF.UpdateRoleIcon)
+		frame:UnregisterEvent("PLAYER_REGEN_DISABLED", UF.UpdateRoleIcon)
 	end
 end

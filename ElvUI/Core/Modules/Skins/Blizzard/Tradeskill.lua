@@ -86,6 +86,10 @@ local function LoadSkin()
 	S:HandleDropDownBox(_G.TradeSkillSubClassDropDown, 140)
 	S:HandleCheckBox(_G.TradeSkillFrameAvailableFilterCheckButton)
 
+	_G.TradeSkillHighlight:SetTexture(E.media.blankTex)
+	_G.TradeSkillHighlight:SetBlendMode("BLEND")
+	_G.TradeSkillHighlight:SetAlpha(0.35)
+
 	_G.TradeSkillExpandButtonFrame:StripTextures()
 	S:HandleCollapseExpandButton(_G.TradeSkillCollapseAllButton, "+")
 
@@ -101,8 +105,6 @@ local function LoadSkin()
 		end
 	end
 
-	_G.TradeSkillHighlight:SetTexture(E.Media.Textures.Highlight)
-	_G.TradeSkillHighlight:SetAlpha(0.35)
 
 	_G.TradeSkillListScrollFrame:StripTextures()
 	S:HandleSirusScrollBar(_G.TradeSkillListScrollFrameScrollBar)
@@ -131,7 +133,7 @@ local function LoadSkin()
 		icon.backdrop:SetTemplate()
 		icon.backdrop:SetOutside(icon)
 
-		icon:SetTexCoord(unpack(E.TexCoords))
+		icon:SetTexCoords()
 		icon:SetDrawLayer("OVERLAY")
 		icon:Size(E.PixelMode and 38 or 32)
 		icon:Point("TOPLEFT", E.PixelMode and 1 or 4, -(E.PixelMode and 1 or 4))

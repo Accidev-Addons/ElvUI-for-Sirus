@@ -1,0 +1,215 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/">
+	<Button name="PlayerTitleButtonTemplate2" virtual="true">
+		<Size x="169" y="22"/>
+		<Anchors>
+			<Anchor point="LEFT">
+				<Offset x="2" y="0"/>
+			</Anchor>
+		</Anchors>
+		<Layers>
+			<Layer level="BACKGROUND">
+				<Texture name="$parentStripe" parentKey="Stripe">
+					<Anchors>
+						<Anchor point="TOPLEFT" x="1" y="0"/>
+						<Anchor point="BOTTOMRIGHT" x="0" y="0"/>
+					</Anchors>
+				</Texture>
+			</Layer>
+			<Layer level="BORDER">
+				<Texture name="$parentCheck" file="Interface\Buttons\UI-CheckBox-Check" parentKey="Check">
+					<Size x="16" y="16"/>
+					<Anchors>
+						<Anchor point="LEFT">
+							<Offset x="8" y="0"/>
+						</Anchor>
+					</Anchors>
+				</Texture>
+			</Layer>
+			<Layer level="OVERLAY">
+				<Texture name="$parentSelectedBar" parentKey="SelectedBar" file="Interface\FriendsFrame\UI-FriendsFrame-HighlightBar" alpha="0.4" alphaMode="ADD" hidden="true"/>
+			</Layer>
+		</Layers>
+		<Scripts>
+			<OnClick>
+				PlayerTitleButton_OnClick(self)
+			</OnClick>
+		</Scripts>
+		<ButtonText name="$parentTitleText" inherits="GameFontNormalSmallLeft" justifyH="LEFT" parentKey="text">
+			<Anchors>
+				<Anchor point="LEFT" relativeTo="$parentCheck" relativePoint="RIGHT" x="3" y="0"/>
+				<Anchor point="RIGHT" x="-3" y="0"/>
+			</Anchors>
+		</ButtonText>
+		<HighlightTexture file="Interface\FriendsFrame\UI-FriendsFrame-HighlightBar" alphaMode="ADD"/>
+	</Button>
+
+	<Button name="GearSetButtonTemplate2" virtual="true">
+		<Size x="169" y="44"/>
+		<Anchors>
+			<Anchor point="LEFT" x="2" y="0"/>
+		</Anchors>
+		<Layers>
+			<Layer level="BACKGROUND">
+				<Texture name="$parentStripe" parentKey="Stripe">
+					<Anchors>
+						<Anchor point="TOPLEFT" x="1" y="0"/>
+						<Anchor point="BOTTOMRIGHT" x="0" y="0"/>
+					</Anchors>
+				</Texture>
+			</Layer>
+			<Layer level="ARTWORK">
+				<FontString name="$parentText" inherits="GameFontNormalLeft" parentKey="text">
+					<Size x="98" y="38"/>
+					<Anchors>
+						<Anchor point="LEFT" x="44"/>
+					</Anchors>
+				</FontString>
+			</Layer>
+			<Layer level="OVERLAY">
+				<Texture name="$parentHighlightBar" parentKey="HighlightBar" file="Interface\FriendsFrame\UI-FriendsFrame-HighlightBar" alpha="0.4" alphaMode="ADD" hidden="true">
+					<TexCoords left="0.2" right="0.8" top="0" bottom="1"/>
+				</Texture>
+			</Layer>
+			<Layer level="OVERLAY">
+				<Texture name="$parentSelectedBar" parentKey="SelectedBar" file="Interface\FriendsFrame\UI-FriendsFrame-HighlightBar" alpha="0.4" alphaMode="ADD" hidden="true">
+					<TexCoords left="0.2" right="0.8" top="0" bottom="1"/>
+				</Texture>
+			</Layer>
+		</Layers>
+
+		<Frames>
+			<Button name="$parentDeleteButton" parentKey="DeleteButton" hidden="true">
+				<Size>
+					<AbsDimension x="14" y="14"/>
+				</Size>
+				<Anchors>
+					<Anchor point="BOTTOMRIGHT" x="-2" y="2"/>
+				</Anchors>
+				<Layers>
+					<Layer level="ARTWORK">
+						<Texture file="Interface\Buttons\UI-GroupLoot-Pass-Up" alpha="0.5" parentKey="texture"/>
+					</Layer>
+				</Layers>
+				<Scripts>
+					<OnEnter>
+						self.texture:SetAlpha(1.0)
+						GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+						GameTooltip:SetText(DELETE)
+					</OnEnter>
+					<OnLeave>
+						self.texture:SetAlpha(0.5)
+						GameTooltip_Hide()
+					</OnLeave>
+					<OnMouseDown>
+						self.texture:SetPoint("TOPLEFT", 1, -1)
+					</OnMouseDown>
+					<OnMouseUp>
+						self.texture:SetPoint("TOPLEFT", 0, 0)
+					</OnMouseUp>
+					<OnClick>
+						local dialog = StaticPopup_Show("CONFIRM_DELETE_EQUIPMENT_SET", self:GetParent().name)
+						if dialog then
+							dialog.data = self:GetParent().name
+						else
+							UIErrorsFrame:AddMessage(ERR_CLIENT_LOCKED_OUT, 1.0, 0.1, 0.1, 1.0)
+						end
+					</OnClick>
+				</Scripts>
+			</Button>
+			<Button name="$parentEditButton" parentKey="EditButton" hidden="true">
+				<Size>
+					<AbsDimension x="16" y="16"/>
+				</Size>
+				<Anchors>
+					<Anchor point="RIGHT" relativeTo="$parentDeleteButton" relativePoint="LEFT" x="-1"/>
+				</Anchors>
+				<Layers>
+					<Layer level="ARTWORK">
+						<Texture file="Interface\WorldMap\GEAR_64GREY" alpha="0.5" parentKey="texture"/>
+					</Layer>
+				</Layers>
+				<Scripts>
+					<OnEnter>
+						self.texture:SetAlpha(1.0)
+						GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+						GameTooltip:SetText(ElvUI[2]["Edit Name/Icon"])
+					</OnEnter>
+					<OnLeave>
+						self.texture:SetAlpha(0.5)
+						GameTooltip_Hide()
+					</OnLeave>
+					<OnMouseDown>
+						self.texture:SetPoint("TOPLEFT", 1, -1)
+					</OnMouseDown>
+					<OnMouseUp>
+						self.texture:SetPoint("TOPLEFT", 0, 0)
+					</OnMouseUp>
+					<OnClick>
+						GearSetButton_OnClick(self:GetParent())
+						GearManagerDialogPopup:Show()
+						GearManagerDialogPopup.isEdit = true
+						GearManagerDialogPopup.origName = self:GetParent().name
+						RecalculateGearManagerDialogPopup(self:GetParent().name, self:GetParent().icon:GetTexture())
+					</OnClick>
+				</Scripts>
+			</Button>
+		</Frames>
+		<Scripts>
+			<OnLoad>
+				self:RegisterForDrag("LeftButton")
+				self:CreateBackdrop("Default")
+				self.backdrop:SetOutside(self.icon)
+				self.icon:SetParent(self.backdrop)
+			</OnLoad>
+			<OnClick>
+				if self.name and self.name ~= "" then
+					PlaySound("igMainMenuOptionCheckBoxOn")
+					PaperDollEquipmentManagerPane.selectedSetName = self.name
+					PaperDollFrame_ClearIgnoredSlots()
+					PaperDollFrame_IgnoreSlotsForSet(self.name)
+					ElvUI[1]:GetModule('Skins'):PaperDollEquipmentManagerPane_Update()
+					GearManagerDialogPopup:Hide()
+				else
+					GearManagerDialogPopup:Show()
+					PaperDollEquipmentManagerPane.selectedSetName = nil
+					GearManagerDialogPopup.selectedSetName = nil
+					PaperDollFrame_ClearIgnoredSlots()
+					ElvUI[1]:GetModule('Skins'):PaperDollEquipmentManagerPane_Update()
+				end
+				StaticPopup_Hide("CONFIRM_SAVE_EQUIPMENT_SET")
+				StaticPopup_Hide("CONFIRM_OVERWRITE_EQUIPMENT_SET")
+			</OnClick>
+			<OnDoubleClick>
+				local name = self.name
+				if name and name ~= "" then
+					PlaySound("igCharacterInfoTab")
+					EquipmentManager_EquipSet(name)
+				end
+			</OnDoubleClick>
+			<OnEnter>
+				GearSetButton_OnEnter(self)
+			</OnEnter>
+			<OnLeave>
+				GameTooltip:Hide()
+			</OnLeave>
+			<OnDragStart>
+				if self.name and self.name ~= "" then
+					PickupEquipmentSetByName(self.name)
+				end
+			</OnDragStart>
+		</Scripts>
+		<NormalTexture name="$parentIcon" parentKey="icon">
+			<Size>
+				<AbsDimension x="36" y="36"/>
+			</Size>
+			<Anchors>
+				<Anchor point="LEFT">
+					<Offset>
+						<AbsDimension x="4" y="0"/>
+					</Offset>
+				</Anchor>
+			</Anchors>
+			<TexCoords left="0.08" right="0.92" top="0.08" bottom="0.92"/>
+		</NormalTexture>
+	</Button>
+</Ui>

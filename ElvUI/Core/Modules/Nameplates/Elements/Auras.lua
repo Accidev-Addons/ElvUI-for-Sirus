@@ -42,37 +42,21 @@ local playerFilters = {
 }
 
 function NP:UpdateTime(elapsed)
-	self.timeLeft = self.timeLeft - elapsed
-	self:SetValue(self.timeLeft)
+	local timeLeft = self.endTime - GetTime()
+	self.timeLeft = timeLeft
+	self:SetValue(timeLeft)
 
-	if self.nextUpdate > 0 then
-		self.nextUpdate = self.nextUpdate - elapsed
-		return
-	end
-
-	if self.timeLeft < 0 then
+	if timeLeft < 0 then
 		self:SetScript("OnUpdate", nil)
 		self:Hide()
 		return
 	end
 
-	local value, id, nextUpdate, remainder = E:GetTimeInfo(self.timeLeft, self.threshold, self.hhmmThreshold, self.mmssThreshold)
-	self.nextUpdate = nextUpdate
-
-	local style = E.TimeFormats[id]
-	if style then
-		local opt = id < 3 and self.roundTime
-		local which = (self.textColors and 2 or 1) + (opt and 2 or 0)
-		if self.textColors then
-			self.text:SetFormattedText(style[which], value, self.textColors[id], remainder)
-		else
-			self.text:SetFormattedText(style[which], value, remainder)
-		end
-	end
-
-	local color = self.timeColors[id]
-	if color then
-		self.text:SetTextColor(color.r, color.g, color.b)
+	if E:Cooldown_TimerEnabled(self) then
+		E.Cooldown_OnUpdate(self, elapsed)
+	else
+		self.nextUpdate = 0
+		self.text:SetText("")
 	end
 end
 
@@ -109,6 +93,7 @@ function NP:SetAura(frame, unit, index, filter, isDebuff, visible, spells)
 				local timeLeft = expiration - GetTime()
 				if timeLeft > 0 then
 					button.timeLeft = timeLeft
+					button.endTime = expiration
 					button.nextUpdate = 0
 
 					button:SetMinMaxValues(0, duration)
@@ -118,6 +103,7 @@ function NP:SetAura(frame, unit, index, filter, isDebuff, visible, spells)
 				end
 			else
 				button.timeLeft = nil
+				button.endTime = nil
 				button.text:SetText("")
 				button:SetScript("OnUpdate", nil)
 				button:SetMinMaxValues(0, 1)
@@ -129,7 +115,7 @@ function NP:SetAura(frame, unit, index, filter, isDebuff, visible, spells)
 
 			if isDebuff then
 				local color = (debuffType and DebuffTypeColor[debuffType]) or DebuffTypeColor.none
-				if button.name and (button.name == unstableAffliction or button.name == vampiricTouch) and E.myclass ~= "WARLOCK" then
+				if name and (name == unstableAffliction or name == vampiricTouch) and E.myclass ~= "WARLOCK" then
 					self:StyleFrameColor(button, 0.05, 0.85, 0.94)
 				else
 					self:StyleFrameColor(button, color.r * 0.6, color.g * 0.6, color.b * 0.6)
@@ -290,13 +276,7 @@ function NP:Construct_AuraIcon(parent, index)
 	button.text = button:CreateFontString(nil, "OVERLAY")
 
 	-- support cooldown override
-	if not button.isRegisteredCooldown then
-		button.CooldownOverride = "nameplates"
-		button.isRegisteredCooldown = true
-
-		if not E.RegisteredCooldowns.nameplates then E.RegisteredCooldowns.nameplates = {} end
-		tinsert(E.RegisteredCooldowns.nameplates, button)
-	end
+	E:RegisterCooldownOverride(button, "nameplates")
 
 	button.text:FontTemplate(LSM:Fetch("font", db.durationFont), db.durationFontSize, db.durationFontOutline)
 

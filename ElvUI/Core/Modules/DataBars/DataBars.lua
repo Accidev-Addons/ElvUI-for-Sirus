@@ -15,6 +15,16 @@ local function SetStatusBarTexture(bar, texture)
 	bar.barTexture:SetDrawLayer(layer, sublayer)
 end
 
+function DB:OnEnter()
+	if self.db.mouseover then
+		E:UIFrameFadeIn(self, 0.4, self:GetAlpha(), 1)
+	end
+
+	if self.onEnter then
+		self:onEnter()
+	end
+end
+
 function DB:OnLeave()
 	if self.db.mouseover then
 		E:UIFrameFadeOut(self, 1, self:GetAlpha(), 0)
@@ -26,7 +36,8 @@ end
 function DB:CreateBar(name, key, updateFunc, onEnter, onClick, points)
 	local holder = CreateFrame("Frame", name.."Holder", E.UIParent)
 	holder:SetTemplate(DB.db.transparent and "Transparent")
-	holder:SetScript("OnEnter", onEnter)
+	holder.onEnter = onEnter
+	holder:SetScript("OnEnter", DB.OnEnter)
 	holder:SetScript("OnLeave", DB.OnLeave)
 	holder:SetScript("OnMouseDown", onClick)
 

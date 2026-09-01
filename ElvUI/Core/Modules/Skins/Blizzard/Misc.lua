@@ -129,6 +129,23 @@ S:AddCallback('Skin_Misc', function()
 		closeButton:StripTextures()
 		S:HandleCloseButton(closeButton, staticPopup)
 
+		local bar = staticPopup.bar
+		if bar then
+			bar:StripTextures()
+			bar:SetStatusBarTexture(E.media.normTex)
+			bar:SetStatusBarColor(0.8, 0.1, 0.1)
+			bar:CreateBackdrop('Transparent')
+			E:RegisterStatusBar(bar)
+
+			bar:ClearAllPoints()
+			bar:Point('TOPLEFT', staticPopup, 'BOTTOMLEFT', 0, -1)
+			bar:Point('TOPRIGHT', staticPopup, 'BOTTOMRIGHT', 0, -1)
+
+			if bar.timeText then
+				bar.timeText:FontTemplate()
+			end
+		end
+
 		itemFrame:GetNormalTexture():Kill()
 		itemFrame:SetTemplate()
 		itemFrame:StyleButton()
@@ -137,12 +154,34 @@ S:AddCallback('Skin_Misc', function()
 			local info = _G.StaticPopupDialogs[which]
 			if not info then return nil end
 
+			closeButton:SetNormalTexture(E.ClearTexture)
+			closeButton:SetPushedTexture(E.ClearTexture)
+
 			if info.hasItemFrame then
 				if data and type(data) == 'table' then
 					if data.color then
 						itemFrame:SetBackdropBorderColor(unpack(data.color))
 					else
 						itemFrame:SetBackdropBorderColor(1, 1, 1, 1)
+					end
+				end
+			end
+
+			if info.equipmentSetButton and staticPopup.slotStorage then
+				for _, slot in next, staticPopup.slotStorage do
+					if not slot.isSkinned then
+						local iconFrame = slot.IconFrame
+						iconFrame:GetNormalTexture():Kill()
+						iconFrame:SetTemplate()
+						iconFrame:StyleButton()
+						iconFrame.IconBorder:Kill()
+						iconFrame.icon:SetTexCoords()
+						iconFrame.icon:SetInside()
+
+						slot.NameFrame.Background:Kill()
+						slot.NameFrame.Text:FontTemplate()
+
+						slot.isSkinned = true
 					end
 				end
 			end
@@ -301,6 +340,51 @@ S:AddCallback('Skin_Misc', function()
 	end
 end)
 
+S:AddCallback('Skin_TimerTracker', function()
+	if not E.private.skins.blizzard.enable or not E.private.skins.blizzard.misc then return end
+
+	local function SkinTimerBar(timer)
+		local bar = timer and timer.bar
+		if not bar or bar.isSkinned then return end
+
+		bar:StripTextures()
+		bar:SetStatusBarTexture(E.media.normTex)
+		bar:SetStatusBarColor(0.8, 0.1, 0.1)
+		bar:CreateBackdrop('Transparent')
+		E:RegisterStatusBar(bar)
+
+		if bar.timeText then
+			bar.timeText:FontTemplate()
+		end
+
+		bar.isSkinned = true
+	end
+
+	hooksecurefunc('TimerTracker_OnEvent', function(self)
+		for _, timer in next, self.timerList do
+			SkinTimerBar(timer)
+		end
+	end)
+
+	local ready = _G.TimerTracker_ReadyStatusButton
+	if not ready then return end
+
+	ready.Background:Kill()
+	ready.Glow:Kill()
+	ready:SetTemplate('Transparent')
+
+	ready.HighlightTexture:SetTexture(E.media.blankTex)
+	ready.HighlightTexture:SetVertexColor(1, 1, 1, 0.15)
+	ready.HighlightTexture:SetInside()
+
+	ready.Selection:SetTexture(E.media.blankTex)
+	ready.Selection:SetVertexColor(0, 1, 0)
+	ready.Selection:SetInside()
+
+	ready.ReadyText:FontTemplate(nil, 20, 'OUTLINE')
+	ready.ReadyTextDescription:FontTemplate()
+end)
+
 S:AddCallback("Skin_ChooseItem", function()
 	if not E.private.skins.blizzard.enable or not E.private.skins.blizzard.chooseitem then return end
 
@@ -439,7 +523,7 @@ S:AddCallback("Skin_ItemBrowser", function()
 				end
 				if cell.Icon then
 					cell.Icon:SetDrawLayer("BORDER")
-					cell.Icon:SetTexCoord(unpack(E.TexCoords))
+					cell.Icon:SetTexCoords()
 					cell.Icon:SetSize(34, 34)
 					cell.Icon:CreateBackdrop("Default")
 					if cell.Icon.backdrop then

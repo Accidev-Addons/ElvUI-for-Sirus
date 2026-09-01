@@ -1,7 +1,8 @@
 local E, L, V, P, G = unpack(ElvUI)
 local B = E:GetModule('Bags')
-local D = B:NewModule('Deconstruct', 'AceHook-3.0', 'AceEvent-3.0')
+local D = B:NewModule('Deconstruct', 'AceHook-3.0', 'AceEvent-3.0', 'AceComm-3.0')
 local LIS = E.Libs.ItemSearch
+local LCG = E.Libs.CustomGlow
 
 local _G = _G
 local ipairs, pairs, pcall, select = ipairs, pairs, pcall, select
@@ -26,9 +27,6 @@ local GetTime = GetTime
 local GetTradeTargetItemLink = GetTradeTargetItemLink
 
 local C_Item_GetItemInfo = C_Item.GetItemInfo
-
-local ShowOverlayGlow = ActionButton_ShowOverlayGlow
-local HideOverlayGlow = ActionButton_HideOverlayGlow
 
 local ITEM_DISENCHANT_ANY_SKILL = ITEM_DISENCHANT_ANY_SKILL
 local ITEM_DISENCHANT_MIN_SKILL = ITEM_DISENCHANT_MIN_SKILL
@@ -558,7 +556,7 @@ function D:ApplyDeconstruct(itemLink, itemId, spell, spellType, button, bag, slo
 	local targetKey = format('%s:%s:%s:%s:%s:%s', bag, slotID, itemId, spellType, tostring(spell), tostring(button))
 
 	if frame.TargetKey == targetKey and frame:IsShown() then
-		if ShowOverlayGlow then ShowOverlayGlow(frame) end
+		LCG.ShowOverlayGlow(frame)
 		return
 	end
 
@@ -573,9 +571,11 @@ function D:ApplyDeconstruct(itemLink, itemId, spell, spellType, button, bag, slo
 	frame:SetAllPoints(button)
 	frame:Show()
 
-	E.Libs.CustomGlow.PixelGlow_Start(frame, E.media.customGlowColor, 8, 0.25, nil, 2, 0, 0, false, 'Deconstruct')
+	if E.db.general.customGlow.style ~= 'Pixel Glow' then
+		E.Libs.CustomGlow.PixelGlow_Start(frame, E.media.customGlowColor, 8, 0.25, nil, 2, 0, 0, false, 'Deconstruct')
+	end
 
-	if ShowOverlayGlow then ShowOverlayGlow(frame) end
+	LCG.ShowOverlayGlow(frame)
 end
 
 function D:DeconstructParser()
@@ -621,9 +621,9 @@ function D:UpdateDeconstructButton(button)
 	B:SetButtonTexture(button, D.DeconstructMode and DE_TEXTURE_ACTIVE or DE_TEXTURE)
 
 	if D.DeconstructMode then
-		if ShowOverlayGlow then ShowOverlayGlow(button) end
+		LCG.ShowOverlayGlow(button)
 	else
-		if HideOverlayGlow then HideOverlayGlow(button) end
+		LCG.HideOverlayGlow(button)
 	end
 
 	button.ttText2 = format(L["Deconstruct Mode Desc"]..'\n'..L["Current state: %s."], D:GetDeconMode())
@@ -720,7 +720,7 @@ function D:ConstructRealDecButton()
 
 	frame.OnLeave = function(self)
 		if D.DeconstructMode and self:IsMouseOver() then
-			if ShowOverlayGlow then ShowOverlayGlow(self) end
+			LCG.ShowOverlayGlow(self)
 			return
 		end
 
@@ -735,7 +735,7 @@ function D:ConstructRealDecButton()
 			self:SetAlpha(1)
 
 			if GameTooltip then GameTooltip:Hide() end
-			if HideOverlayGlow then HideOverlayGlow(self) end
+			LCG.HideOverlayGlow(self)
 
 			self:Hide()
 		end
@@ -746,11 +746,11 @@ function D:ConstructRealDecButton()
 		GameTooltip:ClearLines()
 		GameTooltip:SetBagItem(self.Bag, self.Slot)
 
-		if ShowOverlayGlow then ShowOverlayGlow(self) end
+		LCG.ShowOverlayGlow(self)
 
 		E:Delay(0, function()
-			if self:IsShown() and self:IsMouseOver() and ShowOverlayGlow then
-				ShowOverlayGlow(self)
+			if self:IsShown() and self:IsMouseOver() then
+				LCG.ShowOverlayGlow(self)
 			end
 		end)
 	end
@@ -856,8 +856,8 @@ function D:LEARNED_SPELL_IN_TAB()
 	D:UpdateButtonState()
 end
 
-function D:CHAT_MSG_ADDON(_, prefix, msg)
-	if prefix == 'INVOKE_CLIENT_BUTTON' and msg and strfind(msg, tostring(D.PrimeDEID), 1, true) then
+function D:INVOKE_CLIENT_BUTTON(_, msg)
+	if msg and strfind(msg, tostring(D.PrimeDEID), 1, true) then
 		D:UpdateProfessions()
 		D:UpdateButtonState()
 	end
@@ -933,7 +933,7 @@ function D:InitializeExternal()
 
 		D:RegisterEvent('BAG_UPDATE')
 		D:RegisterEvent('SKILL_LINES_CHANGED')
-		D:RegisterEvent('CHAT_MSG_ADDON')
+		D:RegisterComm('INVOKE_CLIENT_BUTTON', 'INVOKE_CLIENT_BUTTON')
 		D:RegisterEvent('SPELLS_CHANGED')
 		D:RegisterEvent('LEARNED_SPELL_IN_TAB')
 

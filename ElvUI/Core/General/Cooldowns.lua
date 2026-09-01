@@ -270,17 +270,7 @@ function E:ToggleCooldown(cooldown, switch)
 	end
 end
 
--- USED BY WEAKAURAS
-function E:RegisterCooldown(cooldown, module)
-	if not cooldown.isHooked then
-		hooksecurefunc(cooldown, "SetCooldown", E.OnSetCooldown)
-
-		if cooldown.Pause then
-			hooksecurefunc(cooldown, "Pause", E.OnPauseCooldown)
-			hooksecurefunc(cooldown, "Resume", E.OnResumeCooldown)
-		end
-	end
-
+function E:RegisterCooldownOverride(cooldown, module)
 	E:ToggleCooldown(cooldown, true)
 
 	if not cooldown.isRegisteredCooldown then
@@ -297,6 +287,20 @@ function E:RegisterCooldown(cooldown, module)
 		tinsert(E.RegisteredCooldowns[module], cooldown)
 		cooldown.isRegisteredCooldown = true
 	end
+end
+
+-- USED BY WEAKAURAS
+function E:RegisterCooldown(cooldown, module)
+	if not cooldown.isHooked then
+		hooksecurefunc(cooldown, "SetCooldown", E.OnSetCooldown)
+
+		if cooldown.Pause then
+			hooksecurefunc(cooldown, "Pause", E.OnPauseCooldown)
+			hooksecurefunc(cooldown, "Resume", E.OnResumeCooldown)
+		end
+	end
+
+	E:RegisterCooldownOverride(cooldown, module)
 end
 
 function E:ToggleBlizzardCooldownText()

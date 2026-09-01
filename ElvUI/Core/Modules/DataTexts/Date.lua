@@ -8,9 +8,7 @@ local FormatShortDate = FormatShortDate
 local displayString
 
 local function OnClick()
-    if not E:AlertCombat() then
-        _G.GameTimeFrame:Click()
-    end
+    _G.GameTimeFrame:Click()
 end
 
 local function OnEvent(self)

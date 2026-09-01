@@ -2,7 +2,6 @@ local E, L, V, P, G = unpack(ElvUI)
 local S = E:GetModule("Skins")
 
 local _G = _G
-local unpack = unpack
 
 local function LoadSkin()
 	if not E.private.skins.blizzard.enable or not E.private.skins.blizzard.guild then return end
@@ -28,7 +27,7 @@ local function LoadSkin()
 		tab:SetTemplate("Default", true)
 
 		tab.Icon:SetInside()
-		tab.Icon:SetTexCoord(unpack(E.TexCoords))
+		tab.Icon:SetTexCoords()
 	end
 
 	for i = 1, 3 do
@@ -289,7 +288,7 @@ local function LoadSkin()
 	for i = 1,15 do
 		local btn = _G["GuildRosterContainerButton"..i]
 		if btn then
-			btn.CategoryIcon:SetTexCoord(unpack(E.TexCoords))
+			btn.CategoryIcon:SetTexCoords()
 
 		end
 
@@ -307,7 +306,7 @@ local function LoadSkin()
 		tab:StyleButton()
 		tab:SetTemplate("Default", true)
 		tab.Icon:SetInside()
-		tab.Icon:SetTexCoord(unpack(E.TexCoords))
+		tab.Icon:SetTexCoords()
 	end
 
 	if LookingForGuildFrameGuildCardsFirstCardRequestJoin then

@@ -18,7 +18,7 @@ function NP:GetHealthColor(frame)
 	local scale = 1
 
 	local class = frame.UnitClass
-	local classColor = CUSTOM_CLASS_COLORS and CUSTOM_CLASS_COLORS[class] or RAID_CLASS_COLORS[class]
+	local classColor = E:ClassColor(class)
 	local useClassColor = NP.db.units[frame.UnitType].health.useClassColor
 	if classColor and ((frame.UnitType == "FRIENDLY_PLAYER" and useClassColor) or (frame.UnitType == "ENEMY_PLAYER" and useClassColor)) then
 		r, g, b = classColor.r, classColor.g, classColor.b

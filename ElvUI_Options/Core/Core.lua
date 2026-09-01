@@ -75,25 +75,26 @@ do
 end
 
 do
-	C.StateSwitchGetText = function(_, TEXT)
+	C.StateSwitchGetText = function(_, TEXT, list)
+		local specialFilters = (type(list) == "table" and list) or E.global.unitframe.specialFilters
 		local friend, enemy = strmatch(TEXT, "^Friendly:([^,]*)"), strmatch(TEXT, "^Enemy:([^,]*)")
-		local text, blockB, blockS, blockT = friend or enemy or TEXT
-		local SF, localized = E.global.unitframe.specialFilters[text], L[text]
-		if SF and localized and text:match("^block") then blockB, blockS, blockT = localized:match("^%[(.-)](%s?)(.+)") end
-		local filterText = (blockB and format("|cFF999999%s|r%s%s", blockB, blockS, blockT)) or localized or text
-		return (friend and format("|cFF33FF33%s|r %s", L["Friend"], filterText)) or (enemy and format("|cFFFF3333%s|r %s", ENEMY, filterText)) or filterText
+		local text = friend or enemy or TEXT
+		local SF, localized = specialFilters[text], L[text]
+		local blockText = SF and localized and text:match("^block") and localized:gsub("^%[.-]%s?", "")
+		local filterText = (blockText and format("|cFF999999%s|r %s", L["BLOCK"], blockText)) or localized or text
+		return (friend and format("|cFF33FF33%s|r %s", L["FRIEND"], filterText)) or (enemy and format("|cFFFF3333%s|r %s", L["ENEMY"], filterText)) or filterText
 	end
 
-	local function filterMatch(s,v)
+	C.FilterMatch = function(s,v)
 		local m1, m2, m3, m4 = "^"..v.."$", "^"..v..",", ","..v.."$", ","..v..","
 		return (strmatch(s, m1) and m1) or (strmatch(s, m2) and m2) or (strmatch(s, m3) and m3) or (strmatch(s, m4) and v..",")
 	end
 
-	C.SetFilterPriority = function(db, groupName, auraType, value, remove, movehere, friendState)
-		if not auraType or not value then return end
+	C.SetFilterPriority = function(db, groupName, auraType, value, remove, movehere, friendState, allowFriendState)
+		if not db or not auraType or not value then return end
 		local filter = db[groupName] and db[groupName][auraType] and db[groupName][auraType].priority
 		if not filter then return end
-		local found = filterMatch(filter, E:EscapeString(value))
+		local found = C.FilterMatch(filter, E:EscapeString(value))
 		if found and movehere then
 			local tbl, sv, sm = {strsplit(",",filter)}
 			for i in ipairs(tbl) do
@@ -103,11 +104,11 @@ do
 			tremove(tbl, sm)
 			tinsert(tbl, sv, movehere)
 			db[groupName][auraType].priority = tconcat(tbl,",")
-		elseif found and friendState then
+		elseif found and friendState and allowFriendState then
 			local realValue = strmatch(value, "^Friendly:([^,]*)") or strmatch(value, "^Enemy:([^,]*)") or value
-			local friend = filterMatch(filter, E:EscapeString("Friendly:"..realValue))
-			local enemy = filterMatch(filter, E:EscapeString("Enemy:"..realValue))
-			local default = filterMatch(filter, E:EscapeString(realValue))
+			local friend = C.FilterMatch(filter, E:EscapeString("Friendly:"..realValue))
+			local enemy = C.FilterMatch(filter, E:EscapeString("Enemy:"..realValue))
+			local default = C.FilterMatch(filter, E:EscapeString(realValue))
 
 			local state =
 				(friend and (not enemy) and format("%s%s","Enemy:",realValue))					--[x] friend [ ] enemy: > enemy
@@ -117,7 +118,7 @@ do
 			or	(friend and enemy and realValue)												--[x] friend [x] enemy: > default
 
 			if state then
-				local stateFound = filterMatch(filter, E:EscapeString(state))
+				local stateFound = C.FilterMatch(filter, E:EscapeString(state))
 				if not stateFound then
 					local tbl, sv = {strsplit(",",filter)}
 					for i in ipairs(tbl) do

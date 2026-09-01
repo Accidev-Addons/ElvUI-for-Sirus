@@ -2,7 +2,6 @@ local E, L, V, P, G = unpack(ElvUI)
 local S = E:GetModule("Skins")
 
 local _G = _G
-local unpack = unpack
 
 local function LoadSkin()
 	if not E.private.skins.blizzard.enable or not E.private.skins.blizzard.macro then return end
@@ -41,7 +40,7 @@ local function LoadSkin()
 	MacroFrameSelectedMacroButton:StyleButton(nil, true)
 	MacroFrameSelectedMacroButton:GetNormalTexture():SetTexture(nil)
 	MacroFrameSelectedMacroButton:SetTemplate("Default")
-	MacroFrameSelectedMacroButtonIcon:SetTexCoord(unpack(E.TexCoords))
+	MacroFrameSelectedMacroButtonIcon:SetTexCoords()
 	MacroFrameSelectedMacroButtonIcon:SetInside()
 
 	for i = 1, MAX_ACCOUNT_MACROS do
@@ -55,7 +54,7 @@ local function LoadSkin()
 		end
 
 		if buttonIcon then
-			buttonIcon:SetTexCoord(unpack(E.TexCoords))
+			buttonIcon:SetTexCoords()
 			buttonIcon:SetInside()
 		end
 	end

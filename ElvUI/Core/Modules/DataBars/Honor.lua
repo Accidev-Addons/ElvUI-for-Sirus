@@ -2,10 +2,7 @@ local E, L, V, P, G = unpack(ElvUI)
 local DB = E:GetModule('DataBars')
 
 local format = format
-local ipairs = ipairs
-local pcall = pcall
 
-local CreateFrame = CreateFrame
 local UnitIsPVP = UnitIsPVP
 local GameTooltip = GameTooltip
 local TogglePVPUIFrame = TogglePVPUIFrame
@@ -18,32 +15,6 @@ local RATED_BATTLEGROUND_NORANK = RATED_BATTLEGROUND_NORANK
 local RATED_BATTLEGROUND_TOOLTIP_NEXTRANK = RATED_BATTLEGROUND_TOOLTIP_NEXTRANK
 
 local MAX_RBG_RANK = 14
-local HonorEvents = { 'PLAYER_ENTERING_WORLD', 'PLAYER_FLAGS_CHANGED', 'UNIT_FACTION', 'PLAYER_BATTLEGROUND_STATS_UPDATE' }
-local eventFrame
-
-local function RegisterHonorEvents()
-	if not eventFrame then return end
-
-	for _, event in ipairs(HonorEvents) do
-		pcall(eventFrame.RegisterEvent, eventFrame, event)
-
-		if eventFrame.RegisterCustomEvent and not eventFrame:IsEventRegistered(event) then
-			pcall(eventFrame.RegisterCustomEvent, eventFrame, event)
-		end
-	end
-end
-
-local function UnregisterHonorEvents()
-	if not eventFrame then return end
-
-	for _, event in ipairs(HonorEvents) do
-		pcall(eventFrame.UnregisterEvent, eventFrame, event)
-
-		if eventFrame.UnregisterCustomEvent then
-			pcall(eventFrame.UnregisterCustomEvent, eventFrame, event)
-		end
-	end
-end
 
 local function GetHonorInfo()
 	local title, base, rank, _, cur, _, _, _, max = GetRatedBattlegroundRankInfo()
@@ -108,10 +79,6 @@ function DB:HonorBar_Update(event, unit)
 end
 
 function DB:HonorBar_OnEnter()
-	if self.db.mouseover then
-		E:UIFrameFadeIn(self, 0.4, self:GetAlpha(), 1)
-	end
-
 	local title, rank, cur, max, value, range, maxRank = GetHonorInfo()
 
 	GameTooltip:ClearLines()
@@ -142,13 +109,19 @@ function DB:HonorBar_Toggle()
 	if bar.db.enable then
 		E:EnableMover(bar.holder.mover.name)
 
-		RegisterHonorEvents()
+		E:RegisterEventForObject('PLAYER_ENTERING_WORLD', bar, DB.HonorBar_Update)
+		E:RegisterEventForObject('PLAYER_FLAGS_CHANGED', bar, DB.HonorBar_Update)
+		E:RegisterEventForObject('UNIT_FACTION', bar, DB.HonorBar_Update)
+		E:RegisterEventForObject('PLAYER_BATTLEGROUND_STATS_UPDATE', bar, DB.HonorBar_Update)
 
 		DB:HonorBar_Update()
 	else
 		E:DisableMover(bar.holder.mover.name)
 
-		UnregisterHonorEvents()
+		E:UnregisterEventForObject('PLAYER_ENTERING_WORLD', bar, DB.HonorBar_Update)
+		E:UnregisterEventForObject('PLAYER_FLAGS_CHANGED', bar, DB.HonorBar_Update)
+		E:UnregisterEventForObject('UNIT_FACTION', bar, DB.HonorBar_Update)
+		E:UnregisterEventForObject('PLAYER_BATTLEGROUND_STATS_UPDATE', bar, DB.HonorBar_Update)
 
 		DB:SetVisibility(bar)
 	end
@@ -161,9 +134,6 @@ function DB:HonorBar()
 	Honor.ShouldHide = function()
 		return (DB.db.honor.hideOutsidePvP and not UnitIsPVP('player')) or (DB.db.honor.hideBelowMaxLevel and not E:XPIsLevelMax())
 	end
-
-	eventFrame = CreateFrame('Frame')
-	eventFrame:SetScript('OnEvent', function(_, event, unit) DB:HonorBar_Update(event, unit) end)
 
 	E:CreateMover(Honor.holder, 'HonorBarMover', L["Honor Bar"], nil, nil, nil, nil, nil, 'databars,honor')
 

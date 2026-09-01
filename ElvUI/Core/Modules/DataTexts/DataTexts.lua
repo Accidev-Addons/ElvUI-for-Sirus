@@ -273,7 +273,9 @@ function DT:BuildPanelFunctions(name, obj)
 
 	local function UpdateColor(_, Hex)
 		hex = Hex
-		LDB.callbacks:Fire('LibDataBroker_AttributeChanged_'..name, name, nil, obj.text, obj)
+		if panel then
+			UpdateText(nil, nil, nil, nil, obj)
+		end
 	end
 
 	local function OnEvent(dt, event)

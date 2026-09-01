@@ -19,6 +19,8 @@ local function LoadSkin()
 	end
 
 	if TradeRecipientBG then TradeRecipientBG:SetAlpha(0) end
+	if TradeRecipientLeftBorder then TradeRecipientLeftBorder:Kill() end
+	if TradeRecipientBotLeftCorner then TradeRecipientBotLeftCorner:Kill() end
 
 	for _, inset in next, {
 		TradeFrame.RecipientItemsInset,
@@ -39,9 +41,15 @@ local function LoadSkin()
 	S:HandleButton(TradeFrameTradeButton, true)
 	S:HandleButton(TradeFrameCancelButton, true)
 
-	if TradePlayerInputMoneyFrameGold then S:HandleEditBox(TradePlayerInputMoneyFrameGold) end
-	if TradePlayerInputMoneyFrameSilver then S:HandleEditBox(TradePlayerInputMoneyFrameSilver) end
-	if TradePlayerInputMoneyFrameCopper then S:HandleEditBox(TradePlayerInputMoneyFrameCopper) end
+	for _, box in next, { TradePlayerInputMoneyFrameGold, TradePlayerInputMoneyFrameSilver, TradePlayerInputMoneyFrameCopper } do
+		S:HandleEditBox(box)
+
+		if box.backdrop then
+			box.backdrop:ClearAllPoints()
+			box.backdrop:SetPoint('TOPLEFT', box, 'TOPLEFT', -4, 0)
+			box.backdrop:SetPoint('BOTTOMRIGHT', box, 'BOTTOMRIGHT', 4, 0)
+		end
+	end
 
 	for i = 1, MAX_TRADE_ITEMS do
 		local player = _G["TradePlayerItem"..i]
@@ -62,7 +70,7 @@ local function LoadSkin()
 		end
 		if playerButtonIcon then
 			playerButtonIcon:SetInside()
-			playerButtonIcon:SetTexCoord(unpack(E.TexCoords))
+			playerButtonIcon:SetTexCoords()
 		end
 
 		if recipientButton then
@@ -73,7 +81,7 @@ local function LoadSkin()
 		end
 		if recipientButtonIcon then
 			recipientButtonIcon:SetInside()
-			recipientButtonIcon:SetTexCoord(unpack(E.TexCoords))
+			recipientButtonIcon:SetTexCoords()
 		end
 
 		if playerButton then

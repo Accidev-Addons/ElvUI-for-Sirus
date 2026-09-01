@@ -12,7 +12,6 @@ local IsControlKeyDown = IsControlKeyDown
 local UnitIsFriend = UnitIsFriend
 local UnitIsUnit = UnitIsUnit
 local UnitCanAttack = UnitCanAttack
-local RAID_CLASS_COLORS = RAID_CLASS_COLORS
 
 local function OnClick(self)
 	local mod = E.db.unitframe.auraBlacklistModifier
@@ -88,11 +87,11 @@ function UF:Configure_AuraBars(frame)
 		local attachTo = frame
 
 		if E:CheckClassColor(buffColor.r, buffColor.g, buffColor.b) then
-			buffColor = E.myclass == "PRIEST" and E.PriestColors or (CUSTOM_CLASS_COLORS and CUSTOM_CLASS_COLORS[E.myclass] or RAID_CLASS_COLORS[E.myclass])
+			buffColor = E:ClassColor(E.myclass, true) or buffColor
 		end
 
 		if E:CheckClassColor(debuffColor.r, debuffColor.g, debuffColor.b) then
-			debuffColor = E.myclass == "PRIEST" and E.PriestColors or (CUSTOM_CLASS_COLORS and CUSTOM_CLASS_COLORS[E.myclass] or RAID_CLASS_COLORS[E.myclass])
+			debuffColor = E:ClassColor(E.myclass, true) or debuffColor
 		end
 
 		if db.aurabar.attachTo == "BUFFS" then

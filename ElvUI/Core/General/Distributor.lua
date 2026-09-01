@@ -18,7 +18,11 @@ local EXPORT_PREFIX = '!E1!' -- also in Options StyleFilters
 local REQUEST_PREFIX = 'ELVUI_REQUEST'
 local REPLY_PREFIX = 'ELVUI_REPLY'
 local TRANSFER_PREFIX = 'ELVUI_TRANSFER'
+local TRANSFER_LENGTH_PREFIX = 'ELVUI_LENGTH'
 local TRANSFER_COMPLETE_PREFIX = 'ELVUI_COMPLETE'
+
+local DEFLATE_TOKEN = 'D'
+local DEFLATE_LENGTH = '^'..DEFLATE_TOKEN..'(%d+)$'
 
 local ACECOMMPREFIXES = {
 	[TRANSFER_PREFIX.."\001"] = true,
@@ -27,11 +31,12 @@ local ACECOMMPREFIXES = {
 }
 
 -- Set compression
-LibDeflate.compressLevel = { level = 5 }
+D.CompressLevel = { level = 5 }
 
 -- The active downloads
 local Downloads = {}
 local Uploads = {}
+local Receiving
 
 --Keys that should not be exported
 D.blacklistedKeys = {
@@ -189,7 +194,8 @@ function D:Distribute(target, otherServer, dataKey)
 
 	local serialString = D:Serialize(data)
 	local length = strlen(serialString)
-	local message = format('%s:%d:%s:%s', profileKey, length, target, dataKey or 'profile')
+
+	local message = format('%s:%d:%s:%s:%s', profileKey, length, target, dataKey or 'profile', DEFLATE_TOKEN)
 
 	Uploads[profileKey] = { serialString = serialString, target = target }
 
@@ -222,12 +228,22 @@ function D:CHAT_MSG_ADDON(_, prefix, message, _, sender)
 	D.StatusBar:SetValue(current)
 end
 
+local function UploadProgress(_, sent, total)
+	if not (total and total > 0) then return end
+
+	D.StatusBar:SetValue(sent)
+
+	if sent >= total then
+		E:StaticPopupSpecial_Hide(D.StatusBar)
+	end
+end
+
 function D:OnCommReceived(prefix, msg, dist, sender)
 	if prefix == REQUEST_PREFIX then
-		local profile, length, sendTo, dataKey = split(':', msg)
+		local profile, length, sendTo, dataKey, deflate = split(':', msg)
 		if dist ~= 'WHISPER' and sendTo ~= E.myname then return end
 
-		if D.StatusBar:IsShown() then
+		if Receiving then
 			D:SendCommMessage(REPLY_PREFIX, profile..':NO', dist, sender)
 
 			return
@@ -244,14 +260,20 @@ function D:OnCommReceived(prefix, msg, dist, sender)
 
 		if not textString then return end
 
+		local deflateLength = deflate and tonumber(strmatch(deflate, DEFLATE_LENGTH))
+		local useDeflate = deflateLength ~= nil or deflate == DEFLATE_TOKEN
+		local transferLength = deflateLength or tonumber(length)
+
 		local response = E.PopupDialogs.DISTRIBUTOR_RESPONSE
 		response.text = textString
 		response.OnAccept = function()
-			D.StatusBar:SetMinMaxValues(0, length)
+			Receiving = sender
+
+			D.StatusBar:SetMinMaxValues(0, transferLength)
 			D.StatusBar:SetValue(0)
 			D.StatusBar.text:SetFormattedText(L["Data From: %s"], sender)
 			E:StaticPopupSpecial_Show(D.StatusBar)
-			D:SendCommMessage(REPLY_PREFIX, profile..':YES', dist, sender)
+			D:SendCommMessage(REPLY_PREFIX, (useDeflate and format('%s:YES:%s', profile, DEFLATE_TOKEN)) or (profile..':YES'), dist, sender)
 		end
 		response.OnCancel = function()
 			D:SendCommMessage(REPLY_PREFIX, profile..':NO', dist, sender)
@@ -261,34 +283,80 @@ function D:OnCommReceived(prefix, msg, dist, sender)
 
 		Downloads[sender] = {
 			current = 0,
-			length = tonumber(length),
+			length = transferLength,
 			profile = profile,
-			dataKey = dataKey
+			dataKey = dataKey,
+			deflate = useDeflate
 		}
 
 		D:RegisterComm(TRANSFER_PREFIX)
+		D:RegisterComm(TRANSFER_LENGTH_PREFIX)
 	elseif prefix == REPLY_PREFIX then
 		D:UnregisterComm(REPLY_PREFIX)
 		E:StaticPopup_Hide('DISTRIBUTOR_WAITING')
 
-		local profileKey, response = split(':', msg)
+		local profileKey, response, deflate = split(':', msg)
 		local upload = Uploads[profileKey]
 		if upload and response == 'YES' then
 			D:RegisterComm(TRANSFER_COMPLETE_PREFIX)
-			D:SendCommMessage(TRANSFER_PREFIX, upload.serialString, dist, upload.target)
+
+			local transferString, deflated = upload.serialString, false
+			if deflate == DEFLATE_TOKEN then
+				local compressed = LibDeflate:CompressDeflate(transferString, D.CompressLevel)
+				local encoded = compressed and LibDeflate:EncodeForWoWAddonChannel(compressed)
+
+				if encoded then
+					transferString, deflated = encoded, true
+				end
+			end
+
+			local transferLength = strlen(transferString)
+
+			D.StatusBar:SetMinMaxValues(0, transferLength)
+			D.StatusBar:SetValue(0)
+			D.StatusBar.text:SetFormattedText(L["Data To: %s"], upload.target)
+			E:StaticPopupSpecial_Show(D.StatusBar)
+
+			D:SendCommMessage(TRANSFER_LENGTH_PREFIX, (deflated and format('%s%d', DEFLATE_TOKEN, transferLength)) or format('%d', transferLength), dist, upload.target)
+			D:SendCommMessage(TRANSFER_PREFIX, transferString, dist, upload.target, 'BULK', UploadProgress)
 		else
 			E:StaticPopup_Show('DISTRIBUTOR_REQUEST_DENIED')
 		end
 
 		Uploads[profileKey] = nil
+	elseif prefix == TRANSFER_LENGTH_PREFIX then
+		local download = Downloads[sender]
+		if not download then return end
+
+		local deflateLength = tonumber(strmatch(msg, DEFLATE_LENGTH))
+		local transferLength = deflateLength or tonumber(msg)
+		if not transferLength then return end
+
+		download.deflate = deflateLength ~= nil
+		download.length = transferLength
+		download.current = 0
+
+		D.StatusBar:SetMinMaxValues(0, transferLength)
+		D.StatusBar:SetValue(0)
 	elseif prefix == TRANSFER_PREFIX then
 		D:UnregisterComm(TRANSFER_PREFIX)
+		D:UnregisterComm(TRANSFER_LENGTH_PREFIX)
 		E:StaticPopupSpecial_Hide(D.StatusBar)
+
+		Receiving = nil
 
 		local download, success, data = Downloads[sender]
 		local profileKey = download and download.profile
 		if profileKey then -- verify sender first before trying to handle the msg
-			success, data = D:Deserialize(msg)
+			local serialString = msg
+			if download.deflate then
+				local decoded = LibDeflate:DecodeForWoWAddonChannel(msg)
+				serialString = decoded and LibDeflate:DecompressDeflate(decoded)
+			end
+
+			if serialString then
+				success, data = D:Deserialize(serialString)
+			end
 		end
 
 		if success then
@@ -390,6 +458,7 @@ function D:OnCommReceived(prefix, msg, dist, sender)
 		end
 	elseif prefix == TRANSFER_COMPLETE_PREFIX then
 		D:UnregisterComm(TRANSFER_COMPLETE_PREFIX)
+		E:StaticPopupSpecial_Hide(D.StatusBar)
 
 		if msg == 'COMPLETE' then
 			E:StaticPopup_Show('DISTRIBUTOR_SUCCESS')
@@ -453,7 +522,7 @@ function D:GetProfileExport(dataType, dataKey, dataFormat)
 	if dataFormat == 'text' then
 		local serialString = D:Serialize(profileData)
 		local exportString = D:CreateProfileExport(dataType, profileKey, serialString)
-		local compressedData = LibDeflate:CompressDeflate(exportString, LibDeflate.compressLevel)
+		local compressedData = LibDeflate:CompressDeflate(exportString, D.CompressLevel)
 		local printableString = LibDeflate:EncodeForPrint(compressedData)
 		profileExport = printableString and format('%s%s', EXPORT_PREFIX, printableString) or nil
 	elseif dataFormat == 'luaTable' then

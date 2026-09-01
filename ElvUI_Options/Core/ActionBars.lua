@@ -220,7 +220,7 @@ ActionBar.args.microbar.args.visibilityGroup.args.defaults.func = function() E.d
 ActionBar.args.microbar.args.visibilityGroup.args.defaults.desc = function() return P.actionbar.microbar.visibility end
 ActionBar.args.microbar.args.backdropGroup.hidden = function() return not E.db.actionbar.microbar.backdrop end
 
-ActionBar.args.totemBar = ACH:Group(L["Totem Bar"], nil, 16, nil, function(info) return E.db.actionbar.totemBar[info[#info]] end, function(info, value) E.db.actionbar.totemBar[info[#info]] = value AB:PositionAndSizeTotemBar() end, function() return not E.ActionBars.Initialized end)
+ActionBar.args.totemBar = ACH:Group(L["Totem Bar"], nil, 16, nil, function(info) return E.db.actionbar.totemBar[info[#info]] end, function(info, value) E.db.actionbar.totemBar[info[#info]] = value if AB:TotemBarEnabled() then AB:PositionAndSizeTotemBar() end end, function() return E.myclass ~= 'SHAMAN' or not E.ActionBars.Initialized end)
 ActionBar.args.totemBar.args.enable = ACH:Toggle(L["Enable"], nil, 1, nil, nil, nil, nil, function(info, value) E.db.actionbar.totemBar[info[#info]] = value E.ShowPopup = true end)
 ActionBar.args.totemBar.args.mouseover = ACH:Toggle(L["Mouseover"], nil, 2)
 ActionBar.args.totemBar.args.keepSizeRatio = ACH:Toggle(L["Keep Size Ratio"], nil, 3)
@@ -238,7 +238,7 @@ ActionBar.args.totemBar.args.visibility = ACH:Input(L["Visibility State"], L["Th
 ActionBar.args.totemBar.args.strataAndLevel = CopyTable(SharedBarOptions.strataAndLevel)
 ActionBar.args.totemBar.args.strataAndLevel.order = 30
 
-ActionBar.args.totemBar.args.fontGroup = ACH:Group(L["Font Group"], nil, 40, nil, function(info) return E.db.actionbar.totemBar[info[#info]] end, function(info, value) E.db.actionbar.totemBar[info[#info]] = value AB:UpdateTotemBindings(info[#info], value, true) end)
+ActionBar.args.totemBar.args.fontGroup = ACH:Group(L["Font Group"], nil, 40, nil, function(info) return E.db.actionbar.totemBar[info[#info]] end, function(info, value) E.db.actionbar.totemBar[info[#info]] = value if AB:TotemBarEnabled() then AB:UpdateTotemBindings() end end)
 ActionBar.args.totemBar.args.fontGroup.args.font = ACH:SharedMediaFont(L["Font"], nil, 1)
 ActionBar.args.totemBar.args.fontGroup.args.fontSize = ACH:Range(L["Font Size"], nil, 2, C.Values.FontSize)
 ActionBar.args.totemBar.args.fontGroup.args.fontOutline = ACH:FontFlags(L["Font Outline"], nil, 3)

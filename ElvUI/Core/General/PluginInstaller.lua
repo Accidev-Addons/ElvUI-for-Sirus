@@ -62,9 +62,7 @@ local S = E:GetModule("Skins")
 local pairs, unpack = pairs, unpack
 local tinsert, tremove, format = tinsert, tremove, format
 
-local PlaySound = PlaySound
 local CreateFrame = CreateFrame
-local UIFrameFadeOut = UIFrameFadeOut
 local CONTINUE, PREVIOUS, UNKNOWN = CONTINUE, PREVIOUS, UNKNOWN
 -- GLOBALS: PluginInstallFrame
 
@@ -161,50 +159,7 @@ function PI:PreviousPage()
 end
 
 function PI:CreateStepComplete()
-	local imsg = CreateFrame("Frame", "PluginInstallStepComplete", E.UIParent)
-	imsg:Size(418, 72)
-	imsg:Point("TOP", 0, -190)
-	imsg:Hide()
-	imsg:SetScript("OnShow", function(frame)
-		if frame.message then
-			PlaySound(888) -- LEVELUP
-			frame.text:SetText(frame.message)
-			UIFrameFadeOut(frame, 3.5, 1, 0)
-			E:Delay(4, frame.Hide, frame)
-			frame.message = nil
-		else
-			frame:Hide()
-		end
-	end)
-
-	imsg.firstShow = false
-
-	imsg.bg = imsg:CreateTexture(nil, "BACKGROUND")
-	imsg.bg:SetTexture([[Interface\AddOns\ElvUI\Core\Media\Textures\LevelUpTex]])
-	imsg.bg:Point("BOTTOM")
-	imsg.bg:Size(326, 103)
-	imsg.bg:SetTexCoord(0.00195313, 0.63867188, 0.03710938, 0.23828125)
-	imsg.bg:SetVertexColor(1, 1, 1, 0.6)
-
-	imsg.lineTop = imsg:CreateTexture(nil, "BACKGROUND")
-	imsg.lineTop:SetDrawLayer("BACKGROUND", 2)
-	imsg.lineTop:SetTexture([[Interface\AddOns\ElvUI\Core\Media\Textures\LevelUpTex]])
-	imsg.lineTop:Point("TOP")
-	imsg.lineTop:Size(418, 7)
-	imsg.lineTop:SetTexCoord(0.00195313, 0.81835938, 0.01953125, 0.03320313)
-
-	imsg.lineBottom = imsg:CreateTexture(nil, "BACKGROUND")
-	imsg.lineBottom:SetDrawLayer("BACKGROUND", 2)
-	imsg.lineBottom:SetTexture([[Interface\AddOns\ElvUI\Core\Media\Textures\LevelUpTex]])
-	imsg.lineBottom:Point("BOTTOM")
-	imsg.lineBottom:Size(418, 7)
-	imsg.lineBottom:SetTexCoord(0.00195313, 0.81835938, 0.01953125, 0.03320313)
-
-	imsg.text = imsg:CreateFontString(nil, "ARTWORK")
-	imsg.text:FontTemplate(E.media.normFont, 32, "OUTLINE")
-	imsg.text:Point("BOTTOM", 0, 12)
-	imsg.text:SetTextColor(1, 0.82, 0)
-	imsg.text:SetJustifyH("CENTER")
+	E:CreateStepComplete("PluginInstallStepComplete")
 end
 
 function PI:Button_OnClick()
@@ -281,6 +236,7 @@ function PI:CreateFrame()
 	f.Status:OffsetFrameLevel(2)
 	f.Status:CreateBackdrop(nil, true)
 	f.Status:SetStatusBarTexture(E.media.normTex)
+	E:RegisterStatusBar(f.Status)
 	f.Status:SetStatusBarColor(unpack(E.media.rgbvaluecolor))
 	f.Status:Point("TOPLEFT", f.Prev, "TOPRIGHT", 6, -2)
 	f.Status:Point("BOTTOMRIGHT", f.Next, "BOTTOMLEFT", -6, 2)

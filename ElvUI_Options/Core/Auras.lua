@@ -4,9 +4,8 @@ local A = E:GetModule('Auras')
 local ACH = E.Libs.ACH
 local ACD = E.Libs.AceConfigDialog
 
-local next, pairs, ipairs = next, pairs, ipairs
-local tremove, tinsert, tconcat = tremove, tinsert, table.concat
-local format, gsub, match, strsplit = string.format, string.gsub, string.match, strsplit
+local next, pairs = next, pairs
+local strsplit = strsplit
 local CopyTable = CopyTable
 local GetCVar = GetCVar
 
@@ -116,30 +115,8 @@ Auras.args.debuffs.args.statusBar.args.barColor.disabled = function() return not
 
 local carryFilterFrom, carryFilterTo
 
-local function filterMatch(s, v)
-	local m1, m2, m3, m4 = '^'..v..'$', '^'..v..',', ','..v..'$', ','..v..','
-	return (match(s, m1) and m1) or (match(s, m2) and m2) or (match(s, m3) and m3) or (match(s, m4) and v..',')
-end
-
 local function filterPriority(auraType, value, remove, movehere)
-	if not auraType or not value then return end
-	local filter = E.db.auras[auraType] and E.db.auras[auraType].priority
-	if not filter then return end
-	local found = filterMatch(filter, E:EscapeString(value))
-	if found and movehere then
-		local tbl, sv, sm = {strsplit(',', filter)}
-		for i in ipairs(tbl) do
-			if tbl[i] == value then sv = i elseif tbl[i] == movehere then sm = i end
-			if sv and sm then break end
-		end
-		tremove(tbl, sm)
-		tinsert(tbl, sv, movehere)
-		E.db.auras[auraType].priority = tconcat(tbl, ',')
-	elseif found and remove then
-		E.db.auras[auraType].priority = gsub(filter, found, '')
-	elseif not found and not remove then
-		E.db.auras[auraType].priority = (filter == '' and value) or (filter..','..value)
-	end
+	C.SetFilterPriority(E.db, 'auras', auraType, value, remove, movehere, nil, false)
 end
 
 local function UpdateAuraFrames()
@@ -229,11 +206,7 @@ local function GetFilterGroup(auraType)
 				dragOnClick = function()
 					filterPriority(auraType, carryFilterFrom, true)
 				end,
-				stateSwitchGetText = function(_, text)
-					local SF, localized = E.global.unitframe.specialFilters[text], L[text]
-					local blockText = SF and localized and text:match('^block') and localized:gsub('^%[.-]%s?', '')
-					return (blockText and format('|cFF999999%s|r %s', L["BLOCK"], blockText)) or localized or text
-				end,
+				stateSwitchGetText = C.StateSwitchGetText,
 				values = function()
 					local str = E.db.auras[auraType].priority
 					if str == '' then return {} end

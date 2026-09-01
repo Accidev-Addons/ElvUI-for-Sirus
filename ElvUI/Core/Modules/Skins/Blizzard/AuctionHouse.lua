@@ -14,6 +14,35 @@ local function SkinFilterButton(Button)
 	S:HandleButton(Button)
 end
 
+local function HandleSearchHistory(History)
+	if not History then return end
+
+	History:StripTextures()
+	History:CreateBackdrop("Transparent")
+
+	for i = 1, #History.buttons do
+		local button = History.buttons[i]
+		button:StripTextures()
+		button.SelectedTexture:SetTexture(E.media.blankTex)
+		button.SelectedTexture:SetVertexColor(unpack(E.media.rgbvaluecolor))
+		button.SelectedTexture:SetAlpha(0.35)
+		button.SelectedTexture:SetInside()
+		button.Text:FontTemplate()
+	end
+
+	hooksecurefunc(History, "ShowResults", function(self)
+		local last
+		for i = 1, #self.buttons do
+			if self.buttons[i]:IsShown() then last = self.buttons[i] end
+		end
+
+		if last then
+			self.backdrop:Point("TOPLEFT", 0, 0)
+			self.backdrop:Point("BOTTOMRIGHT", last, "BOTTOMRIGHT", 0, 0)
+		end
+	end)
+end
+
 local function HandleSearchBarFrame(Frame)
 	SkinFilterButton(Frame.FilterButton)
 
@@ -21,6 +50,8 @@ local function HandleSearchBarFrame(Frame)
 	S:HandleEditBox(Frame.SearchBox)
 	S:HandleButton(Frame.FavoritesSearchButton)
 	Frame.FavoritesSearchButton:Size(22)
+
+	HandleSearchHistory(Frame.SearchHistory)
 end
 
 local function HandleListIcon(frame)
@@ -96,6 +127,18 @@ local function SkinItemDisplay(frame)
 	if highlight then highlight:Hide() end
 end
 
+local function HeaderOnEnter(self)
+	if self.backdrop then
+		self.backdrop:SetBackdropBorderColor(unpack(E.media.rgbvaluecolor))
+	end
+end
+
+local function HeaderOnLeave(self)
+	if self.backdrop then
+		self.backdrop:SetBackdropBorderColor(unpack(E.media.bordercolor))
+	end
+end
+
 local function HandleHeaders(frame)
 	if frame.ScrollFrame then
 		S:ApplyElvUIFontForce(frame.ScrollFrame)
@@ -112,6 +155,13 @@ local function HandleHeaders(frame)
 				header:CreateBackdrop("Transparent")
 			end
 
+			if header.SetHighlightTexture then
+				header:SetHighlightTexture(E.ClearTexture)
+			end
+
+			header:HookScript("OnEnter", HeaderOnEnter)
+			header:HookScript("OnLeave", HeaderOnLeave)
+
 			header.IsSkinned = true
 		end
 
@@ -123,6 +173,24 @@ local function HandleHeaders(frame)
 	HandleListIcon(frame)
 end
 
+local function HandleBidFrame(frame)
+	if not frame then return end
+
+	S:HandleButton(frame.BidButton)
+
+	local BidAmount = frame.BidAmount
+	if not BidAmount then return end
+
+	S:HandleEditBox(BidAmount.gold)
+	S:HandleEditBox(BidAmount.silver)
+
+	BidAmount.silver:ClearAllPoints()
+	BidAmount.silver:Point("LEFT", BidAmount.gold, "RIGHT", 28, 0)
+
+	frame.BidButton:ClearAllPoints()
+	frame.BidButton:Point("LEFT", BidAmount.silver, "RIGHT", 14, 0)
+end
+
 local function HandleAuctionButtons(button)
 	S:HandleButton(button)
 	button:Size(22)
@@ -130,6 +198,11 @@ end
 
 local function HandleSellFrame(frame)
 	frame:StripTextures()
+
+	S:ApplyElvUIFontForce(frame)
+	frame:HookScript("OnShow", function(self)
+		S:ApplyElvUIFontForce(self)
+	end)
 
 	local ItemDisplay = frame.ItemDisplay
 	if not ItemDisplay then return end
@@ -150,29 +223,28 @@ local function HandleSellFrame(frame)
 	if ItemButton.Icon then S:HandleIcon(ItemButton.Icon, true) end
 
 	if frame.QuantityInput then
-		S:ApplyElvUIFontForce(frame.QuantityInput)
 		if frame.QuantityInput.InputBox then S:HandleEditBox(frame.QuantityInput.InputBox) end
 		if frame.QuantityInput.MaxButton then S:HandleButton(frame.QuantityInput.MaxButton) end
 	end
 
 	if frame.PriceInput and frame.PriceInput.MoneyInputFrame then
-		S:ApplyElvUIFontForce(frame.PriceInput.MoneyInputFrame)
 		if frame.PriceInput.MoneyInputFrame.GoldBox then S:HandleEditBox(frame.PriceInput.MoneyInputFrame.GoldBox) end
 		if frame.PriceInput.MoneyInputFrame.SilverBox then S:HandleEditBox(frame.PriceInput.MoneyInputFrame.SilverBox) end
 	end
 
 	if ItemButton.IconBorder and ItemButton.Icon and ItemButton.Icon.backdrop then
 		S:HandleIconBorder(ItemButton.IconBorder, ItemButton.Icon.backdrop)
+		ItemButton.IconBorder:Kill()
 	end
 
 	if frame.SecondaryPriceInput and frame.SecondaryPriceInput.MoneyInputFrame then
-		S:ApplyElvUIFontForce(frame.SecondaryPriceInput.MoneyInputFrame)
 		if frame.SecondaryPriceInput.MoneyInputFrame.GoldBox then S:HandleEditBox(frame.SecondaryPriceInput.MoneyInputFrame.GoldBox) end
 		if frame.SecondaryPriceInput.MoneyInputFrame.SilverBox then S:HandleEditBox(frame.SecondaryPriceInput.MoneyInputFrame.SilverBox) end
 	end
 
-	if frame.Duration and frame.Duration.Dropdown then
-		S:HandleDropDownBox(frame.Duration.Dropdown)
+	local Duration = frame.DurationDropDown or frame.Duration
+	if Duration and Duration.DropDown then
+		S:HandleDropDownBox(Duration.DropDown)
 	end
 
 	local BuyoutModeCheckButton = frame.BuyoutModeCheckButton or _G.AuctionHouseFrameItemSellFrameBuyoutModeCheckButton
@@ -244,6 +316,12 @@ local function LoadSkin()
 	Categories:StripTextures()
 	Categories.NineSlice:SetTemplate("Transparent")
 	Categories.NineSlice:SetInside(Categories)
+
+	if Categories.ClearFiltersButton then
+		S:HandleCloseButton(Categories.ClearFiltersButton)
+		Categories.ClearFiltersButton:SetTemplate("Transparent")
+		Categories.ClearFiltersButton:Size(22)
+	end
 
 	if Categories.ScrollFrame then
 		Categories.ScrollFrame:StripTextures()
@@ -370,15 +448,7 @@ local function LoadSkin()
 	S:HandleButton(ItemBuyList.RefreshFrame.RefreshButton)
 	hooksecurefunc(ItemBuyList, "RefreshScrollFrame", HandleHeaders)
 
-	local ItemBuyBidFrame = ItemBuyFrame.BidFrame
-	S:HandleButton(ItemBuyBidFrame.BidButton)
-	ItemBuyBidFrame.BidButton:ClearAllPoints()
-	ItemBuyBidFrame.BidButton:Point("LEFT", ItemBuyBidFrame.BidAmount, "RIGHT", 2, -2)
-
-	if ItemBuyBidFrame.BidAmount then
-		S:HandleEditBox(ItemBuyBidFrame.BidAmount.gold)
-		S:HandleEditBox(ItemBuyBidFrame.BidAmount.silver)
-	end
+	HandleBidFrame(ItemBuyFrame.BidFrame)
 
 	local SellFrame = Frame.ItemSellFrame
 	HandleSellFrame(SellFrame)
@@ -452,13 +522,7 @@ local function LoadSkin()
 	HandleSellList(BidsList, true, true)
 	S:HandleButton(BidsList.RefreshFrame.RefreshButton)
 
-	local BidFrame = AuctionsFrame.BidFrame
-	S:HandleButton(BidFrame.BidButton)
-
-	if BidFrame.BidAmount then
-		S:HandleEditBox(BidFrame.BidAmount.gold)
-		S:HandleEditBox(BidFrame.BidAmount.silver)
-	end
+	HandleBidFrame(AuctionsFrame.BidFrame)
 
 	if Frame.BuyDialog then
 		Frame.BuyDialog:StripTextures()

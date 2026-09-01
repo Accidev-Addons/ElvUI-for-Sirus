@@ -82,10 +82,6 @@ function DB:ReputationBar_Update(event, messagetype)
 end
 
 function DB:ReputationBar_OnEnter()
-	if self.db.mouseover then
-		E:UIFrameFadeIn(self, 0.4, self:GetAlpha(), 1)
-	end
-
 	local data = E:GetWatchedFactionInfo()
 	local name, reaction, currentReactionThreshold, nextReactionThreshold, currentStanding = data.name, data.reaction, data.currentReactionThreshold, data.nextReactionThreshold, data.currentStanding
 	local standing = _G['FACTION_STANDING_LABEL'..reaction] or UNKNOWN

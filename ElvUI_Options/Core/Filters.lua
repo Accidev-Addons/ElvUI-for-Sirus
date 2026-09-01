@@ -37,36 +37,41 @@ local function GetSelectedSpell()
 	end
 end
 
-local function filterMatch(s,v)
-	local m1, m2, m3, m4 = '^'..v..'$', '^'..v..',', ','..v..'$', ','..v..','
-	return (strmatch(s, m1) and m1) or (strmatch(s, m2) and m2) or (strmatch(s, m3) and m3) or (strmatch(s, m4) and v..',')
-end
-
 local function removePriority(value)
 	if not value then return end
-	local x, y, z = E.db.unitframe.units, E.db.nameplates.units
+	local x, y, a, z = E.db.unitframe.units, E.db.nameplates.units, E.db.auras
 	for n, t in pairs(x) do
 		if t and t.buffs and t.buffs.priority and t.buffs.priority ~= '' then
-			z = filterMatch(t.buffs.priority, E:EscapeString(value))
+			z = C.FilterMatch(t.buffs.priority, E:EscapeString(value))
 			if z then E.db.unitframe.units[n].buffs.priority = gsub(t.buffs.priority, z, '') end
 		end
 		if t and t.debuffs and t.debuffs.priority and t.debuffs.priority ~= '' then
-			z = filterMatch(t.debuffs.priority, E:EscapeString(value))
+			z = C.FilterMatch(t.debuffs.priority, E:EscapeString(value))
 			if z then E.db.unitframe.units[n].debuffs.priority = gsub(t.debuffs.priority, z, '') end
 		end
 		if t and t.aurabar and t.aurabar.priority and t.aurabar.priority ~= '' then
-			z = filterMatch(t.aurabar.priority, E:EscapeString(value))
+			z = C.FilterMatch(t.aurabar.priority, E:EscapeString(value))
 			if z then E.db.unitframe.units[n].aurabar.priority = gsub(t.aurabar.priority, z, '') end
 		end
 	end
 	for n, t in pairs(y) do
-		if t and t.buffs and t.buffs.priority and t.buffs.priority ~= '' then
-			z = filterMatch(t.buffs.priority, E:EscapeString(value))
-			if z then E.db.nameplates.units[n].buffs.priority = gsub(t.buffs.priority, z, '') end
+		if t and t.buffs and t.buffs.filters and t.buffs.filters.priority and t.buffs.filters.priority ~= '' then
+			z = C.FilterMatch(t.buffs.filters.priority, E:EscapeString(value))
+			if z then E.db.nameplates.units[n].buffs.filters.priority = gsub(t.buffs.filters.priority, z, '') end
 		end
-		if t and t.debuffs and t.debuffs.priority and t.debuffs.priority ~= '' then
-			z = filterMatch(t.debuffs.priority, E:EscapeString(value))
-			if z then E.db.nameplates.units[n].debuffs.priority = gsub(t.debuffs.priority, z, '') end
+		if t and t.debuffs and t.debuffs.filters and t.debuffs.filters.priority and t.debuffs.filters.priority ~= '' then
+			z = C.FilterMatch(t.debuffs.filters.priority, E:EscapeString(value))
+			if z then E.db.nameplates.units[n].debuffs.filters.priority = gsub(t.debuffs.filters.priority, z, '') end
+		end
+	end
+	if a then
+		if a.buffs and a.buffs.priority and a.buffs.priority ~= '' then
+			z = C.FilterMatch(a.buffs.priority, E:EscapeString(value))
+			if z then E.db.auras.buffs.priority = gsub(a.buffs.priority, z, '') end
+		end
+		if a.debuffs and a.debuffs.priority and a.debuffs.priority ~= '' then
+			z = C.FilterMatch(a.debuffs.priority, E:EscapeString(value))
+			if z then E.db.auras.debuffs.priority = gsub(a.debuffs.priority, z, '') end
 		end
 	end
 end

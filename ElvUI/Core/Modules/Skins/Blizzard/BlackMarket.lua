@@ -119,7 +119,7 @@ local function ApplySkin()
 		scrollFrame:StripTextures()
 
 		if scrollFrame.scrollBar then
-			S:HandleScrollBar(scrollFrame.scrollBar)
+			S:HandleSirusScrollBar(scrollFrame.scrollBar)
 		end
 
 		hooksecurefunc(scrollFrame, "update", SkinItemRows)

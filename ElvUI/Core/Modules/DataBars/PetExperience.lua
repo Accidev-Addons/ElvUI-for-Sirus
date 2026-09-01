@@ -49,10 +49,6 @@ function DB:PetExperienceBar_Update()
 end
 
 function DB:PetExperienceBar_OnEnter()
-	if self.db.mouseover then
-		E:UIFrameFadeIn(self, 0.4, self:GetAlpha(), 1)
-	end
-
 	GameTooltip:ClearLines()
 	GameTooltip:SetOwner(self, 'ANCHOR_CURSOR', 0, -4)
 
@@ -77,9 +73,9 @@ function DB:PetExperienceBar_Toggle()
 
 		DB:PetExperienceBar_Update()
 	else
-		bar:Hide()
-
 		E:DisableMover(bar.holder.mover.name)
+
+		DB:SetVisibility(bar)
 	end
 end
 

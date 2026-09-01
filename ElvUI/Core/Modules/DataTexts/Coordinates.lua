@@ -35,9 +35,7 @@ local function OnEvent(self)
 end
 
 local function Click()
-	if not E:AlertCombat() then
-		_G.ToggleFrame(_G.WorldMapFrame)
-	end
+	_G.ToggleFrame(_G.WorldMapFrame)
 end
 
 local function ApplySettings(_, hex)

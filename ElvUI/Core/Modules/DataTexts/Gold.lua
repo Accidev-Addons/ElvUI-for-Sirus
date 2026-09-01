@@ -98,11 +98,11 @@ local function updateGold(self, updateAll, goldChange)
 end
 
 local function OnEvent(self, event)
-	if not IsLoggedIn() then return end
-
 	if not db then
 		db = E.global.datatexts.settings[self.name]
 	end
+
+	if not IsLoggedIn() then return end
 
 	--prevent an error possibly from really old profiles
 	local oldMoney = ElvDB.gold[E.myrealm][E.myname]

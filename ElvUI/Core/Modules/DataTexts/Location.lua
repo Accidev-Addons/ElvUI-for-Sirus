@@ -49,9 +49,7 @@ local function OnEvent(self)
 end
 
 local function OnClick()
-	if not E:AlertCombat() then
-		ToggleFrame(_G.WorldMapFrame)
-	end
+	ToggleFrame(_G.WorldMapFrame)
 end
 
 DT:RegisterDatatext('Location', nil, { 'PLAYER_ENTERING_WORLD', 'ZONE_CHANGED_NEW_AREA', 'ZONE_CHANGED_INDOORS', 'ZONE_CHANGED' }, OnEvent, nil, OnClick, nil, nil, L["Location"])

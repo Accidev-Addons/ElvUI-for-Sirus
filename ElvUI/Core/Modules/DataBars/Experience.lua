@@ -163,10 +163,6 @@ function DB:RegisterCustomQuestXPWatcher(name, func)
 end
 
 function DB:ExperienceBar_OnEnter()
-	if self.db.mouseover then
-		E:UIFrameFadeIn(self, 0.4, self:GetAlpha(), 1)
-	end
-
 	if E:XPIsLevelMax() then return end
 
 	GameTooltip:ClearLines()

@@ -54,11 +54,101 @@ S:AddCallback("Skin_WorldMap", function()
 	WorldMapQuestScrollFrame.backdrop:Point("BOTTOMRIGHT", 25, -1)
 	WorldMapQuestScrollFrame.backdrop:OffsetFrameLevel(nil, WorldMapQuestScrollFrame)
 
-	WorldMapQuestSelectBar:SetTexture(E.Media.Textures.Highlight)
-	WorldMapQuestSelectBar:SetAlpha(0.35)
+	for _, bar in next, { WorldMapQuestSelectBar, WorldMapQuestHighlightBar } do
+		bar:SetTexture(E.media.blankTex)
+		bar:SetAlpha(0.25)
+		bar:ClearAllPoints()
+		bar:Point("TOPLEFT", 37, -3)
+		bar:Point("BOTTOMRIGHT", -15, 3)
+	end
 
-	WorldMapQuestHighlightBar:SetTexture(E.Media.Textures.Highlight)
-	WorldMapQuestHighlightBar:SetAlpha(0.35)
+	local function SkinQuestPOI(poi, size)
+		if not poi then return end
+
+		if not poi.isSkinned then
+			poi:SetTemplate("Transparent")
+			poi:SetHitRectInsets(0, 0, 0, 0)
+
+			poi.normalTexture:SetTexture()
+			poi.pushedTexture:SetTexture()
+
+			if poi.number then
+				poi.number:Kill()
+
+				poi.highlightTexture:SetTexture(E.media.blankTex)
+				poi.highlightTexture:SetVertexColor(1, 1, 1, 0.25)
+				poi.highlightTexture:SetInside()
+			else
+				poi.highlightTexture:SetTexture()
+			end
+
+			poi.selectionGlow:SetTexture(E.media.blankTex)
+			poi.selectionGlow:SetVertexColor(1, 0.82, 0)
+			poi.selectionGlow:SetAlpha(0.35)
+			poi.selectionGlow:SetInside()
+
+			poi.numberText = poi:CreateFontString(nil, "OVERLAY")
+			poi.numberText:Point("CENTER")
+
+			poi.isSkinned = true
+		end
+
+		poi:Size(size)
+		poi.numberText:FontTemplate(nil, size * 0.6, "OUTLINE")
+
+		if poi.turnin then
+			poi.turnin:Size(size - 8)
+		end
+	end
+
+	local function SkinQuestFrame(frame)
+		if not frame or frame.isSkinned then return end
+
+		frame:CreateBackdrop("Transparent")
+		frame.backdrop.customBackdropAlpha = 0
+		frame.backdrop:SetBackdropColor(0, 0, 0, 0)
+		frame.backdrop:Point("TOPLEFT", 26, -2)
+		frame.backdrop:Point("BOTTOMRIGHT", -4, 2)
+
+		if frame.check then
+			frame.check:SetVertexColor(1, 0.82, 0)
+		end
+
+		frame.isSkinned = true
+	end
+
+	hooksecurefunc("QuestPOI_DisplayButton", function(parentName, buttonType, buttonIndex)
+		local poi = _G["poi"..parentName..buttonType.."_"..buttonIndex]
+		if not poi then return end
+
+		SkinQuestPOI(poi, parentName == "WorldMapPOIFrame" and 15 or 22)
+
+		poi.numberText:SetText(buttonType == QUEST_POI_NUMERIC and buttonIndex or "")
+	end)
+
+	hooksecurefunc("WorldMapFrame_UpdateQuests", function()
+		for i = 1, MAX_NUM_QUESTS do
+			local frame = _G["WorldMapQuestFrame"..i]
+			if not frame then break end
+
+			if frame:IsShown() and frame.level then
+				local color = GetQuestDifficultyColor(frame.level)
+				frame.title:SetTextColor(color.r, color.g, color.b)
+			end
+		end
+	end)
+
+	hooksecurefunc("WorldMapFrame_GetQuestFrame", function(index)
+		local frame = _G["WorldMapQuestFrame"..index]
+		if not frame then return end
+
+		SkinQuestFrame(frame)
+
+		if frame.ownPOI then
+			frame.ownPOI:ClearAllPoints()
+			frame.ownPOI:Point("TOPLEFT", frame, "TOPLEFT", 4, -3)
+		end
+	end)
 
 	S:HandleSirusScrollBar(WorldMapQuestScrollFrameScrollBar)
 	S:HandleSirusScrollBar(WorldMapQuestDetailScrollFrameScrollBar)

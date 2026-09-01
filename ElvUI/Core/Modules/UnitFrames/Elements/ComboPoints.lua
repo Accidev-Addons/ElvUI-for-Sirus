@@ -87,6 +87,19 @@ function UF:Configure_ComboPoints(frame)
 	ComboPoints.Holder = frame.ComboPointsHolder
 	ComboPoints.origParent = frame
 
+	if not frame.USE_CLASSBAR then
+		if ComboPoints.Holder then
+			ComboPoints.Holder:Hide()
+		end
+
+		if frame:IsElementEnabled("ComboPoints") then
+			frame:DisableElement("ComboPoints")
+			ComboPoints:Hide()
+		end
+
+		return
+	end
+
 	--Fix height in case it is lower than the theme allows, or in case it's higher than 30px when not detached
 	if (not self.thinBorders and not E.PixelMode) and frame.CLASSBAR_HEIGHT > 0 and frame.CLASSBAR_HEIGHT < 7 then --A height of 7 means 6px for borders and just 1px for the actual power statusbar
 		frame.CLASSBAR_HEIGHT = 7
@@ -114,7 +127,7 @@ function UF:Configure_ComboPoints(frame)
 	ComboPoints:Width(CLASSBAR_WIDTH)
 	ComboPoints:Height(frame.CLASSBAR_HEIGHT - ((frame.BORDER + frame.SPACING) * 2))
 	local color = E.db.unitframe.colors.borderColor
-	ComboPoints.backdrop:SetBackdropColor(color.r, color.g, color.b)
+	ComboPoints.backdrop:SetBackdropBorderColor(color.r, color.g, color.b)
 
 	if not frame.USE_MINI_CLASSBAR then
 		ComboPoints.backdrop:Show()
@@ -160,7 +173,12 @@ function UF:Configure_ComboPoints(frame)
 			end
 		end
 
-		ComboPoints[i]:SetOrientation("HORIZONTAL")
+		if frame.CLASSBAR_DETACHED and db.combobar.orientation == "VERTICAL" then
+			ComboPoints[i]:SetOrientation("VERTICAL")
+		else
+			ComboPoints[i]:SetOrientation("HORIZONTAL")
+		end
+
 		ComboPoints[i]:Show()
 	end
 
@@ -236,10 +254,16 @@ function UF:Configure_ComboPoints(frame)
 
 	self:CombobarDetachedUpdate()
 
-	if frame.USE_CLASSBAR and not frame:IsElementEnabled("ComboPoints") then
-		frame:EnableElement("ComboPoints")
-		ComboPoints:Show()
-	elseif not frame.USE_CLASSBAR and frame:IsElementEnabled("ComboPoints") then
+	if frame.USE_CLASSBAR then
+		if not frame:IsElementEnabled("ComboPoints") then
+			frame:EnableElement("ComboPoints")
+			ComboPoints:Show()
+		end
+
+		if ComboPoints.Holder then
+			ComboPoints.Holder:Show()
+		end
+	elseif frame:IsElementEnabled("ComboPoints") then
 		frame:DisableElement("ComboPoints")
 		ComboPoints:Hide()
 	end

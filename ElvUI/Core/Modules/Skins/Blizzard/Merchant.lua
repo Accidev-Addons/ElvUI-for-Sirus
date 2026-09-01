@@ -65,7 +65,7 @@ local function LoadSkin()
 		button:Size(40)
 		button:Point("TOPLEFT", item, "TOPLEFT", 4, -4)
 
-		icon:SetTexCoord(unpack(E.TexCoords))
+		icon:SetTexCoords()
 		icon:SetInside()
 
 		nameFrame:Point("LEFT", slot, "RIGHT", -6, -17)
@@ -83,7 +83,7 @@ local function LoadSkin()
 			currencyIcon.backdrop:SetFrameLevel(currencyItem:GetFrameLevel())
 			currencyIcon.backdrop:SetOutside(currencyIcon)
 
-			currencyIcon:SetTexCoord(unpack(E.TexCoords))
+			currencyIcon:SetTexCoords()
 			currencyIcon:SetParent(currencyIcon.backdrop)
 		end
 	end
@@ -124,7 +124,7 @@ local function LoadSkin()
 	MerchantBuyBackItemItemButton:SetTemplate("Default", true)
 	MerchantBuyBackItemItemButton:StyleButton()
 
-	MerchantBuyBackItemItemButtonIconTexture:SetTexCoord(unpack(E.TexCoords))
+	MerchantBuyBackItemItemButtonIconTexture:SetTexCoords()
 	MerchantBuyBackItemItemButtonIconTexture:SetInside()
 
 	S:HandleSirusTabs("MerchantFrameTab", 2)

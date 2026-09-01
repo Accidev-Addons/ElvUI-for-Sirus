@@ -7,7 +7,16 @@ local hooksecurefunc = hooksecurefunc
 
 local Minimap_SetPing = Minimap_SetPing
 
+local GetCVar = GetCVar
+
 local MINIMAPPING_FADE_TIMER = MINIMAPPING_FADE_TIMER
+
+do
+	local slider = _G.SpellOverlay_SpellHighlightAlphaSlider
+	if slider and not slider.value then
+		slider.value = tonumber(GetCVar('spellActivationButtonOpacity')) or 1
+	end
+end
 
 function BL:HandleMiscFrames()
 	-- fix minimap ping

@@ -12,6 +12,13 @@ local IsRaidOfficer = IsRaidOfficer
 local UIDropDownMenu_Refresh = UIDropDownMenu_Refresh
 
 local hooksecurefunc = hooksecurefunc
+local CloseDropDownMenus = CloseDropDownMenus
+local PlaySound = PlaySound
+
+local function ClosePopup()
+    CloseDropDownMenus()
+    PlaySound('UChatScrollButton')
+end
 
 local function CreateSecurePromoteButton(name, role)
     local button = CreateFrame('Button', name, E.UIParent, 'SecureActionButtonTemplate')
@@ -21,6 +28,8 @@ local function CreateSecurePromoteButton(name, role)
     button:SetAttribute('type', role)
     button:SetAttribute('unit', 'target')
     button:SetAttribute('action', 'toggle')
+
+    button:SetScript('PostClick', ClosePopup)
 
     button:RegisterEvent('PLAYER_REGEN_DISABLED')
     button:RegisterEvent('PLAYER_REGEN_ENABLED')
@@ -47,7 +56,6 @@ local function SetButton(unit, button, newButton)
 
     CopyScript('OnEnter', button, newButton)
     CopyScript('OnLeave', button, newButton)
-    CopyScript('OnClick', button, newButton)
 
     newButton:SetScript('OnMouseDown', function() button:SetButtonState('PUSHED') end)
     newButton:SetScript('OnMouseUp', function() button:SetButtonState('NORMAL') end)

@@ -83,9 +83,24 @@ E.InfoColor2 = '|cff9b9b9b' -- silver
 
 -- Item Qualitiy stuff, also used by MerathilisUI
 E.QualityColors = CopyTable(_G.ITEM_QUALITY_COLORS)
-E.QualityColors[-1] = {r = 0, g = 0, b = 0}
-E.QualityColors[0] = {r = .61, g = .61, b = .61}
-E.QualityColors[1] = {r = 0, g = 0, b = 0}
+
+do
+	local CreateColor = _G.CreateColor
+
+	local function SetQualityColor(index, r, g, b)
+		local quality = E.QualityColors[index] or {}
+		local color = CreateColor(r, g, b, 1)
+
+		quality.r, quality.g, quality.b = r, g, b
+		quality.color = color
+		quality.hex = color:GenerateHexColorMarkup()
+
+		E.QualityColors[index] = quality
+	end
+
+	SetQualityColor(-1, 0, 0, 0)
+	SetQualityColor(0, .61, .61, .61)
+end
 
 do -- WotLK HD Interface Check
 	local hdFrames = _G['CharacterAttributesFrameer'] or _G['NNewSpellBookPageNavigationFrame']
@@ -151,6 +166,7 @@ do
 	local select = select
 	local LGT = _G.LibStub('LibGroupTalents-1.0')
 	local UnitClass = UnitClass
+	local UnitIsUnit = UnitIsUnit
 	local GetSpellInfo = GetSpellInfo
 	local MAX_TALENT_TABS = MAX_TALENT_TABS or 3
 	local GetActiveTalentGroup = GetActiveTalentGroup
@@ -202,26 +218,31 @@ do
 			class = class or select(2, UnitClass(unit))
 			if class and specsTable[class] then
 				local talentGroup = LGT:GetActiveTalentGroup(unit)
-				local maxPoints, index = 0, 0
+				local _, c1, c2, c3
 
-				for i = 1, MAX_TALENT_TABS do
-					local _, _, pointsSpent = LGT:GetTalentTabInfo(unit, i, talentGroup)
-					if pointsSpent ~= nil then
-						if maxPoints < pointsSpent then
-							maxPoints = pointsSpent
-							if class == 'DRUID' and i >= 2 then
-								if i == 3 then
-									index = 4
-								elseif i == 2 then
-									local points = LGT:UnitHasTalent(unit, GetSpellInfo(57881))
-									index = (points and points > 0) and 3 or 2
-								end
-							else
-								index = i
-							end
-						end
+				if UnitIsUnit(unit, 'player') then
+					c1 = select(3, LGT:GetTalentTabInfo(unit, 1, talentGroup))
+					c2 = select(3, LGT:GetTalentTabInfo(unit, 2, talentGroup))
+					c3 = select(3, LGT:GetTalentTabInfo(unit, 3, talentGroup))
+				else
+					_, c1, c2, c3 = LGT:GetUnitTalentSpec(unit, talentGroup)
+				end
+
+				local maxPoints, tab = 0, 0
+				if c1 and c1 > maxPoints then maxPoints, tab = c1, 1 end
+				if c2 and c2 > maxPoints then maxPoints, tab = c2, 2 end
+				if c3 and c3 > maxPoints then tab = 3 end
+
+				local index = tab
+				if class == 'DRUID' and tab >= 2 then
+					if tab == 3 then
+						index = 4
+					else
+						local points = LGT:UnitHasTalent(unit, GetSpellInfo(57881))
+						index = (points and points > 0) and 3 or 2
 					end
 				end
+
 				spec = specsTable[class][index]
 			end
 		end
@@ -305,7 +326,6 @@ do
 end
 
 do
-	local select = select
 	local wipe = wipe
 	local GetItemInfo = GetItemInfo
 	local GetItemInfoInstant = GetItemInfoInstant
@@ -318,33 +338,36 @@ do
 		local texture, item, count, quality, locked = oldGetLootSlotInfo(slot)
 		local link = GetLootSlotLink(slot)
 		if link then
-			local name = GetItemInfo(link)
-			if select(6, GetItemInfoInstant(link)) == 12 then
+			local itemID, _, _, _, _, classID = GetItemInfoInstant(link)
+			if itemID and classID == 12 then
 				isQuestItem = true
 
-				local cached = questItemCache[name]
+				local cached = questItemCache[itemID]
 				if cached == nil then
-					cached = false
+					local name = GetItemInfo(link)
+					if name then
+						cached = false
 
-					for i = 1, GetNumQuestLogEntries() do
-						local _, _, _, _, isHeader, _, _, _, questId = GetQuestLogTitle(i)
-						if not isHeader then
-							for j = 1, GetNumQuestLeaderBoards(i) do
-								local text = GetQuestLogLeaderBoard(j, i)
-								local nameText = strmatch(text, '(.+):')
-								if name == nameText then
-									cached = {
-										questID = questId,
-										isActive = true
-									}
-									break
+						for i = 1, GetNumQuestLogEntries() do
+							local _, _, _, _, isHeader, _, _, _, questId = GetQuestLogTitle(i)
+							if not isHeader then
+								for j = 1, GetNumQuestLeaderBoards(i) do
+									local text = GetQuestLogLeaderBoard(j, i)
+									local nameText = strmatch(text, '(.+):')
+									if name == nameText then
+										cached = {
+											questID = questId,
+											isActive = true
+										}
+										break
+									end
 								end
 							end
+							if cached then break end
 						end
-						if cached then break end
-					end
 
-					questItemCache[name] = cached
+						questItemCache[itemID] = cached
+					end
 				end
 
 				questID, isActive = cached and cached.questID, cached and cached.isActive

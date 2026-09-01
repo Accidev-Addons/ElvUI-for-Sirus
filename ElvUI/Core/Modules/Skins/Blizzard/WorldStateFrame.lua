@@ -3,6 +3,7 @@ local S = E:GetModule("Skins")
 
 --Lua functions
 local _G = _G
+local ipairs, unpack = ipairs, unpack
 
 S:AddCallback("Skin_WorldStateFrame", function()
 	if not E.private.skins.blizzard.enable or not E.private.skins.blizzard.worldState then return end
@@ -64,6 +65,31 @@ S:AddCallback("Skin_WorldStateFrame", function()
 	end
 
 	hooksecurefunc(ExtendedUI["CAPTUREPOINT"], "create", captureBarCreate)
+
+	local topCenter = _G.WorldStateTopCenterFrame
+	if topCenter then
+		local barColors = { { 0, .44, .87 }, { .77, .12, .23 } }
+
+		for id, bar in ipairs({ topCenter.LeftBar, topCenter.RightBar }) do
+			bar.BG:SetTexture(E.ClearTexture)
+			bar.BorderLeft:SetTexture(E.ClearTexture)
+			bar.BorderRight:SetTexture(E.ClearTexture)
+			bar.BorderCenter:SetTexture(E.ClearTexture)
+			bar.SubLayer.Spark:SetTexture(E.ClearTexture)
+
+			bar:CreateBackdrop("Transparent")
+
+			bar.BarFillTexture:SetTexture(E.media.normTex)
+			bar.BarFillTexture:SetTexCoord(0, 1, 0, 1)
+			bar.BarFillTexture:SetVertexColor(unpack(barColors[id]))
+			bar.BarFillTexture:Height(bar:GetHeight() - 2)
+
+			bar.SubLayer.Label:FontTemplate()
+		end
+
+		topCenter.TimeLeft:FontTemplate()
+		topCenter.BottomLabel:FontTemplate()
+	end
 
 	hooksecurefunc(ExtendedUI["CAPTUREPOINT"], "update", function(id, value, neutralPercent)
 		local bar = _G["WorldStateCaptureBar"..id]

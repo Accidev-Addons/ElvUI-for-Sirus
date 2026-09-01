@@ -32,7 +32,7 @@ local function SkinIconHolder(holder, icon)
 	holder.backdrop:SetOutside(icon)
 	holder:SetFrameLevel(holder:GetFrameLevel() + 1)
 
-	icon:SetTexCoord(unpack(E.TexCoords))
+	icon:SetTexCoords()
 end
 
 local function LayoutTreeArt(top, bottom, background, boxW, boxH)
@@ -99,7 +99,7 @@ local function SkinSpecTabs(frame)
 			tab:GetHighlightTexture().SetTexture = E.noop
 			tab:GetCheckedTexture().SetTexture = E.noop
 			tab:GetNormalTexture():SetInside()
-			tab:GetNormalTexture():SetTexCoord(unpack(E.TexCoords))
+			tab:GetNormalTexture():SetTexCoords()
 
 			tab.isSkinned = true
 		end
@@ -218,7 +218,7 @@ local function LoadSkin()
 		summary:CreateBackdrop()
 		summary:SetFrameLevel(summary:GetFrameLevel() + 2)
 
-		summaryIcon:SetTexCoord(unpack(E.TexCoords))
+		summaryIcon:SetTexCoords()
 
 		SkinIconHolder(header, headerIcon)
 		header:Point("TOPLEFT", panel, "TOPLEFT", 4, -4)
@@ -276,10 +276,10 @@ local function LoadSkin()
 		button:GetHighlightTexture():SetAllPoints()
 		hooksecurefunc(button, "SetPushedTexture", setPushedTexture)
 		button:GetPushedTexture():SetAllPoints()
-		button:GetPushedTexture():SetTexCoord(unpack(E.TexCoords))
+		button:GetPushedTexture():SetTexCoords()
 		button:SetNormalTexture("")
 
-		button.icon:SetTexCoord(unpack(E.TexCoords))
+		button.icon:SetTexCoords()
 		button.icon:SetAllPoints()
 
 		button.Rank:FontTemplate()
@@ -354,7 +354,7 @@ local function LoadSkin()
 			end
 			if icon then
 				icon:SetInside()
-				icon:SetTexCoord(unpack(E.TexCoords))
+				icon:SetTexCoords()
 			end
 		end)
 	end
@@ -366,7 +366,7 @@ local function LoadSkin()
 	PlayerTalentFramePetInfo:ClearAllPoints()
 	PlayerTalentFramePetInfo:Point("BOTTOMLEFT", PlayerTalentFramePetModel, "TOPLEFT", -3, 9)
 
-	PlayerTalentFramePetIcon:SetTexCoord(unpack(E.TexCoords))
+	PlayerTalentFramePetIcon:SetTexCoords()
 
 	PlayerTalentFramePetDiet:StripTextures()
 	PlayerTalentFramePetDiet:CreateBackdrop()
@@ -376,7 +376,7 @@ local function LoadSkin()
 	PlayerTalentFramePetDiet.icon = PlayerTalentFramePetDiet:CreateTexture(nil, "OVERLAY")
 	PlayerTalentFramePetDiet.icon:SetTexture("Interface\\Icons\\Ability_Hunter_BeastTraining")
 	PlayerTalentFramePetDiet.icon:SetAllPoints()
-	PlayerTalentFramePetDiet.icon:SetTexCoord(unpack(E.TexCoords))
+	PlayerTalentFramePetDiet.icon:SetTexCoords()
 
 	PlayerTalentFramePetTypeText:Point("BOTTOMRIGHT", -45, 10)
 
@@ -419,14 +419,14 @@ local function LoadSkin()
 				if gpt then
 					gpt:SetAllPoints(icon)
 
-					button:GetPushedTexture():SetTexCoord(unpack(E.TexCoords))
+					button:GetPushedTexture():SetTexCoords()
 				end
 				local gnt = button:GetNormalTexture()
 				if gnt then
 
-					button:GetNormalTexture():SetTexCoord(unpack(E.TexCoords))
+					button:GetNormalTexture():SetTexCoords()
 				end
-				icon:SetTexCoord(unpack(E.TexCoords))
+				icon:SetTexCoords()
 				icon:SetAllPoints()
 
 				if button.Rank then
@@ -457,7 +457,7 @@ local function LoadSkin()
 		local slot = PlayerGlyphPreviewFrame[slots[i]]
 		slot:CreateBackdrop()
 		slot.backdrop:SetOutside(slot.Icon)
-		slot.Icon:SetTexCoord(unpack(E.TexCoords))
+		slot.Icon:SetTexCoords()
 		slot.NameFrame:SetAlpha(0)
 	end
 
@@ -636,7 +636,7 @@ local function LoadSkin()
 			v:StyleButton(nil, true)
 
 			v:SetTemplate("Default", true)
-			v.Icon:SetTexCoord(unpack(E.TexCoords))
+			v.Icon:SetTexCoords()
 			v.Icon:SetInside()
 
 		end

@@ -3,29 +3,8 @@ local NP = E:GetModule("NamePlates")
 local LSM = E.Libs.LSM
 
 --Lua functions
-local format = string.format
-local gmatch = gmatch
-local gsub = gsub
-local match = string.match
-local utf8lower = utf8.lower
-local utf8sub = utf8.sub
 --WoW API / Variables
-local RAID_CLASS_COLORS = RAID_CLASS_COLORS
 local UNKNOWN = UNKNOWN
-
-local function abbrev(name)
-	local letters, lastWord = "", match(name, ".+%s(.+)$")
-	if lastWord then
-		for word in gmatch(name, ".-%s") do
-			local firstLetter = utf8sub(gsub(word, "^[%s%p]*", ""), 1, 1)
-			if firstLetter ~= utf8lower(firstLetter) then
-				letters = format("%s%s. ", letters, firstLetter)
-			end
-		end
-		name = format("%s%s", letters, lastWord)
-	end
-	return name
-end
 
 function NP:Update_Name(frame, triggered)
 	if not triggered then
@@ -34,7 +13,7 @@ function NP:Update_Name(frame, triggered)
 
 	local name = frame.Name
 	local nameText = frame.UnitName or UNKNOWN
-	name:SetText(self.db.units[frame.UnitType].name.abbrev and abbrev(nameText) or nameText)
+	name:SetText(self.db.units[frame.UnitType].name.abbrev and E.TagFunctions.Abbrev(nameText) or nameText)
 
 	if not triggered then
 		name:ClearAllPoints()
@@ -54,7 +33,7 @@ function NP:Update_Name(frame, triggered)
 
 	local nameDB = self.db.units[frame.UnitType].name
 	local useClassColor = nameDB and nameDB.useClassColor
-	local classColor = class and (CUSTOM_CLASS_COLORS and CUSTOM_CLASS_COLORS[class] or RAID_CLASS_COLORS[class])
+	local classColor = E:ClassColor(class)
 	local isPlayerType = frame.UnitType == "FRIENDLY_PLAYER" or frame.UnitType == "ENEMY_PLAYER"
 	local fallbackToReaction = isPlayerType and useClassColor and not classColor
 

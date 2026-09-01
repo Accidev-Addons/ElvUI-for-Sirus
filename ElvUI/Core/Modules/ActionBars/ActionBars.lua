@@ -3,10 +3,11 @@ local AB = E:GetModule('ActionBars')
 
 local _G = _G
 local ipairs, pairs, next, unpack = ipairs, pairs, next, unpack
-local format, gsub, strsplit, strupper = format, gsub, strsplit, strupper
+local format, gsub, strmatch, strsplit, strupper = format, gsub, strmatch, strsplit, strupper
 
 local ClearOverrideBindings = ClearOverrideBindings
 local CreateFrame = CreateFrame
+local GetActionBarToggles = GetActionBarToggles
 local GetBindingKey = GetBindingKey
 local GetCurrencyListInfo = GetCurrencyListInfo
 local GetCurrencyListSize = GetCurrencyListSize
@@ -16,6 +17,9 @@ local InCombatLockdown = InCombatLockdown
 local IsPossessBarVisible = IsPossessBarVisible
 local PetDismiss = PetDismiss
 local RegisterStateDriver = RegisterStateDriver
+local SecureHandlerExecute = SecureHandlerExecute
+local SecureHandlerSetFrameRef = SecureHandlerSetFrameRef
+local SetActionBarToggles = SetActionBarToggles
 local SetCVar = SetCVar
 local SetModifiedClick = SetModifiedClick
 local SetOverrideBindingClick = SetOverrideBindingClick
@@ -371,6 +375,15 @@ function AB:CreateBar(id)
 	return bar
 end
 
+function AB:DeferOutOfCombat(flag, value)
+	if not InCombatLockdown() then return false end
+
+	AB[flag] = value or true
+	AB:RegisterEvent('PLAYER_REGEN_ENABLED')
+
+	return true
+end
+
 function AB:PLAYER_REGEN_ENABLED()
 	if AB.NeedsUpdateButtonSettings then
 		AB:UpdateButtonSettings()
@@ -384,12 +397,14 @@ function AB:PLAYER_REGEN_ENABLED()
 		AB:AdjustMaxStanceButtons(AB.NeedsAdjustMaxStanceButtons) --sometimes it holds the event, otherwise true. pass it before we nil it.
 		AB.NeedsAdjustMaxStanceButtons = nil
 	end
-	if AB.ReanchorTotemBar and AB.NeedsTotemBarReanchor then
+	if AB.NeedsTotemBarReanchor then
 		AB.NeedsTotemBarReanchor = nil
 		AB:ReanchorTotemBar()
 	end
 	if AB.NeedsPositionAndSizeTotemBar then
-		AB:PositionAndSizeTotemBar()
+		if AB:TotemBarEnabled() then
+			AB:PositionAndSizeTotemBar()
+		end
 		AB.NeedsPositionAndSizeTotemBar = nil
 	end
 	if AB.NeedsRecallButtonUpdate then
@@ -486,7 +501,7 @@ function AB:CreateExtraActionBar()
 	AB:RepointExtraActionBar()
 
 	for _, button in ipairs(_G.ExtraActionBarFrame.Buttons) do
-		button.icon:SetTexCoord(unpack(E.TexCoords))
+		button.icon:SetTexCoords()
 		button:CreateBackdrop()
 		button.backdrop:SetOutside(button.icon)
 
@@ -498,13 +513,8 @@ function AB:CreateExtraActionBar()
 	end
 
 	hooksecurefunc(container, 'SetPoint', function(_, _, parent)
-		if parent ~= holder then
-			if InCombatLockdown() then
-				AB.NeedsExtraActionRepoint = true
-				AB:RegisterEvent('PLAYER_REGEN_ENABLED')
-			else
-				AB:RepointExtraActionBar()
-			end
+		if parent ~= holder and not AB:DeferOutOfCombat('NeedsExtraActionRepoint') then
+			AB:RepointExtraActionBar()
 		end
 	end)
 
@@ -512,11 +522,7 @@ function AB:CreateExtraActionBar()
 end
 
 function AB:UpdateExtraActionBar()
-	if InCombatLockdown() then
-		AB.NeedsExtraActionUpdate = true
-		AB:RegisterEvent('PLAYER_REGEN_ENABLED')
-		return
-	end
+	if AB:DeferOutOfCombat('NeedsExtraActionUpdate') then return end
 
 	local db = E.db.actionbar.extraActionButton
 	local container = _G.ExtraAbilityContainer
@@ -551,7 +557,7 @@ function AB:ReassignBindings(event)
 		AB:UpdatePetBindings()
 		AB:UpdateStanceBindings()
 
-		if E.myclass == 'SHAMAN' then
+		if AB:TotemBarEnabled() then
 			AB:UpdateTotemBindings()
 		end
 	end
@@ -620,11 +626,7 @@ end
 function AB:UpdateButtonSettings(specific)
 	if not E.private.actionbar.enable then return end
 
-	if InCombatLockdown() then
-		AB.NeedsUpdateButtonSettings = true
-		AB:RegisterEvent('PLAYER_REGEN_ENABLED')
-		return
-	end
+	if AB:DeferOutOfCombat('NeedsUpdateButtonSettings') then return end
 
 	for barName, bar in pairs(AB.handledBars) do
 		if not specific or specific == barName then
@@ -641,7 +643,7 @@ function AB:UpdateButtonSettings(specific)
 		AB:UpdatePetBindings()
 		AB:UpdateStanceBindings() -- call after AdjustMaxStanceButtons
 
-		if E.myclass == 'SHAMAN' and AB.db.totemBar.enable then
+		if AB:TotemBarEnabled() then
 			AB:PositionAndSizeTotemBar()
 		end
 	end
@@ -829,31 +831,35 @@ do
 		PossessBarFrame = false
 	}
 
-	local editModeRightBars = { 'MultiBarRight', 'MultiBarLeft' }
-	local editModeHooked = {}
-
-	local function ClearEditModeDefault(bar)
-		local info = bar.systemInfo
-		if info and info.isInDefaultPosition then
-			info.isInDefaultPosition = false
-		end
-	end
-
-	function AB:UnanchorEditModeRightBars()
-		for _, name in next, editModeRightBars do
-			local bar = _G[name]
-			if bar and bar.UpdateSystem then
-				if not editModeHooked[bar] then
-					editModeHooked[bar] = true
-					hooksecurefunc(bar, 'UpdateSystem', ClearEditModeDefault)
+	function AB:ButtonEventsRegisterFrame(added)
+		local frames = _G.ActionBarButtonEventsFrame.frames
+		for index = #frames, 1, -1 do
+			local frame = frames[index]
+			local wasAdded = frame == added
+			if not added or wasAdded then
+				if not strmatch(frame:GetName(), 'ExtraActionButton%d') then
+					frames[index] = nil
 				end
 
-				ClearEditModeDefault(bar)
+				if wasAdded then
+					break
+				end
 			end
 		end
 	end
 
 	local currencyWatcher
+	local secureHider
+
+	local function SecureHideButton(button)
+		button:SetAttribute('_ignore', true)
+		SecureHandlerSetFrameRef(secureHider, 'button', button)
+		SecureHandlerExecute(secureHider, [[
+			local b = self:GetFrameRef('button')
+			b:Hide()
+			b:SetAttribute('statehidden', true)
+		]])
+	end
 
 	local function CurrencyTab_Pulse()
 		local CharacterFrame, TokenFrame = _G.CharacterFrame, _G.TokenFrame
@@ -924,7 +930,13 @@ do
 			end
 		end
 
-		AB:UnanchorEditModeRightBars()
+		local bottomLeft, bottomRight = GetActionBarToggles()
+		SetActionBarToggles(bottomLeft, bottomRight, false, false)
+
+		if _G.ActionBarButtonEventsFrame then
+			hooksecurefunc(_G.ActionBarButtonEventsFrame, 'RegisterFrame', AB.ButtonEventsRegisterFrame)
+			AB.ButtonEventsRegisterFrame()
+		end
 
 		if not currencyWatcher then
 			currencyWatcher = CreateFrame('Frame', 'Elv_CurrencyTabWatcher', E.HiddenFrame)
@@ -949,14 +961,16 @@ do
 			'VehicleMenuBarActionButton',
 		}
 
+		if not secureHider then
+			secureHider = CreateFrame('Frame', nil, nil, 'SecureHandlerBaseTemplate')
+		end
+
 		for i = 1, 12 do
 			for _, buttonPrefix in ipairs(buttons) do
 				local button = _G[buttonPrefix..i]
 				if button then
-					button:SetAttribute('_ignore', true)
-					button:Hide()
 					button:UnregisterAllEvents()
-					button:SetAttribute('statehidden', true)
+					SecureHideButton(button)
 				end
 			end
 		end
@@ -978,10 +992,8 @@ do
 		if E.myclass ~= 'SHAMAN' then
 			for i = 1, 12 do
 				local button = _G['MultiCastActionButton'..i]
-				button:SetAttribute('_ignore', true)
-				button:Hide()
 				button:UnregisterAllEvents()
-				button:SetAttribute('statehidden', true)
+				SecureHideButton(button)
 			end
 		end
 
@@ -1015,11 +1027,7 @@ function AB:GetHotkeyConfig(db)
 end
 
 function AB:UpdateButtonConfig(barName, buttonName)
-	if InCombatLockdown() then
-		AB.NeedsUpdateButtonSettings = true
-		AB:RegisterEvent('PLAYER_REGEN_ENABLED')
-		return
-	end
+	if AB:DeferOutOfCombat('NeedsUpdateButtonSettings') then return end
 
 	local bar = AB.handledBars[barName]
 	if not bar.buttonConfig then
@@ -1292,7 +1300,7 @@ function AB:PLAYER_ENTERING_WORLD(event)
 	AB:AdjustMaxStanceButtons(event)
 	AB:UpdatePet(event)
 
-	if not AB:IsHooked('ShowMultiCastActionBar') and E.myclass == 'SHAMAN' and AB.db.totemBar.enable then
+	if not AB:IsHooked('ShowMultiCastActionBar') and AB:TotemBarEnabled() then
 		AB:SecureHook('ShowMultiCastActionBar', 'PositionAndSizeTotemBar')
 		AB:PositionAndSizeTotemBar()
 	end
@@ -1367,7 +1375,7 @@ function AB:Initialize()
 	AB:RegisterEvent('UNIT_ENTERED_VEHICLE', 'UpdateVehicleShown')
 	AB:RegisterEvent('UNIT_EXITED_VEHICLE', 'UpdateVehicleShown')
 
-	if E.myclass == 'SHAMAN' and AB.db.totemBar.enable then
+	if AB:TotemBarEnabled(true) then
 		AB:CreateTotemBar()
 	end
 

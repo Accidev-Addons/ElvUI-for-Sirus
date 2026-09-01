@@ -146,3 +146,33 @@ S:AddCallback("Skin_PvP", function()
 	BattlefieldFrameJoinButton:Point("RIGHT", BattlefieldFrameCancelButton, "LEFT", -3, 0)
 	BattlefieldFrameCancelButton:Point("CENTER", BattlefieldFrame, "TOPLEFT", 302, -417)
 end)
+S:AddCallback("Skin_BattlegroundInvite", function()
+	if not E.private.skins.blizzard.enable or not E.private.skins.blizzard.pvp then return end
+
+	local frame = _G.BattlegroundInviteFrame
+	if not frame then return end
+
+	local popup = frame.PopupFrame
+	popup.Body:SetTexture(E.ClearTexture)
+	popup.Header:SetTexture(E.ClearTexture)
+	popup.Bottom:SetTexture(E.ClearTexture)
+
+	popup:CreateBackdrop("Transparent")
+	popup.backdrop:Point("TOPLEFT", 0, -40)
+	popup.backdrop:Point("BOTTOMRIGHT", 0, 40)
+
+	popup.Title:FontTemplate(nil, 16, "OUTLINE")
+	popup.Title:SetTextColor(1, 1, 1)
+	popup.Timer:FontTemplate(nil, 24, "OUTLINE")
+
+	local SetTextColor = popup.Timer.SetTextColor
+	popup.Timer.SetTextColor = function(fs, r, g, b, a)
+		if r == 0 and g == 0 and b == 0 then r, g, b = 1, 1, 1 end
+		SetTextColor(fs, r, g, b, a)
+	end
+	popup.Timer:SetTextColor(1, 1, 1)
+
+	S:HandleButton(popup.EnterButton)
+	S:HandleCloseButton(popup.CancelButton)
+	S:HandleNextPrevButton(popup.HideButton, "down")
+end)

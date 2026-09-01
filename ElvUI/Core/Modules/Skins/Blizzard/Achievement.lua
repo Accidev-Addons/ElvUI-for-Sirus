@@ -643,7 +643,7 @@ S:AddCallbackForAddon("Blizzard_AchievementUI", "Skin_Sirus_AchievementUI", func
 				end
 
 				if result.icon and result.icon:GetTexCoord() == 0 then
-					result.icon:SetTexCoord(unpack(E.TexCoords))
+					result.icon:SetTexCoords()
 				end
 			end
 		end
@@ -655,7 +655,7 @@ S:AddCallbackForAddon("Blizzard_AchievementUI", "Skin_Sirus_AchievementUI", func
 			for i = 1, #self.buttons do
 				local result = self.buttons[i]
 				if result.icon and result.icon:GetTexCoord() == 0 then
-					result.icon:SetTexCoord(unpack(E.TexCoords))
+					result.icon:SetTexCoords()
 				end
 			end
 		end)

@@ -14,10 +14,12 @@
 	<Script file="BlackMarket.lua"/>
 	<Script file="BlizzardOptions.lua"/>
 	<Script file="Calendar.lua"/>
+	<Include file="Character.xml"/>
 	<Script file="Character.lua"/>
 	<Script file="Collections.lua"/>
 	<Script file="CombatLog.lua"/>
 	<Script file="Customizations.lua"/>
+	<Script file="DeathRecap.lua"/>
 	<Script file="Debug.lua"/>
 	<Script file="DressingRoom.lua"/>
 	<Script file="DummyControl.lua"/>
@@ -45,6 +47,7 @@
 	<Script file="Petition.lua"/>
 	<Script file="PvP.lua"/>
 	<Script file="Quest.lua"/>
+	<Script file="ObjectiveTracker.lua"/>
 	<Script file="Raid.lua"/>
 	<Script file="Roulette.lua"/>
 	<Script file="Socket.lua"/>

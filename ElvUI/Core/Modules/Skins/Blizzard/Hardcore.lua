@@ -97,7 +97,7 @@ local function LoadSkin()
 
 				if button.Icon then
 					button.Icon:SetDrawLayer("BORDER")
-					button.Icon:SetTexCoord(unpack(E.TexCoords))
+					button.Icon:SetTexCoords()
 
 					local iconBackdrop = CreateFrame("Frame", nil, button)
 					iconBackdrop:SetPoint("LEFT", button, "LEFT", 12, 0)

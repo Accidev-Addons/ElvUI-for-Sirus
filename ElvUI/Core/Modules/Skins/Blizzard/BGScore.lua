@@ -5,20 +5,55 @@ local format, split = string.format, string.split
 local FauxScrollFrame_GetOffset = FauxScrollFrame_GetOffset
 local GetBattlefieldScore = GetBattlefieldScore
 local IsActiveBattlefieldArena = IsActiveBattlefieldArena
-local RAID_CLASS_COLORS = RAID_CLASS_COLORS
 
 S:AddCallback("Skin_WorldStateScore", function()
 	if not E.private.skins.blizzard.enable or not E.private.skins.blizzard.bgscore then return end
 
 	WorldStateScoreFrame:StripTextures()
 	WorldStateScoreFrame:CreateBackdrop("Transparent")
-	WorldStateScoreFrame.backdrop:Point("TOPLEFT", 10, -15)
-	WorldStateScoreFrame.backdrop:Point("BOTTOMRIGHT", -113, 67)
+	WorldStateScoreFrame.backdrop:Point("TOPLEFT", 0, 0)
+	WorldStateScoreFrame.backdrop:Point("BOTTOMRIGHT", 0, 8)
 
 	WorldStateScoreFrame:EnableMouse(true)
 	S:SetBackdropHitRect(WorldStateScoreFrame)
 
 	S:HandleCloseButton(WorldStateScoreFrameCloseButton, WorldStateScoreFrame.backdrop)
+
+	local container = _G.WorldStateScoreFrameContainer
+	container:StripTextures()
+
+	if container.Inset then
+		container.Inset:StripTextures()
+	end
+
+	if _G.WorldStateScoreFrameContainerBattlegroundNameFrame then
+		_G.WorldStateScoreFrameContainerBattlegroundNameFrame:StripTextures()
+	end
+
+	_G.WorldStateScoreFrameWinnerWreatchLeft:Kill()
+	_G.WorldStateScoreFrameWinnerWreatchRight:Kill()
+
+	_G.WorldStateScoreFrameWinnerGlow:ClearAllPoints()
+	_G.WorldStateScoreFrameWinnerGlow:Point("BOTTOM", _G.WorldStateScoreFrameWinner, "TOP", 0, -59)
+	_G.WorldStateScoreWinnerFrame:StripTextures()
+
+	for i = 1, MAX_WORLDSTATE_SCORE_BUTTONS do
+		local left = _G["WorldStateScoreButton"..i.."FactionLeft"]
+		local right = _G["WorldStateScoreButton"..i.."FactionRight"]
+
+		if left then left:SetTexture(E.media.blankTex) end
+		if right then right:SetTexture(E.media.blankTex) end
+	end
+
+	local efficiency = _G.WorldStateScoreFrameEfficiencyEfficiencyBar
+	if efficiency then
+		efficiency:StripTextures()
+		efficiency:SetStatusBarTexture(E.media.normTex)
+		efficiency:CreateBackdrop("Transparent")
+		E:RegisterStatusBar(efficiency)
+	end
+
+	S:HandleDropDownBox(_G.ScorePlayerDropDown)
 
 	WorldStateScoreScrollFrame:StripTextures()
 	S:HandleSirusScrollBar(WorldStateScoreScrollFrameScrollBar)
@@ -33,6 +68,7 @@ S:AddCallback("Skin_WorldStateScore", function()
 	WorldStateScoreFrameTeam:StyleButton()
 
 	S:HandleButton(WorldStateScoreFrameLeaveButton)
+	WorldStateScoreFrameLeaveButton:StripTextures()
 
 	for i = 1, 3 do
 		S:HandleTab(_G["WorldStateScoreFrameTab"..i])
@@ -93,11 +129,14 @@ S:AddCallback("Skin_WorldStateScore", function()
 					name = format("%s|cffffffff - |r%s%s|r", name, color, realm)
 				end
 
-				classTextColor = CUSTOM_CLASS_COLORS and CUSTOM_CLASS_COLORS[classToken] or RAID_CLASS_COLORS[classToken]
+				classTextColor = E:ClassColor(classToken)
 
 				nameText = _G["WorldStateScoreButton"..i.."NameText"]
 				nameText:SetText(name)
-				nameText:SetTextColor(classTextColor.r, classTextColor.g, classTextColor.b)
+
+				if classTextColor then
+					nameText:SetTextColor(classTextColor.r, classTextColor.g, classTextColor.b)
+				end
 			end
 		end
 	end)

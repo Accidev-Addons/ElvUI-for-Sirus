@@ -203,11 +203,14 @@ end
 function M:UpdatePageStrings(i, iLevelDB, slot, slotInfo, which) -- `which` is used by plugins
 	iLevelDB[i] = slotInfo.iLvl
 
-	if E.db.general.itemLevel.showEnchants then
+	if E.db.general.itemLevel.showEnchants and which ~= 'Character' then
 		slot.enchantText:SetText(slotInfo.enchantTextShort)
 		if slotInfo.enchantColors and next(slotInfo.enchantColors) then
 			slot.enchantText:SetTextColor(unpack(slotInfo.enchantColors))
 		end
+	elseif which == 'Character' then
+		slot.enchantText:SetText('')
+		slot.enchantText:Hide()
 	end
 
 	if E.db.general.itemLevel.showItemLevel then
@@ -219,7 +222,7 @@ function M:UpdatePageStrings(i, iLevelDB, slot, slotInfo, which) -- `which` is u
 
 	M:UpdateSocketDisplay(slot, true)
 
-	local gemStep, showGems = 1, E.db.general.itemLevel.showGems
+	local gemStep, showGems = 1, E.db.general.itemLevel.showGems and which ~= 'Character'
 	for x = 1, 10 do
 		local texture = slot['textureSlot'..x]
 		local backdrop = slot['textureSlotBackdrop'..x]
@@ -302,7 +305,9 @@ do
 		for i = 1, numInspectItems do
 			local inspectItem = i ~= 4 and _G[which..InspectItems[i]]
 			if inspectItem then
-				inspectItem.enchantText:SetText('')
+				if which ~= 'Character' then
+					inspectItem.enchantText:SetText('')
+				end
 				inspectItem.iLvlText:SetText('')
 
 				local unit = (which == 'Character' and 'player') or frame.unit
@@ -375,6 +380,12 @@ function M:UpdateSlotPoints(which, config)
 
 			slot.enchantText:FontTemplate(itemLevelFont, itemLevelFontSize, itemLevelFontOutline)
 			slot.enchantText:ClearAllPoints()
+			if which == 'Character' then
+				slot.enchantText:SetText('')
+				slot.enchantText:Hide()
+			else
+				slot.enchantText:Show()
+			end
 
 			local itemLeft, itemRight = i == 16, i == 17
 			if itemLeft or itemRight then

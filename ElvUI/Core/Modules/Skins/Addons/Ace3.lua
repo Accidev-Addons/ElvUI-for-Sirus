@@ -220,6 +220,14 @@ function S:Ace3_RegisterAsWidget(widget)
 		end
 	elseif TYPE == 'CheckBox' then
 		S:Ace3_SkinCheckBox(widget, widget.check, widget.checkbg, widget.highlight)
+	elseif TYPE == 'Dropdown-Item-Toggle' or TYPE == 'Dropdown-Item-Menu' or TYPE == 'Dropdown-Item-Execute' then
+		local highlight = widget.highlight
+		if highlight then
+			local r, g, b = unpack(E.media.rgbvaluecolor)
+			highlight:SetTexture(E.media.blankTex)
+			highlight:SetBlendMode('BLEND')
+			highlight:SetVertexColor(r, g, b, .35)
+		end
 	elseif TYPE == 'Dropdown' or TYPE == 'Dropdown-ElvUI' or TYPE == 'LQDropdown' then
 		local frame = widget.dropdown
 

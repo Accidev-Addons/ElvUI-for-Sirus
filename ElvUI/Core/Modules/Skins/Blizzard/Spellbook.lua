@@ -2,7 +2,6 @@ local E, L, V, P, G = unpack(ElvUI)
 local S = E:GetModule("Skins")
 
 local _G = _G
-local unpack = unpack
 
 local function LoadSkin()
 	if not E.private.skins.blizzard.enable or not E.private.skins.blizzard.spellbook then return end
@@ -48,7 +47,7 @@ local function LoadSkin()
 
 		autoCast:SetOutside(button, 16, 16)
 
-		_G["SpellButton"..i.."IconTexture"]:SetTexCoord(unpack(E.TexCoords))
+		_G["SpellButton"..i.."IconTexture"]:SetTexCoords()
 
 		E:RegisterCooldown(_G["SpellButton"..i.."Cooldown"])
 	end
@@ -71,7 +70,7 @@ local function LoadSkin()
 			nt = button:GetNormalTexture()
 			if nt then
 				nt:SetInside()
-				nt:SetTexCoord(unpack(E.TexCoords))
+				nt:SetTexCoords()
 			end
 		end
 
@@ -100,7 +99,7 @@ local function LoadSkin()
 		button:StyleButton()
 
 		button.IconTexture:SetInside()
-		button.IconTexture:SetTexCoord(unpack(E.TexCoords))
+		button.IconTexture:SetTexCoords()
 	end
 
 	local function SkinProfessionButton(button)
@@ -109,7 +108,7 @@ local function LoadSkin()
 		button:StyleButton()
 
 		button.iconTexture:SetInside()
-		button.iconTexture:SetTexCoord(unpack(E.TexCoords))
+		button.iconTexture:SetTexCoords()
 	end
 
 	local function StatusBarColor(self, value)
@@ -205,7 +204,7 @@ local function LoadSkin()
 			if icon then
 				icon:SetTexture(texture)
 				icon:SetInside()
-				icon:SetTexCoord(unpack(E.TexCoords))
+				icon:SetTexCoords()
 				icon:SetDrawLayer("BORDER")
 			end
 

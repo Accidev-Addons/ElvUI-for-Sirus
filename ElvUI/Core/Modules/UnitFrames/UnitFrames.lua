@@ -7,6 +7,7 @@ local _G = _G
 local select, pairs, type, unpack, assert, tostring = select, pairs, type, unpack, assert, tostring
 local tremove, tinsert = table.remove, table.insert
 local find, gsub, format = string.find, string.gsub, string.format
+local max = math.max
 
 local hooksecurefunc = hooksecurefunc
 local CreateFrame = CreateFrame
@@ -19,6 +20,8 @@ local GetInstanceInfo = GetInstanceInfo
 local GetInstanceID = GetInstanceID
 local UnregisterStateDriver = UnregisterStateDriver
 local RegisterStateDriver = RegisterStateDriver
+local UnregisterUnitWatch = UnregisterUnitWatch
+local RegisterUnitWatch = RegisterUnitWatch
 local MAX_BOSS_FRAMES = MAX_BOSS_FRAMES
 
 UF.headerstoload = {}
@@ -952,6 +955,190 @@ function UF:CreateAndUpdateUF(unit)
 		self[unit]:Disable()
 		E:DisableMover(self[unit].mover:GetName())
 	end
+end
+
+function UF:CreateTargetsGroupUnit(key, moverName, groupFilter, moverY)
+	local title = E:StringTitle(key)
+
+	local function UpdateFrames(self, frame, db)
+		if not db then
+			db = frame.db
+		else
+			frame.db = db
+		end
+
+		frame.colors = ElvUF.colors
+		frame:RegisterForClicks(self.db.targetOnMouseDown and "AnyDown" or "AnyUp")
+
+		do
+			frame.ORIENTATION = db.orientation --allow this value to change when unitframes position changes on screen?
+			if self.thinBorders then
+				frame.SPACING = 0
+				frame.BORDER = E.mult
+			else
+				frame.BORDER = E.Border
+				frame.SPACING = E.Spacing
+			end
+			frame.SHADOW_SPACING = 3
+
+			frame.UNIT_WIDTH = db.width
+			frame.UNIT_HEIGHT = db.height
+
+			frame.USE_POWERBAR = false
+			frame.POWERBAR_DETACHED = false
+			frame.USE_INSET_POWERBAR = false
+			frame.USE_MINI_POWERBAR = false
+			frame.USE_POWERBAR_OFFSET = false
+			frame.POWERBAR_OFFSET = 0
+			frame.POWERBAR_HEIGHT = 0
+			frame.POWERBAR_WIDTH = 0
+
+			frame.USE_PORTRAIT = false
+			frame.USE_PORTRAIT_OVERLAY = false
+			frame.PORTRAIT_WIDTH = 0
+
+			frame.CLASSBAR_YOFFSET = 0
+			frame.BOTTOM_OFFSET = 0
+
+			frame.VARIABLES_SET = true
+		end
+
+		if frame.isChild and frame.originalParent then
+			local childDB = db.targetsGroup
+			frame.db = db.targetsGroup
+			if not frame.originalParent.childList then
+				frame.originalParent.childList = {}
+			end
+			frame.originalParent.childList[frame] = true
+
+			if not InCombatLockdown() then
+				if childDB.enable then
+					frame:SetParent(frame.originalParent)
+					RegisterUnitWatch(frame)
+					frame:Size(childDB.width, childDB.height)
+					frame:ClearAllPoints()
+					frame:Point(E.InversePoints[childDB.anchorPoint], frame.originalParent, childDB.anchorPoint, childDB.xOffset, childDB.yOffset)
+				else
+					UnregisterUnitWatch(frame)
+					frame:SetParent(E.HiddenFrame)
+				end
+			else
+				if childDB.enable then
+					frame:SetAttribute("initial-anchor", format("%s,%s,%d,%d", E.InversePoints[childDB.anchorPoint], childDB.anchorPoint, childDB.xOffset, childDB.yOffset))
+					frame:SetAttribute("initial-width", childDB.width)
+					frame:SetAttribute("initial-height", childDB.height)
+				end
+			end
+		else
+			if not InCombatLockdown() then
+				frame:Size(frame.UNIT_WIDTH, frame.UNIT_HEIGHT)
+			else
+				frame:SetAttribute("initial-width", frame.UNIT_WIDTH)
+				frame:SetAttribute("initial-height", frame.UNIT_HEIGHT)
+			end
+		end
+
+		--Health
+		UF:Configure_HealthBar(frame)
+
+		--Name
+		UF:UpdateNameSettings(frame)
+
+		--Threat
+		UF:Configure_Threat(frame)
+
+		--Fader
+		UF:Configure_Fader(frame)
+
+		--Cutaway
+		UF:Configure_Cutaway(frame)
+
+		UF:Configure_RaidIcon(frame)
+
+		if not frame.isChild then
+			--Auras
+			UF:EnableDisable_Auras(frame)
+			UF:Configure_Auras(frame, "Buffs")
+			UF:Configure_Auras(frame, "Debuffs")
+
+			--RaidDebuffs
+			UF:Configure_RaidDebuffs(frame)
+
+			--Debuff Highlight
+			UF:Configure_DebuffHighlight(frame)
+
+			--Buff Indicator
+			UF:UpdateAuraWatch(frame)
+		end
+
+		frame:UpdateAllElements("ForceUpdate")
+	end
+
+	local function UpdateHeader(self, header, db)
+		header:Hide()
+		header.db = db
+
+		RegisterStateDriver(header, "visibility", "[@raid1,exists] show;hide")
+
+		local width, height = header:GetSize()
+		header.dirtyWidth, header.dirtyHeight = width, max(height, db.height)
+
+		if not header.positioned then
+			header:ClearAllPoints()
+			header:Point("TOPLEFT", E.UIParent, "TOPLEFT", 4, moverY)
+			E:CreateMover(header, header:GetName().."Mover", moverName, nil, nil, nil, "ALL,RAID", nil, "unitframe,"..key..",generalGroup")
+			header.mover.positionOverride = "TOPLEFT"
+			header:SetAttribute("minHeight", header.dirtyHeight)
+			header:SetAttribute("minWidth", header.dirtyWidth)
+			header.positioned = true
+		end
+	end
+
+	local function ConstructFrames(frame)
+		frame:SetScript("OnEnter", UnitFrame_OnEnter)
+		frame:SetScript("OnLeave", UnitFrame_OnLeave)
+
+		frame.RaisedElementParent = CreateFrame("Frame", nil, frame)
+		frame.RaisedElementParent.TextureParent = CreateFrame("Frame", nil, frame.RaisedElementParent)
+		frame.RaisedElementParent:OffsetFrameLevel(100, frame)
+
+		frame.Health = UF:Construct_HealthBar(frame, true)
+		frame.Name = UF:Construct_NameText(frame)
+		frame.ThreatIndicator = UF:Construct_Threat(frame)
+		frame.RaidTargetIndicator = UF:Construct_RaidIcon(frame)
+		frame.MouseGlow = UF:Construct_MouseGlow(frame)
+		frame.TargetGlow = UF:Construct_TargetGlow(frame)
+		frame.Fader = UF:Construct_Fader()
+		frame.Cutaway = UF:Construct_Cutaway(frame)
+
+		if not frame.isChild then
+			frame.Buffs = UF:Construct_Buffs(frame)
+			frame.Debuffs = UF:Construct_Debuffs(frame)
+			frame.AuraWatch = UF:Construct_AuraWatch(frame)
+			frame.RaidDebuffs = UF:Construct_RaidDebuffs(frame)
+			frame.DebuffHighlight = UF:Construct_DebuffHighlight(frame)
+
+			frame.unitframeType = key
+		else
+			frame.unitframeType = key.."target"
+		end
+
+		UF:Update_StatusBars()
+		UF:Update_FontStrings()
+
+		frame.originalParent = frame:GetParent()
+
+		frame.db = UF.db.units[key]
+		frame.PostCreate = UpdateFrames
+
+		return frame
+	end
+
+	UF["Construct_"..title.."Frames"] = ConstructFrames
+	UF["Update_"..title.."Header"] = UpdateHeader
+	UF["Update_"..title.."Frames"] = UpdateFrames
+
+	UF.headerstoload[key] = {groupFilter, "ELVUI_UNITTARGET"}
 end
 
 function UF:LoadUnits()

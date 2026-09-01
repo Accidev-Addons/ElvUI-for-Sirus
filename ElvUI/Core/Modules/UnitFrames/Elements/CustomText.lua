@@ -41,8 +41,10 @@ function UF:Configure_CustomTexts(frame)
 			end
 
 			if objectDB.enable then
-				frame:Tag(frame.customTexts[objectName], objectDB.text_format or "")
-				frame.customTexts[objectName]:Show()
+				local customText = frame.customTexts[objectName]
+				customText.frequentUpdates = (objectDB.text_format and objectDB.text_format ~= "") and 0.2 or nil
+				frame:Tag(customText, objectDB.text_format or "")
+				customText:Show()
 			else
 				frame:Untag(frame.customTexts[objectName])
 				frame.customTexts[objectName]:Hide()

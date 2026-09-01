@@ -589,10 +589,15 @@ function CH:AddMessage(msg, infoR, infoG, infoB, infoID, accessID, typeID, event
 	self.OldAddMessage(self, body, infoR, infoG, infoB, infoID, accessID, typeID, event, eventArgs, msgFormatter)
 end
 
-function CH:UpdateSettings()
-	for _, name in ipairs(_G.CHAT_FRAMES) do
-		_G[name..'EditBox']:SetAltArrowKeyMode(CH.db.useAltKey)
+local function UpdateAltArrowKeyMode(chat)
+	local editbox = chat.editBox
+	if editbox then
+		editbox:SetAltArrowKeyMode(CH.db.useAltKey)
 	end
+end
+
+function CH:UpdateSettings()
+	CH:ForEachChat(UpdateAltArrowKeyMode)
 end
 
 local removeIconFromLine
@@ -661,6 +666,18 @@ function CH:CopyChat(frame)
 	else
 		CH.CopyChatFrameEditBox:SetText('')
 		CH.CopyChatFrame:Hide()
+	end
+end
+
+function CH:ForEachChat(func)
+	for index, name in ipairs(_G.CHAT_FRAMES) do
+		local chat = _G[name]
+		if chat then
+			local result = func(chat, name, index)
+			if result ~= nil then
+				return result
+			end
+		end
 	end
 end
 
@@ -781,26 +798,25 @@ function CH:UpdateEditboxAnchors(cvar, value)
 	local leftChat = classic and _G.LeftChatPanel
 	local panel = 22
 
-	for _, name in ipairs(_G.CHAT_FRAMES) do
-		local frame = _G[name]
-		local editbox = frame and frame.editBox
-		if editbox then
-			editbox.chatStyle = value
-			editbox:ClearAllPoints()
+	CH:ForEachChat(function(frame)
+		local editbox = frame.editBox
+		if not editbox then return end
 
-			local anchorTo = leftChat or frame
-			local below, belowInside = CH.db.editBoxPosition == 'BELOW_CHAT', CH.db.editBoxPosition == 'BELOW_CHAT_INSIDE'
-			if below or belowInside then
-				local showLeftPanel = E.db.datatexts.panels.LeftChatDataPanel.enable
-				editbox:Point('TOPLEFT', anchorTo, 'BOTTOMLEFT', classic and (showLeftPanel and 1 or 0) or -2, (classic and (belowInside and 1 or 0) or -5) + (belowInside and panel or 0))
-				editbox:Point('BOTTOMRIGHT', anchorTo, 'BOTTOMRIGHT', classic and (showLeftPanel and -1 or 0) or -2, (classic and (belowInside and 1 or 0) or -5) + (belowInside and 0 or -panel))
-			else
-				local aboveInside = CH.db.editBoxPosition == 'ABOVE_CHAT_INSIDE'
-				editbox:Point('BOTTOMLEFT', anchorTo, 'TOPLEFT', classic and (aboveInside and 1 or 0) or -2, (classic and (aboveInside and -1 or 0) or 2) + (aboveInside and -panel or 0))
-				editbox:Point('TOPRIGHT', anchorTo, 'TOPRIGHT', classic and (aboveInside and -1 or 0) or 2, (classic and (aboveInside and -1 or 0) or 2) + (aboveInside and 0 or panel))
-			end
+		editbox.chatStyle = value
+		editbox:ClearAllPoints()
+
+		local anchorTo = leftChat or frame
+		local below, belowInside = CH.db.editBoxPosition == 'BELOW_CHAT', CH.db.editBoxPosition == 'BELOW_CHAT_INSIDE'
+		if below or belowInside then
+			local showLeftPanel = E.db.datatexts.panels.LeftChatDataPanel.enable
+			editbox:Point('TOPLEFT', anchorTo, 'BOTTOMLEFT', classic and (showLeftPanel and 1 or 0) or -2, (classic and (belowInside and 1 or 0) or -5) + (belowInside and panel or 0))
+			editbox:Point('BOTTOMRIGHT', anchorTo, 'BOTTOMRIGHT', classic and (showLeftPanel and -1 or 0) or -2, (classic and (belowInside and 1 or 0) or -5) + (belowInside and 0 or -panel))
+		else
+			local aboveInside = CH.db.editBoxPosition == 'ABOVE_CHAT_INSIDE'
+			editbox:Point('BOTTOMLEFT', anchorTo, 'TOPLEFT', classic and (aboveInside and 1 or 0) or -2, (classic and (aboveInside and -1 or 0) or 2) + (aboveInside and -panel or 0))
+			editbox:Point('TOPRIGHT', anchorTo, 'TOPRIGHT', classic and (aboveInside and -1 or 0) or 2, (classic and (aboveInside and -1 or 0) or 2) + (aboveInside and 0 or panel))
 		end
-	end
+	end)
 end
 
 function CH:FindChatWindows()
@@ -814,8 +830,7 @@ function CH:FindChatWindows()
 	end
 
 	local docker = _G.GeneralDockManager.primary
-	for index, name in ipairs(_G.CHAT_FRAMES) do
-		local chat = _G[name]
+	CH:ForEachChat(function(chat, _, index)
 		if (chat.isDocked and chat == docker) or (not chat.isDocked and chat:IsShown()) then
 			if not left and index ~= CH.db.panelSnapRightID then
 				if CH.db.panelSnapLeftID then
@@ -841,10 +856,10 @@ function CH:FindChatWindows()
 
 			-- if both are found just return now, don't wait
 			if left and right then
-				return left, right
+				return true
 			end
 		end
-	end
+	end)
 
 	-- none or one was found
 	return left, right
@@ -898,10 +913,12 @@ function CH:UpdateChatTab(chat)
 	end
 end
 
+local function UpdateTab(chat)
+	CH:UpdateChatTab(chat)
+end
+
 function CH:UpdateChatTabs()
-	for _, name in ipairs(_G.CHAT_FRAMES) do
-		CH:UpdateChatTab(_G[name])
-	end
+	CH:ForEachChat(UpdateTab)
 end
 
 function CH:ToggleChatButton(button)
@@ -910,10 +927,12 @@ function CH:ToggleChatButton(button)
 	end
 end
 
+local function ToggleCopyButton(chat)
+	CH:ToggleChatButton(chat.copyButton)
+end
+
 function CH:ToggleCopyChatButtons()
-	for _, name in ipairs(_G.CHAT_FRAMES) do
-		CH:ToggleChatButton(_G[name].copyButton)
-	end
+	CH:ForEachChat(ToggleCopyButton)
 end
 
 function CH:RefreshToggleButtons()
@@ -1013,6 +1032,10 @@ function CH:PositionChat(chat)
 	end
 end
 
+local function PositionChatFrame(chat)
+	CH:PositionChat(chat)
+end
+
 function CH:PositionChats()
 	_G.LeftChatPanel:Size(CH.db.panelWidth, CH.db.panelHeight)
 	if CH.db.separateSizes then
@@ -1026,9 +1049,7 @@ function CH:PositionChats()
 	-- dont proceed when chat is disabled
 	if not E.private.chat.enable then return end
 
-	for _, name in ipairs(_G.CHAT_FRAMES) do
-		CH:PositionChat(_G[name])
-	end
+	CH:ForEachChat(PositionChatFrame)
 end
 
 function CH:Panel_ColorUpdate()
@@ -1042,17 +1063,18 @@ function CH:Panels_ColorUpdate()
 	_G.RightChatPanel.backdrop:SetBackdropColor(panelColor.r, panelColor.g, panelColor.b, panelColor.a)
 end
 
+local function UpdateTabColors(chat)
+	local tab = CH:GetTab(chat)
+	if tab then
+		CH:FCFTab_UpdateColors(tab, tab.selected)
+	end
+end
+
 function CH:UpdateChatTabColors()
 	-- don't proceed when chat is disabled
 	if not E.private.chat.enable then return end
 
-	for _, frameName in ipairs(_G.CHAT_FRAMES) do
-		local chat = _G[frameName]
-		local tab = chat and CH:GetTab(chat)
-		if tab then
-			CH:FCFTab_UpdateColors(tab, tab.selected)
-		end
-	end
+	CH:ForEachChat(UpdateTabColors)
 end
 E.valueColorUpdateFuncs.Chat = CH.UpdateChatTabColors
 
@@ -1219,20 +1241,28 @@ function CH:OnMouseWheel(frame)
 	end
 end
 
-function CH:ToggleHyperlink(enable)
-	for _, frameName in ipairs(_G.CHAT_FRAMES) do
-		local frame = _G[frameName]
-		local hooked = CH.hooks and CH.hooks[frame] and CH.hooks[frame].OnHyperlinkEnter
-		if enable and not hooked then
-			CH:HookScript(frame, 'OnHyperlinkEnter')
-			CH:HookScript(frame, 'OnHyperlinkLeave')
-			CH:HookScript(frame, 'OnMouseWheel')
-		elseif not enable and hooked then
-			CH:Unhook(frame, 'OnHyperlinkEnter')
-			CH:Unhook(frame, 'OnHyperlinkLeave')
-			CH:Unhook(frame, 'OnMouseWheel')
-		end
+local function HyperlinkHooked(frame)
+	return CH.hooks and CH.hooks[frame] and CH.hooks[frame].OnHyperlinkEnter
+end
+
+local function HookHyperlink(frame)
+	if not HyperlinkHooked(frame) then
+		CH:HookScript(frame, 'OnHyperlinkEnter')
+		CH:HookScript(frame, 'OnHyperlinkLeave')
+		CH:HookScript(frame, 'OnMouseWheel')
 	end
+end
+
+local function UnhookHyperlink(frame)
+	if HyperlinkHooked(frame) then
+		CH:Unhook(frame, 'OnHyperlinkEnter')
+		CH:Unhook(frame, 'OnHyperlinkLeave')
+		CH:Unhook(frame, 'OnMouseWheel')
+	end
+end
+
+function CH:ToggleHyperlink(enable)
+	CH:ForEachChat(enable and HookHyperlink or UnhookHyperlink)
 end
 
 function CH:DisableChatThrottle()
@@ -1744,8 +1774,7 @@ function CH:ChatFrame_MessageEventHandler(frame, event, arg1, arg2, arg3, arg4, 
 			local historyType = notChatHistory and not CH.SoundTimer and not strfind(event, '_INFORM') and historyTypes[event]
 			local alertType = (historyType ~= 'CHANNEL' and CH.db.channelAlerts[historyType]) or (historyType == 'CHANNEL' and CH.db.channelAlerts.CHANNEL[arg9])
 			if alertType and alertType ~= 'None' and arg2 ~= PLAYER_NAME and arg2 ~= E.myname and (not CH.db.noAlertInCombat or not InCombatLockdown()) then
-				CH.SoundTimer = E:Delay(5, CH.ThrottleSound)
-				PlaySoundFile(LSM:Fetch('sound', alertType), 'Master')
+				CH:PlayThrottledSound(alertType)
 			end
 
 			local accessID = _G.ChatHistory_GetAccessID(chatGroup, chatTarget)
@@ -1860,36 +1889,35 @@ do
 end
 
 local ignoreChats = { [2]='Log' }
+local function SetupChatFrame(chat)
+	CH:StyleChat(chat)
+
+	_G.FCFTab_UpdateAlpha(chat)
+
+	local id = chat:GetID()
+	local allowHooks = id and not ignoreChats[id]
+	if allowHooks and not chat.OldAddMessage then
+		--Don't add timestamps to combat log, they don't work.
+		--This usually taints, but LibChatAnims should make sure it doesn't.
+		chat.OldAddMessage = chat.AddMessage
+		chat.AddMessage = CH.AddMessage
+	end
+
+	if not chat.scriptsSet then
+		if allowHooks then
+			chat:SetScript('OnEvent', FloatingChatFrameOnEvent)
+		end
+
+		chat:SetScript('OnMouseWheel', CH.ChatFrame_OnMouseScroll)
+		hooksecurefunc(chat, 'SetScript', CH.ChatFrame_SetScript)
+		chat.scriptsSet = true
+	end
+end
+
 function CH:SetupChat()
 	if not E.private.chat.enable then return end
 
-	for _, frameName in ipairs(_G.CHAT_FRAMES) do
-		local chat = _G[frameName]
-		if chat then
-			CH:StyleChat(chat)
-
-			_G.FCFTab_UpdateAlpha(chat)
-
-			local id = chat:GetID()
-			local allowHooks = id and not ignoreChats[id]
-			if allowHooks and not chat.OldAddMessage then
-				--Don't add timestamps to combat log, they don't work.
-				--This usually taints, but LibChatAnims should make sure it doesn't.
-				chat.OldAddMessage = chat.AddMessage
-				chat.AddMessage = CH.AddMessage
-			end
-
-			if not chat.scriptsSet then
-				if allowHooks then
-					chat:SetScript('OnEvent', FloatingChatFrameOnEvent)
-				end
-
-				chat:SetScript('OnMouseWheel', CH.ChatFrame_OnMouseScroll)
-				hooksecurefunc(chat, 'SetScript', CH.ChatFrame_SetScript)
-				chat.scriptsSet = true
-			end
-		end
-	end
+	CH:ForEachChat(SetupChatFrame)
 
 	local chat = _G.GeneralDockManager.primary
 	_G.GeneralDockManager:ClearAllPoints()
@@ -1964,8 +1992,14 @@ function CH:CHAT_MSG_SAY(event, message, author, ...)
 	return CH:ChatThrottleIntervalHandler(event, message, author, ...)
 end
 
+local SOUND_THROTTLE = 5
 function CH:ThrottleSound()
 	CH.SoundTimer = nil
+end
+
+function CH:PlayThrottledSound(soundKey)
+	CH.SoundTimer = E:Delay(SOUND_THROTTLE, CH.ThrottleSound)
+	PlaySoundFile(LSM:Fetch('sound', soundKey), 'Master')
 end
 
 local protectLinks = {}
@@ -1979,8 +2013,7 @@ function CH:CheckKeyword(message, author)
 		if letSound then
 			for keyword in pairs(CH.Keywords) do
 				if hyperLink == keyword then
-					CH.SoundTimer = E:Delay(5, CH.ThrottleSound)
-					PlaySoundFile(LSM:Fetch('sound', CH.db.keywordSound), 'Master')
+					CH:PlayThrottledSound(CH.db.keywordSound)
 					letSound = false -- dont let a second sound fire below
 					break
 				end
@@ -2004,8 +2037,7 @@ function CH:CheckKeyword(message, author)
 					word = gsub(word, tempWord, format('%s%s|r', E.media.hexvaluecolor, tempWord))
 
 					if letSound then -- dont break because it's recoloring all found
-						CH.SoundTimer = E:Delay(5, CH.ThrottleSound)
-						PlaySoundFile(LSM:Fetch('sound', CH.db.keywordSound), 'Master')
+						CH:PlayThrottledSound(CH.db.keywordSound)
 						letSound = false -- but dont let additional hits call the sound
 					end
 				end
@@ -2103,14 +2135,13 @@ function CH:PostChatClose(chat)
 	tab.classColor = nil
 end
 
+local function UpdateFrameFading(frame)
+	frame:SetTimeVisible(CH.db.inactivityTimer)
+	frame:SetFading(CH.db.fade)
+end
+
 function CH:UpdateFading()
-	for _, frameName in ipairs(_G.CHAT_FRAMES) do
-		local frame = _G[frameName]
-		if frame then
-			frame:SetTimeVisible(CH.db.inactivityTimer)
-			frame:SetFading(CH.db.fade)
-		end
-	end
+	CH:ForEachChat(UpdateFrameFading)
 end
 
 function CH:DisplayChatHistory()
@@ -2124,26 +2155,23 @@ function CH:DisplayChatHistory()
 
 	CH.SoundTimer = true -- ignore sounds during pass through ChatFrame_GetMessageEventFilters
 
-	for _, frameName in ipairs(_G.CHAT_FRAMES) do
-		local chat = _G[frameName]
-		if chat then
-			for _, d in ipairs(data) do
-				if type(d) == 'table' then
-					for _, messageType in pairs(chat.messageTypeList) do
-						local historyType, skip = historyTypes[d[50]]
-						if historyType then -- let others go by..
-							if not CH.db.showHistory[historyType] then skip = true end -- but kill ignored ones
-						end
-						if not skip and gsub(strsub(d[50],10),'_INFORM','') == messageType then
-							if d[1] and not CH:MessageIsProtected(d[1]) then
-								CH:ChatFrame_MessageEventHandler(chat,d[50],d[1],d[2],d[3],d[4],d[5],d[6],d[7],d[8],d[9],d[10],d[11],d[12],d[13],'ElvUI_ChatHistory',d[51],d[52],d[53])
-							end
+	CH:ForEachChat(function(chat)
+		for _, d in ipairs(data) do
+			if type(d) == 'table' then
+				for _, messageType in pairs(chat.messageTypeList) do
+					local historyType, skip = historyTypes[d[50]]
+					if historyType then -- let others go by..
+						if not CH.db.showHistory[historyType] then skip = true end -- but kill ignored ones
+					end
+					if not skip and gsub(strsub(d[50],10),'_INFORM','') == messageType then
+						if d[1] and not CH:MessageIsProtected(d[1]) then
+							CH:ChatFrame_MessageEventHandler(chat,d[50],d[1],d[2],d[3],d[4],d[5],d[6],d[7],d[8],d[9],d[10],d[11],d[12],d[13],'ElvUI_ChatHistory',d[51],d[52],d[53])
 						end
 					end
 				end
 			end
 		end
-	end
+	end)
 
 	CH.SoundTimer = nil
 end
@@ -2157,13 +2185,12 @@ function CH:DelayGuildMOTD()
 		local msg = GetGuildRosterMOTD()
 		if not (msg and strlen(msg) > 0) then return end
 
-		for _, frame in ipairs(_G.CHAT_FRAMES) do
-			local chat = _G[frame]
-			if chat and chat:IsEventRegistered('CHAT_MSG_GUILD') then
+		CH:ForEachChat(function(chat)
+			if chat:IsEventRegistered('CHAT_MSG_GUILD') then
 				CH:ChatFrame_SystemEventHandler(chat, 'GUILD_MOTD', msg)
 				chat:RegisterEvent('GUILD_MOTD')
 			end
-		end
+		end)
 
 		ticker:Cancel()
 	end, 5)
@@ -2472,7 +2499,7 @@ function CH:BuildCopyChatFrame()
 
 	scrollFrame:SetScrollChild(editBox)
 	editBox:Width(scrollFrame:GetWidth())
-	S:HandleScrollBar(scrollFrame.ScrollBar)
+	S:HandleSirusScrollBar(scrollFrame.ScrollBar)
 
 	local close = CreateFrame('Button', 'CopyChatFrameCloseButton', frame, 'UIPanelCloseButton')
 	close:Point('TOPRIGHT')

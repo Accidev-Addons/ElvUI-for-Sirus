@@ -150,6 +150,41 @@ S:AddCallback("Skin_Bags", function()
 		end
 	end
 
+	local BAG_COLUMNS, BAG_SPACING, BAG_ITEM_SIZE = 4, 2, 37
+	local BAGS_PER_COLUMN = 3
+	local BAG_WIDTH = (BAG_COLUMNS * BAG_ITEM_SIZE) + ((BAG_COLUMNS - 1) * BAG_SPACING) + 14
+
+	local function GetColumns()
+		return BAG_COLUMNS
+	end
+
+	local function GetAnchorLayout(self)
+		return AnchorUtil.CreateGridLayout(GridLayoutMixin.Direction.BottomRightToTopLeft, self:GetColumns(), BAG_SPACING, BAG_SPACING)
+	end
+
+	local function CalculateWidth()
+		return BAG_WIDTH
+	end
+
+	local function CalculateHeight(self)
+		local rows = self:GetRows()
+		return (rows * BAG_ITEM_SIZE) + ((rows - 1) * BAG_SPACING) + self:GetPaddingHeight() + self:CalculateExtraHeight()
+	end
+
+	local function SetSearchBoxPoint(self, searchBox)
+		searchBox:ClearAllPoints()
+		searchBox:Point("TOPLEFT", self, "TOPLEFT", 10, -44)
+		searchBox:Width(BAG_WIDTH - 44)
+	end
+
+	local function AnchorKeyRing(self)
+		local keyRingFrame = _G.BagKeyRingFrame
+		if keyRingFrame:GetParent() == self then
+			keyRingFrame:ClearAllPoints()
+			keyRingFrame:Point("TOPRIGHT", self, "TOPRIGHT", -8, -42)
+		end
+	end
+
 	for i = 1, NUM_CONTAINER_FRAMES do
 		local frame = _G["ContainerFrame"..i]
 		local closeButton = _G["ContainerFrame"..i.."CloseButton"]
@@ -161,8 +196,23 @@ S:AddCallback("Skin_Bags", function()
 		end
 
 		frame:CreateBackdrop("Transparent")
-		frame.backdrop:Point("TOPLEFT", 9, -4)
+		frame.backdrop:Point("TOPLEFT", 3, -4)
 		frame.backdrop:Point("BOTTOMRIGHT", -4, 1)
+
+		frame.GetColumns = GetColumns
+		frame.GetAnchorLayout = GetAnchorLayout
+		frame.CalculateWidth = CalculateWidth
+		frame.CalculateHeight = CalculateHeight
+		frame.SetSearchBoxPoint = SetSearchBoxPoint
+		hooksecurefunc(frame, "UpdateSearchBox", AnchorKeyRing)
+
+		local titleText = frame.TitleText
+		if titleText then
+			titleText:ClearAllPoints()
+			titleText:Point("BOTTOMLEFT", _G["ContainerFrame"..i.."PortraitButton"], "BOTTOMRIGHT", 6, 0)
+			titleText:Point("RIGHT", closeButton, "LEFT", -2, 0)
+			titleText:SetJustifyH("LEFT")
+		end
 
 		S:HookScript(frame, "OnShow", function(self)
 			S:SetBackdropHitRect(self)
@@ -179,6 +229,51 @@ S:AddCallback("Skin_Bags", function()
 		end
 
 		SkinFrameItems(frame)
+	end
+
+	hooksecurefunc("UpdateContainerFrameAnchors", function()
+		local previous, columnStart
+
+		for index, frame in ipairs(ContainerFrameSettingsManager:GetBagsShown()) do
+			if index == 1 then
+				columnStart = frame
+			else
+				frame:ClearAllPoints()
+
+				if (index - 1) % BAGS_PER_COLUMN == 0 then
+					frame:Point("BOTTOMRIGHT", columnStart, "BOTTOMLEFT", 4, 0)
+					columnStart = frame
+				else
+					frame:Point("BOTTOMRIGHT", previous, "TOPRIGHT", 0, -2)
+				end
+			end
+
+			previous = frame
+		end
+	end)
+
+	local containerMoney = _G.ContainerFrame1MoneyFrame
+	if containerMoney and containerMoney.Border then
+		containerMoney.Border:StripTextures()
+	end
+
+	if _G.BagItemSearchBox then
+		S:HandleEditBox(_G.BagItemSearchBox, nil, true)
+	end
+
+	local keyRing = _G.KeyRingButton
+	if keyRing then
+		_G.BagKeyRingFrame:Size(22)
+		keyRing:Size(22)
+		keyRing:SetTemplate()
+		keyRing:StyleButton()
+
+		if keyRing.IconBorder then
+			keyRing.IconBorder:Hide()
+		end
+
+		keyRing.Icon:SetTexCoords()
+		keyRing.Icon:SetInside()
 	end
 
 	BackpackTokenFrame:StripTextures()
@@ -199,7 +294,7 @@ S:AddCallback("Skin_Bags", function()
 
 			portraitButton:CreateBackdrop()
 			portraitButton:Size(32)
-			portraitButton:Point("TOPLEFT", 12, -7)
+			portraitButton:Point("TOPLEFT", frame.backdrop, "TOPLEFT", 2, -2)
 			portraitButton:StyleButton(nil, true)
 			portraitButton.hover:SetAllPoints()
 
@@ -336,11 +431,16 @@ S:AddCallback("Skin_Bags", function()
 		button:SetTemplate("Default", true)
 		button:StyleButton()
 
+		if button.IconBorder then
+			button.IconBorder:SetAlpha(0)
+		end
+
 		icon:SetInside()
 		icon:SetTexCoords()
 
+		local r, g, b = unpack(E.media.rgbvaluecolor)
 		highlight:SetInside()
-		highlight:SetTexture(unpack(E.media.rgbvaluecolor), 0.3)
+		highlight:SetTexture(r, g, b, 0.3)
 	end
 
 	BankFrame.bagBackdrop = CreateFrame("Frame", "BankFrameBagBackdrop", BankFrame)

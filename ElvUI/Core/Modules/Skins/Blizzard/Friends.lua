@@ -2,7 +2,6 @@ local E, L, V, P, G = unpack(ElvUI)
 local S = E:GetModule("Skins")
 
 local _G = _G
-local unpack = unpack
 
 local function LoadSkin()
 	if not E.private.skins.blizzard.enable or not E.private.skins.blizzard.friends then return end
@@ -13,16 +12,15 @@ local function LoadSkin()
 	local friendsTitle = _G.FriendsFrameTitleText
 	if friendsTitle then
 		friendsTitle:ClearAllPoints()
-		friendsTitle:SetPoint("TOP", FriendsFrame, "TOP", 0, -16)
+		friendsTitle:SetPoint("CENTER", FriendsFrame, "TOP", 0, -12)
 		friendsTitle:SetJustifyH("CENTER")
 	end
 
 	S:HandleDropDownBox(FriendsFrameStatusDropDown, 70)
 
 	if FriendsFrameStatusDropDown then
-
 		FriendsFrameStatusDropDown:ClearAllPoints()
-		FriendsFrameStatusDropDown:SetPoint("TOPLEFT", FriendsFrame, "TOPLEFT", 43, -27)
+		FriendsFrameStatusDropDown:SetPoint("TOPLEFT", FriendsFrame, "TOPLEFT", 240, -58)
 	end
 
 	if FriendsFrameBroadcastInput then
@@ -38,7 +36,7 @@ local function LoadSkin()
 		local summon = button and button.summonButton
 		if summon then
 			local summonIcon = _G[summon:GetName().."Icon"]
-			if summonIcon then summonIcon:SetTexCoord(unpack(E.TexCoords)) end
+			if summonIcon then summonIcon:SetTexCoords() end
 
 			local summonNormal = _G[summon:GetName().."NormalTexture"]
 			if summonNormal then summonNormal:SetAlpha(0) end
@@ -56,7 +54,8 @@ local function LoadSkin()
 	S:HandleSirusButton(FriendsFrameUnsquelchButton, true)
 
 	WhoFrame:StripTextures()
-	S:HandleDropDownBox(WhoFrameDropDown)
+	S:HandleDropDownBox(WhoFrameDropDown, 120)
+	WhoFrameDropDown.backdrop:Point("TOPLEFT", 8, -2)
 
 	for i = 1, 5 do
 		local header = _G["WhoFrameColumnHeader"..i]
@@ -133,6 +132,12 @@ local function LoadSkin()
 
 	RaidInfoFrame:StripTextures(true)
 	RaidInfoFrame:SetTemplate("Transparent")
+
+	if RaidInfoFrame.Border then RaidInfoFrame.Border:StripTextures() end
+	if RaidInfoFrame.Header then RaidInfoFrame.Header:StripTextures() end
+
+	RaidInfoFrame:ClearAllPoints()
+	RaidInfoFrame:SetPoint("TOPLEFT", RaidFrame, "TOPRIGHT", 34, -28)
 
 	RaidInfoInstanceLabel:StripTextures()
 	RaidInfoIDLabel:StripTextures()

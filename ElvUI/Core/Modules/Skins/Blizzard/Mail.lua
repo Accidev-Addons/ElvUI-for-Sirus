@@ -31,7 +31,7 @@ local function SkinSendMail()
 		local itemName = _G.GetSendMailItem(i)
 		local quality = itemName and select(3, _G.GetItemInfo(itemName))
 		if quality then
-			local r, g, b = _G.GetItemQualityColor(quality)
+			local r, g, b = E:GetItemQualityColor(quality)
 			btn:SetBackdropBorderColor(r, g, b)
 		else
 			btn:SetBackdropBorderColor(unpack(E.media.bordercolor))
@@ -75,7 +75,7 @@ local function SkinOpenMail()
 		local itemLink = openMailID and openMailID ~= 0 and _G.GetInboxItemLink(openMailID, i)
 		local quality = itemLink and select(3, _G.GetItemInfo(itemLink))
 		if quality then
-			local r, g, b = _G.GetItemQualityColor(quality)
+			local r, g, b = E:GetItemQualityColor(quality)
 			btn:SetBackdropBorderColor(r, g, b)
 		else
 			btn:SetBackdropBorderColor(unpack(E.media.bordercolor))
@@ -126,7 +126,7 @@ local function SkinInboxItems()
 						local itemLink = _G.GetInboxItemLink(btn.index, 1)
 						local quality = itemLink and select(3, _G.GetItemInfo(itemLink))
 						if quality then
-							r, g, b = _G.GetItemQualityColor(quality)
+							r, g, b = E:GetItemQualityColor(quality)
 						end
 					end
 
@@ -277,8 +277,8 @@ local function LoadSkin()
 	S:HandleButton(_G.SendMailMailButton, true)
 	S:HandleButton(_G.SendMailCancelButton, true)
 
-	S:HandleRadioButton(_G.SendMailSendMoneyButton)
-	S:HandleRadioButton(_G.SendMailCODButton)
+	S:HandleCheckBox(_G.SendMailSendMoneyButton)
+	S:HandleCheckBox(_G.SendMailCODButton)
 	_G.SendMailSendMoneyButton:ClearAllPoints()
 	_G.SendMailSendMoneyButton:SetPoint("TOPLEFT", _G.SendMailMoney, "TOPRIGHT", 16, 18)
 	_G.SendMailCODButton:ClearAllPoints()

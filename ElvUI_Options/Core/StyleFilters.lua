@@ -119,7 +119,7 @@ do
 		if which == 'text' then
 			local serialString = D:Serialize(data)
 			local exportString = D:CreateProfileExport('styleFilters', 'styleFilters', serialString)
-			local compressedData = LibDeflate:CompressDeflate(exportString, LibDeflate.compressLevel)
+			local compressedData = LibDeflate:CompressDeflate(exportString, D.CompressLevel)
 			local printable = LibDeflate:EncodeForPrint(compressedData)
 			if printable then
 				printableString = format('%s%s', EXPORT_PREFIX, printable)

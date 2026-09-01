@@ -3,9 +3,8 @@ local C, L = unpack(E.Config)
 local NP = E:GetModule("NamePlates")
 local ACD = E.Libs.AceConfigDialog
 
-local next, ipairs, pairs, type, tonumber = next, ipairs, pairs, type, tonumber
-local tremove, tinsert, tconcat = tremove, tinsert, table.concat
-local format, match, gsub, strsplit = string.format, string.match, string.gsub, strsplit
+local next, pairs, type, tonumber = next, pairs, type, tonumber
+local format, match, strsplit = string.format, string.match, strsplit
 
 local GetSpellInfo = GetSpellInfo
 
@@ -30,30 +29,12 @@ local totemsColor = {
 
 local carryFilterFrom, carryFilterTo
 
-local function filterMatch(s,v)
-	local m1, m2, m3, m4 = "^"..v.."$", "^"..v..",", ","..v.."$", ","..v..","
-	return (match(s, m1) and m1) or (match(s, m2) and m2) or (match(s, m3) and m3) or (match(s, m4) and v..",")
+local function filterPriority(auraType, unit, value, remove, movehere)
+	C.SetFilterPriority(E.db.nameplates.units[unit], auraType, "filters", value, remove, movehere, nil, false)
 end
 
-local function filterPriority(auraType, unit, value, remove, movehere)
-	if not auraType or not value then return end
-	local filter = E.db.nameplates.units[unit] and E.db.nameplates.units[unit][auraType] and E.db.nameplates.units[unit][auraType].filters and E.db.nameplates.units[unit][auraType].filters.priority
-	if not filter then return end
-	local found = filterMatch(filter, E:EscapeString(value))
-	if found and movehere then
-		local tbl, sv, sm = {strsplit(",",filter)}
-		for i in ipairs(tbl) do
-			if tbl[i] == value then sv = i elseif tbl[i] == movehere then sm = i end
-			if sv and sm then break end
-		end
-		tremove(tbl, sm)
-		tinsert(tbl, sv, movehere)
-		E.db.nameplates.units[unit][auraType].filters.priority = tconcat(tbl,",")
-	elseif found and remove then
-		E.db.nameplates.units[unit][auraType].filters.priority = gsub(filter, found, "")
-	elseif not found and not remove then
-		E.db.nameplates.units[unit][auraType].filters.priority = (filter == "" and value) or (filter..","..value)
-	end
+local function stateSwitchGetText(_, text)
+	return C.StateSwitchGetText(nil, text, E.global.nameplates.specialFilters)
 end
 
 local function UpdateInstanceDifficulty()
@@ -2600,11 +2581,7 @@ local function GetUnitSettings(unit, name)
 								dragOnClick = function(info)
 									filterPriority("buffs", unit, carryFilterFrom, true)
 								end,
-								stateSwitchGetText = function(_, text)
-									local SF, localized = E.global.unitframe.specialFilters[text], L[text]
-									local blockText = SF and localized and text:match("^block") and localized:gsub("^%[.-]%s?", "")
-									return (blockText and format("|cFF999999%s|r %s", L["BLOCK"], blockText)) or localized or text
-								end,
+								stateSwitchGetText = stateSwitchGetText,
 								values = function()
 									local str = E.db.nameplates.units[unit].buffs.filters.priority
 									if str == "" then return {} end
@@ -2974,11 +2951,7 @@ local function GetUnitSettings(unit, name)
 								dragOnClick = function(info)
 									filterPriority("debuffs", unit, carryFilterFrom, true)
 								end,
-								stateSwitchGetText = function(_, text)
-									local SF, localized = E.global.unitframe.specialFilters[text], L[text]
-									local blockText = SF and localized and text:match("^block") and localized:gsub("^%[.-]%s?", "")
-									return (blockText and format("|cFF999999%s|r %s", L["BLOCK"], blockText)) or localized or text
-								end,
+								stateSwitchGetText = stateSwitchGetText,
 								values = function()
 									local str = E.db.nameplates.units[unit].debuffs.filters.priority
 									if str == "" then return {} end

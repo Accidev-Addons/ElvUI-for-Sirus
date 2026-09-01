@@ -116,6 +116,8 @@ function DB:ThreatBar_Toggle()
 	else
 		E:DisableMover(bar.holder.mover.name)
 
+		bar.showBar = nil
+
 		DB:UnregisterEvent('PLAYER_TARGET_CHANGED')
 		DB:UnregisterEvent('UNIT_THREAT_LIST_UPDATE')
         DB:UnregisterEvent('RAID_ROSTER_UPDATE')

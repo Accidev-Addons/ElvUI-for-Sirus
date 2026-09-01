@@ -47,6 +47,8 @@ local function LoadSkin()
 	local styleButton
 	do
 		local function awaitCache(button)
+			button.awaitingCache = nil
+
 			if InspectFrame.unit then
 				styleButton(button)
 			end
@@ -57,8 +59,14 @@ local function LoadSkin()
 				local itemID = GetInventoryItemID(InspectFrame.unit, button:GetID())
 				if itemID then
 					local _, _, quality = GetItemInfo(itemID)
-					if not quality and quality > 1 then
-						E:Delay(0.1, awaitCache, button)
+					if not quality then
+						button.backdrop:SetBackdropBorderColor(unpack(E.media.bordercolor))
+
+						if not button.awaitingCache then
+							button.awaitingCache = true
+							E:Delay(0.1, awaitCache, button)
+						end
+
 						return
 					elseif quality and quality > 1 then
 						button.backdrop:SetBackdropBorderColor(E:GetItemQualityColor(quality))

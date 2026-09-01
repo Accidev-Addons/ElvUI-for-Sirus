@@ -6,7 +6,6 @@ local _G = _G
 local ipairs, next, gsub = ipairs, next, gsub
 
 local CreateFrame = CreateFrame
-local InCombatLockdown = InCombatLockdown
 local RegisterStateDriver = RegisterStateDriver
 local hooksecurefunc = hooksecurefunc
 
@@ -31,6 +30,10 @@ local SLOT_EMPTY_TCOORDS = {
 	[_G.AIR_TOTEM_SLOT]		= {left = 0.52, right = 0.75, top = 0.14, bottom = 0.26}
 }
 
+function AB:TotemBarEnabled(ignoreCreated)
+	return E.myclass == 'SHAMAN' and AB.db.totemBar.enable and (ignoreCreated or AB.TotemBar ~= nil)
+end
+
 function AB:MultiCastFlyoutFrameOpenButton_Show(button, which, parent)
 	local color = which == 'page' and SLOT_BORDER_COLORS.summon or SLOT_BORDER_COLORS[parent:GetID()]
 	button:SetBackdropBorderColor(color.r, color.g, color.b)
@@ -44,10 +47,7 @@ function AB:MultiCastFlyoutFrameOpenButton_Show(button, which, parent)
 end
 
 function AB:MultiCastActionButton_Update(button)
-	if InCombatLockdown() then
-		AB.NeedsPositionAndSizeTotemBar = true
-		AB:RegisterEvent('PLAYER_REGEN_ENABLED')
-	else
+	if not AB:DeferOutOfCombat('NeedsPositionAndSizeTotemBar') then
 		button:ClearAllPoints()
 		button:SetAllPoints(button.slotButton)
 
@@ -58,11 +58,7 @@ function AB:MultiCastActionButton_Update(button)
 end
 
 function AB:MultiCastSummonSpellButton_Update(summonButton)
-	if InCombatLockdown() then
-		AB.NeedsPositionAndSizeTotemBar = true
-		AB:RegisterEvent('PLAYER_REGEN_ENABLED')
-		return
-	end
+	if AB:DeferOutOfCombat('NeedsPositionAndSizeTotemBar') then return end
 
 	local slot1 = _G.MultiCastSlotButton1
 	slot1:ClearAllPoints()
@@ -213,11 +209,7 @@ function AB:TotemBar_OnLeave()
 end
 
 function AB:PositionAndSizeTotemBar()
-	if InCombatLockdown() then
-		AB.NeedsPositionAndSizeTotemBar = true
-		AB:RegisterEvent('PLAYER_REGEN_ENABLED')
-		return
-	end
+	if AB:DeferOutOfCombat('NeedsPositionAndSizeTotemBar') then return end
 
 	local barFrame = _G.MultiCastActionBarFrame
 	local numActiveSlots = barFrame.numActiveSlots
@@ -301,11 +293,7 @@ function AB:UpdateTotemBindings()
 end
 
 function AB:MultiCastRecallSpellButton_Update(button)
-	if InCombatLockdown() then
-		AB.NeedsRecallButtonUpdate = true
-		AB:RegisterEvent('PLAYER_REGEN_ENABLED')
-		return
-	end
+	if AB:DeferOutOfCombat('NeedsRecallButtonUpdate') then return end
 
 	if not button then button = _G.MultiCastRecallSpellButton end
 
@@ -342,6 +330,26 @@ function AB:MultiCastFlyoutFrameStyle(button, rotate)
 	bar.buttons[button] = true
 end
 
+function AB:ReanchorTotemBar()
+	local frame = _G.MultiCastActionBarFrame
+
+	if AB:DeferOutOfCombat('NeedsTotemBarReanchor') then return end
+
+	AB.NeedsTotemBarReanchor = nil
+
+	if frame:GetParent() ~= bar then
+		frame:SetParent(bar)
+	end
+
+	if frame.ClearAllPointsBase then
+		frame:ClearAllPointsBase()
+		frame:SetPointBase('BOTTOMLEFT', bar, 'BOTTOMLEFT', 0, 0)
+	else
+		frame:ClearAllPoints()
+		frame:SetPoint('BOTTOMLEFT', bar, 'BOTTOMLEFT', 0, 0)
+	end
+end
+
 function AB:CreateTotemBar()
 	AB.TotemBar = bar -- Initialized
 
@@ -354,30 +362,6 @@ function AB:CreateTotemBar()
 	barFrame:SetScript('OnShow', nil)
 	barFrame:SetScript('OnHide', nil)
 	barFrame:SetParent(bar)
-
-	function AB:ReanchorTotemBar()
-		local frame = _G.MultiCastActionBarFrame
-
-		if InCombatLockdown() then
-			AB.NeedsTotemBarReanchor = true
-			AB:RegisterEvent('PLAYER_REGEN_ENABLED')
-			return
-		end
-
-		AB.NeedsTotemBarReanchor = nil
-
-		if frame:GetParent() ~= bar then
-			frame:SetParent(bar)
-		end
-
-		if frame.ClearAllPointsBase then
-			frame:ClearAllPointsBase()
-			frame:SetPointBase('BOTTOMLEFT', bar, 'BOTTOMLEFT', 0, 0)
-		else
-			frame:ClearAllPoints()
-			frame:SetPoint('BOTTOMLEFT', bar, 'BOTTOMLEFT', 0, 0)
-		end
-	end
 
 	AB:ReanchorTotemBar()
 
@@ -436,10 +420,9 @@ function AB:CreateTotemBar()
 	end
 
 	hooksecurefunc(spellButton, 'SetPoint', function(button, point, attachTo, anchorPoint, xOffset, yOffset)
-		if InCombatLockdown() then
-			AB.NeedsRecallButtonUpdate = true
-			AB:RegisterEvent('PLAYER_REGEN_ENABLED')
-		elseif xOffset ~= AB.db.totemBar.spacing or button:GetPoint(2) then
+		if AB:DeferOutOfCombat('NeedsRecallButtonUpdate') then return end
+
+		if xOffset ~= AB.db.totemBar.spacing or button:GetPoint(2) then
 			button:ClearAllPoints()
 			button:SetPoint(point, attachTo, anchorPoint, AB.db.totemBar.spacing, yOffset)
 		end

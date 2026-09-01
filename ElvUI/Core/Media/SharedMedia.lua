@@ -272,15 +272,12 @@ do -- LSM Font Preloader ~Simpy
 	local callMedia = function(mediaType) E:UpdateMedia(mediaType) end
 
 	-- Now lets hook it so we can preload any other AddOns add to LSM
-	hooksecurefunc(LSM,'Register', function(_, mediaType, key, data)
-		if not mediaType or type(mediaType) ~= 'string' then return end
-
-		local mtype = mediaType:lower()
-		if mtype == 'font' then
-			cacheFont(key, data)
-			callMedia(mtype)
-		elseif mtype == 'background' or mtype == 'statusbar' then
-			callMedia(mtype)
+	LSM.RegisterCallback(E,'LibSharedMedia_Registered', function(_, mediaType, key)
+		if mediaType == 'font' then
+			cacheFont(key, LSM:Fetch('font', key))
+			callMedia(mediaType)
+		elseif mediaType == 'background' or mediaType == 'statusbar' then
+			callMedia(mediaType)
 		end
 	end)
 end

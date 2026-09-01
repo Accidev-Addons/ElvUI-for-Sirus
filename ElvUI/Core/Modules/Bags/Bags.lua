@@ -458,9 +458,13 @@ function B:BagFrameHidden(bagFrame)
 	if not (bagFrame and bagFrame.BagIDs) then return end
 
 	for _, bagID in next, bagFrame.BagIDs do
+		local bag = bagFrame.Bags[bagID]
 		local slotMax = B:GetContainerNumSlots(bagID)
 		for slotID = 1, slotMax do
-			B:NewItemGlowSlotSwitch(bagFrame.Bags[bagID][slotID])
+			local slot = bag and bag[slotID]
+			if not slot then break end
+
+			B:NewItemGlowSlotSwitch(slot)
 		end
 	end
 end
@@ -680,9 +684,13 @@ function B:SortingFadeBags(bagFrame, sortingSlots)
 	end
 
 	for _, bagID in next, bagFrame.BagIDs do
+		local bag = bagFrame.Bags[bagID]
 		local slotMax = B:GetContainerNumSlots(bagID)
 		for slotID = 1, slotMax do
-			bagFrame.Bags[bagID][slotID].searchOverlay:SetShown(true)
+			local slot = bag and bag[slotID]
+			if not slot then break end
+
+			slot.searchOverlay:SetShown(true)
 		end
 	end
 end
@@ -1350,19 +1358,21 @@ B.ExcludeGrays = {
 function B:GetGrays(vendor)
 	local value = 0
 
-	for bagID = 0, 4 do
-		for slotID = 1, B:GetContainerNumSlots(bagID) do
-			local info = B:GetContainerItemInfo(bagID, slotID)
-			local itemLink = info.hyperlink
-			if itemLink and not info.hasNoValue and not B.ExcludeGrays[info.itemID] then
-				if info.quality == 0 and info.itemClassID ~= 12 then
-					local stackCount = info.stackCount or 1
-					local stackPrice = (info.itemPrice or 0) * stackCount
+	for _, bagID in next, (B.BagFrame and B.BagFrame.BagIDs) or bagIDs do
+		if bagID ~= KEYRING_CONTAINER then
+			for slotID = 1, B:GetContainerNumSlots(bagID) do
+				local info = B:GetContainerItemInfo(bagID, slotID)
+				local itemLink = info.hyperlink
+				if itemLink and not info.hasNoValue and not B.ExcludeGrays[info.itemID] then
+					if info.quality == 0 and info.itemClassID ~= 12 then
+						local stackCount = info.stackCount or 1
+						local stackPrice = (info.itemPrice or 0) * stackCount
 
-					if vendor then
-						tinsert(B.SellFrame.Info.itemList, {bagID, slotID, itemLink, stackCount, stackPrice})
-					elseif stackPrice > 0 then
-						value = value + stackPrice
+						if vendor then
+							tinsert(B.SellFrame.Info.itemList, {bagID, slotID, itemLink, stackCount, stackPrice})
+						elseif stackPrice > 0 then
+							value = value + stackPrice
+						end
 					end
 				end
 			end
@@ -1642,12 +1652,12 @@ end
 function B:BagsButton_ClickBank()
 	B:ClickSound()
 
-	local f = self:GetParent():GetParent()
+	local f = self.bagFrame
 	ToggleFrame(f.ContainerHolder)
 end
 
 function B:BagsButton_ClickBag()
-	local frame = self:GetParent():GetParent()
+	local frame = self.bagFrame
 	ToggleFrame(frame.ContainerHolder)
 end
 
@@ -1693,11 +1703,13 @@ function B:Container_HelpTooltip()
 end
 
 function B:Container_ClickStackBag()
-	local parent = self:GetParent()
+	if B.SortUpdateTimer:IsShown() then return end
+
+	local bagFrame = self.bagFrame
 	local gather = IsShiftKeyDown()
 
-	B:UnregisterBagEvents(parent)
-	parent.sortingSlots = true
+	B:UnregisterBagEvents(bagFrame)
+	bagFrame.sortingSlots = true
 
 	local sorting = (gather and B:CommandDecorator(B.Stack, 'bank bags')) or B:CommandDecorator(B.Compress, 'bags')
 	local moves = gather and B:StackReagentsToBags() or 0
@@ -1723,11 +1735,11 @@ function B:Container_ClickStackBank()
 end
 
 function B:Container_ClickSortBag()
-	local parent = self:GetParent()
-	B:UnregisterBagEvents(parent)
+	local bagFrame = self.bagFrame
+	B:UnregisterBagEvents(bagFrame)
 
-	if not parent.sortingSlots then
-		B:SortingFadeBags(parent, true)
+	if not bagFrame.sortingSlots then
+		B:SortingFadeBags(bagFrame, true)
 	end
 
 	local sorting = B:CommandDecorator(B.SortBags, 'bags')
@@ -1735,15 +1747,15 @@ function B:Container_ClickSortBag()
 end
 
 function B:Container_ClickSortBank()
-	local parent = self:GetParent()
-	if not parent.holderFrame:IsShown() or parent.sortingSlots or B.SortUpdateTimer:IsShown() then return end
+	local bagFrame = self.bagFrame
+	if not bagFrame.holderFrame:IsShown() or bagFrame.sortingSlots or B.SortUpdateTimer:IsShown() then return end
 
-	local moves = B:PushReagentsToBank({ parent })
+	local moves = B:PushReagentsToBank({ bagFrame })
 	if moves > 0 then
-		parent.sortingSlots = true
-		E:Delay((moves * 0.1) + 0.3, B.SortBankBags, B, parent)
+		bagFrame.sortingSlots = true
+		E:Delay((moves * 0.1) + 0.3, B.SortBankBags, B, bagFrame)
 	else
-		B:SortBankBags(parent)
+		B:SortBankBags(bagFrame)
 	end
 end
 
@@ -1923,8 +1935,8 @@ function B:Container_ClickGold()
 end
 
 function B:Container_ToggleKeyring()
-	local parent = self:GetParent():GetParent()
-	local holder = parent.ContainerHolderByBagID
+	local bagFrame = self.bagFrame
+	local holder = bagFrame.ContainerHolderByBagID
 	local keyring = holder and holder[KEYRING_CONTAINER]
 	if keyring then
 		B:ToggleContainer(keyring)
@@ -1997,6 +2009,7 @@ function B:ConstructContainerFrame(name, isBank)
 
 	--Stack/Transfer Button
 	f.stackButton = CreateFrame('Button', name..'StackButton', f.holderFrame)
+	f.stackButton.bagFrame = f
 	f.stackButton:Size(20)
 	f.stackButton:SetTemplate()
 	B:SetButtonTexture(f.stackButton, E.Media.Textures.Planks)
@@ -2006,6 +2019,7 @@ function B:ConstructContainerFrame(name, isBank)
 
 	--Sort Button
 	f.sortButton = CreateFrame('Button', name..'SortButton', f)
+	f.sortButton.bagFrame = f
 	f.sortButton:Point('RIGHT', f.stackButton, 'LEFT', -5, 0)
 	f.sortButton:Size(20)
 	f.sortButton:SetTemplate()
@@ -2021,6 +2035,7 @@ function B:ConstructContainerFrame(name, isBank)
 
 	--Toggle Bags Button
 	f.bagsButton = CreateFrame('Button', name..'BagsButton', f.holderFrame)
+	f.bagsButton.bagFrame = f
 	f.bagsButton:Size(20)
 	f.bagsButton:Point('RIGHT', f.sortButton, 'LEFT', -5, 0)
 	f.bagsButton:SetTemplate()
@@ -2128,6 +2143,7 @@ function B:ConstructContainerFrame(name, isBank)
 
 		--Keyring Button
 		f.keyButton = CreateFrame('Button', name..'KeyButton', f.holderFrame)
+		f.keyButton.bagFrame = f
 		f.keyButton:Size(20)
 		f.keyButton:SetTemplate()
 		f.keyButton:Point('RIGHT', f.bagsButton, 'LEFT', -5, 0)
@@ -2140,6 +2156,7 @@ function B:ConstructContainerFrame(name, isBank)
 
 		--Vendor Grays
 		f.vendorGraysButton = CreateFrame('Button', nil, f.holderFrame)
+		f.vendorGraysButton.bagFrame = f
 		f.vendorGraysButton:Size(20)
 		f.vendorGraysButton:SetTemplate()
 		f.vendorGraysButton:Point('RIGHT', f.keyButton, 'LEFT', -5, 0)
@@ -2340,25 +2357,23 @@ function B:ToggleBag(bagID)
 end
 
 function B:ToggleBackpack()
-	B:ToggleAllBags()
+	B:ToggleAllBags(IsBagOpen(BACKPACK_CONTAINER))
 end
 
-function B:ToggleAllBags()
-	local backpack = IsBagOpen(BACKPACK_CONTAINER)
+function B:ToggleAllBags(show)
+	if show == nil then
+		show = not B.BagFrame:IsShown()
+	end
 
-	if B.BagBar then
-		if B.BagFrame:IsShown() and not backpack then
-			B:CloseAllBags()
-		elseif backpack then
-			B:SetBagsShown(true)
-			B:Layout()
-			B:OpenBags()
-			B:BagBar_UpdateDesaturated(false) -- force this when showing all
-		end
-	elseif backpack then
-		B:OpenBags()
-	else
+	if not show then
 		B:CloseAllBags()
+	elseif B.BagBar then
+		B:SetBagsShown(true)
+		B:Layout()
+		B:OpenBags()
+		B:BagBar_UpdateDesaturated(false) -- force this when showing all
+	else
+		B:OpenBags()
 	end
 end
 
@@ -2993,27 +3008,7 @@ local function ToggleAllBags()
 		return
 	end
 
-	local bagsOpen = 0
-	local totalBags = 1
-
-	if IsBagOpen(0) then
-		bagsOpen = bagsOpen + 1
-	end
-
-	for i = 1, NUM_BAG_FRAMES do
-		if GetContainerNumSlots(i) > 0 then
-			totalBags = totalBags + 1
-		end
-		if IsBagOpen(i) then
-			bagsOpen = bagsOpen + 1
-		end
-	end
-
-	if bagsOpen < totalBags then
-		_G.OpenAllBags()
-	else
-		_G.CloseAllBags()
-	end
+	B:ToggleAllBags()
 end
 _G.ToggleAllBags = ToggleAllBags
 
@@ -3091,7 +3086,6 @@ function B:Initialize()
 	B:SecureHook('BackpackTokenFrame_Update', 'UpdateTokens')
 	B:SecureHook('ToggleBag')
 	B:SecureHook('ToggleBackpack')
-	B:SecureHook('ToggleAllBags')
 	B:SecureHook('CloseAllBags')
 	B:SecureHook('OpenAllBags')
 

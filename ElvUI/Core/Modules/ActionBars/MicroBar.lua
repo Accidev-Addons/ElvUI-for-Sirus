@@ -10,7 +10,6 @@ local tinsert = tinsert
 local tconcat = table.concat
 local CreateFrame = CreateFrame
 local RegisterStateDriver = RegisterStateDriver
-local InCombatLockdown = InCombatLockdown
 local hooksecurefunc = hooksecurefunc
 local C_Texture = C_Texture
 
@@ -228,11 +227,7 @@ function AB:UpdateMicroBarVisibility()
 	local visibility = (AB.db.microbar.enabled and gsub(AB.db.microbar.visibility, '[\n\r]', '')) or 'hide'
 	if visibility == microBar.visibilityString then return end
 
-	if InCombatLockdown() then
-		AB.NeedsUpdateMicroBarVisibility = true
-		AB:RegisterEvent('PLAYER_REGEN_ENABLED')
-		return
-	end
+	if AB:DeferOutOfCombat('NeedsUpdateMicroBarVisibility') then return end
 
 	microBar.visibilityString = visibility
 	RegisterStateDriver(microBar.visibility, 'visibility', visibility)

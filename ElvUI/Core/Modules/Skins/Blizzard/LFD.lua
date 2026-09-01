@@ -5,7 +5,6 @@ local _G = _G
 local select, unpack = select, unpack
 
 local GetItemInfo = C_Item.GetItemInfo
-local GetItemQualityColor = GetItemQualityColor
 local GetLFGDungeonRewardLink = GetLFGDungeonRewardLink
 local GetLFGDungeonShortageRewardInfo = GetLFGDungeonShortageRewardInfo
 local hooksecurefunc = hooksecurefunc
@@ -60,14 +59,11 @@ local function UpdateMiniGameRewards(self)
 
 			if frame.itemLink and frame.backdrop then
 				local _, _, quality = GetItemInfo(frame.itemLink)
-				if quality then
-					frame.backdrop:SetBackdropBorderColor(GetItemQualityColor(quality))
-					if frame.Name then
-						frame.Name:SetTextColor(GetItemQualityColor(quality))
-					end
-				else
-					frame.backdrop:SetBackdropBorderColor(unpack(E.media.bordercolor))
-					if frame.Name then
+				frame.backdrop:SetBackdropBorderColor(E:GetItemQualityColor(quality))
+				if frame.Name then
+					if quality then
+						frame.Name:SetTextColor(E:GetItemQualityColor(quality))
+					else
 						frame.Name:SetTextColor(1, 1, 1)
 					end
 				end
@@ -251,12 +247,19 @@ local function LoadSkin()
 	LFDQueueFrameRandomScrollFrameScrollBar:SetPoint("TOPLEFT", LFDQueueFrameRandomScrollFrame, "TOPRIGHT", 5, -15)
 	LFDQueueFrameRandomScrollFrameScrollBar:SetPoint("BOTTOMLEFT", LFDQueueFrameRandomScrollFrame, "BOTTOMRIGHT", 5, 0)
 
+	local roleIconTextures = {
+		TANK = E.Media.Textures.Tank,
+		HEALER = E.Media.Textures.Healer,
+		DAMAGER = E.Media.Textures.DPS
+	}
+
 	local function SkinLFDRandomDungeonLoot(frame)
 		if frame.isSkinned then return end
 
 		local icon = _G[frame:GetName() .. "IconTexture"]
 		local nameFrame = _G[frame:GetName() .. "NameFrame"]
 		local count = _G[frame:GetName() .. "Count"]
+		local texture = icon:GetTexture()
 
 		frame:StripTextures()
 		frame:CreateBackdrop("Transparent")
@@ -265,6 +268,10 @@ local function LoadSkin()
 		icon:SetTexCoord(unpack(E.TexCoords))
 		icon:SetDrawLayer("BORDER")
 		icon:SetParent(frame.backdrop)
+
+		if texture then
+			icon:SetTexture(texture)
+		end
 
 		nameFrame:SetSize(118, 39)
 
@@ -285,6 +292,19 @@ local function LoadSkin()
 
 		frame.isSkinned = true
 	end
+
+	hooksecurefunc("LFGRewardsFrame_SetItemButton", function(parentFrame, _, index)
+		local frame = _G[parentFrame:GetName() .. "Item" .. index]
+		if not frame then return end
+
+		for r = 1, 2 do
+			local roleIcon = _G[frame:GetName() .. "RoleIcon" .. r]
+			if roleIcon and roleIcon:IsShown() and roleIcon.role then
+				roleIcon.texture:SetTexture(roleIconTextures[roleIcon.role])
+				roleIcon.texture:SetTexCoord(0, 1, 0, 1)
+			end
+		end
+	end)
 
 	local scan
 	local function GetLFGDungeonRewardLinkFix(dungeonID, rewardIndex)
@@ -315,9 +335,11 @@ local function LoadSkin()
 				local link = GetLFGDungeonRewardLinkFix(dungeonID, i)
 				if link then
 					local _, _, quality = GetItemInfo(link)
+					frame.backdrop:SetBackdropBorderColor(E:GetItemQualityColor(quality))
 					if quality then
-						frame.backdrop:SetBackdropBorderColor(GetItemQualityColor(quality))
-						name:SetTextColor(GetItemQualityColor(quality))
+						name:SetTextColor(E:GetItemQualityColor(quality))
+					else
+						name:SetTextColor(1, 1, 1)
 					end
 				else
 					frame.backdrop:SetBackdropBorderColor(unpack(E.media.bordercolor))
@@ -403,14 +425,14 @@ local function LoadSkin()
 	end)
 
 	hooksecurefunc("LFDDungeonReadyDialogReward_SetReward", function(button, dungeonID, rewardIndex)
-		if button and not button.texture then return end
+		if not button or not button.texture then return end
 
 		SkinLFDDungeonReadyDialogReward(button)
 
 		local link = GetLFGDungeonRewardLinkFix(dungeonID, rewardIndex)
 		if link then
 			local _, _, quality = GetItemInfo(link)
-			button:SetBackdropBorderColor(GetItemQualityColor(quality))
+			button:SetBackdropBorderColor(E:GetItemQualityColor(quality))
 		else
 			button:SetBackdropBorderColor(unpack(E.media.bordercolor))
 		end
@@ -1144,6 +1166,9 @@ local function LoadSkin()
 		if self.gameButtonPool then
 			for button in self.gameButtonPool:EnumerateActive() do
 				if not button.isSkinned then
+					if button.Ring then button.Ring:Kill() end
+					if button.Selected then button.Selected:Kill() end
+
 					S:HandleButton(button)
 					button:StyleButton()
 					if button.Icon then

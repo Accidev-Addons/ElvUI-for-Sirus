@@ -90,6 +90,7 @@ V.skins = {
 		chooseitem = true,
 		collections = true,
 		customizations = true,
+		deathRecap = true,
 		debug = true,
 		dressingroom = true,
 		dummycontrol = true,
@@ -115,6 +116,7 @@ V.skins = {
 		merchant = true,
 		mirrorTimers = true,
 		misc = true,
+		objectiveTracker = true,
 		petition = true,
 		pvp = true,
 		quest = true,
@@ -168,4 +170,34 @@ V.actionbar = {
 
 V.worldmap = {
 	enable = true
+}
+
+V.character = {
+	character = {
+		enable = true,
+		player = {
+			orderName = "",
+			collapsedName = {
+				STRENGTHEN = false,
+				BASE_STATS = false,
+				MELEE_COMBAT = false,
+				RANGED_COMBAT = false,
+				SPELL_COMBAT = false,
+				DEFENSES = false,
+				RESISTANCE = false
+			}
+		},
+		pet = {
+			orderName = "",
+			collapsedName = {
+				STRENGTHEN = false,
+				BASE_STATS = false,
+				MELEE_COMBAT = false,
+				RANGED_COMBAT = false,
+				SPELL_COMBAT = false,
+				DEFENSES = false,
+				RESISTANCE = false
+			}
+		}
+	}
 }

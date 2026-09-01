@@ -115,7 +115,7 @@ local function SkinStoreCategoryButton(btn)
 	HookClearPKBTChrome(btn)
 
 	if btn.Icon then
-		btn.Icon:SetTexCoord(unpack(E.TexCoords))
+		btn.Icon:SetTexCoords()
 	end
 	if btn.ButtonText then
 
@@ -244,7 +244,7 @@ local function SkinStoreRowButton(row)
 			S:ApplyElvUIFont(child)
 			if child.Icon then
 				S:HandleIcon(child.Icon)
-				child.Icon:SetTexCoord(unpack(E.TexCoords))
+				child.Icon:SetTexCoords()
 			end
 			if child.Border then child.Border:SetAlpha(0) end
 			if child.IconBorder then child.IconBorder:SetAlpha(0) end

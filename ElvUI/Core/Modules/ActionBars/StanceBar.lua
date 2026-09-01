@@ -11,7 +11,6 @@ local GetShapeshiftForm = GetShapeshiftForm
 local GetShapeshiftFormCooldown = GetShapeshiftFormCooldown
 local GetShapeshiftFormInfo = GetShapeshiftFormInfo
 local GetSpellTexture = GetSpellTexture
-local InCombatLockdown = InCombatLockdown
 local RegisterStateDriver = RegisterStateDriver
 local NUM_SHAPESHIFT_SLOTS = NUM_SHAPESHIFT_SLOTS
 
@@ -177,11 +176,7 @@ function AB:PositionAndSizeBarShapeShift()
 end
 
 function AB:AdjustMaxStanceButtons(event)
-	if InCombatLockdown() then
-		AB.NeedsAdjustMaxStanceButtons = event or true
-		AB:RegisterEvent('PLAYER_REGEN_ENABLED')
-		return
-	end
+	if AB:DeferOutOfCombat('NeedsAdjustMaxStanceButtons', event) then return end
 
 	for _, button in ipairs(bar.buttons) do
 		button:Hide()

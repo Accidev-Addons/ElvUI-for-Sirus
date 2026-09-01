@@ -6,6 +6,7 @@ local LO = E:GetModule('Layout')
 local M = E:GetModule('Misc')
 local NP = E:GetModule('NamePlates')
 local TM = E:GetModule('TotemTracker')
+local SK = E:GetModule('Skins')
 local UF = E:GetModule('UnitFrames')
 local ACH = E.Libs.ACH
 
@@ -345,3 +346,13 @@ blizz.queueStatus.args.fontGroup.args.position = ACH:Select(L["Position"], nil, 
 blizz.queueStatus.args.fontGroup.args.xOffset = ACH:Range(L["X-Offset"], nil, 12, { min = -30, max = 30, step = 1 })
 blizz.queueStatus.args.fontGroup.args.yOffset = ACH:Range(L["Y-Offset"], nil, 13, { min = -30, max = 30, step = 1 })
 blizz.queueStatus.args.fontGroup.inline = true
+
+blizz.characterInfo = ACH:Group(L["Character Information"], nil, 100, nil, function(info) return E.db.general.characterInfo[info[#info]] end, function(info, value)
+	E.db.general.characterInfo[info[#info]] = value
+	if SK.UpdateCharacterEquipmentSockets then
+		SK:UpdateCharacterEquipmentSockets()
+	end
+end)
+blizz.characterInfo.args.showGems = ACH:Toggle(L["Display Gems"], nil, 1)
+blizz.characterInfo.args.showEnchants = ACH:Toggle(L["Display Enchants"], nil, 2)
+blizz.characterInfo.inline = true

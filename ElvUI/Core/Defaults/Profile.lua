@@ -22,7 +22,7 @@ P.general = {
 	hideErrorFrame = true,
 	hideZoneText = false,
 	hideTutorialFrames = false,
-	hideServerNews = false,
+	hideServerNews = true,
 	enhancedPvpMessages = true,
 	objectiveFrameHeight = 480,
 	objectiveFrameAutoHide = true,
@@ -200,6 +200,10 @@ P.general = {
 		fontOutline = 'OUTLINE',
 		frameStrata = 'MEDIUM',
 		frameLevel = 20,
+	},
+	characterInfo = {
+		showGems = true,
+		showEnchants = false,
 	},
 	lootRoll = {
 		width = 325,

@@ -367,17 +367,40 @@ function M:DelayTutorialFrames()
 	E:Delay(2, M.HideTutorialFrames, M)
 end
 
+local ServerNewsPanels = { 'GameMenuFrameServerAnnounces', 'GameMenuFrameServerChanges' }
+
+local function ToggleServerNewsEvent(panel, hide)
+	if not panel or not panel.UnregisterCustomEvent then return end
+
+	if hide then
+		panel:UnregisterCustomEvent('SERVER_NEWS_UPDATE')
+	else
+		panel:RegisterCustomEvent('SERVER_NEWS_UPDATE')
+	end
+end
+
 function M:HideServerNews(frame)
 	if M.serverNewsUserOpened then
 		M.serverNewsUserOpened = nil
 		return
 	end
 
-	if not E.db.general.hideServerNews then return end
+	local hide = E.db.general.hideServerNews
 
 	frame = frame or _G.ServerNewsFrame
-	if frame and frame:IsShown() then
+	ToggleServerNewsEvent(frame, hide)
+
+	if hide and frame and frame:IsShown() then
 		HideUIPanel(frame)
+	end
+
+	for _, name in next, ServerNewsPanels do
+		local panel = _G[name]
+		ToggleServerNewsEvent(panel, hide)
+
+		if hide and panel then
+			panel:Hide()
+		end
 	end
 end
 

@@ -250,7 +250,7 @@ function E:ClassColor(class, usePriestColor)
 end
 
 function E:GetQualityColor(quality)
-	return _G.ITEM_QUALITY_COLORS[quality]
+	return E.QualityColors[quality]
 end
 
 function E:GetAddOnDisplayName(name)
@@ -347,6 +347,30 @@ do -- other non-english locales require this
 		local gender = (type(unit) == 'number' and unit) or (not unit and E.mygender) or UnitSex(unit)
 		return (gender == 3 and classFemale[className]) or classMale[className]
 	end
+end
+
+function E:GetTalentSpecInfo(isInspect)
+	local talentGroup = GetActiveTalentGroup(isInspect)
+	local maxPoints, specIdx, specName, specIcon = 0, 0
+
+	for i = 1, MAX_TALENT_TABS do
+		local name, icon, pointsSpent = GetTalentTabInfo(i, isInspect, nil, talentGroup)
+		if pointsSpent and maxPoints < pointsSpent then
+			maxPoints = pointsSpent
+			specIdx = i
+			specName = name
+			specIcon = icon
+		end
+	end
+
+	if not specName then
+		specName = NONE
+	end
+	if not specIcon then
+		specIcon = "Interface\\Icons\\INV_Misc_QuestionMark"
+	end
+
+	return specIdx, specName, specIcon
 end
 
 function E:GetUnitSpecInfo(unit)

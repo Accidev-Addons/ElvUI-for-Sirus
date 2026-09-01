@@ -4,7 +4,6 @@ local NP = E:GetModule("NamePlates")
 --Lua functions
 local _G = _G
 local type = type
-local tonumber = tonumber
 local select, unpack, pairs, next = select, unpack, pairs, next
 local random, abs = math.random, math.abs
 local format, gsub, match = string.format, string.gsub, string.match

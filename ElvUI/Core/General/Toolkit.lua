@@ -266,6 +266,24 @@ local function GetDesaturation(frame)
     return r == .6 and g == .6 and b == .6 and a == .8
 end
 
+function E:SetForcedBorderColor(region, r, g, b, a)
+	local fc = region.forcedBorderColors
+	if not fc then
+		fc = {}
+		region.forcedBorderColors = fc
+	end
+
+	fc[1], fc[2], fc[3], fc[4] = r, g, b, a
+
+	region:SetBackdropBorderColor(r, g, b, a)
+end
+
+function E:ClearForcedBorderColor(region, r, g, b, a)
+	region.forcedBorderColors = nil
+
+	region:SetBackdropBorderColor(r, g, b, a)
+end
+
 local function SetTemplate(frame, template, glossTex, ignoreUpdates, forcePixelMode, isUnitFrameElement, isNamePlateElement, noScale)
 	GetTemplate(template, isUnitFrameElement)
 

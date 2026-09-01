@@ -837,9 +837,10 @@ do	--The code in this function is from WeakAuras, credit goes to Mirrored and th
 end
 
 do
+	local AceComm = _G.LibStub('AceComm-3.0')
 	local SendMessageWaiting -- only allow 1 delay at a time regardless of eventing
 	local VERSION_PREFIX = 'ELVUI_VERSIONCHK9'
-	function E:SendMessage()
+	function E:SendVersionCheck()
 		if IsInRaid() then
 			local _, instanceType = IsInInstance()
 			SendAddonMessage(VERSION_PREFIX, E.version, (instanceType == 'pvp' and 'BATTLEGROUND') or 'RAID')
@@ -852,47 +853,50 @@ do
 		SendMessageWaiting = nil
 	end
 
-	local SendRecieveGroupSize = 0
 	local PLAYER_NAME = E.myname
-	local function SendRecieve(_, event, prefix, message, _, sender)
-		if event == 'CHAT_MSG_ADDON' then
-			if sender == PLAYER_NAME then return end
-			if prefix == VERSION_PREFIX then
-				local ver, msg, inCombat = E.version, tonumber(message), InCombatLockdown()
+	local PLAYER_NAME_REALM = format('%s-%s', E.myname, E:ShortenRealm(E.myrealm))
+	local function VersionCheckRecieved(_, message, _, sender)
+		if not sender or sender == PLAYER_NAME or sender == PLAYER_NAME_REALM then return end
 
-				E.UserList[E:StripMyRealm(sender)] = msg
+		local ver, msg, inCombat = E.version, tonumber(message), InCombatLockdown()
 
-				if msg and (msg > ver) and not E.recievedOutOfDateMessage then -- you're outdated D:
-					E:Print(L["ElvUI is out of date. You can download the newest version from https://github.com/ElvUI-WotLK."])
+		E.UserList[E:StripMyRealm(sender)] = msg
 
-					if msg and ((msg - ver) >= 0.05) and not inCombat then
-						E.PopupDialogs.ELVUI_UPDATE_AVAILABLE.text = L["ElvUI is five or more revisions out of date. You can download the newest version from https://github.com/ElvUI-WotLK."]..format('|n|nSender %s : Version %s', sender, msg)
+		if msg and (msg > ver) and not E.recievedOutOfDateMessage then -- you're outdated D:
+			E:Print(L["ElvUI is out of date. You can download the newest version from https://github.com/ElvUI-WotLK."])
 
-						E:StaticPopup_Show('ELVUI_UPDATE_AVAILABLE')
-					end
+			if msg and ((msg - ver) >= 0.05) and not inCombat then
+				E.PopupDialogs.ELVUI_UPDATE_AVAILABLE.text = L["ElvUI is five or more revisions out of date. You can download the newest version from https://github.com/ElvUI-WotLK."]..format('|n|nSender %s : Version %s', sender, msg)
 
-					E.recievedOutOfDateMessage = true
-				end
+				E:StaticPopup_Show('ELVUI_UPDATE_AVAILABLE')
 			end
-		elseif event == 'PARTY_MEMBERS_CHANGED' or event == 'RAID_ROSTER_UPDATE' then
+
+			E.recievedOutOfDateMessage = true
+		end
+	end
+
+	AceComm.RegisterComm(E, VERSION_PREFIX, VersionCheckRecieved)
+
+	local SendRecieveGroupSize = 0
+	local function SendRecieve(_, event)
+		if event == 'PARTY_MEMBERS_CHANGED' or event == 'RAID_ROSTER_UPDATE' then
 			local num = GetNumGroupMembers()
 			if num ~= SendRecieveGroupSize then
 				if num > 1 and num > SendRecieveGroupSize then
 					if not SendMessageWaiting then
-						SendMessageWaiting = E:Delay(10, E.SendMessage)
+						SendMessageWaiting = E:Delay(10, E.SendVersionCheck)
 					end
 				end
 				SendRecieveGroupSize = num
 			end
 		elseif event == 'PLAYER_ENTERING_WORLD' then
 			if not SendMessageWaiting then
-				SendMessageWaiting = E:Delay(10, E.SendMessage)
+				SendMessageWaiting = E:Delay(10, E.SendVersionCheck)
 			end
 		end
 	end
 
 	local f = CreateFrame('Frame')
-	f:RegisterEvent('CHAT_MSG_ADDON')
 	f:RegisterEvent('RAID_ROSTER_UPDATE')
 	f:RegisterEvent('PARTY_MEMBERS_CHANGED')
 	f:RegisterEvent('PLAYER_ENTERING_WORLD')
@@ -1339,7 +1343,7 @@ function E:UpdateActionBars(skipCallback)
 	ActionBars:UpdateMicroButtons()
 	ActionBars:UpdatePetCooldownSettings()
 
-	if E.myclass == 'SHAMAN' then
+	if ActionBars:TotemBarEnabled() then
 		ActionBars:UpdateTotemBindings()
 	end
 
@@ -1417,7 +1421,11 @@ end
 function E:UpdateMisc(skipCallback)
 	AFK:Toggle()
 	TotemTracker:PositionAndSize()
-	ActionBars:PositionAndSizeTotemBar()
+
+	if ActionBars:TotemBarEnabled() then
+		ActionBars:PositionAndSizeTotemBar()
+	end
+
 	MinimapButtonGrabber:UpdateSettings()
 
 	if not skipCallback then

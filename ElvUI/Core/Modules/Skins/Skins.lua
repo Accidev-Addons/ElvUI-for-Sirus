@@ -847,14 +847,20 @@ do --Tab Regions
 		text._elvTabTextForced = false
 	end
 
+	local function IsSkinnedTab(tab)
+		return tab and (tab.isSkinned or tab.backdrop)
+	end
+
 	hooksecurefunc('PanelTemplates_SelectTab', function(tab)
-		ForceTabTextCenter(tab, -1)
+		if IsSkinnedTab(tab) then ForceTabTextCenter(tab, -1) end
 	end)
+
 	hooksecurefunc('PanelTemplates_DeselectTab', function(tab)
-		ForceTabTextCenter(tab, 0)
+		if IsSkinnedTab(tab) then ForceTabTextCenter(tab, 0) end
 	end)
+
 	hooksecurefunc('PanelTemplates_SetDisabledTabState', function(tab)
-		ForceTabTextCenter(tab, 0)
+		if IsSkinnedTab(tab) then ForceTabTextCenter(tab, 0) end
 	end)
 
 	function S:HandleTab(tab, noBackdrop, template)
@@ -951,9 +957,13 @@ function S:ApplyElvUIFont(frame)
 
 	for i = 1, (frame:GetNumRegions() or 0) do
 		local region = select(i, frame:GetRegions())
-		if region and region.GetObjectType and region:GetObjectType() == 'FontString' and region.FontTemplate then
+		if region and region.GetObjectType and region:GetObjectType() == 'FontString' then
 			local _, size, flags = region:GetFont()
-			region:FontTemplate(nil, (size and size >= 1) and size or nil, flags)
+			if region.FontTemplate then
+				region:FontTemplate(nil, (size and size >= 1) and size or nil, flags)
+			elseif region.SetFont then
+				region:SetFont(E.media.normFont or _G.GameFontNormal:GetFont(), (size and size >= 1) and size or 12, flags or '')
+			end
 		end
 	end
 

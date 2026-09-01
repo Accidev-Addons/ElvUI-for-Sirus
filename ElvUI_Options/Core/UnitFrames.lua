@@ -4,9 +4,9 @@ local UF = E:GetModule("UnitFrames")
 local ACD = E.Libs.AceConfigDialog
 
 local _G = _G
-local select, pairs, ipairs = select, pairs, ipairs
-local tremove, tinsert, tconcat, twipe = table.remove, table.insert, table.concat, table.wipe
-local format, strmatch, gsub, strsplit = string.format, strmatch, string.gsub, strsplit
+local select, pairs = select, pairs
+local tinsert, twipe = table.insert, table.wipe
+local format, strsplit = string.format, strsplit
 
 local GetScreenWidth = GetScreenWidth
 local IsAddOnLoaded = IsAddOnLoaded
@@ -101,58 +101,8 @@ local blendModeValues = {
 local CUSTOMTEXT_CONFIGS = {}
 local carryFilterFrom, carryFilterTo
 
-local function filterMatch(s,v)
-	local m1, m2, m3, m4 = "^"..v.."$", "^"..v..",", ","..v.."$", ","..v..","
-	return (strmatch(s, m1) and m1) or (strmatch(s, m2) and m2) or (strmatch(s, m3) and m3) or (strmatch(s, m4) and v..",")
-end
-
 local function filterPriority(auraType, groupName, value, remove, movehere, friendState)
-	if not auraType or not value then return end
-	local filter = E.db.unitframe.units[groupName] and E.db.unitframe.units[groupName][auraType] and E.db.unitframe.units[groupName][auraType].priority
-	if not filter then return end
-	local found = filterMatch(filter, E:EscapeString(value))
-	if found and movehere then
-		local tbl, sv, sm = {strsplit(",",filter)}
-		for i in ipairs(tbl) do
-			if tbl[i] == value then sv = i elseif tbl[i] == movehere then sm = i end
-			if sv and sm then break end
-		end
-		tremove(tbl, sm)
-		tinsert(tbl, sv, movehere)
-		E.db.unitframe.units[groupName][auraType].priority = tconcat(tbl,",")
-	elseif found and friendState then
-		local realValue = strmatch(value, "^Friendly:([^,]*)") or strmatch(value, "^Enemy:([^,]*)") or value
-		local friend = filterMatch(filter, E:EscapeString("Friendly:"..realValue))
-		local enemy = filterMatch(filter, E:EscapeString("Enemy:"..realValue))
-		local default = filterMatch(filter, E:EscapeString(realValue))
-
-		local state =
-			(friend and (not enemy) and format("%s%s","Enemy:",realValue))					--[x] friend [ ] enemy: > enemy
-		or	((not enemy and not friend) and format("%s%s","Friendly:",realValue))			--[ ] friend [ ] enemy: > friendly
-		or	(enemy and (not friend) and default and format("%s%s","Friendly:",realValue))	--[ ] friend [x] enemy: (default exists) > friendly
-		or	(enemy and (not friend) and strmatch(value, "^Enemy:") and realValue)			--[ ] friend [x] enemy: (no default) > realvalue
-		or	(friend and enemy and realValue)												--[x] friend [x] enemy: > default
-
-		if state then
-			local stateFound = filterMatch(filter, E:EscapeString(state))
-			if not stateFound then
-				local tbl, sv = {strsplit(",",filter)}
-				for i in ipairs(tbl) do
-					if tbl[i] == value then
-						sv = i
-						break
-					end
-				end
-				tinsert(tbl, sv, state)
-				tremove(tbl, sv + 1)
-				E.db.unitframe.units[groupName][auraType].priority = tconcat(tbl,",")
-			end
-		end
-	elseif found and remove then
-		E.db.unitframe.units[groupName][auraType].priority = gsub(filter, found, "")
-	elseif not found and not remove then
-		E.db.unitframe.units[groupName][auraType].priority = (filter == "" and value) or (filter..","..value)
-	end
+	C.SetFilterPriority(E.db.unitframe.units, groupName, auraType, value, remove, movehere, friendState, true)
 end
 
 -----------------------------------------------------------------------
@@ -377,14 +327,7 @@ local function GetOptionsTable_AuraBars(updateFunc, groupName)
 		dragOnClick = function(info)
 			filterPriority("aurabar", groupName, carryFilterFrom, true)
 		end,
-		stateSwitchGetText = function(_, TEXT)
-			local friend, enemy = strmatch(TEXT, "^Friendly:([^,]*)"), strmatch(TEXT, "^Enemy:([^,]*)")
-			local text = friend or enemy or TEXT
-			local SF, localized = E.global.unitframe.specialFilters[text], L[text]
-			local blockText = SF and localized and text:match("^block") and localized:gsub("^%[.-]%s?", "")
-			local filterText = (blockText and format("|cFF999999%s|r %s", L["BLOCK"], blockText)) or localized or text
-			return (friend and format("|cFF33FF33%s|r %s", L["FRIEND"], filterText)) or (enemy and format("|cFFFF3333%s|r %s", L["ENEMY"], filterText)) or filterText
-		end,
+		stateSwitchGetText = C.StateSwitchGetText,
 		stateSwitchOnClick = function(info)
 			filterPriority("aurabar", groupName, carryFilterFrom, nil, nil, true)
 		end,
@@ -693,14 +636,7 @@ local function GetOptionsTable_Auras(auraType, updateFunc, groupName, numUnits)
 		dragOnClick = function(info)
 			filterPriority(auraType, groupName, carryFilterFrom, true)
 		end,
-		stateSwitchGetText = function(_, TEXT)
-			local friend, enemy = strmatch(TEXT, "^Friendly:([^,]*)"), strmatch(TEXT, "^Enemy:([^,]*)")
-			local text = friend or enemy or TEXT
-			local SF, localized = E.global.unitframe.specialFilters[text], L[text]
-			local blockText = SF and localized and text:match("^block") and localized:gsub("^%[.-]%s?", "")
-			local filterText = (blockText and format("|cFF999999%s|r %s", L["BLOCK"], blockText)) or localized or text
-			return (friend and format("|cFF33FF33%s|r %s", L["FRIEND"], filterText)) or (enemy and format("|cFFFF3333%s|r %s", L["ENEMY"], filterText)) or filterText
-		end,
+		stateSwitchGetText = C.StateSwitchGetText,
 		stateSwitchOnClick = function(info)
 			filterPriority(auraType, groupName, carryFilterFrom, nil, nil, true)
 		end,

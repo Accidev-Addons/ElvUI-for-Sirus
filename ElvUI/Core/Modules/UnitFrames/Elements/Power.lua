@@ -197,7 +197,14 @@ function UF:Configure_Power(frame)
 	elseif frame:IsElementEnabled("Power") then
 		frame:DisableElement("Power")
 		power:Hide()
-		frame:Tag(power.value, "")
+		frame:Untag(power.value)
+
+		if frame.__mousetags then
+			frame.__mousetags[power.value] = nil
+		end
+
+		power.value:SetAlpha(1)
+		power.value:SetText("")
 	end
 
 	power.custom_backdrop = UF.db.colors.custompowerbackdrop and UF.db.colors.power_backdrop

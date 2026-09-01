@@ -17,7 +17,7 @@ local GuildRoster = GuildRoster
 local IsInGuild = IsInGuild
 local IsShiftKeyDown = IsShiftKeyDown
 local SetItemRef = SetItemRef
-local ToggleFriendsFrame = ToggleFriendsFrame
+local ToggleGuildFrame = ToggleGuildFrame
 local UnitInParty = UnitInParty
 local UnitInRaid = UnitInRaid
 local IsAltKeyDown = IsAltKeyDown
@@ -240,8 +240,8 @@ local function Click(self, btn)
 
 		E:SetEasyMenuAnchor(E.EasyMenu, self)
 		EasyMenu(menuList, E.EasyMenu, nil, nil, nil, 'MENU')
-	elseif not E:AlertCombat() then
-		ToggleFriendsFrame(3)
+	else
+		ToggleGuildFrame()
 	end
 end
 

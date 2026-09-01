@@ -14,7 +14,7 @@ local function LoadSkin()
 	for i = 1, 5 do
 		local button = EncounterJournal.searchBox["sbutton"..i]
 		S:HandleButton(button)
-		button.icon:SetTexCoord(unpack(E.TexCoords))
+		button.icon:SetTexCoords()
 
 		if i ~= 1 then
 			button:Point("TOPLEFT",  EncounterJournal.searchBox["sbutton"..i-1], "BOTTOMLEFT", 0, -E.Border)

@@ -202,11 +202,7 @@ local function GetAllChatBubbles(...)
     end
 end
 
-local function ChatBubble_OnUpdate(self, elapsed)
-    self.lastupdate = (self.lastupdate or 0) + elapsed
-    if self.lastupdate < .1 then return end
-    self.lastupdate = 0
-
+local function ChatBubble_OnUpdate()
     numChildren = WorldGetNumChildren(WorldFrame)
     if lastChildern ~= numChildren then
         GetAllChatBubbles(WorldGetChildren(WorldFrame))
@@ -227,9 +223,10 @@ function M:LoadChatBubbles()
 
     if E.private.general.chatBubbles ~= 'disabled' then
         M.BubbleFrame:SetScript('OnEvent', ChatBubble_OnEvent)
-        M.BubbleFrame:SetScript('OnUpdate', ChatBubble_OnUpdate)
+        M.BubbleTimer = M:ScheduleRepeatingTimer(ChatBubble_OnUpdate, 0.1)
     else
         M.BubbleFrame:SetScript('OnEvent', nil)
-        M.BubbleFrame:SetScript('OnUpdate', nil)
+        M:CancelTimer(M.BubbleTimer)
+        M.BubbleTimer = nil
     end
 end

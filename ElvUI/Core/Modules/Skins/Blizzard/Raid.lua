@@ -33,6 +33,12 @@ function S:Blizzard_RaidUI()
 	S:HandleButton(_G.RaidFrameReadyCheckButton)
 	S:HandleCheckBox(_G.RaidFrameAllAssistCheckButton)
 
+	_G.RaidFrameAllAssistCheckButton:ClearAllPoints()
+	_G.RaidFrameAllAssistCheckButton:Point('TOPLEFT', 8, -23)
+
+	_G.RaidFrameReadyCheckButton:ClearAllPoints()
+	_G.RaidFrameReadyCheckButton:Point('LEFT', _G.RaidFrameAllAssistCheckButtonText, 'RIGHT', 6, 0)
+
 	_G.RaidFrameConvertToRaidButton:Point('BOTTOMRIGHT', -6, 4)
 
 	for _, object in ipairs(StripAllTextures) do

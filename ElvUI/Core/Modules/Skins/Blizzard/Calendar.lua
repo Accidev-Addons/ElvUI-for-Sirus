@@ -166,11 +166,11 @@ local function LoadSkin()
 	S:HandleDropDownBox(CalendarCreateEventMinuteDropDown, 68)
 	S:HandleDropDownBox(CalendarCreateEventAMPMDropDown, 68)
 	S:HandleDropDownBox(CalendarCreateEventRepeatOptionDropDown, 120)
-	CalendarCreateEventIcon:SetTexCoord(unpack(E.TexCoords))
-	hooksecurefunc(CalendarCreateEventIcon, "SetTexCoord", function(self, x1, y1, x2, y2)
-		local x3, y3, x4, y4 = unpack(E.TexCoords)
-		if x1 ~= x3 or y1 ~= y3 or x2 ~= x4 or y2 ~= y4 then
-			self:SetTexCoord(unpack(E.TexCoords))
+	CalendarCreateEventIcon:SetTexCoords()
+	hooksecurefunc(CalendarCreateEventIcon, "SetTexCoord", function(self, left, right, top, bottom)
+		local left2, right2, top2, bottom2 = E:GetTexCoords()
+		if left ~= left2 or right ~= right2 or top ~= top2 or bottom ~= bottom2 then
+			self:SetTexCoords()
 		end
 	end)
 

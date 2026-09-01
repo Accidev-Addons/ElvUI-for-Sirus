@@ -11,7 +11,6 @@ local tinsert = tinsert
 local ReloadUI = ReloadUI
 local PlaySound = PlaySound
 local CreateFrame = CreateFrame
-local UIFrameFadeOut = UIFrameFadeOut
 local ChangeChatColor = ChangeChatColor
 local FCF_SetWindowName = FCF_SetWindowName
 local FCF_StopDragging = FCF_StopDragging
@@ -34,6 +33,13 @@ local GUILD_EVENT_LOG = GUILD_EVENT_LOG
 local CURRENT_PAGE = 0
 local MAX_PAGE = 9
 
+function E:InstallStepMessage(message, noDisplayMsg)
+	local imsg = _G.InstallStepComplete
+	if imsg and not noDisplayMsg then
+		imsg.message = message
+		imsg:Show()
+	end
+end
 
 function E:SetupChat(noDisplayMsg)
 	local chats = _G.CHAT_FRAMES
@@ -108,10 +114,7 @@ function E:SetupChat(noDisplayMsg)
 		_G.LeftChatToggleButton:Click()
 	end
 
-	if _G.InstallStepComplete and not noDisplayMsg then
-		_G.InstallStepComplete.message = L["Chat Set"]
-		_G.InstallStepComplete:Show()
-	end
+	E:InstallStepMessage(L["Chat Set"], noDisplayMsg)
 end
 
 function E:SetupCVars(noDisplayMsg)
@@ -144,10 +147,7 @@ function E:SetupCVars(noDisplayMsg)
 		E:SetCVar('wholeChatWindowClickable', 0)
 	end
 
-	if _G.InstallStepComplete and not noDisplayMsg then
-		_G.InstallStepComplete.message = L["CVars Set"]
-		_G.InstallStepComplete:Show()
-	end
+	E:InstallStepMessage(L["CVars Set"], noDisplayMsg)
 end
 
 function E:GetColor(r, g, b, a)
@@ -202,10 +202,7 @@ function E:SetupTheme(theme, noDisplayMsg)
 
 	E:UpdateStart(true, true)
 
-	if _G.InstallStepComplete and not noDisplayMsg then
-		_G.InstallStepComplete.message = L["Theme Set"]
-		_G.InstallStepComplete:Show()
-	end
+	E:InstallStepMessage(L["Theme Set"], noDisplayMsg)
 end
 
 function E:LayoutAnniversary()
@@ -1022,10 +1019,7 @@ function E:SetupLayout(layout, noDataReset, noDisplayMsg)
 
 	E:StaggeredUpdateAll()
 
-	if _G.InstallStepComplete and not noDisplayMsg then
-		_G.InstallStepComplete.message = L["Layout Set"]
-		_G.InstallStepComplete:Show()
-	end
+	E:InstallStepMessage(L["Layout Set"], noDisplayMsg)
 end
 
 function E:SetupAuras(style, noDisplayMsg)
@@ -1074,10 +1068,7 @@ function E:SetupAuras(style, noDisplayMsg)
 		end
 	end
 
-	if _G.InstallStepComplete and not noDisplayMsg then
-		_G.InstallStepComplete.message = L["Auras Set"]
-		_G.InstallStepComplete:Show()
-	end
+	E:InstallStepMessage(L["Auras Set"], noDisplayMsg)
 end
 
 function E:SetupComplete(reload)
@@ -1325,53 +1316,61 @@ function E:PreviousPage()
 	end
 end
 
+local function StepComplete_OnShow(frame)
+	if frame.message then
+		PlaySound(888)
+		frame.text:SetText(frame.message)
+		E:UIFrameFadeOut(frame, 3.5, 1, 0)
+		E:Delay(4, frame.Hide, frame)
+		frame.message = nil
+	else
+		frame:Hide()
+	end
+end
+
+function E:CreateStepComplete(name)
+	local imsg = CreateFrame('Frame', name, E.UIParent)
+	imsg:Size(418, 72)
+	imsg:Point('TOP', 0, -190)
+	imsg:Hide()
+	imsg:SetScript('OnShow', StepComplete_OnShow)
+
+	imsg.firstShow = false
+
+	imsg.bg = imsg:CreateTexture(nil, 'BACKGROUND')
+	imsg.bg:SetTexture(E.Media.Textures.LevelUpTex)
+	imsg.bg:Point('BOTTOM')
+	imsg.bg:Size(326, 103)
+	imsg.bg:SetTexCoord(0.00195313, 0.63867188, 0.03710938, 0.23828125)
+	imsg.bg:SetVertexColor(1, 1, 1, 0.6)
+
+	imsg.lineTop = imsg:CreateTexture(nil, 'BACKGROUND')
+	imsg.lineTop:SetDrawLayer('BACKGROUND', 2)
+	imsg.lineTop:SetTexture(E.Media.Textures.LevelUpTex)
+	imsg.lineTop:Point('TOP')
+	imsg.lineTop:Size(418, 7)
+	imsg.lineTop:SetTexCoord(0.00195313, 0.81835938, 0.01953125, 0.03320313)
+
+	imsg.lineBottom = imsg:CreateTexture(nil, 'BACKGROUND')
+	imsg.lineBottom:SetDrawLayer('BACKGROUND', 2)
+	imsg.lineBottom:SetTexture(E.Media.Textures.LevelUpTex)
+	imsg.lineBottom:Point('BOTTOM')
+	imsg.lineBottom:Size(418, 7)
+	imsg.lineBottom:SetTexCoord(0.00195313, 0.81835938, 0.01953125, 0.03320313)
+
+	imsg.text = imsg:CreateFontString(nil, 'ARTWORK')
+	imsg.text:FontTemplate(E.media.normFont, 32, 'OUTLINE')
+	imsg.text:Point('BOTTOM', 0, 12)
+	imsg.text:SetTextColor(1, 0.82, 0)
+	imsg.text:SetJustifyH('CENTER')
+
+	return imsg
+end
+
 --Install UI
 function E:Install()
 	if not _G.InstallStepComplete then
-		local imsg = CreateFrame('Frame', 'InstallStepComplete', E.UIParent)
-		imsg:Size(418, 72)
-		imsg:Point('TOP', 0, -190)
-		imsg:Hide()
-		imsg:SetScript('OnShow', function(f)
-			if f.message then
-				PlaySound(888)
-				f.text:SetText(f.message)
-				UIFrameFadeOut(f, 3.5, 1, 0)
-				E:Delay(4, f.Hide, f)
-				f.message = nil
-			else
-				f:Hide()
-			end
-		end)
-
-		imsg.firstShow = false
-
-		imsg.bg = imsg:CreateTexture(nil, 'BACKGROUND')
-		imsg.bg:SetTexture(E.Media.Textures.LevelUpTex)
-		imsg.bg:Point('BOTTOM')
-		imsg.bg:Size(326, 103)
-		imsg.bg:SetTexCoord(0.00195313, 0.63867188, 0.03710938, 0.23828125)
-		imsg.bg:SetVertexColor(1, 1, 1, 0.6)
-
-		imsg.lineTop = imsg:CreateTexture(nil, 'BACKGROUND')
-		imsg.lineTop:SetDrawLayer('BACKGROUND', 2)
-		imsg.lineTop:SetTexture(E.Media.Textures.LevelUpTex)
-		imsg.lineTop:Point('TOP')
-		imsg.lineTop:Size(418, 7)
-		imsg.lineTop:SetTexCoord(0.00195313, 0.81835938, 0.01953125, 0.03320313)
-
-		imsg.lineBottom = imsg:CreateTexture(nil, 'BACKGROUND')
-		imsg.lineBottom:SetDrawLayer('BACKGROUND', 2)
-		imsg.lineBottom:SetTexture(E.Media.Textures.LevelUpTex)
-		imsg.lineBottom:Point('BOTTOM')
-		imsg.lineBottom:Size(418, 7)
-		imsg.lineBottom:SetTexCoord(0.00195313, 0.81835938, 0.01953125, 0.03320313)
-
-		imsg.text = imsg:CreateFontString(nil, 'ARTWORK')
-		imsg.text:FontTemplate(E.media.normFont, 32, 'OUTLINE')
-		imsg.text:Point('BOTTOM', 0, 12)
-		imsg.text:SetTextColor(1, 0.82, 0)
-		imsg.text:SetJustifyH('CENTER')
+		E:CreateStepComplete('InstallStepComplete')
 	end
 
 	--Create Frame

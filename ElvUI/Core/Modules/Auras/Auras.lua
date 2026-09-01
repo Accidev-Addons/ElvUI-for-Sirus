@@ -36,18 +36,6 @@ local MasqueGroupDebuffs = Masque and Masque:Group('ElvUI', 'Debuffs')
 
 local DebuffColors = DebuffTypeColor
 
-local function SetForcedBorderColor(region, r, g, b)
-	local fc = region.forcedBorderColors
-	if not fc then
-		fc = {}
-		region.forcedBorderColors = fc
-	end
-
-	fc[1], fc[2], fc[3] = r, g, b
-
-	region:SetBackdropBorderColor(r, g, b)
-end
-
 local DIRECTION_TO_POINT = {
 	DOWN_RIGHT = 'TOPLEFT',
 	DOWN_LEFT = 'TOPRIGHT',
@@ -158,9 +146,9 @@ function A:UpdateButton(button)
 	if threshold == -1 then
 		return
 	elseif button.timeLeft and button.timeLeft > threshold then
-		E:StopFlash(button, 1)
+		E:StopFlash(button)
 	else
-		E:Flash(button, 1)
+		E:Flash(button, 1, true)
 	end
 end
 
@@ -300,7 +288,7 @@ function A:ClearAuraTime(button, expired)
 
 	button.text:SetText('')
 
-	E:StopFlash(button, 1)
+	E:StopFlash(button)
 
 	if not expired and button.statusBar:IsShown() then
 		button.statusBar:SetMinMaxValues(0, 1)
@@ -338,13 +326,11 @@ function A:UpdateAura(button, index)
 		local debuffColor = button.filter == 'HARMFUL' and A.db.colorDebuffs and DebuffColors[dtype]
 		local color = debuffColor or E.db.general.bordercolor
 		if debuffColor then
-			SetForcedBorderColor(button, color.r, color.g, color.b)
-			SetForcedBorderColor(button.statusBar.backdrop, color.r, color.g, color.b)
+			E:SetForcedBorderColor(button, color.r, color.g, color.b)
+			E:SetForcedBorderColor(button.statusBar.backdrop, color.r, color.g, color.b)
 		else
-			button.forcedBorderColors = nil
-			button.statusBar.backdrop.forcedBorderColors = nil
-			button:SetBackdropBorderColor(color.r, color.g, color.b)
-			button.statusBar.backdrop:SetBackdropBorderColor(color.r, color.g, color.b)
+			E:ClearForcedBorderColor(button, color.r, color.g, color.b)
+			E:ClearForcedBorderColor(button.statusBar.backdrop, color.r, color.g, color.b)
 		end
 		button.debuffType = dtype
 	end
@@ -374,8 +360,8 @@ function A:UpdateTempEnchant(button, index, expiration)
 		local quality = A.db.colorEnchants and GetInventoryItemQuality('player', index)
 		local r, g, b = E:GetItemQualityColor(quality and quality > 1 and quality)
 
-		SetForcedBorderColor(button, r, g, b)
-		SetForcedBorderColor(button.statusBar.backdrop, r, g, b)
+		E:SetForcedBorderColor(button, r, g, b)
+		E:SetForcedBorderColor(button.statusBar.backdrop, r, g, b)
 
 		local remaining = (expiration * 0.001) or 0
 		A:SetAuraTime(button, remaining + GetTime(), (remaining <= 3600 and remaining > 1800) and 3600 or (remaining <= 1800 and remaining > 600) and 1800 or 600)
