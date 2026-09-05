@@ -69,35 +69,38 @@ S:AddCallback("Skin_WorldMap", function()
 			poi:SetTemplate("Transparent")
 			poi:SetHitRectInsets(0, 0, 0, 0)
 
-			poi.normalTexture:SetTexture()
 			poi.pushedTexture:SetTexture()
 
 			if poi.number then
 				poi.number:Kill()
+				poi.normalTexture:SetTexture()
 
 				poi.highlightTexture:SetTexture(E.media.blankTex)
 				poi.highlightTexture:SetVertexColor(1, 1, 1, 0.25)
 				poi.highlightTexture:SetInside()
+
+				poi.numberText = poi:CreateFontString(nil, "OVERLAY")
+				poi.numberText:Point("CENTER")
 			else
+				poi.turnin = poi.normalTexture
 				poi.highlightTexture:SetTexture()
 			end
+
+			poi.turnin:ClearAllPoints()
+			poi.turnin:SetInside()
 
 			poi.selectionGlow:SetTexture(E.media.blankTex)
 			poi.selectionGlow:SetVertexColor(1, 0.82, 0)
 			poi.selectionGlow:SetAlpha(0.35)
 			poi.selectionGlow:SetInside()
 
-			poi.numberText = poi:CreateFontString(nil, "OVERLAY")
-			poi.numberText:Point("CENTER")
-
 			poi.isSkinned = true
 		end
 
 		poi:Size(size)
-		poi.numberText:FontTemplate(nil, size * 0.6, "OUTLINE")
 
-		if poi.turnin then
-			poi.turnin:Size(size - 8)
+		if poi.numberText then
+			poi.numberText:FontTemplate(nil, size * 0.6, "OUTLINE")
 		end
 	end
 
@@ -121,9 +124,17 @@ S:AddCallback("Skin_WorldMap", function()
 		local poi = _G["poi"..parentName..buttonType.."_"..buttonIndex]
 		if not poi then return end
 
-		SkinQuestPOI(poi, parentName == "WorldMapPOIFrame" and 15 or 22)
+		local size = parentName == "WorldMapPOIFrame" and 15 or 19
+		SkinQuestPOI(poi, size)
 
-		poi.numberText:SetText(buttonType == QUEST_POI_NUMERIC and buttonIndex or "")
+		if poi.numberText then
+			poi.numberText:SetText(buttonType == QUEST_POI_NUMERIC and buttonIndex or "")
+		end
+
+		local swap = QUEST_POI_SWAP_BUTTONS[parentName]
+		if swap then
+			SkinQuestPOI(swap, size)
+		end
 	end)
 
 	hooksecurefunc("WorldMapFrame_UpdateQuests", function()
