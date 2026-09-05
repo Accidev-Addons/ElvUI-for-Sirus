@@ -65,17 +65,14 @@ S:AddCallback("Skin_AchievementUI_HybridScrollButton", function()
 
 	hooksecurefunc("HybridScrollFrame_CreateButtons", function(frame, template)
 		if template == "AchievementCategoryTemplate" then
-			local selectedButton
-
 			local function UpdateSelection()
+				local selectedCategory = achievementFunctions and achievementFunctions.selectedCategory
 				for _, button in ipairs(frame.buttons) do
 					if button.isSkinned and button.backdrop then
-						if button == selectedButton then
-							button.backdrop:SetBackdropColor(1, 0.82, 0, 0.3)
-							button.backdrop:SetBackdropBorderColor(1, 0.82, 0)
-						else
-							button.backdrop:SetBackdropColor(0, 0, 0, 0)
-							button.backdrop:SetBackdropBorderColor(0, 0, 0, 0)
+						button.backdrop:SetBackdropColor(0, 0, 0, 0)
+						button.backdrop:SetBackdropBorderColor(0, 0, 0, 0)
+						if selectedCategory and button.categoryID == selectedCategory then
+							button.backdrop:SetBackdropBorderColor(unpack(E.media.bordercolor))
 						end
 					end
 				end
@@ -96,10 +93,6 @@ S:AddCallback("Skin_AchievementUI_HybridScrollButton", function()
 					end
 
 					button:CreateBackdrop("Transparent")
-					button:HookScript("OnClick", function(self)
-						selectedButton = self
-						UpdateSelection()
-					end)
 					button.isSkinned = true
 				end
 			end
@@ -107,16 +100,15 @@ S:AddCallback("Skin_AchievementUI_HybridScrollButton", function()
 			if _G.AchievementFrameCategories_Update and not frame.SelectionHooked then
 				frame.SelectionHooked = true
 				hooksecurefunc("AchievementFrameCategories_Update", function()
-					local selected = achievementFunctions and achievementFunctions.selectedCategory
-					if selected then
-						for _, button in ipairs(frame.buttons) do
-							if button.categoryID == selected then
-								selectedButton = button
-								break
-							end
-						end
-					end
 					UpdateSelection()
+				end)
+			end
+
+			local scrollBar = AchievementFrameCategoriesContainerScrollBar
+			if scrollBar and not scrollBar.SelectionHooked then
+				scrollBar.SelectionHooked = true
+				hooksecurefunc(scrollBar, "SetValue", function(self, value)
+					C_Timer:After(0.05, UpdateSelection)
 				end)
 			end
 		elseif template == "AchievementTemplate" then

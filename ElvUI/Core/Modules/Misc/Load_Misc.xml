@@ -8,7 +8,6 @@
 	<Script file='TotemTracker.lua'/>
 	<Script file='AddonManager.lua'/>
 	<Script file='MinimapButtonGrabber.lua'/>
-	<Script file='InfoItemLevel.lua'/>
 	<Script file='RaidUtility.lua'/>
 	<Script file='AFK.lua'/>
 	<Script file='QueueStatus.lua'/>

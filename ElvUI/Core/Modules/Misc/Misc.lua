@@ -27,7 +27,6 @@ local GetRaidRosterInfo = GetRaidRosterInfo
 local GetRepairAllCost = GetRepairAllCost
 local HideUIPanel = HideUIPanel
 local InCombatLockdown = InCombatLockdown
-local IsAddOnLoaded = IsAddOnLoaded
 local IsShiftKeyDown = IsShiftKeyDown
 local LeaveParty = LeaveParty
 local RaidNotice_AddMessage = RaidNotice_AddMessage
@@ -268,27 +267,6 @@ function M:RESURRECT_REQUEST()
 	end
 end
 
-function M:ADDON_LOADED(_, addon)
-	if addon == 'Blizzard_InspectUI' then
-		if M.worldEntered then
-			M:SetupInspectPageInfo()
-		else
-			M.pendingInspectSetup = true
-		end
-	end
-end
-
-function M:PLAYER_ENTERING_WORLD()
-	M.worldEntered = true
-
-	M:DelayTutorialFrames()
-
-	if M.pendingInspectSetup then
-		M.pendingInspectSetup = nil
-		E:Delay(0.1, M.SetupInspectPageInfo, M)
-	end
-end
-
 function M:QUEST_COMPLETE()
 	if not E.db.general.questRewardMostValueIcon then return end
 
@@ -411,7 +389,6 @@ function M:Initialize()
 	M:LoadLootRoll()
 	M:LoadChatBubbles()
 	M:LoadLoot()
-	M:ToggleItemLevelInfo(true)
 	M:ZoneTextToggle()
 	M:LoadQueueStatus()
 
@@ -425,8 +402,6 @@ function M:Initialize()
 	M:RegisterEvent('PARTY_INVITE_REQUEST', 'AutoInvite')
 	M:RegisterEvent('COMBAT_TEXT_UPDATE')
 	M:RegisterEvent('QUEST_COMPLETE')
-	M:RegisterEvent('ADDON_LOADED')
-	M:RegisterEvent('PLAYER_ENTERING_WORLD')
 
 	M:DelayTutorialFrames()
 
@@ -444,12 +419,6 @@ function M:Initialize()
 	end
 
 	M:HideServerNews()
-
-	for _, addon in next, { 'Blizzard_InspectUI' } do
-		if IsAddOnLoaded(addon) then
-			M:ADDON_LOADED(nil, addon)
-		end
-	end
 
 	do	-- questRewardMostValueIcon
 		local MostValue = CreateFrame('Frame', 'ElvUI_QuestRewardGoldIconFrame', _G.QuestInfoRewardsFrame)

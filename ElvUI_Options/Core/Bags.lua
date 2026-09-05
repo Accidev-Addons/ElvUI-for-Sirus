@@ -70,6 +70,7 @@ local function SetReagentMode(info, value)
 	E.db.bags[info[#info]] = value
 
 	if B.BankFrame then
+		B.BankFrame.reagentCompactExpanded = nil
 		B:ShowBankTab(B.BankFrame, 1)
 		B:UpdateAllSlots(B.BankFrame)
 	end

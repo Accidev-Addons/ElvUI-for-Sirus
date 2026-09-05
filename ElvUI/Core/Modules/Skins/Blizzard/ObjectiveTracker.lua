@@ -11,6 +11,7 @@ local GetQuestLogTitle = GetQuestLogTitle
 local GetSpellCooldown = GetSpellCooldown
 local GetTime = GetTime
 local hooksecurefunc = hooksecurefunc
+local CreateFrame = CreateFrame
 local InCombatLockdown = InCombatLockdown
 
 local function ColorGold(text)
@@ -248,6 +249,34 @@ local function TrackerChallengeAffixes(block)
 	end
 end
 
+local function ConstrainChallengeTimerMarkers(block)
+	local statusBar = block and block.StatusBar
+	if not statusBar then return end
+
+	local bronze = block.timeLimitBronze or select(2, statusBar:GetMinMaxValues())
+	if not bronze or bronze <= 0 then return end
+
+	local width = 207 / bronze
+	local markers = {
+		{ texture = statusBar.SilverTexture, threshold = block.timeLimitSilver, r = 1, g = 1, b = 1 },
+		{ texture = statusBar.GoldTexture, threshold = block.timeLimitGold, r = 1, g = 1, b = 0 },
+	}
+
+	for _, marker in ipairs(markers) do
+		local texture = marker.texture
+		if texture then
+			texture:ClearAllPoints()
+			texture:SetPoint("TOP", statusBar, "TOP", 0, 0)
+			texture:SetPoint("BOTTOM", statusBar, "BOTTOM", 0, 0)
+			texture:SetPoint("RIGHT", statusBar, "RIGHT", -(width * (marker.threshold or 0)), 0)
+			texture:SetWidth(12)
+			texture:SetTexture(E.Media.Textures.White8x8)
+			texture:SetVertexColor(marker.r, marker.g, marker.b, 1)
+			texture:SetDrawLayer("OVERLAY", 7)
+		end
+	end
+end
+
 local function SkinTrackerChallengeMode(block)
 	if block.isSkinned then return end
 
@@ -255,13 +284,14 @@ local function SkinTrackerChallengeMode(block)
 
 	local statusBar = block.StatusBar
 	SkinTrackerBar(statusBar, TrackerTimerColor)
-
-	statusBar.SilverTexture:SetTexture(E.Media.Textures.White8x8)
-	statusBar.GoldTexture:SetTexture(E.Media.Textures.White8x8)
+	ConstrainChallengeTimerMarkers(block)
 
 	ColorGold(block.Level)
 
 	hooksecurefunc(block, "SetUpAffixes", TrackerChallengeAffixes)
+	hooksecurefunc(block, "Activate", function(self)
+		ConstrainChallengeTimerMarkers(self)
+	end)
 
 	block.isSkinned = true
 end
@@ -298,6 +328,8 @@ local function TrackerProgressValue(progressBar)
 	S:StatusBarColorGradient(bar, bar:GetValue(), maxValue)
 end
 
+local ForceScenarioBarFill
+
 local function TrackerProgressBar(module, key)
 	local progressBars = module.usedProgressBars
 	local progressBar = progressBars and progressBars[key]
@@ -306,10 +338,21 @@ local function TrackerProgressBar(module, key)
 
 	SkinTrackerBar(bar)
 
+	if progressBar.GetHeight and progressBar.SetHeight and bar.GetHeight then
+		local barHeight = bar:GetHeight()
+		if barHeight and barHeight > 0 and progressBar:GetHeight() > barHeight then
+			progressBar:SetHeight(barHeight)
+			progressBar.height = barHeight
+		end
+	end
+
 	local label = bar.Label
 	if label then
 		label:ClearAllPoints()
 		label:Point("CENTER", bar)
+		label:SetTextColor(1, 1, 1, 1)
+		label:SetAlpha(1)
+		label:Show()
 	end
 
 	if not progressBar.valueHooked then
@@ -325,6 +368,9 @@ local function TrackerProgressBar(module, key)
 	end
 
 	TrackerProgressValue(progressBar)
+	if progressBar.isScenarioEnemyForces and ForceScenarioBarFill then
+		ForceScenarioBarFill(bar, progressBar)
+	end
 end
 
 local function TrackerTimerBar(module, key)
@@ -530,6 +576,149 @@ local function LoadTrackerSkin()
 	if recipeModule and recipeModule.AddRecipe and recipeModule.GetExistingBlock then
 		hooksecurefunc(recipeModule, "AddRecipe", TrackerRecipeCooldown)
 	end
+end
+
+local function EnsureScenarioBarOverlay(progressBar, bar)
+	if not progressBar or not bar then return end
+
+	local overlay = progressBar.ElvUIEnemyForcesOverlay
+	if not overlay and CreateFrame then
+		overlay = CreateFrame("Frame", nil, progressBar)
+		overlay:EnableMouse(false)
+		progressBar.ElvUIEnemyForcesOverlay = overlay
+
+		local fill = overlay:CreateTexture(nil, "ARTWORK")
+		fill:SetTexture(E.media.normTex or E.Media.Textures.White8x8)
+		overlay.Fill = fill
+
+		local label = overlay:CreateFontString(nil, "OVERLAY")
+		if label.FontTemplate then
+			label:FontTemplate(nil, 12, "OUTLINE")
+		else
+			label:SetFont(E.media.normFont or _G.GameFontNormal:GetFont(), 12, "OUTLINE")
+		end
+		label:SetJustifyH("CENTER")
+		label:SetJustifyV("MIDDLE")
+		label:SetTextColor(1, 1, 1, 1)
+		overlay.Label = label
+	end
+
+	if overlay then
+		overlay:ClearAllPoints()
+		overlay:SetAllPoints(bar)
+		overlay:SetFrameStrata(bar:GetFrameStrata())
+		overlay:SetFrameLevel((bar:GetFrameLevel() or 0) + 20)
+		overlay:Show()
+	end
+
+	return overlay, overlay and overlay.Fill, overlay and overlay.Label
+end
+
+local function SetScenarioBarRange(bar)
+	if not bar or not bar.SetMinMaxValues then return end
+
+	local minValue, maxValue = bar:GetMinMaxValues()
+	if minValue ~= 0 or maxValue ~= 100 then
+		bar:SetMinMaxValues(0, 100)
+	end
+end
+
+ForceScenarioBarFill = function(bar, progressBar)
+	if not bar then return end
+
+	SetScenarioBarRange(bar)
+	local _, maxValue = bar:GetMinMaxValues()
+	local value = bar:GetValue() or 0
+	local percent = (maxValue and maxValue > 0 and value / maxValue) or 0
+	if percent < 0 then percent = 0 elseif percent > 1 then percent = 1 end
+
+	local r, g, b = E:ColorGradient(percent, 0.8, 0, 0, 0.8, 0.8, 0, 0, 0.8, 0)
+	local width, height = bar:GetWidth() or 0, bar:GetHeight() or 0
+
+	local nativeFill = bar.GetStatusBarTexture and bar:GetStatusBarTexture()
+	if nativeFill then
+		nativeFill:SetTexture(E.ClearTexture)
+		nativeFill:SetAlpha(0)
+		nativeFill:Hide()
+	end
+
+	if bar.SetStatusBarColor then
+		bar:SetStatusBarColor(0, 0, 0, 0)
+	end
+
+	local overlay, visibleFill, visibleLabel = EnsureScenarioBarOverlay(progressBar or bar:GetParent(), bar)
+	if overlay and visibleFill and visibleLabel then
+		local overlayWidth, overlayHeight = overlay:GetWidth() or width, overlay:GetHeight() or height
+		visibleFill:ClearAllPoints()
+		visibleFill:SetPoint("LEFT", overlay, "LEFT", 0, 0)
+		visibleFill:SetWidth(overlayWidth * percent)
+		visibleFill:SetHeight(overlayHeight)
+		visibleFill:SetTexture(E.media.normTex or E.Media.Textures.White8x8)
+		visibleFill:SetVertexColor(r, g, b, 1)
+		visibleFill:SetAlpha(1)
+		visibleFill:SetTexCoord(0, 1, 0, 1)
+		if percent > 0 then
+			visibleFill:Show()
+		else
+			visibleFill:Hide()
+		end
+
+		visibleLabel:ClearAllPoints()
+		visibleLabel:SetAllPoints(overlay)
+		visibleLabel:SetText(format("%d%%", floor(value + 0.5)))
+		visibleLabel:SetAlpha(1)
+		visibleLabel:Show()
+	end
+end
+
+local function FixScenarioBarArt(module, key)
+	local progressBars = module.usedProgressBars
+	local progressBar = progressBars and progressBars[key]
+	if not progressBar then return end
+
+	local bar = progressBar.Bar
+	if not bar then return end
+
+	progressBar.isScenarioEnemyForces = true
+
+	if progressBar.GetHeight and progressBar.SetHeight and bar.GetHeight then
+		local barHeight = bar:GetHeight()
+		if barHeight and barHeight > 0 and progressBar:GetHeight() > barHeight then
+			progressBar:SetHeight(barHeight)
+			progressBar.height = barHeight
+		end
+	end
+
+	if bar.BarFrame then bar.BarFrame:Hide() end
+	if bar.IconBG then bar.IconBG:Hide() end
+
+	if bar.SetStatusBarTexture then
+		bar:SetStatusBarTexture(E.media.normTex or E.Media.Textures.White8x8)
+	end
+
+	if bar.Label then
+		bar.Label:Hide()
+	end
+
+	if not progressBar.fillHooked and bar.SetValue then
+		progressBar.fillHooked = true
+		hooksecurefunc(bar, "SetValue", function()
+			ForceScenarioBarFill(bar, progressBar)
+		end)
+	end
+	ForceScenarioBarFill(bar, progressBar)
+
+	if not progressBar.visualHooked and progressBar.SetValue then
+		progressBar.visualHooked = true
+		hooksecurefunc(progressBar, "SetValue", function(self)
+			ForceScenarioBarFill(self.Bar, self)
+		end)
+	end
+end
+
+local scenarioTracker = _G.ScenarioObjectiveTracker
+if scenarioTracker and scenarioTracker.GetProgressBar then
+	hooksecurefunc(scenarioTracker, "GetProgressBar", FixScenarioBarArt)
 end
 
 S:AddCallback("Skin_ObjectiveTracker", LoadTrackerSkin)

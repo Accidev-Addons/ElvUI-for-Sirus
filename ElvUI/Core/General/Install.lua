@@ -413,8 +413,6 @@ function E:LayoutAnniversary()
 	E.db.general.font = 'Expressway'
 	E.db.general.fontSize = 11
 	E.db.general.fontStyle = 'SHADOW'
-	E.db.general.itemLevel.itemLevelFont = 'Expressway'
-	E.db.general.itemLevel.totalLevelFont = 'Expressway'
 	E.db.general.loginmessage = false
 	E.db.general.lootRoll.statusBarTexture = 'ElvUI Norm'
 	E.db.general.minimap.clusterBackdrop = false

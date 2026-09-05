@@ -810,7 +810,8 @@ function B:Holder_OnEnter()
 	elseif self.BagID == KEYRING_CONTAINER then
 		GameTooltip:AddLine(_G.KEYRING, 1, 1, 1)
 	elseif self.BagID == REAGENTBANK_CONTAINER then
-		GameTooltip:AddDoubleLine(REAGENT_BANK, format('%d/%d', B:GetReagentFreeSlots()), 1, 1, 1, 1, 1, 1)
+		local free, total = B:GetReagentFreeSlots()
+		GameTooltip:AddDoubleLine(REAGENT_BANK, format('%d/%d', total - free, total), 1, 1, 1, 1, 1, 1)
 	elseif self.bag.numSlots == 0 then
 		GameTooltip:AddLine(_G.EQUIP_CONTAINER, 1, 1, 1)
 	elseif self.isBank then
@@ -1037,7 +1038,7 @@ function B:Layout(isBank)
 			local mainBag = bagID ~= BANK_CONTAINER and bagID ~= BACKPACK_CONTAINER
 			local doSplit = B.db.split['bag'..bagID]
 			local reagentBag = isBank and B:IsReagentMerged() and bagID == REAGENTBANK_CONTAINER
-			local compactBag = reagentBag and B.db.reagentCompact
+			local compactBag = reagentBag and B.db.reagentCompact and not f.reagentCompactExpanded
 
 			splitBag = reagentBag or (isSplit and not not (mainBag and doSplit))
 			rowsByBag = isSplit or reagentBag
@@ -1794,8 +1795,9 @@ function B:UpdateReagentCount()
 	if not f or not f.reagentCompact then return end
 
 	local free, total = B:GetReagentFreeSlots()
+	local used = total - free
 	f.reagentCompact.free, f.reagentCompact.total = free, total
-	f.reagentCompact.used = total - free
+	f.reagentCompact.used = used
 	f.reagentCompact.Count:SetText(free)
 end
 
@@ -1818,7 +1820,7 @@ end
 
 function B:ReagentCompact_OnEnter()
 	GameTooltip:SetOwner(self, 'ANCHOR_LEFT')
-	GameTooltip:AddDoubleLine(REAGENT_BANK, format('%d/%d', self.free or 0, self.total or 0), 1, 1, 1, 1, 1, 1)
+	GameTooltip:AddDoubleLine(REAGENT_BANK, format('%d/%d', self.used or 0, self.total or 0), 1, 1, 1, 1, 1, 1)
 	GameTooltip:AddLine(' ')
 	GameTooltip:AddLine(L["Left Click: Deposit Reagents"], .8, .8, .8)
 	GameTooltip:AddLine(L["Right Click: Expand"], .8, .8, .8)
@@ -1827,7 +1829,7 @@ end
 
 function B:ReagentCompact_OnClick(button)
 	if button == 'RightButton' then
-		B.db.reagentCompact = false
+		B.BankFrame.reagentCompactExpanded = true
 		B:Layout(true)
 	else
 		DepositReagentBank()
@@ -2670,10 +2672,12 @@ function B:SetupItemGlow(frame)
 end
 
 function B:OpenBank()
+	B.BankFrame.reagentCompactExpanded = nil
 	B.BankFrame:Show()
 	B:PanelShow(_G.BankFrame)
 
 	B:ShowBankTab(B.BankFrame)
+	B:Layout(true)
 
 	if B.BankFrame.firstOpen then
 		B:UpdateAllSlots(B.BankFrame, true)
@@ -2700,6 +2704,7 @@ function B:OpenBank()
 end
 
 function B:CloseBank()
+	B.BankFrame.reagentCompactExpanded = nil
 	B:PanelHide(_G.BankFrame)
 
 	if B.BankFrame:IsShown() then

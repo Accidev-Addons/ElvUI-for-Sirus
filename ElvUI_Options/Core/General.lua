@@ -254,27 +254,6 @@ blizz.lootRollGroup.args.fontGroup.args.nameFontSize = ACH:Range(L["Font Size"],
 blizz.lootRollGroup.args.fontGroup.args.nameFontOutline = ACH:FontFlags(L["Font Outline"], nil, 3)
 blizz.lootRollGroup.args.fontGroup.inline = true
 
-blizz.itemLevelInfo = ACH:Group(L["Item Level"], nil, 40, nil, function(info) return E.db.general.itemLevel[info[#info]] end, function(info, value) E.db.general.itemLevel[info[#info]] = value M:ToggleItemLevelInfo(nil, true) end)
-blizz.itemLevelInfo.args.displayInspectInfo = ACH:Toggle(L["Display Inspect Info"], L["Shows item level of each item, enchants, and gems when inspecting another player."], 1)
-blizz.itemLevelInfo.args.displayCharacterInfo = ACH:Toggle(L["Display Character Info"], L["Shows item level of each item, enchants, and gems on the character page."], 2)
-blizz.itemLevelInfo.args.enchantAbbrev = ACH:Toggle(L["Abbreviate Enchants"], nil, 3)
-blizz.itemLevelInfo.args.itemLevelRarity = ACH:Toggle(L["Rarity Color"], nil, 4)
-blizz.itemLevelInfo.args.showEnchants = ACH:Toggle(L["Show Enchants"], nil, 10)
-blizz.itemLevelInfo.args.showItemLevel = ACH:Toggle(L["Show ItemLevel"], nil, 11)
-blizz.itemLevelInfo.args.showGems = ACH:Toggle(L["Show Gems"], nil, 12)
-
-blizz.itemLevelInfo.args.fontGroup = ACH:Group(L["Item Score"], nil, 70, nil, nil, function(info, value) E.db.general.itemLevel[info[#info]] = value M:UpdateInspectPageFonts('Character') M:UpdateInspectPageFonts('Inspect') end, function() return not E.db.general.itemLevel.displayCharacterInfo and not E.db.general.itemLevel.displayInspectInfo end)
-blizz.itemLevelInfo.args.fontGroup.args.itemLevelFont = ACH:SharedMediaFont(L["Font"], nil, 4)
-blizz.itemLevelInfo.args.fontGroup.args.itemLevelFontSize = ACH:Range(L["Font Size"], nil, 5, C.Values.FontSize)
-blizz.itemLevelInfo.args.fontGroup.args.itemLevelFontOutline = ACH:FontFlags(L["Font Outline"], nil, 6)
-blizz.itemLevelInfo.args.fontGroup.inline = true
-
-blizz.itemLevelInfo.args.totalFontGroup = ACH:Group(L["Total Score"], nil, 80, nil, nil, function(info, value) E.db.general.itemLevel[info[#info]] = value M:UpdateInspectPageFonts('Character') M:UpdateInspectPageFonts('Inspect') end, function() return not E.db.general.itemLevel.displayCharacterInfo and not E.db.general.itemLevel.displayInspectInfo end)
-blizz.itemLevelInfo.args.totalFontGroup.args.totalLevelFont = ACH:SharedMediaFont(L["Font"], nil, 4)
-blizz.itemLevelInfo.args.totalFontGroup.args.totalLevelFontSize = ACH:Range(L["Font Size"], nil, 5, C.Values.FontSize)
-blizz.itemLevelInfo.args.totalFontGroup.args.totalLevelFontOutline = ACH:FontFlags(L["Font Outline"], nil, 6)
-blizz.itemLevelInfo.args.totalFontGroup.inline = true
-
 blizz.totems = ACH:Group(L["Totem Tracker"], nil, 40, nil, function(info) return E.db.general.totems[info[#info]] end, function(info, value) E.db.general.totems[info[#info]] = value TM:PositionAndSize() end)
 blizz.totems.args.enable = ACH:Toggle(L["Enable"], nil, 1, nil, nil, nil, function() return E.private.general.totemTracker end, function(_, value) E.private.general.totemTracker = value; E.ShowPopup = true end)
 blizz.totems.args.sortDirection = ACH:Select(L["Sort Direction"], nil, 2, { ASCENDING = L["Ascending"], DESCENDING = L["Descending"] })

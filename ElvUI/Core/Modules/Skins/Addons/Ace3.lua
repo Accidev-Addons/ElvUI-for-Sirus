@@ -123,12 +123,92 @@ function S:Ace3_ButtonSetPoint(point, anchor, point2, xOffset, yOffset, skip)
 	end
 end
 
+function S:Ace3_RefreshButton(button)
+	local buttonType = type(button)
+	if buttonType ~= 'table' and buttonType ~= 'userdata' then return end
+	if not button.StripTextures then return end
+	if button.__elvAce3Refreshing then return end
+
+	button.__elvAce3Refreshing = true
+	if button.SetNormalTexture then button:SetNormalTexture(E.ClearTexture) end
+	if button.SetHighlightTexture then button:SetHighlightTexture(E.ClearTexture) end
+	if button.SetPushedTexture then button:SetPushedTexture(E.ClearTexture) end
+	if button.SetDisabledTexture then button:SetDisabledTexture(E.ClearTexture) end
+
+	button:StripTextures()
+
+	button.__elvAce3Refreshing = nil
+end
+
 function S:Ace3_SkinButton(button)
+	if button.__elvAce3Button then return end
+
 	if not button.isSkinned then
 		S:HandleButton(button, true)
-
-		hooksecurefunc(button, 'SetPoint', S.Ace3_ButtonSetPoint)
 	end
+
+	button.__elvAce3Button = true
+
+	button:HookScript('OnShow', function(frame)
+		S:Ace3_RefreshButton(frame)
+	end)
+
+	for _, method in next, {'SetNormalTexture', 'SetHighlightTexture', 'SetPushedTexture', 'SetDisabledTexture'} do
+		hooksecurefunc(button, method, function()
+			S:Ace3_RefreshButton(button)
+		end)
+	end
+	if button.SetButtonState then
+		hooksecurefunc(button, 'SetButtonState', function()
+			S:Ace3_RefreshButton(button)
+		end)
+	end
+
+	hooksecurefunc(button, 'SetPoint', function(point, anchor, point2, xOffset, yOffset, skip)
+		S:Ace3_ButtonSetPoint(button, point, anchor, point2, xOffset, yOffset, skip)
+	end)
+	S:Ace3_RefreshButton(button)
+end
+
+function S:Ace3_BuildTabs(...)
+	local width = self.frame and self.frame:GetWidth()
+	if width and width > 0 then
+		self.frame.width = width
+	end
+
+	if not self.old_BuildTabs then return end
+
+	local result = self.old_BuildTabs(self, ...)
+	if not width or width <= 0 then
+		return result
+	end
+
+	local rows = {}
+	for _, tab in ipairs(self.tabs) do
+		if tab:IsShown() then
+			local point = tab:GetPoint(1)
+			local row = rows[#rows]
+			if not row or point == 'TOPLEFT' then
+				row = {tabs = {}, width = 0}
+				rows[#rows + 1] = row
+			end
+
+			row.tabs[#row.tabs + 1] = tab
+			row.width = row.width + tab:GetWidth()
+		end
+	end
+
+	for _, row in ipairs(rows) do
+		local usedWidth = row.width - ((#row.tabs - 1) * 10)
+		local extra = (width - usedWidth) / #row.tabs
+		if extra > 0 then
+			for _, tab in ipairs(row.tabs) do
+				tab:SetWidth(tab:GetWidth() + extra)
+			end
+		end
+	end
+
+	return result
 end
 
 function S:Ace3_SkinCheckBox(widget, check, checkbg, highlight)
@@ -509,6 +589,11 @@ function S:Ace3_RegisterAsContainer(widget)
 			if not widget.old_CreateTab then
 				widget.old_CreateTab = widget.CreateTab
 				widget.CreateTab = S.Ace3_CreateTab
+			end
+
+			if not widget.old_BuildTabs then
+				widget.old_BuildTabs = widget.BuildTabs
+				widget.BuildTabs = S.Ace3_BuildTabs
 			end
 
 			if widget.tabs then

@@ -43,7 +43,13 @@ end
 
 local function CreateUpdater(partyPrefix, raidPrefix)
 	return function(self, elapsed)
-		self.blipElapsed = (self.blipElapsed or 0) + elapsed
+		if not self.blipInitialized then
+			self.blipInitialized = true
+			self.blipElapsed = UPDATE_INTERVAL
+		else
+			self.blipElapsed = (self.blipElapsed or 0) + elapsed
+		end
+
 		if self.blipElapsed < UPDATE_INTERVAL then return end
 		self.blipElapsed = 0
 
@@ -63,12 +69,13 @@ local function CreateUpdater(partyPrefix, raidPrefix)
 	end
 end
 
-local function SetupUnits(prefix, count, size, texture)
+local function SetupUnits(prefix, count, size, texture, raid)
 	for i = 1, count do
 		local frame = _G[prefix..i]
 		if frame and frame.icon then
 			frame.icon:SetTexture(texture)
 			frame:Size(size)
+			UpdateIcon(frame, raid)
 		end
 	end
 end
@@ -82,7 +89,7 @@ function CB.Initialize()
 	end
 
 	SetupUnits('WorldMapParty', MAX_PARTY_MEMBERS, 24, texture)
-	SetupUnits('WorldMapRaid', MAX_RAID_MEMBERS, 24, texture)
+	SetupUnits('WorldMapRaid', MAX_RAID_MEMBERS, 24, texture, true)
 
 	if _G.WorldMapButton then
 		_G.WorldMapButton:HookScript('OnUpdate', CreateUpdater('WorldMapParty', 'WorldMapRaid'))
@@ -90,7 +97,7 @@ function CB.Initialize()
 
 	if _G.BattlefieldMinimap then
 		SetupUnits('BattlefieldMinimapParty', MAX_PARTY_MEMBERS, 16, texture)
-		SetupUnits('BattlefieldMinimapRaid', MAX_RAID_MEMBERS, 16, texture)
+		SetupUnits('BattlefieldMinimapRaid', MAX_RAID_MEMBERS, 16, texture, true)
 		_G.BattlefieldMinimap:HookScript('OnUpdate', CreateUpdater('BattlefieldMinimapParty', 'BattlefieldMinimapRaid'))
 	end
 end

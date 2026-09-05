@@ -360,29 +360,68 @@ S:AddCallback('Skin_TimerTracker', function()
 		bar.isSkinned = true
 	end
 
-	hooksecurefunc('TimerTracker_OnEvent', function(self)
-		for _, timer in next, self.timerList do
-			SkinTimerBar(timer)
+	local function SkinAllTimers()
+		local tracker = _G.TimerTracker
+		if tracker and tracker.timerList then
+			for _, timer in next, tracker.timerList do
+				SkinTimerBar(timer)
+			end
+		end
+	end
+
+	SkinAllTimers()
+
+	pcall(hooksecurefunc, 'TimerTracker_OnEvent', function(self)
+		if self and self.timerList then
+			for _, timer in next, self.timerList do
+				SkinTimerBar(timer)
+			end
 		end
 	end)
 
-	local ready = _G.TimerTracker_ReadyStatusButton
-	if not ready then return end
+	pcall(hooksecurefunc, 'StartTimer_OnShow', SkinAllTimers)
 
-	ready.Background:Kill()
-	ready.Glow:Kill()
-	ready:SetTemplate('Transparent')
+	pcall(function()
+		local tracker = _G.TimerTracker
+		if tracker then
+			tracker:HookScript('OnEvent', SkinAllTimers)
+		end
+	end)
 
-	ready.HighlightTexture:SetTexture(E.media.blankTex)
-	ready.HighlightTexture:SetVertexColor(1, 1, 1, 0.15)
-	ready.HighlightTexture:SetInside()
+	local function SkinReadyButton()
+		local ready = _G.TimerTracker_ReadyStatusButton
+		if not ready or ready.isSkinned then return end
 
-	ready.Selection:SetTexture(E.media.blankTex)
-	ready.Selection:SetVertexColor(0, 1, 0)
-	ready.Selection:SetInside()
+		if ready.Background then ready.Background:Kill() end
+		if ready.Glow then ready.Glow:Kill() end
+		ready:SetTemplate('Transparent')
 
-	ready.ReadyText:FontTemplate(nil, 20, 'OUTLINE')
-	ready.ReadyTextDescription:FontTemplate()
+		if ready.HighlightTexture then
+			ready.HighlightTexture:SetTexture(E.media.blankTex)
+			ready.HighlightTexture:SetVertexColor(1, 1, 1, 0.15)
+			ready.HighlightTexture:SetInside()
+		end
+
+		if ready.Selection then
+			ready.Selection:SetTexture(E.media.blankTex)
+			ready.Selection:SetVertexColor(0, 1, 0)
+			ready.Selection:SetInside()
+		end
+
+		if ready.ReadyText then ready.ReadyText:FontTemplate(nil, 20, 'OUTLINE') end
+		if ready.ReadyTextDescription then ready.ReadyTextDescription:FontTemplate() end
+
+		ready.isSkinned = true
+	end
+
+	SkinReadyButton()
+
+	pcall(function()
+		local ready = _G.TimerTracker_ReadyStatusButton
+		if ready then
+			ready:HookScript('OnShow', SkinReadyButton)
+		end
+	end)
 end)
 
 S:AddCallback("Skin_ChooseItem", function()

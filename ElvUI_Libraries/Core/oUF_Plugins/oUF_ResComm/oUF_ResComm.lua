@@ -27,6 +27,7 @@ local oUF = ns.oUF
 assert(oUF, "oUF_ResComm was unable to locate oUF install")
 
 local UnitHasIncomingResurrection = UnitHasIncomingResurrection
+local UnitIsDeadOrGhost = UnitIsDeadOrGhost
 
 local function Update(self, event)
 	local unit = self.unit
@@ -43,7 +44,7 @@ local function Update(self, event)
 		element:PreUpdate()
 	end
 
-	local incomingResurrect = UnitHasIncomingResurrection(unit)
+	local incomingResurrect = UnitIsDeadOrGhost(unit) and UnitHasIncomingResurrection(unit)
 	if incomingResurrect then
 		element:Show()
 	else
@@ -85,6 +86,7 @@ local function Enable(self)
 
 		self:RegisterEvent("INCOMING_RESURRECT_CHANGED", Path, true)
 		self:RegisterEvent("UNIT_HEALTH", Path)
+		self:RegisterEvent("UNIT_FLAGS", Path)
 
 		if element:IsObjectType("Texture") and not element:GetTexture() then
 			element:SetTexture([[Interface\Icons\Spell_Holy_Resurrection]])
@@ -102,6 +104,7 @@ local function Disable(self)
 
 		self:UnregisterEvent("INCOMING_RESURRECT_CHANGED", Path)
 		self:UnregisterEvent("UNIT_HEALTH", Path)
+		self:UnregisterEvent("UNIT_FLAGS", Path)
 	end
 end
 

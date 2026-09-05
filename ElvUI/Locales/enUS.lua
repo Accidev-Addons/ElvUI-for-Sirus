@@ -157,6 +157,7 @@ L["ElvUI Plugin Installation"] = true
 L["Status"] = true
 L["ElvUI Version:"] = true
 L["Error resetting UnitFrame."] = true
+L["Error Text"] = true
 L["EventToastWidget"] = true
 L["Experience Bar"] = true
 L["Experience"] = true

@@ -31,6 +31,7 @@ local utf8sub = utf8.sub
 local lower = string.lower
 
 local ENCHANT_TEXT_MAX_LENGTH = 20
+local MAX_DISPLAYED_SOCKETS = 3
 
 local function HideAtlasTexture(texture)
 	hooksecurefunc(texture, "SetAtlas", function(self)
@@ -134,11 +135,10 @@ local function ShortenEnchantText(text)
 	text = gsub(text, "\194\160", " ")
 	text = gsub(text, "%s+", " ")
 	text = strtrim(text)
-	text = ReplacePlain(text, "+", "")
 	text = gsub(text, "^%s*([0-9]+)%s*", "%1 ")
-	local originalNumber = strmatch(text, "^(%d+)")
 	text = gsub(text, "[Ии]%s+увеличение скорости передвижения на%s+(%d+%%%s*)", " и %1 бег")
 	text = gsub(text, "увеличение скорости передвижения на%s+(%d+%%%s*)", "%1 бег")
+	text = gsub(text, "снижение угрозы на%s+(%d+%%%s*)", "-%1 угрозы")
 
 	local replacements = {
 		{"к силе заклинаний", "спд"},
@@ -154,9 +154,11 @@ local function ShortenEnchantText(text)
 		{"к критическому удару", "крит"},
 		{"к рейтингу критического удара", "крит"},
 		{"рейтингу критического удара", "крит"},
-		{"к пробиванию брони", "проб"},
-		{"к рейтингу пробивания брони", "проб"},
-		{"рейтингу пробивания брони", "проб"},
+		{"к рейтингу критического эффекта", "крит"},
+		{"рейтингу критического эффекта", "крит"},
+		{"к пробиванию брони", "рпб"},
+		{"к рейтингу пробивания брони", "рпб"},
+		{"рейтингу пробивания брони", "рпб"},
 		{"к устойчивости", "уст"},
 		{"к рейтингу устойчивости", "уст"},
 		{"рейтингу устойчивости", "уст"},
@@ -185,6 +187,9 @@ local function ShortenEnchantText(text)
 		{"броня", "бр"},
 		{"к сопротивлению", "сопр"},
 		{"сопротивление", "сопр"},
+		{"ко всем характеристикам", "ко всем"},
+		{"ед. маны каждые 5 секунд", "мп5"},
+		{"маны каждые 5 секунд", "мп5"},
 	}
 
 	for _, replacement in ipairs(replacements) do
@@ -205,10 +210,8 @@ local function ShortenEnchantText(text)
 	text = ReplacePlain(text, "использование:", "")
 
 	text = strtrim(gsub(text, "%s+", " "))
-	local number, suffix = strmatch(text, "^[^0-9]*(%d+)(.*)$")
-	if originalNumber then
-		return originalNumber..suffix
-	elseif number then
+	local number, suffix = strmatch(text, "^([^0-9]*%d+)(.*)$")
+	if number then
 		return number..suffix
 	end
 	return utf8sub(text, 1, ENCHANT_TEXT_MAX_LENGTH)
@@ -249,7 +252,7 @@ local function GetSirusEnchantText(inventorySlot, slotName, fallbackText)
 
 	tooltip:Show()
 	local tooltipData = tooltip.GetTooltipData and tooltip:GetTooltipData()
-	local function CheckText(text)
+	local function CheckText(text, lineFrame)
 		if not text then return end
 
 		text = gsub(text, "^|c%x%x%x%x%x%x%x%x", "")
@@ -260,7 +263,12 @@ local function GetSirusEnchantText(inventorySlot, slotName, fallbackText)
 		if slotName == "MainHandSlot" or slotName == "SecondaryHandSlot" or slotName == "RangedSlot" then
 			if find(normalized, "зачаровано:", 1, true) or find(normalized, "зачарование:", 1, true) then
 				return ShortenEnchantText(strtrim(text))
+		elseif slotName == "SecondaryHandSlot" and strmatch(text, "^%+%s*%d") and lineFrame then
+			local r, g, b = lineFrame:GetTextColor()
+			if g > 0.5 and r < 0.6 and b < 0.6 then
+				return ShortenEnchantText(strtrim(text))
 			end
+		end
 		elseif slotName == "NeckSlot" and find(normalized, "дар собирателя", 1, true) then
 			return ShortenEnchantText("Дар собирателя")
 		elseif slotName == "WaistSlot" and find(normalized, "использование:", 1, true) then
@@ -279,7 +287,7 @@ local function GetSirusEnchantText(inventorySlot, slotName, fallbackText)
 		for lineIndex = 1, tooltip:NumLines() do
 			local left = _G["ElvUI_ScanTooltipTextLeft"..lineIndex]
 			local right = _G["ElvUI_ScanTooltipTextRight"..lineIndex]
-			enchantText = CheckText(left and left:GetText()) or CheckText(right and right:GetText())
+			enchantText = CheckText(left and left:GetText(), left) or CheckText(right and right:GetText(), right)
 			if enchantText then break end
 		end
 	end
@@ -290,6 +298,49 @@ local function GetSirusEnchantText(inventorySlot, slotName, fallbackText)
 	end
 
 	return ShortenEnchantText(enchantText or fallbackText)
+end
+
+local function GetItemSocketCount(inventorySlot)
+	local tooltip = E.ScanTooltip
+	if not tooltip or not inventorySlot then return 0 end
+
+	local socketCount = 0
+	local function IsSocketLine(text)
+		if not text then return end
+
+		text = lower(gsub(gsub(text, "|c%x%x%x%x%x%x%x%x", ""), "|r", ""))
+		text = strtrim(text)
+		if find(text, "гнездо$") or find(text, "гнездо:", 1, true) or find(text, "socket$") then
+			return true
+		end
+	end
+
+	tooltip:SetOwner(UIParent, "ANCHOR_NONE")
+	local hasItem = tooltip:SetInventoryItem("player", inventorySlot)
+	if not hasItem then return 0 end
+	tooltip:Show()
+
+	local tooltipData = tooltip.GetTooltipData and tooltip:GetTooltipData()
+	if tooltipData and tooltipData.lines then
+		for _, line in next, tooltipData.lines do
+			if IsSocketLine(line and line.leftText) or IsSocketLine(line and line.rightText) then
+				socketCount = socketCount + 1
+				if socketCount >= MAX_DISPLAYED_SOCKETS then break end
+			end
+		end
+	else
+		for lineIndex = 1, tooltip:NumLines() do
+			local left = _G["ElvUI_ScanTooltipTextLeft"..lineIndex]
+			local right = _G["ElvUI_ScanTooltipTextRight"..lineIndex]
+			if IsSocketLine(left and left:GetText()) or IsSocketLine(right and right:GetText()) then
+				socketCount = socketCount + 1
+				if socketCount >= MAX_DISPLAYED_SOCKETS then break end
+			end
+		end
+	end
+
+	tooltip:Hide()
+	return socketCount
 end
 
 function S:HandleSirusEquipmentSocketInfo(slotFrame, inventorySlot, anchor, slotName)
@@ -317,7 +368,7 @@ function S:HandleSirusEquipmentSocketInfo(slotFrame, inventorySlot, anchor, slot
 	if link then
 		if showEnchants and E.GetGearSlotInfo then
 			local gearInfo = E:GetGearSlotInfo("player", inventorySlot, true)
-			if type(gearInfo) == "table" and slotName ~= "MainHandSlot" and slotName ~= "SecondaryHandSlot" and slotName ~= "RangedSlot" then
+			if type(gearInfo) == "table" then
 				enchantText = gearInfo.enchantText
 			end
 		end
@@ -331,9 +382,13 @@ function S:HandleSirusEquipmentSocketInfo(slotFrame, inventorySlot, anchor, slot
 	end
 
 	if link and showGems then
+		local numSockets = GetItemSocketCount(inventorySlot)
 		for index = 1, 3 do
 			local gemName, gemLink = GetItemGem(link, index)
 			if gemName or gemLink then
+				numSockets = math.max(numSockets, index)
+			end
+			if index <= numSockets then
 				socketCount = socketCount + 1
 				local socket = info.slots[socketCount]
 				if not socket then
@@ -355,20 +410,30 @@ function S:HandleSirusEquipmentSocketInfo(slotFrame, inventorySlot, anchor, slot
 					end
 					info.slots[socketCount] = socket				end
 
-				local gemTexture = GetItemIcon(gemLink or gemName)
-				socket.Icon:SetTexture(gemTexture or E.Media.Textures.White8x8)
-				socket.Icon:SetTexCoord(unpack(E.TexCoords))
-				socket.itemLink = gemLink or gemName
-				socket.inventorySlot = inventorySlot
-				socket.socketIndex = socketCount
-				socket.anchor = anchor
-				socket.slotName = slotName
-				local gemDisplayName = gemName or (gemLink and GetItemInfo(gemLink))
-				socket.canExtract = gemDisplayName and (
-					find(gemDisplayName, "черный", 1, true) or
-					find(gemDisplayName, "Черный", 1, true) or
-					find(gemDisplayName, "ЧЕРНЫЙ", 1, true)
-				)
+				if gemName or gemLink then
+					local gemTexture = GetItemIcon(gemLink or gemName)
+					socket.Icon:SetTexture(gemTexture or E.Media.Textures.White8x8)
+					socket.Icon:SetTexCoord(unpack(E.TexCoords))
+					socket.itemLink = gemLink or gemName
+					socket.inventorySlot = inventorySlot
+					socket.socketIndex = socketCount
+					socket.anchor = anchor
+					socket.slotName = slotName
+					local gemDisplayName = gemName or (gemLink and GetItemInfo(gemLink))
+					socket.canExtract = gemDisplayName and (
+						find(gemDisplayName, "черный", 1, true) or
+						find(gemDisplayName, "Черный", 1, true) or
+						find(gemDisplayName, "ЧЕРНЫЙ", 1, true)
+					)
+				else
+					socket.Icon:SetTexture(nil)
+					socket.itemLink = nil
+					socket.inventorySlot = nil
+					socket.socketIndex = nil
+					socket.anchor = nil
+					socket.slotName = nil
+					socket.canExtract = nil
+				end
 				socket:SetScript("OnEnter", function(self)
 					if self.itemLink then
 						GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
@@ -382,6 +447,7 @@ function S:HandleSirusEquipmentSocketInfo(slotFrame, inventorySlot, anchor, slot
 
 				socket:SetScript("OnLeave", GameTooltip_Hide)
 				socket:SetScript("OnClick", function(self, button)
+					if not self.itemLink then return end
 					if button ~= "LeftButton" or not IsModifiedClick() or not IsControlKeyDown() then return end
 					local socketIndex = self.socketIndex
 					SocketInventoryItem(self.inventorySlot)
@@ -456,10 +522,12 @@ function S:HandleSirusEquipmentSocketInfo(slotFrame, inventorySlot, anchor, slot
 				info.enchant:SetPoint("BOTTOMRIGHT", slotFrame, "BOTTOMLEFT", -3, 1)
 			elseif isOffHand then
 				info.enchant:SetJustifyH("LEFT")
-				info.enchant:SetPoint("BOTTOMLEFT", slotFrame, "BOTTOMRIGHT", 3, -3)
+				local slotWidth = slotFrame:GetWidth()
+				if not slotWidth or slotWidth <= 0 then slotWidth = 44 end
+				info.enchant:SetPoint("TOPLEFT", slotFrame, "TOPRIGHT", slotWidth + 8, -3)
 			elseif isRanged then
 				info.enchant:SetJustifyH("LEFT")
-				info.enchant:SetPoint("LEFT", slotFrame, "RIGHT", 3, -3)
+				info.enchant:SetPoint("BOTTOMLEFT", slotFrame, "BOTTOMRIGHT", 3, -3)
 			else
 				info.enchant:SetJustifyH("CENTER")
 				info.enchant:SetPoint("BOTTOM", info.socketRow, "TOP", 0, 1)

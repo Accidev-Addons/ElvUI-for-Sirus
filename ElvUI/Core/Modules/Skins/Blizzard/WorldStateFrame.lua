@@ -68,6 +68,7 @@ S:AddCallback("Skin_WorldStateFrame", function()
 
 	local topCenter = _G.WorldStateTopCenterFrame
 	if topCenter then
+		topCenter:SetToplevel(false)
 		local barColors = { { 0, .44, .87 }, { .77, .12, .23 } }
 
 		for id, bar in ipairs({ topCenter.LeftBar, topCenter.RightBar }) do

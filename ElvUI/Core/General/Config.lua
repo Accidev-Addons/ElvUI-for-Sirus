@@ -809,7 +809,7 @@ function E:Config_CreateFrame(info, frame, unskinned, frameType, ...)
 
 	if frameType == 'Button' then
 		if not unskinned then
-			S:HandleButton(element)
+			S:HandleButton(element, true)
 		end
 
 		element:SetScript('OnClick', info.func)

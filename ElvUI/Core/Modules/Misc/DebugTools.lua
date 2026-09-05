@@ -3,10 +3,12 @@ local D = E:GetModule("DebugTools")
 
 --Lua functions
 local format = string.format
+local hooksecurefunc = hooksecurefunc
 --WoW API / Variables
 local GetCVarBool = GetCVarBool
 local InCombatLockdown = InCombatLockdown
 local ReloadUI = ReloadUI
+local UIErrorsFrame = UIErrorsFrame
 
 function D:ModifyErrorFrame()
 	ScriptErrorsFrameScrollFrameText.cursorOffset = 0
@@ -100,6 +102,20 @@ function D:ModifyErrorFrame()
 	ScriptErrorsFrame.indexLabel:SetPoint("BOTTOMLEFT", 0, 12)
 end
 
+function D:PositionErrorFrame()
+	if not UIErrorsFrame or UIErrorsFrame.mover then return end
+
+	E:CreateMover(UIErrorsFrame, 'ErrorFrameMover', L["Error Text"], nil, nil, nil, 'ALL')
+	UIErrorsFrame:SetAllPoints(UIErrorsFrame.mover)
+
+	hooksecurefunc(UIErrorsFrame, 'SetPoint', function(frame, _, relativeTo)
+		if relativeTo ~= frame.mover then
+			frame:ClearAllPoints()
+			frame:SetAllPoints(frame.mover)
+		end
+	end)
+end
+
 function D:ScriptErrorsFrame_UpdateButtons()
 	local numErrors = #ScriptErrorsFrame.order
 	local index = ScriptErrorsFrame.index
@@ -158,6 +174,7 @@ function D:Initialize()
 	end
 
 	D:ModifyErrorFrame()
+	D:PositionErrorFrame()
 	D:SecureHook("ScriptErrorsFrame_UpdateButtons")
 	D:SecureHook("ScriptErrorsFrame_OnError")
 	D:SecureHook("StaticPopup_Show")

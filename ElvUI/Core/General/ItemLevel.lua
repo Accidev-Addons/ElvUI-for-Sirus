@@ -2,10 +2,9 @@ local E, L, V, P, G = unpack(ElvUI)
 
 local _G = _G
 local pi = math.pi
-local utf8sub = utf8.sub
 local tonumber = tonumber
 local tinsert, strfind, strmatch = tinsert, strfind, strmatch
-local next, max, wipe, gsub, select = next, max, wipe, gsub, select
+local next, max, wipe, select = next, max, wipe, select
 
 local C_Item = C_Item
 local GetItemInfo = GetItemInfo
@@ -51,11 +50,7 @@ function E:InspectGearSlot(line, lineText, slotInfo)
 
 	local enchant = strfind(lineText, '^%+') and lineText
 	if enchant then
-		local shortStrip = gsub(enchant, '[&+] ?', '')
-		local shortAbbrev = E.db.general.itemLevel.enchantAbbrev and gsub(shortStrip, '(%w%w%w)%w+', '%1')
 		slotInfo.enchantText = enchant
-		slotInfo.enchantTextShort = utf8sub(shortAbbrev or shortStrip, 1, 20)
-		slotInfo.enchantTextReal = enchant
 
 		slotInfo.enchantColors[1] = r
 		slotInfo.enchantColors[2] = g

@@ -649,7 +649,6 @@ do -- Module Copy
 
 		config.args.minimap.name = L["Minimap"]
 		config.args.totems.name = L["Class Totems"]
-		config.args.itemLevel.name = L["Item Level"]
 		config.args.bottomPanelSettings.name = L["Bottom Panel"]
 		config.args.topPanelSettings.name = L["Top Panel"]
 		config.args.raidUtility.name = L["RAID_CONTROL"]
