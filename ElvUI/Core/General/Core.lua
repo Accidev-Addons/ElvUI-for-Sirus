@@ -5,7 +5,7 @@ local E, L, V, P, G = unpack(ElvUI)
 local _G = _G
 local tonumber, pairs, ipairs, error, unpack, select, tostring = tonumber, pairs, ipairs, error, unpack, select, tostring
 local strjoin, wipe, sort, tinsert, tremove, tContains = strjoin, wipe, sort, tinsert, tremove, tContains
-local format, strfind, strrep, gsub = format, strfind, strrep, gsub
+local format, strfind, strrep, gsub, strupper = format, strfind, strrep, gsub, strupper
 local type, pcall, xpcall, next, print = type, pcall, xpcall, next, print
 local rawget, rawset, setmetatable = rawget, rawset, setmetatable
 
@@ -1874,6 +1874,21 @@ function E:DelayedUpdate(func, ...)
 	end, 0.05)
 end
 
+function E:UpdatePlayerFaction()
+	local factionID = _G.C_FactionManager and _G.C_FactionManager.GetOriginalFaction and _G.C_FactionManager.GetOriginalFaction()
+	local faction = factionID and _G.PLAYER_FACTION_GROUP and _G.PLAYER_FACTION_GROUP[factionID]
+	if not faction or faction == E.myfaction then return end
+
+	E.myfaction = faction
+	E.myLocalizedFaction = _G['FACTION_'..strupper(faction)] or E.myLocalizedFaction
+
+	local DT = E:GetModule('DataTexts')
+	if DT.Initialized then
+		DT:BuildTables()
+		DT:ForceUpdate_DataText('Gold')
+	end
+end
+
 function E:Initialize()
 	wipe(E.db)
 	wipe(E.global)
@@ -1903,6 +1918,11 @@ function E:Initialize()
 		E:LoadAPI()
 		E:LoadCommands()
 		E:InitializeModules()
+
+		if _G.C_FactionManager and _G.C_FactionManager.RegisterCallback then
+			_G.C_FactionManager.RegisterCallback(function() E:UpdatePlayerFaction() end, true, true)
+		end
+
 		E:UpdateMedia()
 		E:UpdateDispelColors()
 		E:UpdateCustomClassColors()

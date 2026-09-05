@@ -40,7 +40,7 @@ local Collapsed = {}
 local iconString = '|T%s:20:20:0:0:64:64:4:60:4:60|t'
 
 local honorID, arenaID = 43308, 43307 -- itemid for Honor and Arena points
-local honorTex = [[Interface\TargetingFrame\UI-PVP-]]..E.myfaction
+local honorTex = [[Interface\TargetingFrame\UI-PVP-]]
 local arenaTex = [[Interface\PVPFrame\PVP-ArenaPoints-Icon]]
 
 DT.tooltip = CreateFrame('GameTooltip', 'DataTextTooltip', E.UIParent, 'GameTooltipTemplate')
@@ -841,7 +841,7 @@ function DT:CurrencyInfo(id)
 
 	info.quantity = (id == honorID and honorCur) or (id == arenaID and arenaCur) or quantity or GetItemCount(id)
 	info.maxQuantity = (id == honorID and honorMax) or (id == arenaID and arenaMax) or ((maxQuantity and maxQuantity > 0) and maxQuantity) or nil
-	info.iconFileID = (id == honorID and honorTex) or (id == arenaID and arenaTex) or info.iconFileID
+	info.iconFileID = (id == honorID and honorTex..E.myfaction) or (id == arenaID and arenaTex) or info.iconFileID
 
 	local texString = strmatch(info.iconFileID or '', E.myfaction) ~= nil and gsub(iconString, '4:60:4:60', '4:38:2:36') or iconString
 	return info, info.name, format(texString, info.iconFileID or [[Interface\Icons\Spell_Nature_Bloodlust]])
@@ -851,7 +851,7 @@ function DT:BackpackCurrencyInfo(index)
 	local info = {}
 
 	info.name, info.quantity, _, info.iconFileID, info.currencyTypesID = GetBackpackCurrencyInfo(index)
-	info.iconFileID = (info.currencyTypesID == honorID and honorTex) or (info.currencyTypesID == arenaID and arenaTex) or info.iconFileID
+	info.iconFileID = (info.currencyTypesID == honorID and honorTex..E.myfaction) or (info.currencyTypesID == arenaID and arenaTex) or info.iconFileID
 
 	return info, info and info.name
 end
