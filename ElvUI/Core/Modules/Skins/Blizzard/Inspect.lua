@@ -7,7 +7,6 @@ local unpack = unpack
 
 local strsub = strsub
 local hooksecurefunc = hooksecurefunc
-local GetInventoryItemID = GetInventoryItemID
 local GetInventoryItemLink = GetInventoryItemLink
 local GetItemInfo = GetItemInfo
 local C_Timer = C_Timer
@@ -78,9 +77,8 @@ local function LoadSkin()
 			end
 
 			if button.hasItem then
-				local itemID = GetInventoryItemID(InspectFrame.unit, button:GetID())
-				if itemID then
-					local _, _, quality = GetItemInfo(itemID)
+				if button.lastLink then
+					local _, _, quality = GetItemInfo(button.lastLink)
 					if not quality then
 						button.backdrop:SetBackdropBorderColor(unpack(E.media.bordercolor))
 
@@ -167,20 +165,14 @@ local function LoadSkin()
 		S:HandleSirusScrollBar(InspectBattlegroundStatisticsScrollFrameScrollBar)
 	end
 
-	hooksecurefunc("InspectBattlegroundStatisticsScrollFrame_OnShow", function()
-		if not statsScrollFrame or not statsScrollFrame.buttons then return end
-
-		for _, button in ipairs(statsScrollFrame.buttons) do
+	statsScrollFrame:HookScript("OnShow", function(frame)
+		for _, button in ipairs(frame.buttons) do
 			if not button.isSkinned then
-				button:StripTextures()
-				button:CreateBackdrop("Default")
-				button.backdrop:Point("TOPLEFT", 1, -1)
-				button.backdrop:Point("BOTTOMRIGHT", -1, 1)
+				button:SetTemplate("Transparent")
 
-				for i = 1, 10 do
-					local statFrame = button["StatFrame" .. i]
-					if statFrame then statFrame:StripTextures() end
-				end
+				button.Background:SetDrawLayer("BORDER")
+				button.Background:SetInside()
+				button.Background:SetGradientAlpha("HORIZONTAL", 0, 0, 0, 0, 1, 1, 1, 1)
 
 				S:HandleSirusToggle(button.TogglePlus, E.Media.Textures.Plus)
 				S:HandleSirusToggle(button.ToggleMinus, E.Media.Textures.Minus)
@@ -199,9 +191,21 @@ local function LoadSkin()
 			ladder.CentralContainer.backdrop:Point("BOTTOMRIGHT", -2, 2)
 		end
 
-		if ladder.ScrollFrame then
-			ladder.ScrollFrame:StripTextures()
-			S:HandleSirusScrollBar(ladder.ScrollFrame.ScrollBar)
+		local scrollFrame = ladder.CentralContainer.ScrollFrame
+		scrollFrame.ShadowOverlay:StripTextures()
+		S:HandleSirusScrollBar(scrollFrame.ScrollBar)
+
+		hooksecurefunc(ladder, "InitializeScrollFrame", function()
+			S:ApplyElvUIFont(scrollFrame.ScrollChild)
+		end)
+
+		for i = 1, 4 do
+			local tab = ladder["RightTab"..i]
+			tab:GetRegions():Hide()
+			tab:SetTemplate()
+			tab:StyleButton(nil, true)
+			tab.Icon:SetTexCoord(unpack(E.TexCoords))
+			tab.Icon:SetInside()
 		end
 
 		if ladder.TopContainer and ladder.TopContainer.StatisticsFrame then
@@ -209,6 +213,7 @@ local function LoadSkin()
 			ladder.TopContainer.StatisticsFrame:CreateBackdrop("Transparent")
 			ladder.TopContainer.StatisticsFrame.backdrop:Point("TOPLEFT", 3, -3)
 			ladder.TopContainer.StatisticsFrame.backdrop:Point("BOTTOMRIGHT", -3, 3)
+			S:ApplyElvUIFont(ladder.TopContainer)
 		end
 	end
 
