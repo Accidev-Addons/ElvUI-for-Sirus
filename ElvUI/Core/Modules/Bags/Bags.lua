@@ -3013,7 +3013,11 @@ local function ToggleAllBags()
 		return
 	end
 
-	B:ToggleAllBags()
+	if B.Initialized then
+		B:ToggleAllBags()
+	else
+		_G.OpenAllBags()
+	end
 end
 _G.ToggleAllBags = ToggleAllBags
 
