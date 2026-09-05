@@ -125,7 +125,7 @@ function E:ParseVersionString(addon)
 end
 
 do
-	E.Libs = { version = 9.06 } -- E:ParseVersionString('ElvUI_Libraries') will add later
+	E.Libs = { version = 9.07 } -- E:ParseVersionString('ElvUI_Libraries') will add later
 	E.LibsMinor = {}
 	function E:AddLib(name, major, minor)
 		if not name then return end
