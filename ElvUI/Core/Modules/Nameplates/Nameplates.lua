@@ -5,7 +5,7 @@ local NP = E:GetModule("NamePlates")
 local _G = _G
 local type = type
 local select, unpack, pairs, next = select, unpack, pairs, next
-local random, abs = math.random, math.abs
+local random, abs, floor = math.random, math.abs, math.floor
 local format, gsub, match = string.format, string.gsub, string.match
 local twipe = table.wipe
 --WoW API / Variables
@@ -75,6 +75,17 @@ function NP:CheckBGHealers()
 	NP:ForEachVisiblePlate("Update_HealerIcon")
 end
 
+local function plateScale()
+	return NP.db.plateScale and E.uiscale or 1
+end
+
+function NP:Pixel(x, even)
+	local px = E.perfect / plateScale()
+	local n = floor(x / px + 0.5)
+	if even and n % 2 == 1 then n = n + 1 end
+	return n * px
+end
+
 function NP:SetFrameScale(frame, scale, noPlayAnimation)
 	if frame.currentScale ~= scale then
 		NP:Configure_HealthBarScale(frame, scale, noPlayAnimation)
@@ -130,7 +141,7 @@ end
 
 function NP:StyleFrame(parent, noBackdrop, point)
 	point = point or parent
-	local noscalemult = E:PixelSize(1, parent)
+	local noscalemult = E.perfect / plateScale()
 
 	if point.bordertop then return end
 
@@ -604,7 +615,7 @@ function NP:OnCreated(frame)
 	unitFrame:Hide()
 	unitFrame:SetAllPoints(frame)
 	unitFrame:SetScript("OnEvent", NP.OnEvent)
-	unitFrame:SetScale(NP.db.plateScale and E.uiscale or 1)
+	unitFrame:SetScale(plateScale())
 	unitFrame.plateID = plateID
 
 	unitFrame.Health = NP:Construct_HealthBar(unitFrame)
@@ -623,12 +634,6 @@ function NP:OnCreated(frame)
 	NP:Construct_Glow(unitFrame)
 
 	NP:DisableBlizzard(frame)
-
-	unitFrame.UnitType = "ENEMY_NPC"
-	NP:Configure_Level(unitFrame)
-	NP:Configure_Name(unitFrame)
-	NP:Configure_CastBar(unitFrame, true)
-	NP:Configure_HealthBar(unitFrame, true)
 
 	NP:SetSize(frame)
 
@@ -873,9 +878,9 @@ end
 function NP:PixelSnap(frame)
 	local health = frame.Health
 	local left, top = health:GetLeft(), health:GetTop()
-	if not left or not top then return end
+	if not left or not top or abs(health:GetEffectiveScale() - plateScale()) > 0.001 then return end
 
-	local pixel = E.perfect / health:GetEffectiveScale()
+	local pixel = E.perfect / plateScale()
 	local x, y = (left / pixel) % 1, (top / pixel) % 1
 	if x > 0.5 then x = x - 1 end
 	if y > 0.5 then y = y - 1 end
@@ -1092,6 +1097,10 @@ function NP:SetCVars()
 	E:SetCVar('ShowClassColorInNameplate', 1)
 	E:SetCVar('showVKeyCastbar', 0)
 	E:SetCVar('nameplateAllowOverlap', NP.db.motionType == 'STACKED' and 0 or 1)
+	E:SetCVar('nameplateGlobalScale', 1)
+	E:SetCVar('nameplateMinScale', 1)
+	E:SetCVar('nameplateMaxScale', 1)
+	E:SetCVar('nameplateSelectedScale', 1)
 
 	-- the order of these is important !!
 	E:SetCVar('nameplateShowEnemyGuardians', NP.db.visibility.enemy.guardians and 1 or 0)

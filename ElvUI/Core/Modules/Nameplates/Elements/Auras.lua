@@ -130,7 +130,8 @@ function NP:SetAura(frame, unit, index, filter, isDebuff, visible, spells)
 end
 
 function NP:Update_AurasPosition(frame, db)
-	local size = db.size + db.spacing
+	local size, spacing = NP:Pixel(db.size), NP:Pixel(db.spacing)
+	local step = size + spacing
 	local anchor = E.InversePoints[db.anchorPoint]
 	local growthx = (db.growthX == "LEFT" and -1) or 1
 	local growthy = (db.growthY == "DOWN" and -1) or 1
@@ -143,9 +144,9 @@ function NP:Update_AurasPosition(frame, db)
 		local col = (i - 1) % cols
 		local row = floor((i - 1) / cols)
 
-		button:SetSize(db.size, db.size)
+		button:SetSize(size, size)
 		button:ClearAllPoints()
-		button:SetPoint(anchor, frame, anchor, col * size * growthx, row * size * growthy)
+		button:SetPoint(anchor, frame, anchor, col * step * growthx, row * step * growthy)
 
 		button.count:FontTemplate(LSM:Fetch("font", db.countFont), db.countFontSize, db.countFontOutline)
 		button.count:ClearAllPoints()
@@ -297,10 +298,11 @@ function NP:Configure_Auras(frame, auraType)
 
 	auras.anchoredIcons = 0
 
-	auras:SetWidth(db.perrow * db.size + ((db.perrow - 1) * db.spacing))
-	auras:SetHeight(db.numrows * db.size + ((db.numrows - 1) * db.spacing))
+	local size, spacing = NP:Pixel(db.size), NP:Pixel(db.spacing)
+	auras:SetWidth(NP:Pixel(db.perrow * size + ((db.perrow - 1) * spacing), true))
+	auras:SetHeight(db.numrows * size + ((db.numrows - 1) * spacing))
 	auras:ClearAllPoints()
-	auras:SetPoint(positionValues[db.anchorPoint], db.attachTo == "BUFFS" and frame.Buffs or frame.Health, positionValues2[db.anchorPoint], db.xOffset, db.yOffset)
+	auras:SetPoint(positionValues[db.anchorPoint], db.attachTo == "BUFFS" and frame.Buffs or frame.Health, positionValues2[db.anchorPoint], NP:Pixel(db.xOffset), NP:Pixel(db.yOffset))
 end
 
 function NP:ConstructElement_Auras(frame, auraType)

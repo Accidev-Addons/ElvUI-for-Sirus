@@ -151,8 +151,8 @@ function NP:Update_HealthBar(frame)
 end
 
 function NP:Configure_HealthBarScale(frame, scale, noPlayAnimation)
-	local width = E:Scale(self.db.units[frame.UnitType].health.width * scale, frame.Health)
-	local height = E:Scale(self.db.units[frame.UnitType].health.height * scale, frame.Health)
+	local width = NP:Pixel(self.db.units[frame.UnitType].health.width * scale, true)
+	local height = NP:Pixel(self.db.units[frame.UnitType].health.height * scale)
 
 	if noPlayAnimation then
 		frame.Health:SetWidth(width)

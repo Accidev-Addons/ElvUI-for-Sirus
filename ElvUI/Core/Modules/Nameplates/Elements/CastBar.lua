@@ -237,22 +237,23 @@ function NP:Configure_CastBarScale(frame, scale, noPlayAnimation)
 	if not db.enable then return end
 
 	local castBar = frame.CastBar
+	local width, height, iconSize = NP:Pixel(db.width * scale, true), NP:Pixel(db.height * scale), NP:Pixel(db.iconSize * scale)
 
 	if noPlayAnimation then
-		castBar:SetSize(db.width * scale, db.height * scale)
-		castBar.Icon:SetSize(db.iconSize * scale, db.iconSize * scale)
+		castBar:SetSize(width, height)
+		castBar.Icon:SetSize(iconSize, iconSize)
 	else
 		if castBar.scale:IsPlaying() or castBar.Icon.scale:IsPlaying() then
 			castBar.scale:Stop()
 			castBar.Icon.scale:Stop()
 		end
 
-		castBar.scale.width:SetChange(db.width * scale)
-		castBar.scale.height:SetChange(db.height * scale)
+		castBar.scale.width:SetChange(width)
+		castBar.scale.height:SetChange(height)
 		castBar.scale:Play()
 
-		castBar.Icon.scale.width:SetChange(db.iconSize * scale)
-		castBar.Icon.scale.height:SetChange(db.iconSize * scale)
+		castBar.Icon.scale.width:SetChange(iconSize)
+		castBar.Icon.scale.height:SetChange(iconSize)
 		castBar.Icon.scale:Play()
 	end
 end
@@ -261,11 +262,11 @@ function NP:Configure_CastBar(frame, configuring)
 	local db = self.db.units[frame.UnitType].castbar
 	local castBar = frame.CastBar
 
-	castBar:SetPoint("TOP", frame.Health, "BOTTOM", db.xOffset, db.yOffset)
+	castBar:SetPoint("TOP", frame.Health, "BOTTOM", NP:Pixel(db.xOffset), NP:Pixel(db.yOffset))
 
 	if db.showIcon then
 		castBar.Icon:ClearAllPoints()
-		castBar.Icon:SetPoint(db.iconPosition == "RIGHT" and "BOTTOMLEFT" or "BOTTOMRIGHT", castBar, db.iconPosition == "RIGHT" and "BOTTOMRIGHT" or "BOTTOMLEFT", db.iconOffsetX, db.iconOffsetY)
+		castBar.Icon:SetPoint(db.iconPosition == "RIGHT" and "BOTTOMLEFT" or "BOTTOMRIGHT", castBar, db.iconPosition == "RIGHT" and "BOTTOMRIGHT" or "BOTTOMLEFT", NP:Pixel(db.iconOffsetX), NP:Pixel(db.iconOffsetY))
 		castBar.Icon:Show()
 	else
 		castBar.Icon:Hide()
