@@ -14,6 +14,26 @@ local function RestoreSummonIcon(button, iconKey, spellID, fallback)
 	texture:SetTexture(spellIcon or fallback)
 end
 
+local modelBorderColors = {
+	["transmog-wardrobe-border-uncollected"] = {.5, .5, .5},
+	["transmog-wardrobe-border-unusable"] = {.9, .2, .2},
+}
+
+local stateBorderColors = {
+	["transmog-wardrobe-border-current-transmogged"] = {1, .5, 1},
+	["transmog-wardrobe-border-current"] = {1, .8, 0},
+}
+
+local function UpdateModelBorders(frame)
+	for _, model in ipairs(frame.Models) do
+		if model.backdrop then
+			local state = model.Overlay.TransmogStateTexture
+			local color = state:IsShown() and (stateBorderColors[state:GetAtlas()] or E.media.rgbvaluecolor) or modelBorderColors[model.Overlay.Border:GetAtlas()] or E.media.bordercolor
+			model.backdrop:SetBackdropBorderColor(unpack(color))
+		end
+	end
+end
+
 local function LoadSkin()
 	if not E.private.skins.blizzard.enable or not E.private.skins.blizzard.collections then return end
 
@@ -183,20 +203,28 @@ local function LoadSkin()
 				S:HandleNextPrevButton(paging.NextPageButton)
 			end
 
-			for row = 1, 3 do
-				for col = 1, 6 do
-					local model = itemsFrame["ModelR"..row.."C"..col]
-					if model and not model.isSkinned then
-						if model.Overlay and model.Overlay.Border then model.Overlay.Border:SetAlpha(0) end
-						if model.Overlay and model.Overlay.Highlight then model.Overlay.Highlight:SetTexture(1, 1, 1, 0.25) end
+			for _, model in ipairs(itemsFrame.Models) do
+				if model.Overlay and not model.isSkinned then
+					model.Overlay.Border:SetAlpha(0)
+					model.Overlay.TransmogStateTexture:SetAlpha(0)
+					model.Overlay.Highlight:SetTexture(1, 1, 1, 0.25)
+					model.Overlay.Highlight:SetAllPoints(model)
 
-						model:CreateBackdrop("Default")
-						model.backdrop:SetOutside(model)
+					model:CreateBackdrop("Default")
+					model.backdrop:SetOutside(model)
 
-						model.isSkinned = true
-					end
+					model.isSkinned = true
 				end
 			end
+
+			local pending = itemsFrame.PendingTransmogFrame
+			for _, region in next, { pending:GetRegions() } do
+				if region ~= pending.UndoIcon and region:IsObjectType("Texture") then
+					region:SetTexture(E.ClearTexture)
+				end
+			end
+
+			hooksecurefunc(itemsFrame, "UpdateItems", UpdateModelBorders)
 
 			if itemsFrame.SlotsFrame and itemsFrame.SlotsFrame.Buttons then
 				for _, button in ipairs(itemsFrame.SlotsFrame.Buttons) do
