@@ -10,6 +10,7 @@ local ipairs, wipe, time, difftime = ipairs, wipe, time, difftime
 local pairs, unpack, select, pcall, next, tonumber, type = pairs, unpack, select, pcall, next, tonumber, type
 local strlower, strsub, strlen, strupper, strtrim, strmatch = strlower, strsub, strlen, strupper, strtrim, strmatch
 local tostring, tinsert, tremove, tconcat = tostring, tinsert, tremove, table.concat
+local abs = math.abs
 
 local BetterDate = BetterDate
 local CreateFrame = CreateFrame
@@ -1878,14 +1879,20 @@ do
 
 			btn:HookScript('OnEnter', CH.Overflow_OnEnter)
 			btn:HookScript('OnLeave', CH.Overflow_OnLeave)
+			btn.list:HookScript('OnShow', CH.OverflowList_OnShow)
 		end
 
-		local hl = btn.Texture
+		local hl = btn:GetHighlightTexture()
+		hl:SetInside()
 		hl:SetVertexColor(unpack(E.media.rgbvaluecolor))
 		hl:SetRotation(S.ArrowRotation.down)
 
 		btn.list:SetTemplate('Transparent')
 	end
+end
+
+function CH:OverflowList_OnShow()
+	self:SetFrameStrata('DIALOG')
 end
 
 local ignoreChats = { [2]='Log' }
@@ -2241,13 +2248,30 @@ function CH:GetCombatLog()
 	if LOG then return LOG, CH:GetTab(LOG) end
 end
 
+local function SettleDockTabs()
+	local dock = _G.GeneralDockManager
+	local scrollFrame = dock.scrollFrame
+	if not scrollFrame.dynTabSize then return end
+
+	if abs(_G.FCFDock_CalculateTabSize(dock, scrollFrame.numDynFrames) - scrollFrame.dynTabSize) > 0.5 then
+		_G.FCFDock_UpdateTabs(dock, true)
+	end
+end
+
 function CH:FCFDock_ScrollToSelectedTab(dock)
 	if dock ~= _G.GeneralDockManager then return end
 
 	local logchat, logchattab = CH:GetCombatLog()
 	dock.scrollFrame:ClearAllPoints()
-	dock.scrollFrame:Point('RIGHT', dock.overflowButton, 'LEFT')
-	dock.scrollFrame:Point('TOPLEFT', (logchat and logchat.isDocked and logchattab) or CH:GetTab(dock.primary), 'TOPRIGHT')
+	dock.scrollFrame:Point('LEFT', (logchat and logchat.isDocked and logchattab) or CH:GetTab(dock.primary), 'RIGHT')
+
+	if dock.overflowButton:IsShown() then
+		dock.scrollFrame:Point('BOTTOMRIGHT', dock.overflowButton, 'BOTTOMLEFT')
+	else
+		dock.scrollFrame:Point('BOTTOMRIGHT', dock, 'BOTTOMRIGHT')
+	end
+
+	E:Delay(0.01, SettleDockTabs)
 end
 
 function CH:FCF_SetWindowAlpha(frame, alpha)
@@ -2522,6 +2546,21 @@ CH.TabStyles = {
 	CURVE1	= '%s(|r %s %s)|r',
 }
 
+local function TabDecorationWidth(tab, text, decorated)
+	local measure = CH.TabMeasure
+	if not measure then
+		measure = UIParent:CreateFontString(nil, 'ARTWORK')
+		CH.TabMeasure = measure
+	end
+
+	measure:SetFont(tab.Text:GetFont())
+	measure:SetText(text)
+	local plain = measure:GetStringWidth()
+	measure:SetText(decorated)
+
+	return measure:GetStringWidth() - plain
+end
+
 function CH:FCFTab_UpdateColors(tab, selected)
 	if not tab then return end
 
@@ -2538,14 +2577,18 @@ function CH:FCFTab_UpdateColors(tab, selected)
 		tab.whisperName = gsub(E:StripMyRealm(name), '([%S]-)%-[%S]+', '%1|cFF999999*|r')
 	end
 
+	local text = tab.whisperName or name
+	local decorated = text
+	if CH.db.tabSelector ~= 'NONE' then
+		local color = CH.db.tabSelectorColor
+		local hexColor = color and E:RGBToHex(color.r, color.g, color.b) or '|cff4cff4c'
+		decorated = format(CH.TabStyles[CH.db.tabSelector] or CH.TabStyles.ARROW1, hexColor, text, hexColor)
+	end
+
+	tab.sizePadding = (selected or not tab.Text) and 0 or TabDecorationWidth(tab, text, decorated)
+
 	if selected then -- color tables are class updated in UpdateMedia
-		if CH.db.tabSelector == 'NONE' then
-			tab:SetFormattedText(CH.TabStyles.NONE, tab.whisperName or name)
-		else
-			local color = CH.db.tabSelectorColor
-			local hexColor = color and E:RGBToHex(color.r, color.g, color.b) or '|cff4cff4c'
-			tab:SetFormattedText(CH.TabStyles[CH.db.tabSelector] or CH.TabStyles.ARROW1, hexColor, tab.whisperName or name, hexColor)
-		end
+		tab:SetText(decorated)
 
 		if CH.db.tabSelectedTextEnabled then
 			local color = CH.db.tabSelectedTextColor
