@@ -7,22 +7,24 @@ local ipairs = ipairs
 local find = string.find
 local hooksecurefunc = hooksecurefunc
 local pairs = pairs
+local wipe, select = wipe, select
 local GetInventoryItemLink = GetInventoryItemLink
 local GetItemGem = GetItemGem
-local IsModifiedClick = IsModifiedClick
-local IsControlKeyDown = IsControlKeyDown
-local C_ItemSocketInfo = C_ItemSocketInfo
 local SocketInventoryItem = SocketInventoryItem
-local CloseSocketInfo = CloseSocketInfo
-local HideUIPanel = HideUIPanel
-local ClickSocketButton = ClickSocketButton
 local SendServerMessage = SendServerMessage
-local GetItemIcon = GetItemIcon
 local GetItemInfo = GetItemInfo
+local C_Item = C_Item
+local GetContainerNumSlots = GetContainerNumSlots
+local GetContainerItemLink = GetContainerItemLink
+local PickupContainerItem = PickupContainerItem
+local GetSocketTypes = GetSocketTypes
+local ClickSocketButton = ClickSocketButton
+local AcceptSockets = AcceptSockets
+local HideUIPanel = HideUIPanel
 local GameTooltip = GameTooltip
 local GameTooltip_Hide = GameTooltip_Hide
-local ITEMSOCKET_TO_GET_BRILLIANT = ITEMSOCKET_TO_GET_BRILLIANT
 local CreateFrame = CreateFrame
+local UIParent = UIParent
 local strmatch = string.match
 local gsub = string.gsub
 local sub = string.sub
@@ -32,6 +34,17 @@ local lower = string.lower
 
 local ENCHANT_TEXT_MAX_LENGTH = 20
 local MAX_DISPLAYED_SOCKETS = 3
+local SOCKET_SIZE, SOCKET_STEP = 14, 15
+
+local GEM_CLASS, META_GEM_SUBCLASS = 3, 6
+
+local SOCKET_COLORS = {
+	[lower(EMPTY_SOCKET_RED or "")] = { 1, .11, .08, .5 },
+	[lower(EMPTY_SOCKET_YELLOW or "")] = { 1, .95, .08, .5 },
+	[lower(EMPTY_SOCKET_BLUE or "")] = { .08, .26, 1, .5 },
+	[lower(EMPTY_SOCKET_META or "")] = { 1, 1, 1, 1 },
+	[lower(EMPTY_SOCKET_NO_COLOR or "")] = { .99, .15, .9, .5 },
+}
 
 local function HideAtlasTexture(texture)
 	hooksecurefunc(texture, "SetAtlas", function(self)
@@ -217,344 +230,244 @@ local function ShortenEnchantText(text)
 	return utf8sub(text, 1, ENCHANT_TEXT_MAX_LENGTH)
 end
 
-local function GetCharacterInfoSetting(name)
-	local characterInfo = E.db and E.db.general and E.db.general.characterInfo
-	if not characterInfo or characterInfo[name] == nil then
-		return name == "showGems"
-	end
-
-	return characterInfo[name]
+local function StripColor(text)
+	return strtrim(gsub(gsub(text, "|c%x%x%x%x%x%x%x%x", ""), "|r", ""))
 end
 
-function S:UpdateCharacterEquipmentSockets()
-	if not CharacterFrame or not CharacterFrame:IsShown() then return end
-
-	for slotName, inventorySlot in pairs(S.characterEquipmentSlots or {}) do
-		local slotFrame = _G["Character"..slotName]
-		if slotFrame then
-			S:HandleSirusEquipmentSocketInfo(slotFrame, inventorySlot, S.characterEquipmentAnchors[slotName], slotName)
+local function MatchEnchant(line, text, plain, slotName)
+	if find(plain, "зачаров", 1, true) then
+		return text
+	elseif slotName == "NeckSlot" and find(plain, "дар собирателя", 1, true) then
+		return "Дар собирателя"
+	elseif slotName == "WaistSlot" and find(plain, "использование:", 1, true) then
+		return text
+	elseif find(text, "^%+") then
+		local r, g, b = line:GetTextColor()
+		if E:Round(r, 2) == 0 and E:Round(g, 2) == 1 and E:Round(b, 2) == 0 then
+			return text
 		end
 	end
 end
 
-local function GetSirusEnchantText(inventorySlot, slotName, fallbackText)
-	if not E.ScanTooltip or not inventorySlot then return ShortenEnchantText(fallbackText) end
-	if slotName ~= "NeckSlot" and slotName ~= "WaistSlot" and slotName ~= "MainHandSlot" and slotName ~= "SecondaryHandSlot" and slotName ~= "RangedSlot" then return ShortenEnchantText(fallbackText) end
+local function Socket_OnEnter(self)
+	GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
 
-	local enchantText
-	local tooltip = E.ScanTooltip
-	tooltip:SetOwner(UIParent, "ANCHOR_NONE")
-	local hasItem = tooltip:SetInventoryItem("player", inventorySlot)
-	if not hasItem then
-		tooltip:Hide()
-		return ShortenEnchantText(fallbackText)
-	end
-
-	tooltip:Show()
-	local tooltipData = tooltip.GetTooltipData and tooltip:GetTooltipData()
-	local function CheckText(text, lineFrame)
-		if not text then return end
-
-		text = gsub(text, "^|c%x%x%x%x%x%x%x%x", "")
-		text = gsub(text, "|r$", "")
-		text = gsub(text, "^%s+", "")
-		local normalized = lower(text)
-
-		if slotName == "MainHandSlot" or slotName == "SecondaryHandSlot" or slotName == "RangedSlot" then
-			if find(normalized, "зачаровано:", 1, true) or find(normalized, "зачарование:", 1, true) then
-				return ShortenEnchantText(strtrim(text))
-		elseif slotName == "SecondaryHandSlot" and strmatch(text, "^%+%s*%d") and lineFrame then
-			local r, g, b = lineFrame:GetTextColor()
-			if g > 0.5 and r < 0.6 and b < 0.6 then
-				return ShortenEnchantText(strtrim(text))
-			end
-		end
-		elseif slotName == "NeckSlot" and find(normalized, "дар собирателя", 1, true) then
-			return ShortenEnchantText("Дар собирателя")
-		elseif slotName == "WaistSlot" and find(normalized, "использование:", 1, true) then
-			return ShortenEnchantText(text)
-		end
-	end
-
-	if tooltipData and tooltipData.lines then
-		for _, line in next, tooltipData.lines do
-			enchantText = CheckText(line and line.leftText) or CheckText(line and line.rightText)
-			if enchantText then break end
-		end
-	end
-
-	if not enchantText then
-		for lineIndex = 1, tooltip:NumLines() do
-			local left = _G["ElvUI_ScanTooltipTextLeft"..lineIndex]
-			local right = _G["ElvUI_ScanTooltipTextRight"..lineIndex]
-			enchantText = CheckText(left and left:GetText(), left) or CheckText(right and right:GetText(), right)
-			if enchantText then break end
-		end
-	end
-
-	tooltip:Hide()
-	if slotName == "MainHandSlot" or slotName == "SecondaryHandSlot" or slotName == "RangedSlot" then
-		return ShortenEnchantText(enchantText)
-	end
-
-	return ShortenEnchantText(enchantText or fallbackText)
-end
-
-local function GetItemSocketCount(inventorySlot)
-	local tooltip = E.ScanTooltip
-	if not tooltip or not inventorySlot then return 0 end
-
-	local socketCount = 0
-	local function IsSocketLine(text)
-		if not text then return end
-
-		text = lower(gsub(gsub(text, "|c%x%x%x%x%x%x%x%x", ""), "|r", ""))
-		text = strtrim(text)
-		if find(text, "гнездо$") or find(text, "гнездо:", 1, true) or find(text, "socket$") then
-			return true
-		end
-	end
-
-	tooltip:SetOwner(UIParent, "ANCHOR_NONE")
-	local hasItem = tooltip:SetInventoryItem("player", inventorySlot)
-	if not hasItem then return 0 end
-	tooltip:Show()
-
-	local tooltipData = tooltip.GetTooltipData and tooltip:GetTooltipData()
-	if tooltipData and tooltipData.lines then
-		for _, line in next, tooltipData.lines do
-			if IsSocketLine(line and line.leftText) or IsSocketLine(line and line.rightText) then
-				socketCount = socketCount + 1
-				if socketCount >= MAX_DISPLAYED_SOCKETS then break end
-			end
+	if self.gemLink then
+		GameTooltip:SetHyperlink(self.gemLink)
+		if self.canRemove then
+			GameTooltip:AddLine(L["<Click to extract the gem>"], 0, .8, 1)
 		end
 	else
-		for lineIndex = 1, tooltip:NumLines() do
-			local left = _G["ElvUI_ScanTooltipTextLeft"..lineIndex]
-			local right = _G["ElvUI_ScanTooltipTextRight"..lineIndex]
-			if IsSocketLine(left and left:GetText()) or IsSocketLine(right and right:GetText()) then
-				socketCount = socketCount + 1
-				if socketCount >= MAX_DISPLAYED_SOCKETS then break end
-			end
+		GameTooltip:SetText(self.lineText, 1, 1, 1)
+		if self.isEmpty then
+			GameTooltip:AddLine(L["<Click to insert a black diamond>"], 0, .8, 1)
 		end
 	end
 
-	tooltip:Hide()
-	return socketCount
+	GameTooltip:Show()
 end
 
-function S:HandleSirusEquipmentSocketInfo(slotFrame, inventorySlot, anchor, slotName)
-	if not slotFrame or not inventorySlot then return end
-	anchor = anchor or "RIGHT"
-	local info = slotFrame.sirusSocketInfo
-	if not info then
-		info = CreateFrame("Frame", nil, slotFrame)
-		info:SetFrameLevel(slotFrame:GetFrameLevel() + 1)
-		info.slots = {}
-		info.socketRow = CreateFrame("Frame", nil, info)
-		info.socketRow:SetSize(45, 15)
-		info.enchant = info:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-		info.enchant:SetTextColor(0.1, 1, 0.1)
-		info.enchant:SetWordWrap(false)
-		info.enchant:SetJustifyH("CENTER")
-		slotFrame.sirusSocketInfo = info
-	end
-
-	local link = GetInventoryItemLink("player", inventorySlot)
-	local socketCount = 0
-	local enchantText
-	local showGems = GetCharacterInfoSetting("showGems")
-	local showEnchants = GetCharacterInfoSetting("showEnchants")
-	if link then
-		if showEnchants and E.GetGearSlotInfo then
-			local gearInfo = E:GetGearSlotInfo("player", inventorySlot, true)
-			if type(gearInfo) == "table" then
-				enchantText = gearInfo.enchantText
-			end
-		end
-
-		if showEnchants then
-			enchantText = GetSirusEnchantText(inventorySlot, slotName, enchantText)
-		end
-	end
-	if not showGems then
-		socketCount = 0
-	end
-
-	if link and showGems then
-		local numSockets = GetItemSocketCount(inventorySlot)
-		for index = 1, 3 do
-			local gemName, gemLink = GetItemGem(link, index)
-			if gemName or gemLink then
-				numSockets = math.max(numSockets, index)
-			end
-			if index <= numSockets then
-				socketCount = socketCount + 1
-				local socket = info.slots[socketCount]
-				if not socket then
-					socket = CreateFrame("Button", nil, info.socketRow)
-					socket:SetSize(14, 14)
-					socket.Icon = socket:CreateTexture(nil, "ARTWORK")
-					socket.Icon:SetAllPoints()
-					socket:ClearAllPoints()
-								if anchor == "TOP" then
-						if slotName == "MainHandSlot" then
-							socket:SetPoint("BOTTOM", info.socketRow, "BOTTOM", 0, (socketCount - 1) * 15)
-						else
-							socket:SetPoint("BOTTOM", info.socketRow, "BOTTOM", 0, (socketCount - 1) * 15)
-						end
-					elseif anchor == "RIGHT" then
-						socket:SetPoint("LEFT", info.socketRow, "LEFT", (socketCount - 1) * 15, 0)
-					else
-						socket:SetPoint("RIGHT", info.socketRow, "RIGHT", -(socketCount - 1) * 15, 0)
-					end
-					info.slots[socketCount] = socket				end
-
-				if gemName or gemLink then
-					local gemTexture = GetItemIcon(gemLink or gemName)
-					socket.Icon:SetTexture(gemTexture or E.Media.Textures.White8x8)
-					socket.Icon:SetTexCoord(unpack(E.TexCoords))
-					socket.itemLink = gemLink or gemName
-					socket.inventorySlot = inventorySlot
-					socket.socketIndex = socketCount
-					socket.anchor = anchor
-					socket.slotName = slotName
-					local gemDisplayName = gemName or (gemLink and GetItemInfo(gemLink))
-					socket.canExtract = gemDisplayName and (
-						find(gemDisplayName, "черный", 1, true) or
-						find(gemDisplayName, "Черный", 1, true) or
-						find(gemDisplayName, "ЧЕРНЫЙ", 1, true)
-					)
-				else
-					socket.Icon:SetTexture(nil)
-					socket.itemLink = nil
-					socket.inventorySlot = nil
-					socket.socketIndex = nil
-					socket.anchor = nil
-					socket.slotName = nil
-					socket.canExtract = nil
+local function FindBlackDiamond(isMeta)
+	local bestBag, bestSlot, bestLevel
+	for bag = 0, 4 do
+		for slot = 1, GetContainerNumSlots(bag) do
+			local link = GetContainerItemLink(bag, slot)
+			if link then
+				local _, _, quality, level, _, _, _, _, _, _, _, _, classID, subClassID = C_Item.GetItemInfo(link)
+				if quality == 5 and classID == GEM_CLASS and (subClassID == META_GEM_SUBCLASS) == isMeta and (not bestLevel or level > bestLevel) then
+					bestBag, bestSlot, bestLevel = bag, slot, level
 				end
-				socket:SetScript("OnEnter", function(self)
-					if self.itemLink then
-						GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-						GameTooltip:SetHyperlink(self.itemLink)
-						if self.canExtract then
-							GameTooltip:AddLine(ITEMSOCKET_TO_GET_BRILLIANT or "<Нажмите Ctrl и щелкните левой кнопкой мыши, чтобы достать камень.>", 0, 0.8, 1)
-						end
-						GameTooltip:Show()
-					end
-				end)
-
-				socket:SetScript("OnLeave", GameTooltip_Hide)
-				socket:SetScript("OnClick", function(self, button)
-					if not self.itemLink then return end
-					if button ~= "LeftButton" or not IsModifiedClick() or not IsControlKeyDown() then return end
-					local socketIndex = self.socketIndex
-					SocketInventoryItem(self.inventorySlot)
-					if C_ItemSocketInfo and C_ItemSocketInfo.CanRemoveGem and C_ItemSocketInfo.CanRemoveGem(socketIndex) then
-						if C_ItemSocketInfo.RemoveGem then
-							C_ItemSocketInfo.RemoveGem(socketIndex)
-						elseif ClickSocketButton then
-							ClickSocketButton(socketIndex)
-						end
-					elseif SendServerMessage then
-						SendServerMessage("ACMSG_REMOVE_SOCKET_FROM_ITEM", string.format("%d:%d:%d", -1, self.inventorySlot, socketIndex))
-					end
-					if CloseSocketInfo then CloseSocketInfo() end
-					if ItemSocketingFrame then HideUIPanel(ItemSocketingFrame) end
-					local owner = self:GetParent():GetParent():GetParent()
-					if owner and owner.sirusSocketInfo then
-						owner.sirusSocketInfo:Hide()
-					end
-				end)
-				socket:RegisterForClicks("AnyUp")
-
-				if not socket.backdrop then
-					socket:CreateBackdrop("Default")
-				end
-				socket:Show()
 			end
 		end
 	end
 
-	info:ClearAllPoints()
-	local isMainHand = slotName == "MainHandSlot"
-	local isOffHand = slotName == "SecondaryHandSlot"
-	local isRanged = slotName == "RangedSlot"
+	return bestBag, bestSlot
+end
+
+local function Socket_OnClick(self)
+	if self.gemLink then
+		if self.canRemove then
+			SendServerMessage("ACMSG_REMOVE_SOCKET_FROM_ITEM", -1, self.inventorySlot, self.index)
+		end
+	elseif self.isEmpty then
+		SocketInventoryItem(self.inventorySlot)
+
+		local bag, slot = FindBlackDiamond(GetSocketTypes(self.index) == "Meta")
+		if bag then
+			PickupContainerItem(bag, slot)
+			ClickSocketButton(self.index)
+			AcceptSockets()
+			HideUIPanel(_G.ItemSocketingFrame)
+		end
+	end
+end
+
+local function CreateSocket(info, index, anchor)
+	local socket = CreateFrame("Button", nil, info)
+	socket:SetSize(SOCKET_SIZE, SOCKET_SIZE)
+	socket:SetTemplate("Default")
+	socket:RegisterForClicks("LeftButtonUp")
+	socket:SetScript("OnEnter", Socket_OnEnter)
+	socket:SetScript("OnLeave", GameTooltip_Hide)
+	socket:SetScript("OnClick", Socket_OnClick)
+	socket.index = index
+
+	socket.Icon = socket:CreateTexture(nil, "ARTWORK")
+	socket.Icon:SetInside()
+
+	local offset = (index - 1) * SOCKET_STEP
+	if anchor == "RIGHT" then
+		socket:SetPoint("LEFT", info.socketRow, "LEFT", offset, 0)
+	elseif anchor == "LEFT" then
+		socket:SetPoint("RIGHT", info.socketRow, "RIGHT", -offset, 0)
+	end
+
+	return socket
+end
+
+local function CreateSocketInfo(slotFrame, anchor, slotName)
+	local info = CreateFrame("Frame", nil, slotFrame)
+	info:SetFrameLevel(slotFrame:GetFrameLevel() + 1)
+	info:SetSize(220, anchor == "TOP" and 46 or 31)
+	info.slots = {}
+	info.anchor = anchor
+
+	info.socketRow = CreateFrame("Frame", nil, info)
+	info.socketRow:SetSize(SOCKET_STEP * MAX_DISPLAYED_SOCKETS, SOCKET_STEP)
+	info.enchant = info:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+	info.enchant:SetTextColor(0.1, 1, 0.1)
+	info.enchant:SetWordWrap(false)
+	info.enchant:SetSize(220, 14)
 
 	if anchor == "TOP" then
-			info:SetSize(220, 46)
-			if isMainHand then
-				info:SetPoint("TOPRIGHT", slotFrame, "BOTTOMLEFT", -3, -3)
-			elseif isOffHand then
-				info:SetPoint("TOPLEFT", slotFrame, "BOTTOMRIGHT", 3, -3)
-			else
-				info:SetPoint("BOTTOM", slotFrame, "TOP", 0, 4)
-			end
-	else		info:SetSize(220, 31)
+		info.socketRow:SetPoint("BOTTOM", slotFrame, "TOP", 0, 3)
+
+		if slotName == "MainHandSlot" then
+			info:SetPoint("TOPRIGHT", slotFrame, "BOTTOMLEFT", -3, -3)
+			info.enchant:SetJustifyH("RIGHT")
+			info.enchant:SetPoint("BOTTOMRIGHT", slotFrame, "BOTTOMLEFT", -3, 1)
+		elseif slotName == "SecondaryHandSlot" then
+			info:SetPoint("TOPLEFT", slotFrame, "BOTTOMRIGHT", 3, -3)
+			info.enchant:SetJustifyH("LEFT")
+			info.enchant:SetPoint("TOPLEFT", slotFrame, "TOPRIGHT", slotFrame:GetWidth() + 8, -3)
+		elseif slotName == "RangedSlot" then
+			info:SetPoint("BOTTOM", slotFrame, "TOP", 0, 4)
+			info.enchant:SetJustifyH("LEFT")
+			info.enchant:SetPoint("BOTTOMLEFT", slotFrame, "BOTTOMRIGHT", 3, -3)
+		else
+			info:SetPoint("BOTTOM", slotFrame, "TOP", 0, 4)
+			info.enchant:SetJustifyH("CENTER")
+			info.enchant:SetPoint("BOTTOM", info.socketRow, "TOP", 0, 1)
+		end
+	else
 		if anchor == "RIGHT" then
 			info:SetPoint("LEFT", slotFrame, "RIGHT", 3, 0)
-		else
-			info:SetPoint("RIGHT", slotFrame, "LEFT", -3, 0)
-		end
-	end
-
-	info.socketRow:ClearAllPoints()
-	info.enchant:ClearAllPoints()
-	info.enchant:SetSize(220, 14)
-	if anchor == "TOP" then
-		info.socketRow:SetSize(15, 45)
-		info.socketRow:SetPoint("BOTTOM", slotFrame, "TOP", 0, 3)
-	else
-		info.socketRow:SetSize(45, 15)
-		if anchor == "RIGHT" then
 			info.socketRow:SetPoint("LEFT", slotFrame, "RIGHT", 3, -3)
-		else
-			info.socketRow:SetPoint("RIGHT", slotFrame, "LEFT", -3, -3)
-		end
-	end
-	if enchantText then
-		enchantText = ShortenEnchantText(enchantText)
-		info.enchant:SetText(enchantText)
-		if anchor == "TOP" then
-			info.enchant:SetJustifyH("RIGHT")
-			if isMainHand then
-				info.enchant:SetPoint("BOTTOMRIGHT", slotFrame, "BOTTOMLEFT", -3, 1)
-			elseif isOffHand then
-				info.enchant:SetJustifyH("LEFT")
-				local slotWidth = slotFrame:GetWidth()
-				if not slotWidth or slotWidth <= 0 then slotWidth = 44 end
-				info.enchant:SetPoint("TOPLEFT", slotFrame, "TOPRIGHT", slotWidth + 8, -3)
-			elseif isRanged then
-				info.enchant:SetJustifyH("LEFT")
-				info.enchant:SetPoint("BOTTOMLEFT", slotFrame, "BOTTOMRIGHT", 3, -3)
-			else
-				info.enchant:SetJustifyH("CENTER")
-				info.enchant:SetPoint("BOTTOM", info.socketRow, "TOP", 0, 1)
-			end
-		elseif anchor == "RIGHT" then
 			info.enchant:SetJustifyH("LEFT")
 			info.enchant:SetPoint("BOTTOMLEFT", info.socketRow, "TOPLEFT", 0, 1)
 		else
+			info:SetPoint("RIGHT", slotFrame, "LEFT", -3, 0)
+			info.socketRow:SetPoint("RIGHT", slotFrame, "LEFT", -3, -3)
 			info.enchant:SetJustifyH("RIGHT")
 			info.enchant:SetPoint("BOTTOMRIGHT", info.socketRow, "TOPRIGHT", 0, 1)
 		end
-		info.enchant:Show()
-	else
-		info.enchant:Hide()
 	end
 
-	if socketCount == 0 and not enchantText then
-		info:Hide()
-	else
-		for index = socketCount + 1, #info.slots do
-			info.slots[index].itemLink = nil
-			info.slots[index].inventorySlot = nil
-			info.slots[index].socketIndex = nil
-			info.slots[index]:Hide()
-		end
-		info:Show()
+	for index = 1, MAX_DISPLAYED_SOCKETS do
+		info.slots[index] = CreateSocket(info, index, anchor)
 	end
+
+	return info
+end
+
+local function SetSocket(socket, inventorySlot, link, texture, lineText, socketColor)
+	local gemLink = not socketColor and select(2, GetItemGem(link, socket.index))
+	local quality = gemLink and select(3, GetItemInfo(gemLink))
+
+	socket.inventorySlot = inventorySlot
+	socket.isEmpty = socketColor ~= nil
+	socket.gemLink = gemLink or nil
+	socket.canRemove = quality == 5
+	socket.lineText = lineText
+
+	if socketColor then
+		socket.Icon:SetTexture(E.Media.Textures.NormTex2)
+		socket.Icon:SetTexCoord(0, 1, 0, 1)
+		socket.Icon:SetVertexColor(unpack(socketColor))
+	else
+		socket.Icon:SetTexture(texture)
+		socket.Icon:SetTexCoord(unpack(E.TexCoords))
+		socket.Icon:SetVertexColor(1, 1, 1, 1)
+	end
+
+	socket:Show()
+end
+
+local gemLines = {}
+function S:HandleSirusEquipmentSocketInfo(slotFrame, inventorySlot, anchor, slotName)
+	if not slotFrame or not inventorySlot then return end
+
+	local info = slotFrame.sirusSocketInfo
+	if not info then
+		info = CreateSocketInfo(slotFrame, anchor or "RIGHT", slotName)
+		slotFrame.sirusSocketInfo = info
+	end
+
+	local db = E.db.general.characterInfo
+	local link = GetInventoryItemLink("player", inventorySlot)
+	local numSockets, enchantText = 0
+
+	if link and (db.showGems or db.showEnchants) then
+		local tooltip = E.ScanTooltip
+		tooltip:SetOwner(UIParent, "ANCHOR_NONE")
+		tooltip:SetInventoryItem("player", inventorySlot)
+		tooltip:Show()
+
+		for index = 1, 10 do
+			local texture = _G["ElvUI_ScanTooltipTexture"..index]
+			if texture and texture:IsShown() then
+				local _, relativeTo = texture:GetPoint(1)
+				gemLines[relativeTo] = texture:GetTexture()
+			end
+		end
+
+		for index = 1, tooltip:NumLines() do
+			local line = _G["ElvUI_ScanTooltipTextLeft"..index]
+			local text = line:GetText()
+			if text then
+				local texture = gemLines[line]
+				local plain = StripColor(text)
+				local socketColor = SOCKET_COLORS[lower(plain)]
+
+				if texture or socketColor then
+					if db.showGems and numSockets < MAX_DISPLAYED_SOCKETS then
+						numSockets = numSockets + 1
+						SetSocket(info.slots[numSockets], inventorySlot, link, texture, plain, socketColor)
+					end
+				elseif db.showEnchants and not enchantText then
+					enchantText = MatchEnchant(line, plain, lower(plain), slotName)
+				end
+			end
+		end
+
+		tooltip:Hide()
+		wipe(gemLines)
+	end
+
+	for index = numSockets + 1, MAX_DISPLAYED_SOCKETS do
+		info.slots[index]:Hide()
+	end
+
+	if info.anchor == "TOP" then
+		for index = 1, numSockets do
+			info.slots[index]:SetPoint("CENTER", info.socketRow, "CENTER", (index - (numSockets + 1) / 2) * SOCKET_STEP, 0)
+		end
+	end
+
+	enchantText = enchantText and ShortenEnchantText(enchantText)
+	info.enchant:SetText(enchantText)
+	info.enchant:SetShown(enchantText ~= nil)
+	info:SetShown(numSockets > 0 or enchantText ~= nil)
 end
 
 function S:HandleSirusScrollFrame(scrollFrame, createBackdrop)

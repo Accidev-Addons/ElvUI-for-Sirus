@@ -2444,14 +2444,8 @@ local function LoadSkin()
 		[16] = "TOP", [17] = "TOP", [18] = "TOP", [19] = "RIGHT"
 	}
 
-	S.characterEquipmentSlots = {}
-	S.characterEquipmentAnchors = {}
-
-	for slotIndex, slotName in ipairs(slots) do
-		S.characterEquipmentSlots[slotName] = GetInventorySlotInfo(slotName)
-		S.characterEquipmentAnchors[slotName] = socketAnchors[slotIndex] or "RIGHT"
+	for _, slotName in ipairs(slots) do
 		local slotFrame = _G["Character"..slotName]
-		local itemSlot = GetInventorySlotInfo(slotName)
 		local icon = _G["Character"..slotName.."IconTexture"]
 		local cooldown = _G["Character"..slotName.."Cooldown"]
 		local popout = _G["Character"..slotName.."PopoutButton"]
@@ -2468,8 +2462,6 @@ local function LoadSkin()
 		if cooldown then
 			E:RegisterCooldown(cooldown)
 		end
-
-		S:HandleSirusEquipmentSocketInfo(slotFrame, itemSlot, socketAnchors[slotIndex] or "RIGHT", slotName)
 
 		if popout then
 			popout:StripTextures()
@@ -2512,37 +2504,30 @@ local function LoadSkin()
 
 	local function UpdateCharacterEquipmentSockets()
 		ColorItemBorder()
+
 		for slotIndex, slotName in ipairs(slots) do
-			local itemSlot = GetInventorySlotInfo(slotName)
-			local target = _G["Character"..slotName]
-			local anchor = socketAnchors[slotIndex] or "RIGHT"
-			S:HandleSirusEquipmentSocketInfo(target, itemSlot, anchor, slotName)
+			S:HandleSirusEquipmentSocketInfo(_G["Character"..slotName], GetInventorySlotInfo(slotName), socketAnchors[slotIndex], slotName)
 		end
 	end
 
 	S.UpdateCharacterEquipmentSockets = UpdateCharacterEquipmentSockets
 
-	local pendingSocketUpdate = false
-	local socketUpdateElapsed = 0
-	local CheckItemBorderColor = CreateFrame("Frame")
-	CheckItemBorderColor:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
-	CheckItemBorderColor:RegisterEvent("UNIT_INVENTORY_CHANGED")
-	CheckItemBorderColor:RegisterEvent("SOCKET_INFO_CLOSE")
-	CheckItemBorderColor:RegisterEvent("SOCKET_INFO_UPDATE")
-	CheckItemBorderColor:SetScript("OnEvent", function(self, event, unit)
-		if event == "UNIT_INVENTORY_CHANGED" and unit ~= "player" then return end
-		pendingSocketUpdate = true
-		socketUpdateElapsed = 0
-	end)
-	CheckItemBorderColor:SetScript("OnUpdate", function(self, elapsed)
-		if not pendingSocketUpdate then return end
-		socketUpdateElapsed = socketUpdateElapsed + elapsed
-		if socketUpdateElapsed < 0.1 then return end
-		pendingSocketUpdate = false
+	local socketUpdateTimer
+	local function SocketUpdateDelayed()
+		socketUpdateTimer = nil
 		UpdateCharacterEquipmentSockets()
+	end
+
+	local equipmentWatcher = CreateFrame("Frame")
+	equipmentWatcher:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
+	equipmentWatcher:RegisterEvent("UNIT_INVENTORY_CHANGED")
+	equipmentWatcher:RegisterEvent("SOCKET_INFO_CLOSE")
+	equipmentWatcher:SetScript("OnEvent", function(_, event, unit)
+		if (event == "UNIT_INVENTORY_CHANGED" and unit ~= "player") or not CharacterFrame:IsShown() or socketUpdateTimer then return end
+		socketUpdateTimer = E:Delay(0.1, SocketUpdateDelayed)
 	end)
-	CharacterFrame:HookScript("OnShow", ColorItemBorder)
-	ColorItemBorder()
+
+	CharacterFrame:HookScript("OnShow", UpdateCharacterEquipmentSockets)
 
 	local function HandleResistanceFrame(frameName)
 		for i = 1, 5 do
