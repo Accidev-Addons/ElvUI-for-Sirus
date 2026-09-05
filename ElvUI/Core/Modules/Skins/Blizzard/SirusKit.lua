@@ -46,6 +46,14 @@ local SOCKET_COLORS = {
 	[lower(EMPTY_SOCKET_NO_COLOR or "")] = { .99, .15, .9, .5 },
 }
 
+S.EquipmentSlotAnchors = {
+	HeadSlot = "RIGHT", NeckSlot = "RIGHT", ShoulderSlot = "RIGHT", ShirtSlot = "RIGHT", ChestSlot = "RIGHT",
+	WristSlot = "RIGHT", BackSlot = "RIGHT", TabardSlot = "RIGHT",
+	HandsSlot = "LEFT", WaistSlot = "LEFT", LegsSlot = "LEFT", FeetSlot = "LEFT",
+	Finger0Slot = "LEFT", Finger1Slot = "LEFT", Trinket0Slot = "LEFT", Trinket1Slot = "LEFT",
+	MainHandSlot = "TOP", SecondaryHandSlot = "TOP", RangedSlot = "TOP",
+}
+
 local function HideAtlasTexture(texture)
 	hooksecurefunc(texture, "SetAtlas", function(self)
 		self:SetAlpha(0)
@@ -252,16 +260,19 @@ end
 local function Socket_OnEnter(self)
 	GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
 
+	local isPlayer = self.unit == "player"
 	if self.gemLink then
 		GameTooltip:SetHyperlink(self.gemLink)
-		if self.canRemove then
+		if isPlayer and self.canRemove then
 			GameTooltip:AddLine(L["<Click to extract the gem>"], 0, .8, 1)
 		end
-	else
+	elseif self.isEmpty then
 		GameTooltip:SetText(self.lineText, 1, 1, 1)
-		if self.isEmpty then
+		if isPlayer then
 			GameTooltip:AddLine(L["<Click to insert a black diamond>"], 0, .8, 1)
 		end
+	else
+		GameTooltip:SetText(L["Gem data unavailable"], .6, .6, .6)
 	end
 
 	GameTooltip:Show()
@@ -285,6 +296,8 @@ local function FindBlackDiamond(isMeta)
 end
 
 local function Socket_OnClick(self)
+	if self.unit ~= "player" then return end
+
 	if self.gemLink then
 		if self.canRemove then
 			SendServerMessage("ACMSG_REMOVE_SOCKET_FROM_ITEM", -1, self.inventorySlot, self.index)
@@ -380,32 +393,41 @@ local function CreateSocketInfo(slotFrame, anchor, slotName)
 	return info
 end
 
-local function SetSocket(socket, inventorySlot, link, texture, lineText, socketColor)
-	local gemLink = not socketColor and select(2, GetItemGem(link, socket.index))
-	local quality = gemLink and select(3, GetItemInfo(gemLink))
+local function SetGemSocket(socket, gemLink, texture)
+	socket.isEmpty = nil
+	socket.gemLink = gemLink
+	socket.lineText = nil
+	socket.canRemove = gemLink and select(3, GetItemInfo(gemLink)) == 5
 
-	socket.inventorySlot = inventorySlot
-	socket.isEmpty = socketColor ~= nil
-	socket.gemLink = gemLink or nil
-	socket.canRemove = quality == 5
-	socket.lineText = lineText
-
-	if socketColor then
-		socket.Icon:SetTexture(E.Media.Textures.NormTex2)
-		socket.Icon:SetTexCoord(0, 1, 0, 1)
-		socket.Icon:SetVertexColor(unpack(socketColor))
-	else
+	if gemLink and texture then
 		socket.Icon:SetTexture(texture)
 		socket.Icon:SetTexCoord(unpack(E.TexCoords))
 		socket.Icon:SetVertexColor(1, 1, 1, 1)
+	else
+		socket.Icon:SetTexture(E.Media.Textures.NormTex2)
+		socket.Icon:SetTexCoord(0, 1, 0, 1)
+		socket.Icon:SetVertexColor(.4, .4, .4, 1)
 	end
 
 	socket:Show()
 end
 
-local gemLines = {}
-function S:HandleSirusEquipmentSocketInfo(slotFrame, inventorySlot, anchor, slotName)
+local function SetEmptySocket(socket, name, color)
+	socket.isEmpty = true
+	socket.gemLink = nil
+	socket.lineText = name
+	socket.canRemove = nil
+	socket.Icon:SetTexture(E.Media.Textures.NormTex2)
+	socket.Icon:SetTexCoord(0, 1, 0, 1)
+	socket.Icon:SetVertexColor(unpack(color))
+	socket:Show()
+end
+
+local gemFields, gemTextures, emptyNames, emptyColors = {}, {}, {}, {}
+function S:HandleSirusEquipmentSocketInfo(slotFrame, inventorySlot, anchor, slotName, unit)
+	local hasUnknown
 	if not slotFrame or not inventorySlot then return end
+	unit = unit or "player"
 
 	local info = slotFrame.sirusSocketInfo
 	if not info then
@@ -414,20 +436,20 @@ function S:HandleSirusEquipmentSocketInfo(slotFrame, inventorySlot, anchor, slot
 	end
 
 	local db = E.db.general.characterInfo
-	local link = GetInventoryItemLink("player", inventorySlot)
+	local showGems, showEnchants = db.showGems, db.showEnchants and unit == "player"
+	local link = GetInventoryItemLink(unit, inventorySlot)
 	local numSockets, enchantText = 0
 
-	if link and (db.showGems or db.showEnchants) then
+	if link and (showGems or showEnchants) then
 		local tooltip = E.ScanTooltip
 		tooltip:SetOwner(UIParent, "ANCHOR_NONE")
-		tooltip:SetInventoryItem("player", inventorySlot)
+		tooltip:SetInventoryItem(unit, inventorySlot)
 		tooltip:Show()
 
 		for index = 1, 10 do
 			local texture = _G["ElvUI_ScanTooltipTexture"..index]
 			if texture and texture:IsShown() then
-				local _, relativeTo = texture:GetPoint(1)
-				gemLines[relativeTo] = texture:GetTexture()
+				gemTextures[#gemTextures + 1] = texture:GetTexture()
 			end
 		end
 
@@ -435,23 +457,46 @@ function S:HandleSirusEquipmentSocketInfo(slotFrame, inventorySlot, anchor, slot
 			local line = _G["ElvUI_ScanTooltipTextLeft"..index]
 			local text = line:GetText()
 			if text then
-				local texture = gemLines[line]
 				local plain = StripColor(text)
 				local socketColor = SOCKET_COLORS[lower(plain)]
-
-				if texture or socketColor then
-					if db.showGems and numSockets < MAX_DISPLAYED_SOCKETS then
-						numSockets = numSockets + 1
-						SetSocket(info.slots[numSockets], inventorySlot, link, texture, plain, socketColor)
-					end
-				elseif db.showEnchants and not enchantText then
+				if socketColor then
+					emptyNames[#emptyNames + 1] = plain
+					emptyColors[#emptyColors + 1] = socketColor
+				elseif showEnchants and not enchantText then
 					enchantText = MatchEnchant(line, plain, lower(plain), slotName)
 				end
 			end
 		end
 
 		tooltip:Hide()
-		wipe(gemLines)
+
+		if showGems then
+			gemFields[1], gemFields[2], gemFields[3] = strmatch(link, "item:%-?%d+:%-?%d+:(%-?%d+):(%-?%d+):(%-?%d+)")
+
+			local nextTexture, nextEmpty = 1, 1
+			for index = 1, MAX_DISPLAYED_SOCKETS do
+				local socket = info.slots[index]
+				local field = gemFields[index]
+				if field and field ~= "0" then
+					local _, gemLink = GetItemGem(link, index)
+					SetGemSocket(socket, gemLink, gemLink and gemTextures[nextTexture])
+					if gemLink then nextTexture = nextTexture + 1 else hasUnknown = true end
+				elseif emptyNames[nextEmpty] then
+					SetEmptySocket(socket, emptyNames[nextEmpty], emptyColors[nextEmpty])
+					nextEmpty = nextEmpty + 1
+				else
+					break
+				end
+
+				socket.unit = unit
+				socket.inventorySlot = inventorySlot
+				numSockets = index
+			end
+		end
+
+		wipe(gemTextures)
+		wipe(emptyNames)
+		wipe(emptyColors)
 	end
 
 	for index = numSockets + 1, MAX_DISPLAYED_SOCKETS do
@@ -468,6 +513,8 @@ function S:HandleSirusEquipmentSocketInfo(slotFrame, inventorySlot, anchor, slot
 	info.enchant:SetText(enchantText)
 	info.enchant:SetShown(enchantText ~= nil)
 	info:SetShown(numSockets > 0 or enchantText ~= nil)
+
+	return hasUnknown
 end
 
 function S:HandleSirusScrollFrame(scrollFrame, createBackdrop)

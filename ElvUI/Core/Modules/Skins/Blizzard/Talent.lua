@@ -88,6 +88,77 @@ local function GlobeCoord(i)
 	return x / GLOBE_SHEET, (x + GLOBE_FW) / GLOBE_SHEET, y / GLOBE_SHEET, (y + GLOBE_FW) / GLOBE_SHEET
 end
 
+function S:CreateGlyphTreeArt(frame)
+	local top = frame:CreateTexture(nil, "BORDER")
+	top:Point("TOPLEFT", frame.backdrop, 1, -1)
+	top:Point("TOPRIGHT", frame.backdrop, -1, -1)
+	top:SetVertexColor(0.7, 0.7, 0.7)
+
+	local bottom = frame:CreateTexture(nil, "BORDER")
+	bottom:Point("TOPLEFT", top, "BOTTOMLEFT")
+	bottom:Point("TOPRIGHT", top, "BOTTOMRIGHT")
+	bottom:SetVertexColor(0.7, 0.7, 0.7)
+
+	frame.treeArtTop, frame.treeArtBottom = top, bottom
+end
+
+function S:LayoutGlyphTreeArt(frame, background, boxW, boxH)
+	LayoutTreeArt(frame.treeArtTop, frame.treeArtBottom, background, boxW, boxH)
+end
+
+function S:HandleGlyphSocket(glyph, globes)
+	glyph.background:SetTexture(E.ClearTexture)
+	glyph.ring:SetTexture(E.ClearTexture)
+
+	glyph.Shadow = glyph:CreateTexture(nil, "BACKGROUND", nil, -2)
+	glyph.Shadow:SetTexture(GLYPH_ART.."shadow")
+	glyph.Shadow:Point("CENTER")
+
+	glyph.Globe = glyph:CreateTexture(nil, "BACKGROUND", nil, -1)
+	glyph.Globe:Point("CENTER")
+	glyph.Globe:SetTexCoord(GlobeCoord(1))
+	globes[#globes + 1] = glyph.Globe
+
+	glyph.Gloss = glyph:CreateTexture(nil, "ARTWORK", nil, 3)
+	glyph.Gloss:SetTexture(GLYPH_ART.."orbgloss")
+	glyph.Gloss:Point("CENTER")
+
+	glyph.GoldRing = glyph:CreateTexture(nil, "OVERLAY")
+	glyph.GoldRing:SetTexture(GLYPH_ART.."ring-gold")
+	glyph.GoldRing:Point("CENTER")
+end
+
+function S:UpdateGlyphSocket(sock, major, lit, scale)
+	scale = scale or 1
+	local base = (major and 80 or 66) * scale
+	sock.Globe:SetTexture(GLYPH_ART..(major and "globe-health" or "globe-mana"))
+	sock.Globe:Size(base)
+	sock.Shadow:Size(base * 1.9)
+	sock.Gloss:Size(base * 1.2)
+	sock.GoldRing:Size((major and 118 or 100) * scale)
+
+	sock.Globe:SetDesaturated(not lit)
+	sock.Globe:SetAlpha(lit and 1 or 0.45)
+	sock.Gloss:SetAlpha(lit and 0.8 or 0.5)
+	sock.GoldRing:SetDesaturated(not lit)
+	sock.GoldRing:SetAlpha(lit and 1 or 0.7)
+end
+
+function S:AnimateGlyphGlobes(frame, globes)
+	local animElapsed, animIndex = 0, 1
+	frame:HookScript("OnUpdate", function(_, elapsed)
+		animElapsed = animElapsed + elapsed
+		if animElapsed < 0.033 then return end
+		animElapsed = 0
+
+		animIndex = animIndex % GLOBE_FRAMES + 1
+		local l, r, t, b = GlobeCoord(animIndex)
+		for k = 1, #globes do
+			globes[k]:SetTexCoord(l, r, t, b)
+		end
+	end)
+end
+
 local function SkinSpecTabs(frame)
 	if not frame.specTabs then return end
 
@@ -470,20 +541,7 @@ local function LoadSkin()
 		local enabled, glyphType, glyphSpell = GetGlyphSocketInfo(sock:GetID(), talentGroup)
 		if not glyphType then return end
 
-		local major = glyphType == 1
-		local base = major and 80 or 66
-		sock.Globe:SetTexture(GLYPH_ART..(major and "globe-health" or "globe-mana"))
-		sock.Globe:Size(base)
-		sock.Shadow:Size(base * 1.9)
-		sock.Gloss:Size(base * 1.2)
-		sock.GoldRing:Size(major and 118 or 100)
-
-		local lit = (enabled and glyphSpell) and true or false
-		sock.Globe:SetDesaturated(not lit)
-		sock.Globe:SetAlpha(lit and 1 or 0.45)
-		sock.Gloss:SetAlpha(lit and 0.8 or 0.5)
-		sock.GoldRing:SetDesaturated(not lit)
-		sock.GoldRing:SetAlpha(lit and 1 or 0.7)
+		S:UpdateGlyphSocket(sock, glyphType == 1, (enabled and glyphSpell) and true or false)
 	end
 
 	local function UpdateGlyphBackground()
@@ -497,7 +555,7 @@ local function LoadSkin()
 			if (points or 0) > bestPoints then bestPoints, bestBackground = points or 0, background end
 		end
 
-		LayoutTreeArt(GlyphFrame.treeArtTop, GlyphFrame.treeArtBottom, bestBackground, GlyphFrame:GetWidth(), GlyphFrame:GetHeight())
+		S:LayoutGlyphTreeArt(GlyphFrame, bestBackground, GlyphFrame:GetWidth(), GlyphFrame:GetHeight())
 	end
 
 	local function SkinGlyphFrame()
@@ -516,18 +574,7 @@ local function LoadSkin()
 		if GlyphFrame.background then GlyphFrame.background:SetAlpha(0) end
 
 		GlyphFrame:CreateBackdrop("Transparent")
-
-		local treeTop = GlyphFrame:CreateTexture(nil, "BORDER")
-		treeTop:Point("TOPLEFT", GlyphFrame.backdrop, 1, -1)
-		treeTop:Point("TOPRIGHT", GlyphFrame.backdrop, -1, -1)
-		treeTop:SetVertexColor(0.7, 0.7, 0.7)
-
-		local treeBottom = GlyphFrame:CreateTexture(nil, "BORDER")
-		treeBottom:Point("TOPLEFT", treeTop, "BOTTOMLEFT")
-		treeBottom:Point("TOPRIGHT", treeTop, "BOTTOMRIGHT")
-		treeBottom:SetVertexColor(0.7, 0.7, 0.7)
-
-		GlyphFrame.treeArtTop, GlyphFrame.treeArtBottom = treeTop, treeBottom
+		S:CreateGlyphTreeArt(GlyphFrame)
 
 		local specButton = GlyphFrame.SpecButton
 		if specButton then
@@ -546,26 +593,7 @@ local function LoadSkin()
 		for i = 1, 6 do
 			local glyph = _G["GlyphFrameGlyph"..i]
 			if glyph then
-				if glyph.background then glyph.background:SetAlpha(0) end
-				if glyph.ring then glyph.ring:SetAlpha(0) end
-
-				glyph.Shadow = glyph:CreateTexture(nil, "BACKGROUND", nil, -2)
-				glyph.Shadow:SetTexture(GLYPH_ART.."shadow")
-				glyph.Shadow:Point("CENTER")
-
-				glyph.Globe = glyph:CreateTexture(nil, "BACKGROUND", nil, -1)
-				glyph.Globe:Point("CENTER")
-				glyph.Globe:SetTexCoord(GlobeCoord(1))
-				glyphGlobes[#glyphGlobes + 1] = glyph.Globe
-
-				glyph.Gloss = glyph:CreateTexture(nil, "ARTWORK", nil, 3)
-				glyph.Gloss:SetTexture(GLYPH_ART.."orbgloss")
-				glyph.Gloss:Point("CENTER")
-
-				glyph.GoldRing = glyph:CreateTexture(nil, "OVERLAY")
-				glyph.GoldRing:SetTexture(GLYPH_ART.."ring-gold")
-				glyph.GoldRing:Point("CENTER")
-
+				S:HandleGlyphSocket(glyph, glyphGlobes)
 				UpdateGlyphSocket(glyph)
 			end
 
@@ -576,18 +604,7 @@ local function LoadSkin()
 			end
 		end
 
-		local animElapsed, animIndex = 0, 1
-		GlyphFrame:HookScript("OnUpdate", function(_, elapsed)
-			animElapsed = animElapsed + elapsed
-			if animElapsed < 0.033 then return end
-			animElapsed = 0
-
-			animIndex = animIndex % GLOBE_FRAMES + 1
-			local l, r, t, b = GlobeCoord(animIndex)
-			for k = 1, #glyphGlobes do
-				glyphGlobes[k]:SetTexCoord(l, r, t, b)
-			end
-		end)
+		S:AnimateGlyphGlobes(GlyphFrame, glyphGlobes)
 
 		UpdateGlyphBackground()
 

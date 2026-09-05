@@ -2437,13 +2437,6 @@ local function LoadSkin()
 		[15] = "BackSlot", [16] = "MainHandSlot", [17] = "SecondaryHandSlot", [18] = "RangedSlot", [19] = "TabardSlot"
 	}
 
-	local socketAnchors = {
-		[1] = "RIGHT", [2] = "RIGHT", [3] = "RIGHT", [4] = "RIGHT", [5] = "RIGHT",
-		[6] = "LEFT", [7] = "LEFT", [8] = "LEFT", [9] = "RIGHT", [10] = "LEFT",
-		[11] = "LEFT", [12] = "LEFT", [13] = "LEFT", [14] = "LEFT", [15] = "RIGHT",
-		[16] = "TOP", [17] = "TOP", [18] = "TOP", [19] = "RIGHT"
-	}
-
 	for _, slotName in ipairs(slots) do
 		local slotFrame = _G["Character"..slotName]
 		local icon = _G["Character"..slotName.."IconTexture"]
@@ -2505,8 +2498,8 @@ local function LoadSkin()
 	local function UpdateCharacterEquipmentSockets()
 		ColorItemBorder()
 
-		for slotIndex, slotName in ipairs(slots) do
-			S:HandleSirusEquipmentSocketInfo(_G["Character"..slotName], GetInventorySlotInfo(slotName), socketAnchors[slotIndex], slotName)
+		for _, slotName in ipairs(slots) do
+			S:HandleSirusEquipmentSocketInfo(_G["Character"..slotName], GetInventorySlotInfo(slotName), S.EquipmentSlotAnchors[slotName], slotName)
 		end
 	end
 

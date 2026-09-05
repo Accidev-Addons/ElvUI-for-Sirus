@@ -102,6 +102,7 @@ L["Titles"] = true
 L["Display Gems"] = true
 L["<Click to extract the gem>"] = true
 L["<Click to insert a black diamond>"] = true
+L["Gem data unavailable"] = true
 L["Display Enchants"] = true
 L["Character: "] = true
 L["Chat Set"] = true

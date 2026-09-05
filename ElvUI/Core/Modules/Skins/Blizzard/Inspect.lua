@@ -5,8 +5,14 @@ local _G = _G
 local ipairs = ipairs
 local unpack = unpack
 
+local strsub = strsub
+local hooksecurefunc = hooksecurefunc
 local GetInventoryItemID = GetInventoryItemID
+local GetInventoryItemLink = GetInventoryItemLink
 local GetItemInfo = GetItemInfo
+local C_Timer = C_Timer
+local GetTalentTabInfo = GetTalentTabInfo
+local GLYPHTYPE_MAJOR = GLYPHTYPE_MAJOR
 
 local Slots = {
 	"HeadSlot", "NeckSlot", "ShoulderSlot", "BackSlot", "ChestSlot", "ShirtSlot", "TabardSlot", "WristSlot",
@@ -22,6 +28,12 @@ local function LoadSkin()
 	S:HandleSirusTabs("InspectFrameTab", 5)
 
 	InspectPaperDollFrame:StripTextures()
+
+	InspectModelFrame:CreateBackdrop()
+	InspectModelFrame.backdrop:SetOutside(InspectModelFrameBackgroundOverlay)
+	InspectModelFrame:DisableDrawLayer("OVERLAY")
+	InspectItemLevelFrame.ilvlbackground:SetAlpha(0)
+	InspectItemLevelFrame:Point("BOTTOM", InspectModelFrame, "BOTTOM", 0, 40)
 
 	if InspectPaperDollFrame.ViewButton then
 		S:HandleButton(InspectPaperDollFrame.ViewButton)
@@ -55,6 +67,16 @@ local function LoadSkin()
 		end
 
 		styleButton = function(button)
+			if InspectFrame.unit then
+				button.lastLink = GetInventoryItemLink(InspectFrame.unit, button:GetID())
+
+				local slotName = strsub(button:GetName(), 8)
+				if S:HandleSirusEquipmentSocketInfo(button, button:GetID(), S.EquipmentSlotAnchors[slotName], slotName, InspectFrame.unit) and not button.awaitingCache then
+					button.awaitingCache = true
+					E:Delay(0.5, awaitCache, button)
+				end
+			end
+
 			if button.hasItem then
 				local itemID = GetInventoryItemID(InspectFrame.unit, button:GetID())
 				if itemID then
@@ -81,6 +103,27 @@ local function LoadSkin()
 
 	hooksecurefunc("InspectPaperDollItemSlotButton_Update", styleButton)
 
+	local function RefreshChangedSlots()
+		local unit = InspectFrame.unit
+		if not unit or not InspectFrame:IsShown() then return end
+
+		for _, slot in ipairs(Slots) do
+			local button = _G["Inspect"..slot]
+			if GetInventoryItemLink(unit, button:GetID()) ~= button.lastLink then
+				InspectPaperDollItemSlotButton_Update(button)
+			end
+		end
+	end
+
+	local refreshTicker
+	local function WatchInspectData()
+		if refreshTicker then refreshTicker:Cancel() end
+		refreshTicker = C_Timer:NewTicker(0.2, RefreshChangedSlots, 25)
+	end
+
+	hooksecurefunc("InspectFrame_UnitChanged", WatchInspectData)
+	InspectFrame:HookScript("OnShow", WatchInspectData)
+
 	if InspectModelFrameControlFrameRotateLeftButton then
 		S:HandleRotateButton(InspectModelFrameControlFrameRotateLeftButton)
 	end
@@ -91,6 +134,7 @@ local function LoadSkin()
 	InspectPVPFrame:StripTextures()
 
 	S:HandleSirusTabs("InspectPVPFrameTab", 3)
+	S:HandleButton(InspectPVPFrame.ToggleStatisticsButton)
 
 	local pvpService = InspectPVPFrame.Service
 	local pvpRating = InspectPVPFrame.Rating
@@ -224,25 +268,34 @@ local function LoadSkin()
 
 	InspectTalentFramePointsBar:StripTextures()
 
-	if InspectGlyphFrame then
-		InspectGlyphFrame:StripTextures()
+	local glyphFrame = _G.InspectGlyphFrame
+	glyphFrame:StripTextures()
+	glyphFrame:CreateBackdrop("Transparent")
+	glyphFrame.backdrop:SetAllPoints(glyphFrame.background)
+	S:CreateGlyphTreeArt(glyphFrame)
 
-		for i = 1, 6 do
-			local glyph = _G["InspectGlyphFrameGlyph" .. i]
-			if glyph then
-				glyph:StripTextures()
-				glyph:CreateBackdrop("Default")
-				glyph.backdrop:SetAllPoints()
-				glyph:StyleButton()
-
-				if glyph.glyph then
-					glyph.glyph:SetTexCoords()
-					glyph.glyph:SetInside()
-					glyph.glyph:SetDrawLayer("ARTWORK")
-				end
-			end
-		end
+	local function UpdateGlyphSocket(glyph)
+		S:UpdateGlyphSocket(glyph, glyph.glyphType == GLYPHTYPE_MAJOR, glyph.spell ~= nil, 0.79)
 	end
+
+	local glyphGlobes = {}
+	for i = 1, 6 do
+		local glyph = _G["InspectGlyphFrameGlyph"..i]
+		S:HandleGlyphSocket(glyph, glyphGlobes)
+		hooksecurefunc(glyph, "UpdateSlot", UpdateGlyphSocket)
+		UpdateGlyphSocket(glyph)
+	end
+	S:AnimateGlyphGlobes(glyphFrame, glyphGlobes)
+
+	hooksecurefunc(glyphFrame, "UpdateGlyphs", function()
+		local bestPoints, bestBackground = 0, nil
+		for i = 1, 3 do
+			local _, _, points, background = GetTalentTabInfo(i, true, nil, InspectTalentFrame.talentGroup)
+			if (points or 0) > bestPoints then bestPoints, bestBackground = points, background end
+		end
+
+		S:LayoutGlyphTreeArt(glyphFrame, bestBackground, glyphFrame.background:GetWidth() - 2, glyphFrame.background:GetHeight() - 2)
+	end)
 
 	if InspectGuildFrame then
 		local guildBG = _G.InspectGuildFrameBG
