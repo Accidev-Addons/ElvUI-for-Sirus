@@ -411,9 +411,10 @@ function TT:AddTargetInfo(tt, unit)
 		tt:AddDoubleLine(format('%s:', _G.TARGET), format('|cff%02x%02x%02x%s|r', targetColor.r * 255, targetColor.g * 255, targetColor.b * 255, UnitName(unitTarget)))
 	end
 
-	if GetNumPartyMembers() > 0 then
-		local isInRaid = GetNumRaidMembers() > 1
-		for i = 1, GetNumPartyMembers() do
+	local numParty, numRaid = GetNumPartyMembers(), GetNumRaidMembers()
+	if numParty > 0 or numRaid > 0 then
+		local isInRaid = numRaid > 0
+		for i = 1, (isInRaid and numRaid or numParty) do
 			local groupUnit = (isInRaid and 'raid' or 'party')..i
 			if UnitIsUnit(groupUnit..'target', unit) and not UnitIsUnit(groupUnit,'player') then
 				local _, class = UnitClass(groupUnit)
