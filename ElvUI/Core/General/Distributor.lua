@@ -4,7 +4,7 @@ local NP = E:GetModule('NamePlates')
 local LibDeflate = E.Libs.Deflate
 
 local _G = _G
-local tonumber, type, gsub, pairs, pcall, loadstring, unpack = tonumber, type, gsub, pairs, pcall, loadstring, unpack
+local tonumber, type, gsub, pairs, pcall, loadstring, setfenv, unpack = tonumber, type, gsub, pairs, pcall, loadstring, setfenv, unpack
 local strlen, format, split, strmatch, strsplittable = strlen, format, strsplit, strmatch, strsplittable
 
 local ReloadUI = ReloadUI
@@ -550,7 +550,7 @@ function D:Decode(dataString)
 	if stringType == 'Deflate' then
 		local data = gsub(dataString, '^'..EXPORT_PREFIX, '')
 		local decodedData = LibDeflate:DecodeForPrint(data)
-		local decompressed = LibDeflate:DecompressDeflate(decodedData)
+		local decompressed = decodedData and LibDeflate:DecompressDeflate(decodedData)
 
 		if not decompressed then
 			E:Print('Error decompressing data.')
@@ -593,7 +593,10 @@ function D:Decode(dataString)
 
 		local profileMessage
 		local profileToTable = loadstring(format('%s %s', 'return', profileDataAsString))
-		if profileToTable then profileMessage, profileData = pcall(profileToTable) end
+		if profileToTable then
+			setfenv(profileToTable, {})
+			profileMessage, profileData = pcall(profileToTable)
+		end
 
 		if not profileMessage or type(profileData) ~= 'table' then
 			E:Print('Error converting lua string to table:', profileData)

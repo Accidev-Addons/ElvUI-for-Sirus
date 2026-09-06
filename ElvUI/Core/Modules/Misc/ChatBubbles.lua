@@ -12,11 +12,11 @@ local PRIEST_COLOR = RAID_CLASS_COLORS.PRIEST
 local UIParent = UIParent
 local WorldFrame = WorldFrame
 local WorldGetChildren = WorldFrame.GetChildren
-local WorldGetNumChildren = WorldFrame.GetNumChildren
+local GetTime = GetTime
 
---Message caches
-local messageToGUID = {}
-local messageToSender = {}
+-- [SIRUS] Keep only recent message owners; chat text is not a permanent identity.
+local messageCache, messageOrder = {}, {}
+local messageIndex, MESSAGE_LIMIT, MESSAGE_TTL = 1, 128, 30
 
 local function ReplaceIconTags(value)
     local index = _G.ICON_TAG_LIST[strlower(value)]
@@ -27,6 +27,7 @@ local function ReplaceIconTags(value)
 end
 
 function M:UpdateBubbleBorder()
+    if E.private.general.chatBubbles == 'disabled' then return end
     local holder = self
     local str = holder and holder.text
     if not str then return end
@@ -45,7 +46,10 @@ function M:UpdateBubbleBorder()
     if not text then return end
 
     if E.private.general.chatBubbleName then
-        M:AddChatBubbleName(self, messageToGUID[text], messageToSender[text])
+        local message = messageCache[text]
+        if message and GetTime() - message.time <= MESSAGE_TTL then
+            M:AddChatBubbleName(self, message.guid, message.sender)
+        end
     end
 
     local rebuiltString
@@ -176,25 +180,33 @@ function M:SkinBubble(frame)
     frame.isSkinnedElvUI = true
 end
 
-function M:IsChatBubble(frame)
-    for i = 1, frame:GetNumRegions() do
-        local region = select(i, frame:GetRegions())
-        if region.GetTexture and region:GetTexture() and region:GetTexture() == [[Interface\Tooltips\ChatBubble-Background]] then
+local function IsChatBubbleRegion(...)
+    for i = 1, select('#', ...) do
+        local region = select(i, ...)
+        if region.GetTexture and region:GetTexture() == [[Interface\Tooltips\ChatBubble-Background]] then
             return true
         end
     end
 end
 
-local function ChatBubble_OnEvent(self, event, msg, sender, _, _, _, _, _, _, _, _, _, guid)
-    if not E.private.general.chatBubbleName then return end
-
-    messageToGUID[msg] = guid
-    messageToSender[msg] = sender
+function M:IsChatBubble(frame)
+    return IsChatBubbleRegion(frame:GetRegions())
 end
 
-local lastChildern, numChildren = 0, 0
+local function ChatBubble_OnEvent(self, event, msg, sender, _, _, _, _, _, _, _, _, _, guid)
+    if E.private.general.chatBubbles == 'disabled' or not E.private.general.chatBubbleName or not msg then return end
+
+    local previous = messageOrder[messageIndex]
+    if previous and messageCache[previous.text] == previous then
+        messageCache[previous.text] = nil
+    end
+    local message = {text = msg, guid = guid, sender = sender, time = GetTime()}
+    messageCache[msg], messageOrder[messageIndex] = message, message
+    messageIndex = messageIndex % MESSAGE_LIMIT + 1
+end
+
 local function GetAllChatBubbles(...)
-    for i = lastChildern + 1, numChildren do
+    for i = 1, select('#', ...) do
         local frame = select(i, ...)
         if not frame.isSkinnedElvUI and M:IsChatBubble(frame) then
             M:SkinBubble(frame)
@@ -203,17 +215,30 @@ local function GetAllChatBubbles(...)
 end
 
 local function ChatBubble_OnUpdate()
-    numChildren = WorldGetNumChildren(WorldFrame)
-    if lastChildern ~= numChildren then
-        GetAllChatBubbles(WorldGetChildren(WorldFrame))
-        lastChildern = numChildren
-    end
+    if E.private.general.chatBubbles == 'disabled' then return end
+    -- [SIRUS] WorldFrame children can be replaced or reordered without growing.
+    GetAllChatBubbles(WorldGetChildren(WorldFrame))
 end
 
 function M:LoadChatBubbles()
 	yOffset = (E.private.general.chatBubbles == 'backdrop' and 2) or (E.private.general.chatBubbles == 'backdrop_noborder' and -2) or 0
 
-    M.BubbleFrame = CreateFrame('Frame')
+    if M.BubbleTimer then
+        M:CancelTimer(M.BubbleTimer)
+        M.BubbleTimer = nil
+    end
+    if E.private.general.chatBubbles == 'disabled' then
+        if M.BubbleFrame then
+            M.BubbleFrame:UnregisterAllEvents()
+            M.BubbleFrame:SetScript('OnEvent', nil)
+        end
+        wipe(messageCache)
+        wipe(messageOrder)
+        messageIndex = 1
+        return
+    end
+
+    M.BubbleFrame = M.BubbleFrame or CreateFrame('Frame')
     M.BubbleFrame:RegisterEvent('CHAT_MSG_SAY')
     M.BubbleFrame:RegisterEvent('CHAT_MSG_YELL')
     M.BubbleFrame:RegisterEvent('CHAT_MSG_PARTY')
@@ -221,12 +246,10 @@ function M:LoadChatBubbles()
     M.BubbleFrame:RegisterEvent('CHAT_MSG_MONSTER_SAY')
     M.BubbleFrame:RegisterEvent('CHAT_MSG_MONSTER_YELL')
 
-    if E.private.general.chatBubbles ~= 'disabled' then
-        M.BubbleFrame:SetScript('OnEvent', ChatBubble_OnEvent)
-        M.BubbleTimer = M:ScheduleRepeatingTimer(ChatBubble_OnUpdate, 0.1)
-    else
-        M.BubbleFrame:SetScript('OnEvent', nil)
-        M:CancelTimer(M.BubbleTimer)
-        M.BubbleTimer = nil
-    end
+    M.BubbleFrame:SetScript('OnEvent', ChatBubble_OnEvent)
+    local timer
+    timer = M:ScheduleRepeatingTimer(function()
+        if M.BubbleTimer == timer then ChatBubble_OnUpdate() end
+    end, 0.1)
+    M.BubbleTimer = timer
 end

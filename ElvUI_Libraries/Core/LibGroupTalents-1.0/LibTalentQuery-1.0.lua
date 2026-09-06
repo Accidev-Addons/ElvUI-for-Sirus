@@ -27,7 +27,7 @@ Example Usage:
 	end
 ]]
 
-local MAJOR, MINOR = "LibTalentQuery-1.0", 100085
+local MAJOR, MINOR = "LibTalentQuery-1.0", 100086
 
 local lib = LibStub:NewLibrary(MAJOR, MINOR)
 if not lib then return end
@@ -271,6 +271,8 @@ end
 
 -- INSPECT_TALENT_READY
 function lib:INSPECT_TALENT_READY()
+	-- [SIRUS] An untracked or late response must not consume the next inspect.
+	if self.lastInspectPending <= 0 then return end
 	self.lastInspectPending = self.lastInspectPending - 1
 
 	-- Results are valid only when we have received as many events as we have posted notifies

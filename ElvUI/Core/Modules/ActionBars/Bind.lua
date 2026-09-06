@@ -29,7 +29,7 @@ local bind = CreateFrame('Frame', 'ElvUI_KeyBinder', E.UIParent)
 AB.KeyBinder = bind
 
 function AB:ActivateBindMode()
-	if InCombatLockdown() then return end
+	if not bind.Popup or InCombatLockdown() then return end
 
 	bind.active = true
 	E:StaticPopupSpecial_Show(bind.Popup)

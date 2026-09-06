@@ -453,10 +453,15 @@ function NP:OnHide(isConfig)
 end
 
 function NP:UpdateAllFrame(frame, isConfig, dontHideHighlight)
-	frame = frame:GetParent()
+	local plate = frame:GetParent()
 
-	NP.OnHide(frame, isConfig)
-	NP.OnShow(frame, isConfig, dontHideHighlight)
+	NP.OnHide(plate, isConfig)
+	if plate:IsShown() then
+		NP.OnShow(plate, isConfig, dontHideHighlight)
+	elseif isConfig then
+		-- [SIRUS] Configure pooled plates on reuse without marking them visible.
+		frame.UnitType = nil
+	end
 end
 
 function NP:ConfigureAll()

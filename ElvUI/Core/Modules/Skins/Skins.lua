@@ -1890,7 +1890,7 @@ function S:PLAYER_REGEN_ENABLED()
 		frame:SetHitRectInsets(info[1], info[2], info[3], info[4])
 
 		if info[5] then
-			frame:SetClampRectInsets(info[1], info[2], info[3], info[4])
+			frame:SetClampRectInsets(info[1], -info[2], -info[3], info[4])
 		end
 
 		S.hitRectQueue[frame] = nil

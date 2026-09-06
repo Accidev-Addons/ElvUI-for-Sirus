@@ -205,7 +205,7 @@ function E:CreateCooldownTimer(parent)
 
 	-- keep an eye on the size so we can rescale the font if needed
 	E:Cooldown_OnSizeChanged(timer, parent:GetWidth())
-	parent:SetScript("OnSizeChanged", function(_, width)
+	parent:HookScript("OnSizeChanged", function(_, width)
 		E:Cooldown_OnSizeChanged(timer, width)
 	end)
 
@@ -243,7 +243,7 @@ end
 function E:OnResumeCooldown()
 	local timer = self.timer
 	if timer and timer.paused then
-		timer.endTime = timer.start + timer.duration + (GetTime() - timer.paused) -- calcuate time since paused
+		timer.endTime = timer.endTime + (GetTime() - timer.paused)
 		timer.endCooldown = timer.endTime - 0.05
 
 		timer.paused = nil

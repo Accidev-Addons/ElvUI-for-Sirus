@@ -158,7 +158,7 @@ local function OnColorSelect(frame, r, g, b)
 	if not frame:IsVisible() then
 		DelayCall()
 	elseif not delayFunc then
-		delayFunc = ColorPickerFrame.swatchFunc
+		delayFunc = frame.func
 		E:Delay(delayWait, DelayCall)
 	end
 end
@@ -190,6 +190,7 @@ function BL:EnhanceColorPicker()
 
 	-- Keep the colors updated
 	ColorPickerFrame:SetScript('OnColorSelect', OnColorSelect)
+	ColorPickerFrame:HookScript('OnHide', function() delayFunc = nil end)
 
 	ColorPickerFrame:HookScript('OnShow', function(frame)
 		-- get color that will be replaced
@@ -295,7 +296,7 @@ function BL:EnhanceColorPicker()
 	defaultButton:Point('TOPLEFT', 'ColorPPClass', 'BOTTOMLEFT', 0, -7)
 	defaultButton:Disable() -- enable when something has been copied
 	defaultButton:SetScript('OnHide', function(btn) if btn.colors then wipe(btn.colors) end end)
-	defaultButton:SetScript('OnShow', function(btn) btn:SetEnabled(btn.colors) end)
+	defaultButton:SetScript('OnShow', function(btn) btn:SetEnabled(btn.colors and btn.colors.r ~= nil) end)
 	S:HandleButton(defaultButton)
 
 	-- paste color on button click, updating frame components

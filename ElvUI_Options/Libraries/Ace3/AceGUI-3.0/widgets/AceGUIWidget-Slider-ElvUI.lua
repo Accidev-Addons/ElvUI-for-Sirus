@@ -2,7 +2,7 @@
 Slider Widget (Modified to support min and max fuctions on SetSliderValues)
 Graphical Slider, like, for Range values.
 -------------------------------------------------------------------------------]]
-local Type, Version = "Slider-ElvUI", 4
+local Type, Version = "Slider-ElvUI", 5
 local AceGUI = LibStub and LibStub("AceGUI-3.0", true)
 if not AceGUI or (AceGUI:GetWidgetVersion(Type) or 0) >= Version then return end
 
@@ -98,7 +98,8 @@ local function EditBox_OnEnterPressed(frame)
 	local value = frame:GetText()
 	if self.ispercent then
 		value = value:gsub('%%', '')
-		value = tonumber(value) / 100
+		value = tonumber(value)
+		if value then value = value / 100 end
 	else
 		value = tonumber(value)
 	end

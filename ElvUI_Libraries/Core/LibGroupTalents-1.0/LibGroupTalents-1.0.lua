@@ -66,7 +66,7 @@ Events:
 
 local TalentQuery = LibStub("LibTalentQuery-1.0")
 
-local MAJOR, MINOR = "LibGroupTalents-1.0", 10066
+local MAJOR, MINOR = "LibGroupTalents-1.0", 10067
 local lib = LibStub:NewLibrary(MAJOR, MINOR)
 if not lib then return end
 
@@ -413,15 +413,16 @@ function lib:OnRaidRosterUpdate()
 			local r = self.roster[guid]
 			if (r) then
 				self.events:Fire("LibGroupTalents_Remove", guid, r.name, r.realm)
-				self.roster[guid] = deepDel(r)
 
+				-- [SIRUS] Retire pending strings before returning the roster to the pool.
 				local classStorageStrings = self.pendingStorageStrings[r.class]
 				if (classStorageStrings) then
-					classStorageStrings[guid] = del(classStorageStrings[guid])
+					classStorageStrings[guid] = nil
 					if (not next(classStorageStrings)) then
-						self.pendingStorageStrings[r.class] = del(self.pendingStorageStrings[r.class])
+						self.pendingStorageStrings[r.class] = del(classStorageStrings)
 					end
 				end
+				self.roster[guid] = deepDel(r)
 			end
 		end
 

@@ -192,6 +192,7 @@ function E:UIFrameFade_OnUpdate(elapsed)
 	FADEMANAGER.timer = (FADEMANAGER.timer or 0) + elapsed
 
 	if FADEMANAGER.timer > FADEMANAGER.delay then
+		local delta = FADEMANAGER.timer
 		FADEMANAGER.timer = 0
 
 		for frame, info in next, FADEFRAMES do
@@ -199,7 +200,7 @@ function E:UIFrameFade_OnUpdate(elapsed)
 
 			-- Reset the timer if there isn't one, this is just an internal counter
 			if frame:IsVisible() then
-				info.fadeTimer = (info.fadeTimer or 0) + (elapsed + FADEMANAGER.delay)
+				info.fadeTimer = (info.fadeTimer or 0) + delta
 			else
 				info.fadeTimer = (timeToFade or 0) + 1
 			end
@@ -216,7 +217,7 @@ function E:UIFrameFade_OnUpdate(elapsed)
 
 				-- If there is a fadeHoldTime then wait until its passed to continue on
 				if info.fadeHoldTime and info.fadeHoldTime > 0 then
-					info.fadeHoldTime = info.fadeHoldTime - elapsed
+					info.fadeHoldTime = info.fadeHoldTime - delta
 				else
 					-- Complete the fade and call the finished function if there is one
 					E:UIFrameFadeRemoveFrame(frame)

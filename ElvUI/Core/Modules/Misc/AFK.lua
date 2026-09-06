@@ -91,6 +91,8 @@ end
 
 function AFK:SetAFK(status)
 	if status then
+		if AFK.isAFK then return end
+
 		AFK:CameraSpin(status)
 
 		CloseAllWindows()
@@ -134,6 +136,7 @@ function AFK:SetAFK(status)
 		AFK:CameraSpin()
 		AFK:CancelTimer(AFK.timer)
 		AFK:CancelTimer(AFK.animTimer)
+		AFK.timer, AFK.animTimer = nil, nil
 
 		bottom.time:SetText('00:00')
 		chat:UnregisterAllEvents()
@@ -241,6 +244,8 @@ function AFK:Toggle()
 
 		E:SetCVar('autoClearAFK', '1')
 	else
+		AFK:SetAFK(false)
+		AFK:UnregisterEvent('PLAYER_REGEN_ENABLED')
 		AFK:UnregisterEvent('PLAYER_FLAGS_CHANGED')
 		AFK:UnregisterEvent('PLAYER_REGEN_DISABLED')
 		AFK:UnregisterEvent('LFG_PROPOSAL_SHOW')

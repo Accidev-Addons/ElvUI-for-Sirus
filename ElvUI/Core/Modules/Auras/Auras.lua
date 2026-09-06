@@ -321,18 +321,15 @@ function A:UpdateAura(button, index)
 	button.texture:SetTexture(icon)
 	button.auraIndex = index
 
-	local dtype = dispelType or 'none'
-	if button.debuffType ~= dtype then
-		local debuffColor = button.filter == 'HARMFUL' and A.db.colorDebuffs and DebuffColors[dtype]
-		local color = debuffColor or E.db.general.bordercolor
-		if debuffColor then
-			E:SetForcedBorderColor(button, color.r, color.g, color.b)
-			E:SetForcedBorderColor(button.statusBar.backdrop, color.r, color.g, color.b)
-		else
-			E:ClearForcedBorderColor(button, color.r, color.g, color.b)
-			E:ClearForcedBorderColor(button.statusBar.backdrop, color.r, color.g, color.b)
-		end
-		button.debuffType = dtype
+	-- [SIRUS] Pooled icons also change enchant/aura mode and color settings.
+	local debuffColor = button.filter == 'HARMFUL' and A.db.colorDebuffs and DebuffColors[dispelType or 'none']
+	local color = debuffColor or E.db.general.bordercolor
+	if debuffColor then
+		E:SetForcedBorderColor(button, color.r, color.g, color.b)
+		E:SetForcedBorderColor(button.statusBar.backdrop, color.r, color.g, color.b)
+	else
+		E:ClearForcedBorderColor(button, color.r, color.g, color.b)
+		E:ClearForcedBorderColor(button.statusBar.backdrop, color.r, color.g, color.b)
 	end
 
 	if duration > 0 and expiration then
@@ -678,6 +675,9 @@ function A:UpdateConsolidate(header, numConsolidated)
 	end
 
 	A:ClearAuraTime(button)
+	local color = E.db.general.bordercolor
+	E:ClearForcedBorderColor(button, color.r, color.g, color.b)
+	E:ClearForcedBorderColor(button.statusBar.backdrop, color.r, color.g, color.b)
 	button.consolidated = true
 	button.consolidateStyled = true
 	button.auraIndex = nil

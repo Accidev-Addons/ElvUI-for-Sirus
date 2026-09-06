@@ -5,6 +5,7 @@ local UF = E:GetModule("UnitFrames")
 local random = math.random
 --WoW API / Variables
 local UnitGroupRolesAssigned = UnitGroupRolesAssigned
+local InCombatLockdown = InCombatLockdown
 local UnitGUID = UnitGUID
 local UnitIsConnected = UnitIsConnected
 
@@ -46,7 +47,8 @@ function UF:UpdateRoleIcon(event)
 		role = rnd == 1 and "TANK" or (rnd == 2 and "HEALER" or (rnd == 3 and "DAMAGER"))
 	end
 
-	local shouldHide = ((event == "PLAYER_REGEN_DISABLED" and db.combatHide and true) or false)
+	-- [SIRUS] Roster updates must keep roles hidden throughout combat.
+	local shouldHide = db.combatHide and InCombatLockdown()
 
 	if (self.isForced or UnitIsConnected(self.unit)) and ((role == "DAMAGER" and db.damager) or (role == "HEALER" and db.healer) or (role == "TANK" and db.tank)) then
 		lfdrole:SetTexture(roleIconTextures[role])

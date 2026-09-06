@@ -107,6 +107,7 @@ end
 
 -- ElvUI block
 local UNIT_SPELLCAST_SENT = function (self, event, unit, _, _, target)
+	if(self.unit ~= unit) then return end
 	local castbar = self.Castbar
 	castbar.curTarget = (target and target ~= "") and target or nil
 end
@@ -468,6 +469,7 @@ local function Disable(self)
 	if(element) then
 		element:Hide()
 
+		self:UnregisterEvent('UNIT_SPELLCAST_SENT', UNIT_SPELLCAST_SENT)
 		self:UnregisterEvent('UNIT_SPELLCAST_START', CastStart)
 		self:UnregisterEvent('UNIT_SPELLCAST_CHANNEL_START', CastStart)
 		self:UnregisterEvent('UNIT_SPELLCAST_DELAYED', CastUpdate)
@@ -500,45 +502,4 @@ end)
 
 oUF:AddElement('Castbar', Update, Enable, Disable)
 
-function CastingBarFrame_SetUnit(self, unit, showTradeSkills, showShield)
-	if(self.unit ~= unit) then
-		self.unit = unit
-		self.showTradeSkills = showTradeSkills
-		self.showShield = showShield
-
-		self.casting = nil
-		self.channeling = nil
-		self.holdTime = 0
-		self.fadeOut = nil
-
-		if(unit) then
-			self:RegisterEvent("UNIT_SPELLCAST_START")
-			self:RegisterEvent("UNIT_SPELLCAST_STOP")
-			self:RegisterEvent("UNIT_SPELLCAST_FAILED")
-			self:RegisterEvent("UNIT_SPELLCAST_INTERRUPTED")
-			self:RegisterEvent("UNIT_SPELLCAST_DELAYED")
-			self:RegisterEvent("UNIT_SPELLCAST_CHANNEL_START")
-			self:RegisterEvent("UNIT_SPELLCAST_CHANNEL_UPDATE")
-			self:RegisterEvent("UNIT_SPELLCAST_CHANNEL_STOP")
-			self:RegisterEvent("UNIT_SPELLCAST_INTERRUPTIBLE")
-			self:RegisterEvent("UNIT_SPELLCAST_NOT_INTERRUPTIBLE")
-			self:RegisterEvent("PLAYER_ENTERING_WORLD")
-
-			CastingBarFrame_OnEvent(self, "PLAYER_ENTERING_WORLD")
-		else
-			self:UnregisterEvent("UNIT_SPELLCAST_INTERRUPTED")
-			self:UnregisterEvent("UNIT_SPELLCAST_DELAYED")
-			self:UnregisterEvent("UNIT_SPELLCAST_CHANNEL_START")
-			self:UnregisterEvent("UNIT_SPELLCAST_CHANNEL_UPDATE")
-			self:UnregisterEvent("UNIT_SPELLCAST_CHANNEL_STOP")
-			self:UnregisterEvent("UNIT_SPELLCAST_INTERRUPTIBLE")
-			self:UnregisterEvent("UNIT_SPELLCAST_NOT_INTERRUPTIBLE")
-			self:UnregisterEvent("PLAYER_ENTERING_WORLD")
-			self:UnregisterEvent("UNIT_SPELLCAST_START")
-			self:UnregisterEvent("UNIT_SPELLCAST_STOP")
-			self:UnregisterEvent("UNIT_SPELLCAST_FAILED")
-
-			self:Hide()
-		end
-	end
-end
+-- [SIRUS] Use the native CastingBarFrame_SetUnit without replacing the global.

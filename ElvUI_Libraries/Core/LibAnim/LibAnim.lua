@@ -1,5 +1,5 @@
 -- LibAnim by Hydra
-local Version = 2.901 -- based on 2.03
+local Version = 2.902 -- based on 2.03
 
 -- Note, deprecated items will be removed next version.
 -- Please update your usage accordingly. (ctrl + f - "Deprecated")
@@ -8,7 +8,7 @@ if _G._LibAnim and _G._LibAnim >= Version then
 	return
 end
 
-local Updater = CreateFrame("StatusBar", nil, nil)
+local Updater = _G.LibAnimUpdater or CreateFrame("StatusBar", nil, nil)
 local Texture = Updater:CreateTexture()
 local FontString = Updater:CreateFontString()
 local Initialize, Update, Easing = {}, {}, {}
@@ -39,6 +39,10 @@ local AnimationOnUpdate = function(self, elapsed)
 end
 
 local StartUpdating = function(anim)
+	-- [SIRUS] Restarting an animation must not enqueue it twice.
+	for i = 1, #Updater do
+		if Updater[i] == anim then return end
+	end
 	tinsert(Updater, anim)
 
 	if not Updater:GetScript("OnUpdate") then

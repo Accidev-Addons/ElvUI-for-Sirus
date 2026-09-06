@@ -161,40 +161,51 @@ function MC:CreateMoversConfigGroup()
 	return config
 end
 
+local function CopyDetached(source)
+	local copy = {}
+	for key, value in pairs(source) do
+		copy[key] = type(value) == 'table' and CopyDetached(value) or value
+	end
+	local meta = getmetatable(source)
+	if type(meta) == 'table' then setmetatable(copy, meta) end
+	return copy
+end
+
 function MC:CopyTable(CopyFrom, CopyTo, CopyDefault, module)
-	-- no defaults branch for this module means there is nothing to compare against,
-	-- and treating every key as obsolete would strip the profile we copy from
-	if not (CopyFrom and CopyTo and CopyDefault) then return end
+	if not (CopyFrom and CopyTo and CopyDefault) or CopyFrom == CopyTo then return end
 
-	for key, value in pairs(CopyTo) do
-		if type(value) ~= 'table' then
-			if module == true or (type(module) == 'table' and (module.general == nil or (not CopyTo.general and module.general))) then --Some dark magic of a logic to figure out stuff
-				--This check is to see if the profile we are copying from has keys absent from defaults.
-				--If key exists, then copy. If not, then clear obsolite key from the profile.
-				if CopyDefault[key] ~= nil then
-					local newValue = CopyFrom[key]
-					if newValue == nil then newValue = CopyDefault[key] end
+	if module == true then
+		-- Detach aliases left by older copies before merging into the destination.
+		local copy = CopyDetached(CopyTo)
+		E:CopyTable(copy, CopyDefault)
+		E:CopyTable(copy, CopyFrom)
+		for key, value in pairs(copy) do CopyTo[key] = value end
+		return
+	elseif type(module) ~= 'table' then
+		return
+	end
 
-					CopyTo[key] = newValue
-				else
-					CopyFrom[key] = nil
-				end
+	-- [SIRUS] Defaults and the selection template also cover empty destinations.
+	if module.general == nil or (not CopyDefault.general and module.general) then
+		for key, value in pairs(CopyTo) do
+			if type(value) ~= 'table' and CopyDefault[key] == nil then
+				CopyTo[key] = nil
 			end
-		else
-			if module == true then --Copy over entire section of profile subgroup
-				E:CopyTable(CopyTo, CopyDefault)
-				E:CopyTable(CopyTo, CopyFrom)
-			elseif type(module) == 'table' and module[key] ~= nil then
-				--Making sure tables actually exist in profiles (e.g absent values in ElvDB.profiles are for default values)
-				CopyFrom[key], CopyTo[key] = MC:TablesExist(CopyFrom[key], CopyTo[key], CopyDefault[key])
-				--If key exists, then copy. If not, then clear obsolite key from the profile.
-				--Someone should double check this logic. Cause for single keys it is fine, but I'm no sure bout whole tables @Darth
-				if CopyFrom[key] ~= nil then
-					MC:CopyTable(CopyFrom[key], CopyTo[key], CopyDefault[key], module[key])
-				else
-					CopyTo[key] = nil
-				end
+		end
+		for key, value in pairs(CopyDefault) do
+			if type(value) ~= 'table' then
+				local newValue = CopyFrom[key]
+				if newValue == nil then newValue = value end
+				CopyTo[key] = type(newValue) == 'table' and E:CopyTable({}, newValue) or newValue
 			end
+		end
+	end
+
+	for key, selected in pairs(module) do
+		if selected and type(CopyDefault[key]) == 'table' then
+			local source, destination = MC:TablesExist(CopyFrom[key], CopyTo[key], CopyDefault[key])
+			CopyTo[key] = destination
+			MC:CopyTable(source, destination, CopyDefault[key], selected)
 		end
 	end
 end
@@ -221,8 +232,8 @@ end
 ]]
 
 function MC:TablesExist(CopyFrom, CopyTo, CopyDefault)
-	if not CopyFrom then CopyFrom = CopyDefault end
-	if not CopyTo then CopyTo = CopyDefault end
+	if not CopyFrom and CopyDefault then CopyFrom = E:CopyTable({}, CopyDefault) end
+	if CopyDefault and (not CopyTo or CopyTo == CopyDefault) then CopyTo = E:CopyTable({}, CopyDefault) end
 	return CopyFrom, CopyTo
 end
 
@@ -237,17 +248,22 @@ function MC:ImportFromProfile(section, pluginSection)
 	--Starting digging through the settings
 	local selected = ElvDB.profiles[E.global.profileCopy.selected]
 	local CopyFrom = pluginSection and ((selected and selected[pluginSection] and selected[pluginSection][section]) or P[pluginSection][section]) or (selected and selected[section])
-	local CopyTo = pluginSection and E.db[pluginSection][section] or E.db[section]
+	local CopyTo = pluginSection and (E.db[pluginSection] and E.db[pluginSection][section]) or (not pluginSection and E.db[section])
 	local CopyDefault = pluginSection and P[pluginSection][section] or P[section]
 	--Making sure tables actually exist in profiles (e.g absent values in ElvDB.profiles are for default values)
 	CopyFrom, CopyTo = MC:TablesExist(CopyFrom, CopyTo, CopyDefault)
 	if type(module) == 'table' and next(module) then --This module is not an empty table
 		MC:CopyTable(CopyFrom, CopyTo, CopyDefault, module)
 	elseif type(module) == 'boolean' then --Copy over entire section of profile subgroup
-		E:CopyTable(CopyTo, CopyDefault)
-		E:CopyTable(CopyTo, CopyFrom)
+		MC:CopyTable(CopyFrom, CopyTo, CopyDefault, module)
 	else
 		error(format('Provided section name "%s" does not have a valid copy template.', section))
+	end
+	if pluginSection then
+		E.db[pluginSection] = E.db[pluginSection] or {}
+		E.db[pluginSection][section] = CopyTo
+	else
+		E.db[section] = CopyTo
 	end
 	E:StaggeredUpdateAll()
 end
@@ -262,23 +278,28 @@ function MC:ExportToProfile(section, pluginSection)
 	if not module then error(format('Provided section name "%s" does not have a template for profile copy.', section)) end
 	--Making sure tables actually exist
 	if not ElvDB.profiles[E.global.profileCopy.selected] then ElvDB.profiles[E.global.profileCopy.selected] = {} end -- profile not created yet
-	if not ElvDB.profiles[E.global.profileCopy.selected][section] then ElvDB.profiles[E.global.profileCopy.selected][section] = {} end
+	if not pluginSection and not ElvDB.profiles[E.global.profileCopy.selected][section] then ElvDB.profiles[E.global.profileCopy.selected][section] = {} end
 	if pluginSection then
 		if not ElvDB.profiles[E.global.profileCopy.selected][pluginSection] then ElvDB.profiles[E.global.profileCopy.selected][pluginSection] = {} end
 		if not ElvDB.profiles[E.global.profileCopy.selected][pluginSection][section] then ElvDB.profiles[E.global.profileCopy.selected][pluginSection][section] = {} end
 	end
-	if not E.db[section] then E.db[section] = {} end
 	--Starting digging through the settings
-	local CopyFrom = pluginSection and E.db[pluginSection][section] or E.db[section]
+	local CopyFrom = pluginSection and (E.db[pluginSection] and E.db[pluginSection][section]) or (not pluginSection and E.db[section])
 	local CopyTo = pluginSection and ElvDB.profiles[E.global.profileCopy.selected][pluginSection][section] or ElvDB.profiles[E.global.profileCopy.selected][section]
 	local CopyDefault = pluginSection and P[pluginSection][section] or P[section]
+	CopyFrom, CopyTo = MC:TablesExist(CopyFrom, CopyTo, CopyDefault)
 	if type(module) == 'table' and next(module) then --This module is not an empty table
 		MC:CopyTable(CopyFrom, CopyTo, CopyDefault, module)
 	elseif type(module) == 'boolean' then --Copy over entire section of profile subgroup
-		E:CopyTable(CopyTo, CopyDefault)
-		E:CopyTable(CopyTo, CopyFrom)
+		MC:CopyTable(CopyFrom, CopyTo, CopyDefault, module)
 	else
 		error(format('Provided section name "%s" does not have a valid copy template.', section))
+	end
+	local selected = ElvDB.profiles[E.global.profileCopy.selected]
+	if pluginSection then
+		selected[pluginSection][section] = CopyTo
+	else
+		selected[section] = CopyTo
 	end
 end
 

@@ -177,14 +177,18 @@ function B:SizeAndPositionBagBar()
 		end
 	end
 
-	local numButtons = #B.BagBar.buttons
+	if justBackpack then
+		firstButton, lastButton = B.BagBar.buttons[1], B.BagBar.buttons[1]
+	end
+
+	local numButtons = justBackpack and 1 or #B.BagBar.buttons
 	local btnSize = bagBarSize * numButtons
 	local btnSpace = buttonSpacing * (numButtons - 1)
 	local bdpDoubled = backdropSpacing * 2
 
 	B.BagBar.backdrop:ClearAllPoints()
 	B.BagBar.backdrop:Point('TOPLEFT', firstButton, 'TOPLEFT', -backdropSpacing, backdropSpacing)
-	B.BagBar.backdrop:Point('BOTTOMRIGHT', justBackpack and firstButton or lastButton, 'BOTTOMRIGHT', backdropSpacing, -backdropSpacing)
+	B.BagBar.backdrop:Point('BOTTOMRIGHT', lastButton, 'BOTTOMRIGHT', backdropSpacing, -backdropSpacing)
 	B.BagBar.backdrop:SetShown(showBackdrop)
 
 	if growthDirection == 'HORIZONTAL' then

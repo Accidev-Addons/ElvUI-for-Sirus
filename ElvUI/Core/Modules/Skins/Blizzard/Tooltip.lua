@@ -34,8 +34,9 @@ function S:StyleTooltips()
 	for _, tt in next, {
 		_G.ItemRefTooltip,
 	} do
-		if TT:IsHooked(tt, 'OnSizeChanged') then return end
-		TT:SecureHookScript(tt, 'OnSizeChanged', 'SetStyle')
+		if not TT:IsHooked(tt, 'OnSizeChanged') then
+			TT:SecureHookScript(tt, 'OnSizeChanged', 'SetStyle')
+		end
 	end
 
 	for _, tt in next, {
@@ -61,8 +62,9 @@ function S:StyleTooltips()
 		-- libs
 		_G.LibDBIconTooltip,
 	} do
-		if TT:IsHooked(tt, 'OnShow') then return end
-		TT:SecureHookScript(tt, 'OnShow', 'SetStyle')
+		if not TT:IsHooked(tt, 'OnShow') then
+			TT:SecureHookScript(tt, 'OnShow', 'SetStyle')
+		end
 	end
 end
 

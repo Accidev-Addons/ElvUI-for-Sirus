@@ -4,7 +4,7 @@ https://www.wowace.com/projects/libbuttonglow-1-0
 ]]
 -- luacheck: globals CreateFromMixins ObjectPoolMixin CreateTexturePool CreateFramePool
 local MAJOR_VERSION = "LibCustomGlow-1.0-ElvUI"
-local MINOR_VERSION = 21
+local MINOR_VERSION = 22
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub.") end
 local lib, oldversion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
 if not lib then return end
@@ -35,8 +35,9 @@ local TexPoolResetter = function(pool, tex)
 	tex:ClearAllPoints()
 end
 
-local GlowTexPool = CreateTexturePool(GlowParent, "ARTWORK", nil, nil, TexPoolResetter)
+local GlowTexPool = lib.GlowTexPool or CreateTexturePool(GlowParent, "ARTWORK", nil, nil, TexPoolResetter)
 lib.GlowTexPool = GlowTexPool
+GlowTexPool.resetterFunc = TexPoolResetter
 
 local FramePoolResetter = function(framePool, frame)
 	frame:SetScript("OnSizeChanged", nil)
@@ -56,8 +57,9 @@ local FramePoolResetter = function(framePool, frame)
 	frame:ClearAllPoints()
 end
 
-local GlowFramePool = CreateFramePool("Frame", GlowParent, "", FramePoolResetter)
+local GlowFramePool = lib.GlowFramePool or CreateFramePool("Frame", GlowParent, "", FramePoolResetter)
 lib.GlowFramePool = GlowFramePool
+GlowFramePool.resetterFunc = FramePoolResetter
 
 local function addFrameAndTex(r, color, name, key, N, xOffset, yOffset, texture, texCoord, desaturated, frameLevel)
 	key = key or ""
@@ -139,9 +141,11 @@ local function pSizeChanged(self, width, height)
 	end
 end
 local function pUpdate(self, elapsed)
-	self.timer = self.timer + elapsed / self.info.period
-	if self.timer > 1 or self.timer < -1 then self.timer = self.timer % 1 end
 	local info = self.info
+	-- [SIRUS] Wait for layout before calculating positions on the perimeter.
+	if not info.perimeter or info.perimeter <= 0 then return end
+	self.timer = self.timer + elapsed / info.period
+	if self.timer > 1 or self.timer < -1 then self.timer = self.timer % 1 end
 	for i = 1, info.N do
 		local position = (info.space * i + info.perimeter * self.timer) % info.perimeter
 		if position > info.bottomlim then
@@ -193,7 +197,7 @@ local acSizes = {7, 6, 5, 4}
 local function acSizeChanged(self, width, height)
 	if not (width or height) then width, height = self:GetSize() end
 	if width ~= self.info.width or height ~= self.info.height then
-		if width*height == 0 then return end
+
 		self.info.width = width
 		self.info.height = height
 		self.info.perimeter = 2 * (width + height)
@@ -204,6 +208,7 @@ local function acSizeChanged(self, width, height)
 end
 local function acUpdate(self, elapsed)
 	local texIndex, info = 0, self.info
+	if not info.perimeter or info.perimeter <= 0 then return end
 	for k = 1, 4 do
 		self.timer[k] = self.timer[k] + elapsed / (info.period * k)
 		if self.timer[k] > 1 or self.timer[k] < -1 then self.timer[k] = self.timer[k] % 1 end
@@ -415,8 +420,9 @@ local function ButtonGlowResetter(framePool,frame)
 	frame:Hide()
 	frame:ClearAllPoints()
 end
-local ButtonGlowPool = CreateFramePool("Frame", GlowParent, "", ButtonGlowResetter)
+local ButtonGlowPool = lib.ButtonGlowPool or CreateFramePool("Frame", GlowParent, "", ButtonGlowResetter)
 lib.ButtonGlowPool = ButtonGlowPool
+ButtonGlowPool.resetterFunc = ButtonGlowResetter
 
 local function AnimIn_OnPlay(anim)
 	local frame = anim:GetRegionParent()
@@ -693,8 +699,9 @@ local function ProcGlowResetter(framePool, frame)
 	local parent = frame:GetParent()
 	if frame.name and parent[frame.name] then parent[frame.name] = nil end
 end
-local ProcGlowPool = CreateFramePool("Frame", GlowParent, "", ProcGlowResetter)
+local ProcGlowPool = lib.ProcGlowPool or CreateFramePool("Frame", GlowParent, "", ProcGlowResetter)
 lib.ProcGlowPool = ProcGlowPool
+ProcGlowPool.resetterFunc = ProcGlowResetter
 
 local function InitProcGlow(f)
 	f.ProcStart = f:CreateTexture(nil, "ARTWORK")

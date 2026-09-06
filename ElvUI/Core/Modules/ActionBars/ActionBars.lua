@@ -729,11 +729,12 @@ function AB:UpdateMasque(bar, masqueGroup)
 	end
 end
 
-function AB:ColorSwipeTexture(cooldown)
+function AB:ColorSwipeTexture(cooldown, start, duration)
 	if not cooldown then return end
 
 	local color = AB.db.colorSwipeNormal
 	cooldown:SetSwipeColor(color.r, color.g, color.b, color.a)
+	if start and duration then E.UpdateCooldownSwipe(cooldown, start, duration) end
 end
 
 function AB:Bar_OnEnter(bar)
@@ -1285,14 +1286,14 @@ function AB:LAB_CooldownDone(button)
 	end
 end
 
-function AB:LAB_CooldownUpdate(button, _, duration)
+function AB:LAB_CooldownUpdate(button, start, duration)
 	if button._state_type == 'action' then
 		AB:SetButtonDesaturation(button, duration)
 		AB:UpdateAuraCooldown(button, duration)
 	end
 
 	if button.cooldown then
-		AB:ColorSwipeTexture(button.cooldown)
+		AB:ColorSwipeTexture(button.cooldown, start, duration)
 	end
 end
 

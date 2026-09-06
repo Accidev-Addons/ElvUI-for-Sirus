@@ -312,11 +312,13 @@ local function SetFrequentUpdates(element, state)
 		if(element.frequentUpdates) then
 			element:SetScript('OnUpdate', onHealthUpdate)
 
-			local unit = element.__owner.unit
-			if((unit == 'party' or unit:match('party%d?$')) and not element:IsEventRegistered("UNIT_HEALTH")) then
-				element:RegisterEvent('UNIT_HEALTH', Path)
-			elseif(element:IsEventRegistered('UNIT_HEALTH')) then
-				element:UnregisterEvent('UNIT_HEALTH', Path)
+			-- [SIRUS] Unit events belong to the owner, not the Health StatusBar.
+			local owner = element.__owner
+			local unit = owner.unit
+			if(unit and (unit == 'party' or unit:match('^party%d$'))) then
+				owner:RegisterEvent('UNIT_HEALTH', Path)
+			else
+				owner:UnregisterEvent('UNIT_HEALTH', Path)
 			end
 		else
 			element:SetScript('OnUpdate', nil)
@@ -356,7 +358,7 @@ local function Enable(self, unit)
 			element:SetScript('OnUpdate', onHealthUpdate)
 
 			-- The party frames need this to handle disconnect states correctly.
-			if(unit == 'party') then
+			if(unit == 'party' or unit:match('^party%d$')) then
 				self:RegisterEvent('UNIT_HEALTH', Path)
 			end
 		else

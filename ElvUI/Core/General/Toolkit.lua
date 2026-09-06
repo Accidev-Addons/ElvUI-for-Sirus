@@ -569,49 +569,54 @@ do
 	end
 end
 
-local function GetSwipe(self)
-	if not self._swipeTex then
-		local swipe = self:CreateTexture(nil, 'BACKGROUND', nil, -5)
-		swipe:SetAllPoints(self)
-		swipe:SetTexture(E.Media.Textures.White8x8)
-		swipe:SetBlendMode('ADD')
-		self._swipeTex = swipe
-	end
-	return self._swipeTex
-end
-
 local function SwipeOnUpdate(self)
-	if (GetTime() - self._cdStart) >= self._cdDuration then
-		self._swipeTex:Hide()
-		self:SetScript('OnUpdate', nil)
+	if GetTime() >= self.expires then
+		self.swipe:Hide()
+		self:Hide()
 	end
 end
 
 local function OnCooldownSet(self, start, duration)
-	local swipe = self._swipeTex
-	self._cdStart, self._cdDuration = start, duration
+	local updater = self._elvSwipeUpdater
+	if not updater then return end
 
-	if swipe and start and duration and duration > 0.1 then
-		swipe:Show()
-		self:SetScript('OnUpdate', SwipeOnUpdate)
-	elseif swipe and not start then
-		swipe:Hide()
-		self:SetScript('OnUpdate', nil)
+	if start and start > 0 and duration and duration > 0.1 and start + duration > GetTime() then
+		updater.expires = start + duration
+		updater.swipe:Show()
+		updater:Show()
+	else
+		updater.swipe:Hide()
+		updater:Hide()
 	end
 end
 
 local function SetSwipeColor(self, r, g, b, a)
-	local swipe = GetSwipe(self)
-	swipe:SetVertexColor(r or 1, g or 1, b or 1, a or 1)
+	local updater = self._elvSwipeUpdater
+	if not updater then
+		updater = CreateFrame('Frame', nil, self)
+		updater:Hide()
+		updater:SetScript('OnUpdate', SwipeOnUpdate)
+		updater:SetScript('OnShow', SwipeOnUpdate)
 
-	if not self._swipeHooked then
+		local swipe = self:CreateTexture(nil, 'BACKGROUND', nil, -5)
+		swipe:SetAllPoints(self)
+		swipe:SetTexture(E.Media.Textures.White8x8)
+		swipe:SetBlendMode('ADD')
+		swipe:Hide()
+		updater.swipe = swipe
+		self._elvSwipeUpdater = updater
 		hooksecurefunc(self, 'SetCooldown', OnCooldownSet)
-		self._swipeHooked = true
 	end
+
+	updater.swipe:SetVertexColor(r or 1, g or 1, b or 1, a or 1)
 end
 
+E.UpdateCooldownSwipe = OnCooldownSet
+
 local CooldownProto = getmetatable(CreateFrame('Cooldown', nil, UIParent)).__index
-CooldownProto.SetSwipeColor = SetSwipeColor
+if not CooldownProto.SetSwipeColor then
+	CooldownProto.SetSwipeColor = SetSwipeColor
+end
 
 local API = {
 	Kill = Kill,
@@ -639,7 +644,6 @@ local API = {
 	SetTexCoords = SetTexCoords,
 	GetDebugName = GetDebugName,
 	GetChild = GetChild,
-	SetSwipeColor = SetSwipeColor,
 }
 
 local function addapi(object)
