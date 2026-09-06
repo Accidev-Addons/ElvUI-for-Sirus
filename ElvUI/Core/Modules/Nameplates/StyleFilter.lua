@@ -596,7 +596,7 @@ function NP:StyleFilterConditionCheck(frame, filter, trigger)
 		local b, c = frame.CastBar, trigger.casting
 
 		-- Spell
-		if b.spellName then
+		if b and b.spellName then
 			if c.spells and next(c.spells) then
 				for _, value in pairs(c.spells) do
 					if value then -- only run if at least one is selected
@@ -611,13 +611,13 @@ function NP:StyleFilterConditionCheck(frame, filter, trigger)
 
 		-- Status
 		if c.isCasting or c.isChanneling or c.notCasting or c.notChanneling then
-			if (c.isCasting and b.casting) or (c.isChanneling and b.channeling)
-			or (c.notCasting and not b.casting) or (c.notChanneling and not b.channeling) then passed = true else return end
+			if (c.isCasting and b and b.casting) or (c.isChanneling and b and b.channeling)
+			or (c.notCasting and not (b and b.casting)) or (c.notChanneling and not (b and b.channeling)) then passed = true else return end
 		end
 
 		-- Interruptible
 		if c.interruptible or c.notInterruptible then
-			if (b.casting or b.channeling) and ((c.interruptible and not b.notInterruptible)
+			if b and (b.casting or b.channeling) and ((c.interruptible and not b.notInterruptible)
 			or (c.notInterruptible and b.notInterruptible)) then passed = true else return end
 		end
 	end
