@@ -187,9 +187,9 @@ end
 
 tagFunctions.dead = function(u)
 	if(UnitIsDead(u)) then
-		return 'Dead'
+		return _VARS.L and _VARS.L['Dead'] or 'Dead'
 	elseif(UnitIsGhost(u)) then
-		return 'Ghost'
+		return _VARS.L and _VARS.L['Ghost'] or 'Ghost'
 	end
 end
 
@@ -281,7 +281,7 @@ end
 
 tagFunctions.offline = function(u)
 	if(not UnitIsConnected(u)) then
-		return 'Offline'
+		return _VARS.L and _VARS.L['Offline'] or 'Offline'
 	end
 end
 
@@ -414,11 +414,11 @@ end
 
 tagFunctions.status = function(u)
 	if(UnitIsDead(u)) then
-		return 'Dead'
+		return _VARS.L and _VARS.L['Dead'] or 'Dead'
 	elseif(UnitIsGhost(u)) then
-		return 'Ghost'
+		return _VARS.L and _VARS.L['Ghost'] or 'Ghost'
 	elseif(not UnitIsConnected(u)) then
-		return 'Offline'
+		return _VARS.L and _VARS.L['Offline'] or 'Offline'
 	else
 		return _TAGS.resting
 	end
@@ -631,7 +631,14 @@ local function GetTagFunc(tagstr)
 			_ENV._COLORS = parent.colors
 
 			for i, fnc in next, funcs do
-				tagBuffer[i] = fnc(unit, realUnit, customArgs) or ''
+				local value = fnc(unit, realUnit, customArgs)
+				-- Guard against tag functions returning unexpected types (e.g. a function
+				-- instead of a string), which would break SetFormattedText.
+				if type(value) == 'string' or type(value) == 'number' then
+					tagBuffer[i] = value
+				else
+					tagBuffer[i] = ''
+				end
 			end
 
 			-- we do 1 to num because buffer is shared by all tags and can hold several unneeded vars.
