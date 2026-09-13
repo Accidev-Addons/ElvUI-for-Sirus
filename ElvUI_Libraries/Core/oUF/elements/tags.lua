@@ -420,7 +420,7 @@ tagFunctions.status = function(u)
 	elseif(not UnitIsConnected(u)) then
 		return _VARS.L and _VARS.L['Offline'] or 'Offline'
 	else
-		return _TAGS.resting
+		return _TAGS.resting(u)
 	end
 end
 
