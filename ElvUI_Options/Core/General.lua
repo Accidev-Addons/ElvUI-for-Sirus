@@ -68,7 +68,7 @@ GenGen.camera.inline = true
 
 GenGen.scaling = ACH:Group(L["UI Scale"], nil, 60)
 GenGen.scaling.inline = true
-GenGen.scaling.args.UIScale = ACH:Range(L["UI Scale"], nil, 1, { min = 0.1, max = 1.25, step = 0.000000000000001, softMin = 0.40, softMax = 1.15, bigStep = 0.01 }, nil, function() return E.global.general.UIScale end, function(_, value) E.global.general.UIScale = value if not IsMouseButtonDown() then E:PixelScaleChanged() E.ShowPopup = true end end)
+GenGen.scaling.args.UIScale = ACH:Range(L["UI Scale"], nil, 1, { min = 0.4, max = 1.15, step = 0.000000000000001, softMin = 0.40, softMax = 1.15, bigStep = 0.01 }, nil, function() return E.global.general.UIScale end, function(_, value) E.global.general.UIScale = value if not IsMouseButtonDown() then E:PixelScaleChanged() E.ShowPopup = true end end)
 GenGen.scaling.args.ScaleSmall = ACH:Execute(L["Small"], nil, 2, function() E.global.general.UIScale = .6 E:PixelScaleChanged() E.ShowPopup = true end, nil, nil, 100)
 GenGen.scaling.args.ScaleMedium = ACH:Execute(L["Medium"], nil, 3, function() E.global.general.UIScale = .7 E:PixelScaleChanged() E.ShowPopup = true end, nil, nil, 100)
 GenGen.scaling.args.ScaleLarge = ACH:Execute(L["Large"], nil, 4, function() E.global.general.UIScale = .8 E:PixelScaleChanged() E.ShowPopup = true end, nil, nil, 100)
