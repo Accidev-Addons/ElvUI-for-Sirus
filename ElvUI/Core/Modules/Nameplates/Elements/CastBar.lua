@@ -265,8 +265,7 @@ function NP:Configure_CastBar(frame, configuring)
 	castBar:SetPoint("TOP", frame.Health, "BOTTOM", NP:Pixel(db.xOffset), NP:Pixel(db.yOffset))
 
 	if db.showIcon then
-		castBar.Icon:ClearAllPoints()
-		castBar.Icon:SetPoint(db.iconPosition == "RIGHT" and "BOTTOMLEFT" or "BOTTOMRIGHT", castBar, db.iconPosition == "RIGHT" and "BOTTOMRIGHT" or "BOTTOMLEFT", NP:Pixel(db.iconOffsetX), NP:Pixel(db.iconOffsetY))
+		castBar.Icon:ClearAndSetPoint(db.iconPosition == "RIGHT" and "BOTTOMLEFT" or "BOTTOMRIGHT", castBar, db.iconPosition == "RIGHT" and "BOTTOMRIGHT" or "BOTTOMLEFT", NP:Pixel(db.iconOffsetX), NP:Pixel(db.iconOffsetY))
 		castBar.Icon:Show()
 	else
 		castBar.Icon:Hide()
@@ -296,16 +295,8 @@ function NP:Configure_CastBar(frame, configuring)
 	castBar.Name:FontTemplate(LSM:Fetch("font", db.font), db.fontSize, db.fontOutline)
 	castBar.Time:FontTemplate(LSM:Fetch("font", db.font), db.fontSize, db.fontOutline)
 
-	if db.hideSpellName then
-		castBar.Name:Hide()
-	else
-		castBar.Name:Show()
-	end
-	if db.hideTime then
-		castBar.Time:Hide()
-	else
-		castBar.Time:Show()
-	end
+	castBar.Name:SetShown(not db.hideSpellName)
+	castBar.Time:SetShown(not db.hideTime)
 
 	castBar:SetStatusBarTexture(LSM:Fetch("statusbar", self.db.statusbar))
 

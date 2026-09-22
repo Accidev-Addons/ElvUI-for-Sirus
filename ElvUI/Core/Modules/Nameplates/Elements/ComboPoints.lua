@@ -22,11 +22,7 @@ function NP:Update_CPoints(frame)
 		frame.CPoints:Show()
 
 		for i = 1, MAX_COMBO_POINTS do
-			if i <= numPoints then
-				frame.CPoints[i]:Show()
-			else
-				frame.CPoints[i]:Hide()
-			end
+			frame.CPoints[i]:SetShown(i <= numPoints)
 		end
 	else
 		frame.CPoints:Hide()

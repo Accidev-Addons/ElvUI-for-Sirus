@@ -697,33 +697,24 @@ function NP:OnEvent(event, unit, ...)
 	NP:Update_CastBar(self, event, unit, ...)
 end
 
-local function registerUnitEvent(frame, event)
-	frame:RegisterUnitEvent(event, frame.unit)
-end
+local unitEvents = {
+	"UNIT_HEALTH", "UNIT_MAXHEALTH", "UNIT_NAME_UPDATE", "UNIT_LEVEL", "UNIT_FACTION", "UNIT_AURA"
+}
+local castEvents = {
+	"UNIT_SPELLCAST_INTERRUPTED", "UNIT_SPELLCAST_DELAYED", "UNIT_SPELLCAST_CHANNEL_START",
+	"UNIT_SPELLCAST_CHANNEL_UPDATE", "UNIT_SPELLCAST_CHANNEL_STOP", "UNIT_SPELLCAST_INTERRUPTIBLE",
+	"UNIT_SPELLCAST_NOT_INTERRUPTIBLE", "UNIT_SPELLCAST_START", "UNIT_SPELLCAST_STOP", "UNIT_SPELLCAST_FAILED"
+}
 
 function NP:RegisterEvents(frame)
 	if not frame.unit then return end
 
-	registerUnitEvent(frame, "UNIT_HEALTH")
-	registerUnitEvent(frame, "UNIT_MAXHEALTH")
-	registerUnitEvent(frame, "UNIT_NAME_UPDATE")
-	registerUnitEvent(frame, "UNIT_LEVEL")
-	registerUnitEvent(frame, "UNIT_FACTION")
-	registerUnitEvent(frame, "UNIT_AURA")
+	FrameUtil.RegisterFrameForUnitEvents(frame, unitEvents, frame.unit)
 	frame.isEventsRegistered = true
 
 	if NP.db.units[frame.UnitType].health.enable or (frame.isTarget and NP.db.alwaysShowTargetHealth) then
 		if NP.db.units[frame.UnitType].castbar.enable then
-			registerUnitEvent(frame, "UNIT_SPELLCAST_INTERRUPTED")
-			registerUnitEvent(frame, "UNIT_SPELLCAST_DELAYED")
-			registerUnitEvent(frame, "UNIT_SPELLCAST_CHANNEL_START")
-			registerUnitEvent(frame, "UNIT_SPELLCAST_CHANNEL_UPDATE")
-			registerUnitEvent(frame, "UNIT_SPELLCAST_CHANNEL_STOP")
-			registerUnitEvent(frame, "UNIT_SPELLCAST_INTERRUPTIBLE")
-			registerUnitEvent(frame, "UNIT_SPELLCAST_NOT_INTERRUPTIBLE")
-			registerUnitEvent(frame, "UNIT_SPELLCAST_START")
-			registerUnitEvent(frame, "UNIT_SPELLCAST_STOP")
-			registerUnitEvent(frame, "UNIT_SPELLCAST_FAILED")
+			FrameUtil.RegisterFrameForUnitEvents(frame, castEvents, frame.unit)
 		end
 
 		NP.OnEvent(frame, nil, frame.unit)
@@ -731,22 +722,8 @@ function NP:RegisterEvents(frame)
 end
 
 function NP:UnregisterFrameEvents(frame)
-	frame:UnregisterEvent("UNIT_HEALTH")
-	frame:UnregisterEvent("UNIT_MAXHEALTH")
-	frame:UnregisterEvent("UNIT_NAME_UPDATE")
-	frame:UnregisterEvent("UNIT_LEVEL")
-	frame:UnregisterEvent("UNIT_FACTION")
-	frame:UnregisterEvent("UNIT_AURA")
-	frame:UnregisterEvent("UNIT_SPELLCAST_INTERRUPTED")
-	frame:UnregisterEvent("UNIT_SPELLCAST_DELAYED")
-	frame:UnregisterEvent("UNIT_SPELLCAST_CHANNEL_START")
-	frame:UnregisterEvent("UNIT_SPELLCAST_CHANNEL_UPDATE")
-	frame:UnregisterEvent("UNIT_SPELLCAST_CHANNEL_STOP")
-	frame:UnregisterEvent("UNIT_SPELLCAST_INTERRUPTIBLE")
-	frame:UnregisterEvent("UNIT_SPELLCAST_NOT_INTERRUPTIBLE")
-	frame:UnregisterEvent("UNIT_SPELLCAST_START")
-	frame:UnregisterEvent("UNIT_SPELLCAST_STOP")
-	frame:UnregisterEvent("UNIT_SPELLCAST_FAILED")
+	FrameUtil.UnregisterFrameForEvents(frame, unitEvents)
+	FrameUtil.UnregisterFrameForEvents(frame, castEvents)
 	frame.isEventsRegistered = nil
 end
 

@@ -145,16 +145,13 @@ function NP:Update_AurasPosition(frame, db)
 		local row = floor((i - 1) / cols)
 
 		button:SetSize(size, size)
-		button:ClearAllPoints()
-		button:SetPoint(anchor, frame, anchor, col * step * growthx, row * step * growthy)
+		button:ClearAndSetPoint(anchor, frame, anchor, col * step * growthx, row * step * growthy)
 
 		button.count:FontTemplate(LSM:Fetch("font", db.countFont), db.countFontSize, db.countFontOutline)
-		button.count:ClearAllPoints()
-		button.count:SetPoint(db.countPosition, db.countXOffset, db.countYOffset)
+		button.count:ClearAndSetPoint(db.countPosition, db.countXOffset, db.countYOffset)
 
 		button.text:FontTemplate(LSM:Fetch("font", db.durationFont), db.durationFontSize, db.durationFontOutline)
-		button.text:ClearAllPoints()
-		button.text:SetPoint(db.durationPosition, db.durationXOffset, db.durationYOffset)
+		button.text:ClearAndSetPoint(db.durationPosition, db.durationXOffset, db.durationYOffset)
 
 		button:SetOrientation(db.cooldownOrientation)
 

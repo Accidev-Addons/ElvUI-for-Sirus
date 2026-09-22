@@ -143,11 +143,7 @@ function NP:RegisterHealthBarCallbacks(frame, valueChangeCB, colorChangeCB)
 end
 
 function NP:Update_HealthBar(frame)
-	if self.db.units[frame.UnitType].health.enable or (frame.isTarget and self.db.alwaysShowTargetHealth) then
-		frame.Health:Show()
-	else
-		frame.Health:Hide()
-	end
+	frame.Health:SetShown(self.db.units[frame.UnitType].health.enable or (frame.isTarget and self.db.alwaysShowTargetHealth))
 end
 
 function NP:Configure_HealthBarScale(frame, scale, noPlayAnimation)
