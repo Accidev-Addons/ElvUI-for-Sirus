@@ -47,6 +47,7 @@ local RaidIconIndex = {
 
 NP.CreatedPlates = {}
 NP.VisiblePlates = {}
+NP.PlatesByUnit = {}
 NP.Healers = {}
 
 NP.NameByUnit = {}
@@ -310,15 +311,23 @@ function NP:GetUnitTypeFromUnit(unit)
 	end
 end
 
+local function GetPlateUnit(plate)
+	if plate.GetUnit then return plate:GetUnit() end
+	return plate.unitToken or plate.namePlateUnitToken
+end
+
 function NP:OnShow(isConfig, dontHideHighlight, unitToken)
 	local frame = self.ElvUIFrame
 	if not frame then return end
 
 	NP:DisableBlizzard(self)
 
-	local unit = unitToken or self.namePlateUnitToken
+	local unit = unitToken or GetPlateUnit(self)
+	if not unit and not frame.testUnitType then return end
+
 	frame.unit = unit
 	frame.guid = unit and UnitGUID(unit)
+	if unit then NP.PlatesByUnit[unit] = self end
 
 	NP.VisiblePlates[frame] = 1
 
@@ -384,6 +393,9 @@ function NP:OnHide(isConfig)
 
 	NP.VisiblePlates[frame] = nil
 
+	if frame.unit and NP.PlatesByUnit[frame.unit] == self then
+		NP.PlatesByUnit[frame.unit] = nil
+	end
 	frame.unit = nil
 
 	for i = 1, #frame.Buffs do
@@ -564,7 +576,7 @@ function NP:UpdateClickableSizes()
 	end
 end
 
-local blizzardRegions = { "healthBar", "castBar", "BuffFrame", "ClassificationFrame", "RaidTargetFrame", "aggroHighlight", "selectionHighlight", "classificationIndicator", "name" }
+local blizzardRegions = { "healthBar", "castBar", "BuffFrame", "AurasFrame", "LevelFrame", "ClassificationFrame", "RaidTargetFrame", "aggroHighlight", "aggroHighlightBase", "aggroHighlightAdditive", "aggroFlash", "selectionHighlight", "classificationIndicator", "behindCameraIcon", "name" }
 
 local function muteBlizzardPlate(blizz)
 	blizz:SetAlpha(0)
@@ -600,14 +612,13 @@ end
 
 local function neutralizeDriverPlate(plate)
 	local blizz = plate.UnitFrame
-	if not blizz then return end
+	if not (blizz and blizz.isNamePlate) then return end
 
-	if CompactUnitFrame_UnregisterEvents then
-		CompactUnitFrame_UnregisterEvents(blizz)
-	end
+	NP:DisableBlizzard(plate)
 
-	if blizz.BuffFrame and blizz.BuffFrame.SetActive then
-		blizz.BuffFrame:SetActive(false)
+	local auras = blizz.AurasFrame or blizz.BuffFrame
+	if auras and auras.SetActive then
+		auras:SetActive(false)
 	end
 end
 
@@ -1010,7 +1021,7 @@ end
 
 function NP:AcquireExistingPlates()
 	for _, plate in ipairs(C_NamePlate_GetNamePlates()) do
-		local unit = plate.namePlateUnitToken
+		local unit = GetPlateUnit(plate)
 		if unit and UnitExists(unit) then
 			NP:NAME_PLATE_UNIT_ADDED(nil, unit)
 		end
@@ -1041,8 +1052,8 @@ end
 function NP:NAME_PLATE_UNIT_REMOVED(_, unit)
 	if not unit then return end
 
-	local plate = C_NamePlate_GetNamePlateForUnit(unit)
-	if plate and NP.CreatedPlates[plate] then
+	local plate = NP.PlatesByUnit[unit] or C_NamePlate_GetNamePlateForUnit(unit)
+	if plate and NP.CreatedPlates[plate] and plate.ElvUIFrame.unit == unit then
 		NP.OnHide(plate)
 	end
 end
