@@ -16,7 +16,7 @@ local GetItemInfo = GetItemInfo
 
 local currencyList, DTPanelOptions = {}, {}
 
-DTPanelOptions.numPoints = ACH:Range(L["Number of DataTexts"], nil, 2, { min = 1, softMax = 20, step = 1}) -- softMax is used in the loop
+DTPanelOptions.numPoints = ACH:Range(L["Number of DataTexts"], nil, 2, { min = 1, max = 20, softMin = 1, softMax = 20, step = 1, bigStep = 1}) -- softMax is used in the loop
 DTPanelOptions.growth = ACH:Select(L["Growth"], nil, 3, { HORIZONTAL = L["Horizontal"], VERTICAL = L["Vertical"] })
 DTPanelOptions.width = ACH:Range(L["Width"], nil, 4, { min = 24, max = ceil(E.screenWidth), step = 1})
 DTPanelOptions.height = ACH:Range(L["Height"], nil, 5, { min = 12, max = ceil(E.screenHeight), step = 1})
@@ -35,8 +35,8 @@ DTPanelOptions.tooltip = ACH:Group(L["Tooltip"], nil, 20)
 DTPanelOptions.tooltip.inline = true
 
 DTPanelOptions.tooltip.args.tooltipAnchor = ACH:Select(L["Anchor"], nil, 0, { ANCHOR_TOP = L["TOP"], ANCHOR_RIGHT = L["RIGHT"], ANCHOR_BOTTOM = L["BOTTOM"], ANCHOR_LEFT = L["LEFT"], ANCHOR_TOPRIGHT = L["TOPRIGHT"], ANCHOR_BOTTOMRIGHT = L["BOTTOMRIGHT"], ANCHOR_TOPLEFT = L["TOPLEFT"], ANCHOR_BOTTOMLEFT = L["BOTTOMLEFT"], ANCHOR_CURSOR = L["CURSOR"], ANCHOR_CURSOR_LEFT = L["CURSOR_LEFT"], ANCHOR_CURSOR_RIGHT = L["CURSOR_RIGHT"] })
-DTPanelOptions.tooltip.args.tooltipXOffset = ACH:Range(L["X-Offset"], nil, 1, { softMin = -30, softMax = 30, min = -60, max = 60, step = 1 })
-DTPanelOptions.tooltip.args.tooltipYOffset = ACH:Range(L["Y-Offset"], nil, 2, { softMin = -30, softMax = 30, min = -60, max = 60, step = 1 })
+DTPanelOptions.tooltip.args.tooltipXOffset = ACH:Range(L["X-Offset"], nil, 1, { softMin = -30, softMax = 30, min = -30, max = 30, step = 1, bigStep = 1 })
+DTPanelOptions.tooltip.args.tooltipYOffset = ACH:Range(L["Y-Offset"], nil, 2, { softMin = -30, softMax = 30, min = -30, max = 30, step = 1, bigStep = 1 })
 
 DTPanelOptions.visibility = ACH:Input(L["Visibility State"], L["This works like a macro, you can run different situations to get the actionbar to show/hide differently.\n Example: '[combat] show;hide'"], 25, nil, 'full')
 

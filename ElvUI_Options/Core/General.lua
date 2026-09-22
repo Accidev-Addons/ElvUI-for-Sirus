@@ -35,7 +35,7 @@ local GenGen = General.general.args
 GenGen.loginmessage = ACH:Toggle(L["Login Message"], nil, 1)
 GenGen.decimalLength = ACH:Range(L["Decimal Length"], L["Controls the amount of decimals used in values displayed on elements like NamePlates and UnitFrames."], 2, { min = 0, max = 4, step = 1 }, nil, nil, function(info, value) E.db.general[info[#info]] = value E:BuildPrefixValues() E:StaggeredUpdateAll() end)
 GenGen.tagUpdateRate = ACH:Range(L["Tag Update Rate"], L["Maximum tick rate allowed for tag updates per second."], 3, { min = 0.05, max = 0.5, step = 0.01 }, nil, nil, function(info, value) E.db.general[info[#info]] = value; E:TagUpdateRate(value) end)
-GenGen.smoothingAmount = ACH:Range(L["Smoothing Amount"], L["Controls the speed at which smoothed bars will be updated."], 4, { isPercent = true, min = 0.2, max = 0.8, softMax = 0.75, softMin = 0.25, step = 0.01 }, nil, nil, function(info, value) E.db.general[info[#info]] = value E:SetSmoothingAmount(value) end)
+GenGen.smoothingAmount = ACH:Range(L["Smoothing Amount"], L["Controls the speed at which smoothed bars will be updated."], 4, { isPercent = true, min = 0.25, max = 0.75, softMax = 0.75, softMin = 0.25, step = 0.01 }, nil, nil, function(info, value) E.db.general[info[#info]] = value E:SetSmoothingAmount(value) end)
 
 GenGen.taintLog = ACH:Toggle(L["Log Taints"], L["Send ADDON_ACTION_BLOCKED errors to the Lua Error frame. These errors are less important in most cases and will not effect your game performance. Also a lot of these errors cannot be fixed. Please only report these errors if you notice a Defect in gameplay."], 5)
 GenGen.locale = ACH:Select(L["LANGUAGE"], nil, 6, { enUS = 'English', ruRU = 'Русский' }, nil, nil, function() return E.global.general.locale end, function(_, value) E.global.general.locale = value E.ShowPopup = true end)
@@ -68,7 +68,7 @@ GenGen.camera.inline = true
 
 GenGen.scaling = ACH:Group(L["UI Scale"], nil, 60)
 GenGen.scaling.inline = true
-GenGen.scaling.args.UIScale = ACH:Range(L["UI Scale"], nil, 1, { min = 0.1, max = 1.25, step = 0.000000000000001, softMin = 0.40, softMax = 1.15, bigStep = 0.01 }, nil, function() return E.global.general.UIScale end, function(_, value) E.global.general.UIScale = value if not IsMouseButtonDown() then E:PixelScaleChanged() E.ShowPopup = true end end)
+GenGen.scaling.args.UIScale = ACH:Range(L["UI Scale"], nil, 1, { min = 0.4, max = 1.15, softMin = 0.40, softMax = 1.15, step = 0.01, bigStep = 0.01 }, nil, function() return E.global.general.UIScale end, function(_, value) E.global.general.UIScale = value if not IsMouseButtonDown() then E:PixelScaleChanged() E.ShowPopup = true end end)
 GenGen.scaling.args.ScaleSmall = ACH:Execute(L["Small"], nil, 2, function() E.global.general.UIScale = .6 E:PixelScaleChanged() E.ShowPopup = true end, nil, nil, 100)
 GenGen.scaling.args.ScaleMedium = ACH:Execute(L["Medium"], nil, 3, function() E.global.general.UIScale = .7 E:PixelScaleChanged() E.ShowPopup = true end, nil, nil, 100)
 GenGen.scaling.args.ScaleLarge = ACH:Execute(L["Large"], nil, 4, function() E.global.general.UIScale = .8 E:PixelScaleChanged() E.ShowPopup = true end, nil, nil, 100)
@@ -162,7 +162,7 @@ Cosmetic.bordersGroup.args.cropIcon = ACH:Toggle(L["Crop Icons"], L["This is for
 Cosmetic.customGlowGroup = ACH:Group(L["Custom Glow"], nil, 16, nil, function(info) return E.db.general.customGlow[info[#info]] end, function(info, value) E:StopAllCustomGlows() E.db.general.customGlow[info[#info]] = value end)
 Cosmetic.customGlowGroup.inline = true
 Cosmetic.customGlowGroup.args.style = ACH:Select(L["Style"], nil, 1, function() local tbl = {} for _, name in next, E.Libs.CustomGlow.glowList do tbl[name] = name end return tbl end)
-Cosmetic.customGlowGroup.args.speed = ACH:Range(L["SPEED"], nil, 2, { min = -1, max = 1, softMin = -0.5, softMax = 0.5, step = .01, bigStep = .05 }, nil, nil, nil, nil, function() return E.db.general.customGlow.style == 'Proc Glow' end)
+Cosmetic.customGlowGroup.args.speed = ACH:Range(L["SPEED"], nil, 2, { min = -0.5, max = 0.5, softMin = -0.5, softMax = 0.5, step = .01, bigStep = .05 }, nil, nil, nil, nil, function() return E.db.general.customGlow.style == 'Proc Glow' end)
 Cosmetic.customGlowGroup.args.duration = ACH:Range(L["Duration"], nil, 2, { min = 0.1, max = 2, step = 0.1 }, nil, nil, nil, nil, function() return E.db.general.customGlow.style ~= 'Proc Glow' end)
 Cosmetic.customGlowGroup.args.size = ACH:Range(L["Size"], nil, 3, { min = 1, max = 5, step = 1 }, nil, nil, nil, nil, function() return E.db.general.customGlow.style ~= 'Pixel Glow' end)
 Cosmetic.customGlowGroup.args.lines = ACH:Range(function() return E.db.general.customGlow.style == 'Pixel Glow' and L["Lines"] or L["Particles"] end, nil, 4, { min = 1, max = 20, step = 1 }, nil, nil, nil, nil, function() local style = E.db.general.customGlow.style return style ~= 'Pixel Glow' and style ~= 'Autocast Shine' end)
