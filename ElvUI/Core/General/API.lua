@@ -64,7 +64,12 @@ local GameMenuFrame = GameMenuFrame
 local UIErrorsFrame = UIErrorsFrame
 -- GLOBALS: ElvDB, ElvUI
 
-local DebuffColors = DebuffTypeColor
+local DebuffColors = {}
+for debuffType, color in next, DebuffTypeColor do
+	DebuffColors[debuffType] = { r = color.r, g = color.g, b = color.b }
+end
+DebuffColors[''] = DebuffColors.none
+E.DebuffColors = DebuffColors
 
 E.GroupRoles = {}
 E.GroupUnitsByRole = {

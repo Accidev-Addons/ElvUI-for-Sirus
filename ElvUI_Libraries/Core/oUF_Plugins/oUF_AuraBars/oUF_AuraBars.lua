@@ -361,7 +361,8 @@ local function Update(self, event, unit)
 			elseif debuffType == "none" and element.defaultDebuffColor then
 				r, g, b = unpack(element.defaultDebuffColor)
 			else
-				r, g, b = DebuffTypeColor[debuffType].r, DebuffTypeColor[debuffType].g, DebuffTypeColor[debuffType].b
+				local color = (element.debuffTypeColors or DebuffTypeColor)[debuffType]
+				r, g, b = color.r, color.g, color.b
 			end
 		elseif element.buffColor then
 			r, g, b = unpack(element.buffColor)

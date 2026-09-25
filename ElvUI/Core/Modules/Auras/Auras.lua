@@ -34,7 +34,7 @@ local Masque = E.Masque or E.Libs.LBF
 local MasqueGroupBuffs = Masque and Masque:Group('ElvUI', 'Buffs')
 local MasqueGroupDebuffs = Masque and Masque:Group('ElvUI', 'Debuffs')
 
-local DebuffColors = DebuffTypeColor
+local DebuffColors = E.DebuffColors
 
 local DIRECTION_TO_POINT = {
 	DOWN_RIGHT = 'TOPLEFT',

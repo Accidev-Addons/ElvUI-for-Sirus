@@ -114,7 +114,7 @@ function NP:SetAura(frame, unit, index, filter, isDebuff, visible, spells)
 			button:Show()
 
 			if isDebuff then
-				local color = (debuffType and DebuffTypeColor[debuffType]) or DebuffTypeColor.none
+				local color = (debuffType and E.DebuffColors[debuffType]) or E.DebuffColors.none
 				if name and (name == unstableAffliction or name == vampiricTouch) and E.myclass ~= "WARLOCK" then
 					self:StyleFrameColor(button, 0.05, 0.85, 0.94)
 				else
