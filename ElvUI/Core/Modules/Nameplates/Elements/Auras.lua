@@ -15,6 +15,8 @@ local GetSpellInfo = GetSpellInfo
 local GetTime = GetTime
 local UnitAura = UnitAura
 
+local DebuffColors = E.DebuffColors or DebuffTypeColor
+
 local AURA_ITEM_HEIGHT = 25 -- NamePlateConstants.AURA_ITEM_HEIGHT on the sirus side
 
 local VISIBLE, HIDDEN = 1, 0
@@ -100,7 +102,7 @@ function NP:StyleAura(button, index, texture, count, debuffType, duration, expir
 	button:Show()
 
 	if isDebuff then
-		local color = (debuffType and DebuffTypeColor[debuffType]) or DebuffTypeColor.none
+		local color = (debuffType and DebuffColors[debuffType]) or DebuffColors.none
 		if name and (name == unstableAffliction or name == vampiricTouch) and E.myclass ~= "WARLOCK" then
 			self:StyleFrameColor(button, 0.05, 0.85, 0.94)
 		else

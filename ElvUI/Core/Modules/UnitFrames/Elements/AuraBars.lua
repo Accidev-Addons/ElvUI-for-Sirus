@@ -64,6 +64,7 @@ function UF:Construct_AuraBarHeader(frame)
 	auraBar.spark = true
 	auraBar.filter = UF.AuraBarFilter
 	auraBar.PostUpdate = UF.ColorizeAuraBars
+	auraBar.debuffTypeColors = E.DebuffColors
 
 	return auraBar
 end

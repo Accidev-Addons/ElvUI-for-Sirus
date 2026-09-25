@@ -346,7 +346,7 @@ function UF:PostUpdateAura(unit, button)
 			E:SetForcedBorderColor(button, 0.9, 0.1, 0.1)
 			button.icon:SetDesaturated((unit and not find(unit, "arena%d")) and true or false)
 		else
-			local color = (button.dtype and DebuffTypeColor[button.dtype]) or DebuffTypeColor.none
+			local color = (button.dtype and E.DebuffColors[button.dtype]) or E.DebuffColors.none
 			if button.name and (button.name == unstableAffliction or button.name == vampiricTouch) and E.myclass ~= "WARLOCK" then
 				E:SetForcedBorderColor(button, 0.05, 0.85, 0.94)
 			else
