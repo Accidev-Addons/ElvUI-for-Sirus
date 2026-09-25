@@ -787,6 +787,10 @@ function NP:OnCreated(frame)
 	unitFrame.RaidIcon = NP:Construct_RaidIcon(unitFrame)
 	NP:Construct_Glow(unitFrame)
 
+	if frame.AcquireUnitFrame then
+		hooksecurefunc(frame, "AcquireUnitFrame", neutralizeDriverPlate)
+	end
+
 	NP:DisableBlizzard(frame)
 
 	NP:SetSize(frame)
