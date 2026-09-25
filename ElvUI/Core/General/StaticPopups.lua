@@ -38,7 +38,7 @@ local YES, NO, OKAY, CANCEL, ACCEPT, DECLINE = YES, NO, OKAY, CANCEL, ACCEPT, DE
 
 -- GLOBALS: ElvUIBindPopupWindowCheckButton
 
-local DOWNLOAD_URL = 'https://github.com/ElvUI-WotLK/ElvUI/releases/latest'
+local DOWNLOAD_URL = 'https://github.com/Accidev-Addons/ElvUI-for-Sirus/releases/latest'
 local FALLBACK_COLOR = { 1, 1, 1, 1 }
 
 E.PopupDialogs = {}
@@ -46,7 +46,7 @@ E.StaticPopup_DisplayedFrames = {}
 E.MAX_STATIC_POPUPS = 4
 
 E.PopupDialogs.ELVUI_UPDATE_AVAILABLE = {
-	text = L["ElvUI is five or more revisions out of date. You can download the newest version from https://github.com/ElvUI-WotLK/ElvUI/."],
+	text = L["ElvUI is five or more revisions out of date. You can download the newest version from https://github.com/Accidev-Addons/ElvUI-for-Sirus/."],
 	hasEditBox = 1,
 	OnShow = function(self)
 		self.editBox:SetAutoFocus(false)

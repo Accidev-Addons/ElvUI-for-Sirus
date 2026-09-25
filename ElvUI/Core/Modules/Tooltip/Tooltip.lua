@@ -309,7 +309,7 @@ function TT:SetUnitText(tt, unit, isPlayerUnit)
 			local addonUser = E.UserList[nameRealm]
 			if addonUser then
 				local same = addonUser == E.version
-				tt:AddDoubleLine(L["ElvUI Version:"], format('%.2f', addonUser), nil, nil, nil, same and 0.2 or 1, same and 1 or 0.2, 0.2)
+				tt:AddDoubleLine(L["ElvUI Version:"], E:FormatVersion(addonUser), nil, nil, nil, same and 0.2 or 1, same and 1 or 0.2, 0.2)
 			end
 		end
 

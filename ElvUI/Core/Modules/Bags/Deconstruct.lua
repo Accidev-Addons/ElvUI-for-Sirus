@@ -571,10 +571,6 @@ function D:ApplyDeconstruct(itemLink, itemId, spell, spellType, button, bag, slo
 	frame:SetAllPoints(button)
 	frame:Show()
 
-	if E.db.general.customGlow.style ~= 'Pixel Glow' then
-		E.Libs.CustomGlow.PixelGlow_Start(frame, E.media.customGlowColor, 8, 0.25, nil, 2, 0, 0, false, 'Deconstruct')
-	end
-
 	LCG.ShowOverlayGlow(frame)
 end
 
@@ -716,15 +712,11 @@ function D:ConstructRealDecButton()
 	frame:SetFrameStrata('TOOLTIP')
 	frame:Hide()
 
-	local customGlow = E.Libs.CustomGlow
-
 	frame.OnLeave = function(self)
 		if D.DeconstructMode and self:IsMouseOver() then
 			LCG.ShowOverlayGlow(self)
 			return
 		end
-
-		customGlow.PixelGlow_Stop(self, 'Deconstruct')
 
 		if InCombatLockdown() then
 			self:SetAlpha(0)

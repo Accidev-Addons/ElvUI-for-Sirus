@@ -120,12 +120,26 @@ end
 
 function E:ParseVersionString(addon)
 	local version = GetAddOnMetadata(addon, 'Version')
-	local release, extra = strmatch(version, '^v?([%d.]+)(.*)')
-	return tonumber(release), release..extra, extra ~= ''
+	if not version then return end
+
+	local major, minor, patch, extra = strmatch(version, '^v?(%d+)%.?(%d?%d?)%.?(%d?%d?)(.*)')
+	if not major then return end
+
+	major, minor, patch = tonumber(major), tonumber(minor) or 0, tonumber(patch) or 0
+	local value = tonumber(format('%.4f', major + minor / 100 + patch / 10000))
+
+	return value, format('%d.%02d.%02d%s', major, minor, patch, extra), extra ~= ''
+end
+
+function E:FormatVersion(value)
+	local major, minor, patch = format('%.4f', value or 0):match('^(%d+)%.(%d%d)(%d%d)$')
+	if not major then return tostring(value or 0) end
+
+	return format('%d.%02d.%02d', tonumber(major), tonumber(minor), tonumber(patch))
 end
 
 do
-	E.Libs = { version = 9.09 } -- E:ParseVersionString('ElvUI_Libraries') will add later
+	E.Libs = { version = E:ParseVersionString('ElvUI_Libraries') } -- compared against E.version, so it must stay in sync with ElvUI_Libraries.toc
 	E.LibsMinor = {}
 	function E:AddLib(name, major, minor)
 		if not name then return end
@@ -149,7 +163,7 @@ do
 	E:AddLib('SimpleSticky', 'LibSimpleSticky-1.0')
 	E:AddLib('SpellRange', 'SpellRange-1.0')
 	E:AddLib('ItemSearch', 'LibItemSearch-1.2-ElvUI')
-	E:AddLib('CustomGlow', 'LibCustomGlow-1.0-ElvUI')
+	E:AddLib('CustomGlow', 'LibCustomGlow-1.0')
 	E:AddLib('Deflate', 'LibDeflate')
 	E:AddLib('Masque', 'Masque', true)
 	E:AddLib('Translit', 'LibTranslit-1.0')

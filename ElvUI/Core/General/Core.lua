@@ -863,10 +863,10 @@ do
 		E.UserList[E:StripMyRealm(sender)] = msg
 
 		if msg and (msg > ver) and not E.recievedOutOfDateMessage then -- you're outdated D:
-			E:Print(L["ElvUI is out of date. You can download the newest version from https://github.com/ElvUI-WotLK."])
+			E:Print(L["ElvUI is out of date. You can download the newest version from https://github.com/Accidev-Addons/ElvUI-for-Sirus."])
 
 			if msg and ((msg - ver) >= 0.05) and not inCombat then
-				E.PopupDialogs.ELVUI_UPDATE_AVAILABLE.text = L["ElvUI is five or more revisions out of date. You can download the newest version from https://github.com/ElvUI-WotLK."]..format('|n|nSender %s : Version %s', sender, msg)
+				E.PopupDialogs.ELVUI_UPDATE_AVAILABLE.text = L["ElvUI is five or more revisions out of date. You can download the newest version from https://github.com/Accidev-Addons/ElvUI-for-Sirus."]..format('|n|nSender %s : Version %s', sender, E:FormatVersion(msg))
 
 				E:StaticPopup_Show('ELVUI_UPDATE_AVAILABLE')
 			end
@@ -1945,7 +1945,7 @@ function E:Initialize()
 			E:Install()
 		end
 
-		if E.version ~= E.Libs.version then
+		if format('%.2f', E.version or 0) ~= format('%.2f', E.Libs.version or 0) then
 			E.updateRequestTriggered = true
 			E:StaticPopup_Show('UPDATE_REQUEST')
 		end

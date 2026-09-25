@@ -178,6 +178,14 @@ function S:Ace3_BuildTabs(...)
 
 	if not self.old_BuildTabs then return end
 
+	if self.tabs then
+		for _, tab in ipairs(self.tabs) do
+			if tab.__elvAce3Width then
+				tab:SetWidth(tab.__elvAce3Width)
+			end
+		end
+	end
+
 	local result = self.old_BuildTabs(self, ...)
 	if not width or width <= 0 then
 		return result
@@ -203,7 +211,8 @@ function S:Ace3_BuildTabs(...)
 		local extra = (width - usedWidth) / #row.tabs
 		if extra > 0 then
 			for _, tab in ipairs(row.tabs) do
-				tab:SetWidth(tab:GetWidth() + extra)
+				tab.__elvAce3Width = tab.__elvAce3Width or tab:GetWidth()
+				tab:SetWidth(tab.__elvAce3Width + extra)
 			end
 		end
 	end
@@ -594,6 +603,23 @@ function S:Ace3_RegisterAsContainer(widget)
 			if not widget.old_BuildTabs then
 				widget.old_BuildTabs = widget.BuildTabs
 				widget.BuildTabs = S.Ace3_BuildTabs
+			end
+
+			local tabFrame = widget.frame
+			if tabFrame and not tabFrame.__elvTabSizeHook then
+				tabFrame.__elvTabSizeHook = true
+
+				tabFrame:HookScript('OnSizeChanged', function(_, width)
+					if width and width > 0 and tabFrame.width ~= width then
+						widget:BuildTabs()
+					end
+				end)
+
+				tabFrame:HookScript('OnShow', function()
+					if tabFrame:GetWidth() ~= tabFrame.width then
+						widget:BuildTabs()
+					end
+				end)
 			end
 
 			if widget.tabs then
