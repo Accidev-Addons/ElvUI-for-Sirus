@@ -197,7 +197,13 @@ function NP:GetSirusAuraLayout(frame, auraType)
 	local stride = tonumber(list.stride) or 10
 	local limit = tonumber(list.maxAuraItemsDisplayed) or (stride * 2)
 	local perrow = min(stride, limit)
-	local goingRight, goingUp = list.layoutFramesGoingRight ~= false, list.layoutFramesGoingUp ~= false
+	local goingRight, goingUp = list.layoutFramesGoingRight, list.layoutFramesGoingUp
+
+	if goingRight == nil then
+		goingRight = not (auraType == "buffs" or auraType == "Buffs")
+	end
+
+	goingUp = goingUp ~= false
 
 	return {
 		list = list,
@@ -263,18 +269,6 @@ local function GetSirusAuraAnchor(frame, auraType)
 	return "LEFT", target, "RIGHT", NP:SirusPixel(5), 0
 end
 
-local function ResolveSirusAura(unit, auraInstanceID, stored)
-	local unitAuras = _G.C_UnitAuras
-	if unit and auraInstanceID and unitAuras and unitAuras.GetAuraDataByAuraInstanceID then
-		local aura = unitAuras.GetAuraDataByAuraInstanceID(unit, auraInstanceID)
-		if aura then
-			return aura
-		end
-	end
-
-	return stored
-end
-
 local function GetItemAura(item)
 	local count = item.CountFrame and item.CountFrame.Count and tonumber(item.CountFrame.Count:GetText())
 
@@ -285,20 +279,39 @@ local function GetItemAura(item)
 	}
 end
 
+local function ResolveSirusAura(unit, item)
+	local unitAuras = _G.C_UnitAuras
+	if unit and item.auraInstanceID and unitAuras and unitAuras.GetAuraDataByAuraInstanceID then
+		local aura = unitAuras.GetAuraDataByAuraInstanceID(unit, item.auraInstanceID)
+		if aura then
+			return aura
+		end
+	end
+
+	return GetItemAura(item)
+end
+
+local auraItems = {}
+
 local function GetSirusAuraItems(list)
-	local items = {}
+	local count = 0
 
 	if list and list.IsShown and list:IsShown() then
 		for _, item in next, { list:GetChildren() } do
 			if item.layoutIndex then
-				items[#items + 1] = item
+				count = count + 1
+				auraItems[count] = item
 			end
 		end
 
-		sort(items, function(a, b) return a.layoutIndex < b.layoutIndex end)
+		sort(auraItems, function(a, b) return a.layoutIndex < b.layoutIndex end)
 	end
 
-	return items
+	for i = count + 1, #auraItems do
+		auraItems[i] = nil
+	end
+
+	return auraItems, count
 end
 
 local function HideSirusAuraItem(item)
@@ -320,14 +333,14 @@ function NP:UpdateElement_SirusAuras(auras)
 
 	local db = GetAuraDB(frame, auras.type)
 	local unit = frame.unit
-	local items = GetSirusAuraItems(list)
+	local items, itemCount = GetSirusAuraItems(list)
 	local visible = 0
 
 	local sirus = NP:CheckSirusAuraLayout(frame, AuraTypeName(auras.type))
 
-	for index = 1, #items do
+	for index = 1, itemCount do
 		local item = items[index]
-		local aura = ResolveSirusAura(unit, item.auraInstanceID, GetItemAura(item))
+		local aura = ResolveSirusAura(unit, item)
 
 		if aura and aura.icon then
 			visible = visible + 1
@@ -364,7 +377,7 @@ function NP:UpdateElement_SirusLossOfControl(auras)
 	local aura
 
 	if locFrame:IsShown() and item:IsShown() then
-		aura = ResolveSirusAura(unit, item.auraInstanceID, GetItemAura(item))
+		aura = ResolveSirusAura(unit, item)
 	end
 
 	local size = NP:SirusPixel((tonumber(locFrame:GetWidth()) or AURA_ITEM_HEIGHT) * NP:GetSirusAuraItemScale())
