@@ -123,51 +123,12 @@ function S:Ace3_ButtonSetPoint(point, anchor, point2, xOffset, yOffset, skip)
 	end
 end
 
-function S:Ace3_RefreshButton(button)
-	local buttonType = type(button)
-	if buttonType ~= 'table' and buttonType ~= 'userdata' then return end
-	if not button.StripTextures then return end
-	if button.__elvAce3Refreshing then return end
-
-	button.__elvAce3Refreshing = true
-	if button.SetNormalTexture then button:SetNormalTexture(E.ClearTexture) end
-	if button.SetHighlightTexture then button:SetHighlightTexture(E.ClearTexture) end
-	if button.SetPushedTexture then button:SetPushedTexture(E.ClearTexture) end
-	if button.SetDisabledTexture then button:SetDisabledTexture(E.ClearTexture) end
-
-	button:StripTextures()
-
-	button.__elvAce3Refreshing = nil
-end
-
 function S:Ace3_SkinButton(button)
-	if button.__elvAce3Button then return end
-
 	if not button.isSkinned then
 		S:HandleButton(button, true)
+
+		hooksecurefunc(button, 'SetPoint', S.Ace3_ButtonSetPoint)
 	end
-
-	button.__elvAce3Button = true
-
-	button:HookScript('OnShow', function(frame)
-		S:Ace3_RefreshButton(frame)
-	end)
-
-	for _, method in next, {'SetNormalTexture', 'SetHighlightTexture', 'SetPushedTexture', 'SetDisabledTexture'} do
-		hooksecurefunc(button, method, function()
-			S:Ace3_RefreshButton(button)
-		end)
-	end
-	if button.SetButtonState then
-		hooksecurefunc(button, 'SetButtonState', function()
-			S:Ace3_RefreshButton(button)
-		end)
-	end
-
-	hooksecurefunc(button, 'SetPoint', function(point, anchor, point2, xOffset, yOffset, skip)
-		S:Ace3_ButtonSetPoint(button, point, anchor, point2, xOffset, yOffset, skip)
-	end)
-	S:Ace3_RefreshButton(button)
 end
 
 function S:Ace3_BuildTabs(...)
