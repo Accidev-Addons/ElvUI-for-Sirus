@@ -11335,6 +11335,7 @@ return {
 	"FrameHeight",
 	"FrameScript",
 	"FrameSize",
+	"FrameUtil",
 	"FrameWidth",
 	"FrameXML_Debug",
 	"FramerateLabel",

@@ -4238,3 +4238,61 @@ for i = 1, 5 do
 		end
 	}
 end
+
+do
+	local sirusOwnsAuras = function() return NP:IsSirusNameplates() end
+	local hiddenInSirus = { "perrow", "numrows", "size", "spacing", "xOffset", "yOffset", "anchorPoint", "attachTo", "growthX", "growthY" }
+
+	local function HideSirusOwnedAuraLayout(group)
+		if not (group and group.args) then return end
+
+		for _, key in next, hiddenInSirus do
+			local option = group.args[key]
+			if option then
+				option.hidden = sirusOwnsAuras
+			end
+		end
+
+		local enable, filtersGroup = group.args.enable, group.args.filtersGroup
+		if enable then enable.hidden = sirusOwnsAuras end
+		if filtersGroup then filtersGroup.hidden = sirusOwnsAuras end
+
+		group.args.clientAuras = {
+			order = 0.5,
+			type = "description",
+			name = L["The game client decides which auras a nameplate shows: its own aura display options, buff and debuff rules, spell blacklists and crowd control. ElvUI draws those auras in its own style."],
+			hidden = function() return not NP:IsSirusNameplates() end
+		}
+
+		group.args.clientLayout = {
+			order = 1.5,
+			type = "description",
+			name = L["Aura positions, sizes, spacing and the amount of icons are set in the game client's nameplate options."],
+			hidden = function() return not NP:IsSirusNameplates() end
+		}
+	end
+
+	for _, group in pairs(E.Options.args.nameplates.args) do
+		if type(group) == "table" and group.args then
+			HideSirusOwnedAuraLayout(group.args.buffsGroup)
+			HideSirusOwnedAuraLayout(group.args.debuffsGroup)
+		end
+	end
+
+	local general = E.Options.args.nameplates.args.generalGroup.args.general.args
+	if general.motionType then
+		general.motionType.hidden = sirusOwnsAuras
+	end
+
+	general.clientStacking = {
+		order = 3,
+		type = "description",
+		name = function()
+			local layout = NP:GetSirusStackLayout()
+			local text = layout and (_G["UNIT_NAMEPLATES_STACK_LAYOUT_" .. layout] or layout)
+
+			return text and format(L["Nameplate stacking is set in the game client's nameplate options: %s"], format("|cffFFD100%s|r", text)) or ""
+		end,
+		hidden = function() return not NP:IsSirusNameplates() end
+	}
+end

@@ -157,6 +157,7 @@ L["AUCTIONS"] = "Лоты"
 L["Aura Filters"] = "Фильтры аур"
 L["Aura Highlight"] = "Подсветка аур"
 L["Aura Indicator"] = "Индикатор аур"
+L["Aura positions, sizes, spacing and the amount of icons are set in the game client's nameplate options."] = "Позиции, размеры, отступы и количество иконок аур задаются в настройках индикаторов игрового клиента."
 L["Auto Add New Spells"] = "Автоматически добавлять новые заклинания"
 L["Auto Hide"] = "Автоскрытие"
 L["Auto Repair"] = "Автоматический ремонт"
@@ -1158,6 +1159,7 @@ L["NamePlate Style Filters"] = "Фильтры стилей индикаторо
 L["Nameplate Thin Borders"] = "Тонкие границы индикаторов здоровья"
 L["Nameplate"] = "Индикатор здоровья"
 L["Nameplates"] = "Индикаторы здоровья"
+L["Nameplate stacking is set in the game client's nameplate options: %s"] = "Расположение индикаторов задаётся в настройках индикаторов игрового клиента: %s"
 L["Names"] = "Имена"
 L["Negative Match"] = "Обратная проверка"
 L["Neutral"] = "Нейтральный"
@@ -1573,6 +1575,7 @@ L["Show"] = "Показать"
 L["Show/Hide Test Frame"] = "Показать / Скрыть тестовый фрейм"
 L["Shows a swipe animation when a spell is recharging but still has charges left."] = "Отображать анимацию заполнения, когда заклинание перезаряжается, но все еще имеет заряды."
 L["Side Arrows"] = "Стрелки по сторонам"
+L["Sirus Development:"] = "Разработка под Sirus:"
 L["Size and Positions"] = "Размер и позиция"
 L["Size Offset"] = "Офсет размера"
 L["Size Override"] = "Свой размер"
@@ -1718,6 +1721,7 @@ L["The font that combat text will use. |cffFF3333WARNING: This requires a game r
 L["The font that the core of the UI will use."] = "Шрифт для основного интерфейса."
 L["The font that the unitframes will use."] = "Шрифт рамок юнитов."
 L["The frame is not shown unless you mouse over the frame."] = "Отображать только при наведении мыши."
+L["The game client decides which auras a nameplate shows: its own aura display options, buff and debuff rules, spell blacklists and crowd control. ElvUI draws those auras in its own style."] = "Набор аур на индикаторе определяет игровой клиент: его настройки отображения аур, правила баффов и дебаффов, чёрные списки заклинаний и контроль. ElvUI лишь отрисовывает эти ауры в своём стиле."
 L["The height of the action buttons."] = "Высота кнопок панели."
 L["The initial group will start near the center and grow out."] = "Первая группа появится в центре и будет расти наружу."
 L["The minimum item level required for it to be shown."] = "Минимальный уровень предмета, который будет показан в сумках."
@@ -2192,7 +2196,7 @@ L["TEXT_FORMAT_DESC"] = [=[Строка для изменения вида те�
 Форматы цвета:
 |cff HEX [tag]|r
 |cffaaaaaa[name]|r
-Для отключения оставьте поле пустым, для дополнительной информации посетите https://discord.gg/wRPF8CCpNV]=]
+Для отключения оставьте поле пустым, для дополнительной информации посетите https://discord.gg/CXtYebMBb]=]
 L["Tank Target"] = "Цели танков"
 L["Target Scale"] = "Масштаб цели"
 L["Target units on mouse down rather than mouse up. \n\n|cffFF0000Warning: If you are using the addon 'Clique' you may have to adjust your clique settings when changing this."] = "Выделять при нажатии кнопки мыши, а не при ее отпускании.\n\n|cffFF0000Внимание: Если Вы используете аддон 'Clique', то Вы также должны изменить его настройки при изменении этой."

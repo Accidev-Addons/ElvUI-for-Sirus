@@ -155,6 +155,7 @@ L["AUCTIONS"] = "Auctions"
 L["Aura Filters"] = true
 L["Aura Highlight"] = true
 L["Aura Indicator"] = true
+L["Aura positions, sizes, spacing and the amount of icons are set in the game client's nameplate options."] = true
 L["Auto Add New Spells"] = true
 L["Auto Hide"] = true
 L["Auto Repair"] = true
@@ -1149,6 +1150,7 @@ L["NamePlate Style Filters"] = true
 L["Nameplate Thin Borders"] = true
 L["Nameplate"] = true
 L["Nameplates"] = true
+L["Nameplate stacking is set in the game client's nameplate options: %s"] = true
 L["Names"] = true
 L["Negative Match"] = true
 L["Neutral"] = true
@@ -1561,6 +1563,7 @@ L["Show"] = true
 L["Show/Hide Test Frame"] = true
 L["Shows a swipe animation when a spell is recharging but still has charges left."] = true
 L["Side Arrows"] = true
+L["Sirus Development:"] = true
 L["Size and Positions"] = true
 L["Size Offset"] = true
 L["Size Override"] = true
@@ -1705,6 +1708,7 @@ L["The font that combat text will use. |cffFF3333WARNING: This requires a game r
 L["The font that the core of the UI will use."] = true
 L["The font that the unitframes will use."] = true
 L["The frame is not shown unless you mouse over the frame."] = true
+L["The game client decides which auras a nameplate shows: its own aura display options, buff and debuff rules, spell blacklists and crowd control. ElvUI draws those auras in its own style."] = true
 L["The height of the action buttons."] = true
 L["The initial group will start near the center and grow out."] = true
 L["The minimum item level required for it to be shown."] = true
@@ -2180,7 +2184,7 @@ Name Formats:
 "name:long" - Name restricted to 20 characters
 "name:short:translit" - Name restricted to 10 characters with transliteration
 
-To disable leave the field blank, if you need more information visit https://discord.gg/wRPF8CCpNV]=]
+To disable leave the field blank, if you need more information visit https://discord.gg/CXtYebMBb]=]
 L["Tank Target"] = true
 L["Target Scale"] = true
 L["Target units on mouse down rather than mouse up. \n\n|cffFF0000Warning: If you are using the addon 'Clique' you may have to adjust your clique settings when changing this."] = true
