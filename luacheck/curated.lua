@@ -165,6 +165,7 @@ return {
 	"C_GlobalStorage",
 	"C_Item",
 	"C_NamePlate",
+	"C_NamePlateManager",
 	"C_Texture",
 	"C_Timer",
 	"CalendarClassButton1",

@@ -5,7 +5,7 @@ local NP = E:GetModule("NamePlates")
 local _G = _G
 local type = type
 local select, unpack, pairs, next = select, unpack, pairs, next
-local random, abs, floor = math.random, math.abs, math.floor
+local random, abs, floor, max = math.random, math.abs, math.floor, math.max
 local format, gsub, match = string.format, string.gsub, string.match
 local twipe = table.wipe
 --WoW API / Variables
@@ -154,7 +154,7 @@ function NP:HookSirusPlateSize()
 	end)
 
 	hooksecurefunc(driver, "UpdateNamePlateHitTestArea", function(_, unit)
-		NP:ClearHitTestOverride(unit)
+		NP:UpdateHitTestArea(unit)
 	end)
 
 	hooksecurefunc(C_NamePlate, "SetNamePlateEnemyClickThrough", function(value)
@@ -634,27 +634,29 @@ function NP:UpdateElement_All(frame, noTargetFrame, filterIgnore)
 	end
 end
 
+local function GetPlateSize(unitType)
+	local friendly = unitType == "FRIENDLY_PLAYER" or unitType == "FRIENDLY_NPC"
+	local db = NP.db.plateSize
+	local width = friendly and db.friendlyWidth or db.enemyWidth
+	local height = friendly and db.friendlyHeight or db.enemyHeight
+	local mult = plateScale()
+
+	return width, height, mult, NP:GetSirusStackHeight() or height * mult
+end
+
 function NP:SetSize(frame)
 	if InCombatLockdown() then
 		NP.ResizeQueue[frame] = true
 	else
 		local unitFrame = frame.ElvUIFrame
-		local unitType = unitFrame and unitFrame.UnitType
-		local friendly = unitType == "FRIENDLY_PLAYER" or unitType == "FRIENDLY_NPC"
-		local db = NP.db.plateSize
-		local contentWidth = friendly and db.friendlyWidth or db.enemyWidth
-		local contentHeight = friendly and db.friendlyHeight or db.enemyHeight
-		local mult = NP.db.plateScale and E.uiscale or 1
-		local width, height = contentWidth * mult, contentHeight * mult
-		local sirus = NP:IsSirusNameplates()
-		local stackHeight = sirus and NP:GetSirusStackHeight() or nil
+		local width, height, mult, plateHeight = GetPlateSize(unitFrame and unitFrame.UnitType)
 
-		frame:SetSize(width, stackHeight or height)
+		frame:SetSize(width * mult, plateHeight)
 
-		if sirus and unitFrame then
+		if unitFrame and NP:IsSirusNameplates() then
 			unitFrame:ClearAllPoints()
 			unitFrame:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 0, 0)
-			unitFrame:SetSize(contentWidth, contentHeight)
+			unitFrame:SetSize(width, height)
 		end
 
 		NP.ResizeQueue[frame] = nil
@@ -689,27 +691,43 @@ function NP:UpdateClickableSizes()
 		NP.ClickableSizeQueued = true
 	else
 		NP.ClickableSizeQueued = nil
-		local db = NP.db.plateSize
-		local mult = NP.db.plateScale and E.uiscale or 1
-		local enemyHeight, friendlyHeight = db.enemyHeight * mult, db.friendlyHeight * mult
 
-		local stackHeight = NP:GetSirusStackHeight()
-		local enemyPlateHeight, friendlyPlateHeight = stackHeight or enemyHeight, stackHeight or friendlyHeight
+		local width, height, mult, plateHeight = GetPlateSize("ENEMY_NPC")
+		C_NamePlate_SetNamePlateEnemySize(width * mult, plateHeight)
+		C_NamePlate_SetNamePlateEnemyPreferredClickInsets(0, 0, plateHeight - height * mult, 0)
 
-		C_NamePlate_SetNamePlateEnemySize(db.enemyWidth * mult, enemyPlateHeight)
-		C_NamePlate_SetNamePlateFriendlySize(db.friendlyWidth * mult, friendlyPlateHeight)
-		C_NamePlate_SetNamePlateEnemyPreferredClickInsets(0, 0, enemyPlateHeight - enemyHeight, 0)
-		C_NamePlate_SetNamePlateFriendlyPreferredClickInsets(0, 0, friendlyPlateHeight - friendlyHeight, 0)
+		width, height, mult, plateHeight = GetPlateSize("FRIENDLY_NPC")
+		C_NamePlate_SetNamePlateFriendlySize(width * mult, plateHeight)
+		C_NamePlate_SetNamePlateFriendlyPreferredClickInsets(0, 0, plateHeight - height * mult, 0)
+
 		C_NamePlate_SetNamePlateEnemyClickThrough(NP.db.clickThrough.enemy)
 		C_NamePlate_SetNamePlateFriendlyClickThrough(NP.db.clickThrough.friendly)
+
+		for frame in pairs(NP.VisiblePlates) do
+			if frame.IconOnlyChanged and frame.unit then
+				NP:UpdateHitTestArea(frame.unit)
+			end
+		end
 	end
 end
 
-function NP:ClearHitTestOverride(unit)
+function NP:UpdateHitTestArea(unit)
 	if InCombatLockdown() then
 		NP.HitTestQueue[unit] = true
 	else
-		C_NamePlateManager.ClearNamePlateHitTestInsetsOverride(unit)
+		local plate = C_NamePlate_GetNamePlateForUnit(unit)
+		local frame = plate and plate.ElvUIFrame
+
+		if frame and frame.IconOnlyChanged then
+			local width, height, mult, plateHeight = GetPlateSize(frame.UnitType)
+			local size = NP.db.units[frame.UnitType].iconFrame.size
+			local side = max((width - size) * mult / 2, 0)
+
+			C_NamePlateManager.SetNamePlateHitTestInsetsOverride(unit, side, side, plateHeight - height * mult, max((height - size) * mult, 0))
+		else
+			C_NamePlateManager.ClearNamePlateHitTestInsetsOverride(unit)
+		end
+
 		NP.HitTestQueue[unit] = nil
 	end
 end
@@ -855,7 +873,9 @@ function NP:OnEvent(event, unit, ...)
 			self.UnitReaction = reaction
 
 			NP:Update_HealthColor(self)
-			NP:Update_Name(self)
+			if not (self.NameOnlyChanged or self.IconOnlyChanged) then
+				NP:Update_Name(self)
+			end
 			return
 		end
 	end
@@ -1305,7 +1325,7 @@ function NP:PLAYER_REGEN_ENABLED()
 	end
 
 	for unit in pairs(NP.HitTestQueue) do
-		NP:ClearHitTestOverride(unit)
+		NP:UpdateHitTestArea(unit)
 	end
 
 	if NP.db.showFriendlyCombat == 'TOGGLE_ON' then

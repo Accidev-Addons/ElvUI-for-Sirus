@@ -50,11 +50,6 @@ local totemTypes = {
 	air = { -- Air Totems
 		[8177] = "a1",	-- Grounding Totem
 		[10595] = "a2",	-- Nature Resistance Totem I
-		[10600] = "a2",	-- Nature Resistance Totem II
-		[10601] = "a2",	-- Nature Resistance Totem III
-		[25574] = "a2",	-- Nature Resistance Totem IV
-		[58746] = "a2",	-- Nature Resistance Totem V
-		[58749] = "a2",	-- Nature Resistance Totem VI
 		[6495] = "a3",	-- Sentry Totem
 		[8512] = "a4",	-- Windfury Totem
 		[3738] = "a5",	-- Wrath of Air Totem
@@ -63,98 +58,23 @@ local totemTypes = {
 		[2062] = "e1",	-- Earth Elemental Totem
 		[2484] = "e2",	-- Earthbind Totem
 		[5730] = "e3",	-- Stoneclaw Totem I
-		[6390] = "e3",	-- Stoneclaw Totem II
-		[6391] = "e3",	-- Stoneclaw Totem III
-		[6392] = "e3",	-- Stoneclaw Totem IV
-		[10427] = "e3",	-- Stoneclaw Totem V
-		[10428] = "e3",	-- Stoneclaw Totem VI
-		[25525] = "e3",	-- Stoneclaw Totem VII
-		[58580] = "e3",	-- Stoneclaw Totem VIII
-		[58581] = "e3",	-- Stoneclaw Totem IX
-		[58582] = "e3",	-- Stoneclaw Totem X
 		[8071] = "e4",	-- Stoneskin Totem I -- Faction Champs
-		[8154] = "e4",	-- Stoneskin Totem II
-		[8155] = "e4",	-- Stoneskin Totem III
-		[10406] = "e4",	-- Stoneskin Totem IV
-		[10407] = "e4",	-- Stoneskin Totem V
-		[10408] = "e4",	-- Stoneskin Totem VI
-		[25508] = "e4",	-- Stoneskin Totem VII
-		[25509] = "e4",	-- Stoneskin Totem VIII
-		[58751] = "e4",	-- Stoneskin Totem IX
-		[58753] = "e4",	-- Stoneskin Totem X
 		[8075] = "e5",	-- Strength of Earth Totem I -- Faction Champs
-		[8160] = "e5",	-- Strength of Earth Totem II
-		[8161] = "e5",	-- Strength of Earth Totem III
-		[10442] = "e5",	-- Strength of Earth Totem IV
-		[25361] = "e5",	-- Strength of Earth Totem V
-		[25528] = "e5",	-- Strength of Earth Totem VI
-		[57622] = "e5",	-- Strength of Earth Totem VII
-		[58643] = "e5",	-- Strength of Earth Totem VIII
 		[8143] = "e6",	-- Tremor Totem
 	},
 	fire = { -- Fire Totems
 		[2894] = "f1",	-- Fire Elemental Totem
 		[8227] = "f2",	-- Flametongue Totem I -- Faction Champs
-		[8249] = "f2",	-- Flametongue Totem II
-		[10526] = "f2",	-- Flametongue Totem III
-		[16387] = "f2",	-- Flametongue Totem IV
-		[25557] = "f2",	-- Flametongue Totem V
-		[58649] = "f2",	-- Flametongue Totem VI
-		[58652] = "f2",	-- Flametongue Totem VII
-		[58656] = "f2",	-- Flametongue Totem VIII
 		[8181] = "f3",	-- Frost Resistance Totem I
-		[10478] = "f3",	-- Frost Resistance Totem II
-		[10479] = "f3",	-- Frost Resistance Totem III
-		[25560] = "f3",	-- Frost Resistance Totem IV
-		[58741] = "f3",	-- Frost Resistance Totem V
-		[58745] = "f3",	-- Frost Resistance Totem VI
 		[8190] = "f4",	-- Magma Totem I
-		[10585] = "f4",	-- Magma Totem II
-		[10586] = "f4",	-- Magma Totem III
-		[10587] = "f4",	-- Magma Totem IV
-		[25552] = "f4",	-- Magma Totem V
-		[58731] = "f4",	-- Magma Totem VI
-		[58734] = "f4",	-- Magma Totem VII
 		[3599] = "f5",	-- Searing Totem I -- Faction Champs
-		[6363] = "f5",	-- Searing Totem II
-		[6364] = "f5",	-- Searing Totem III
-		[6365] = "f5",	-- Searing Totem IV
-		[10437] = "f5",	-- Searing Totem V
-		[10438] = "f5",	-- Searing Totem VI
-		[25533] = "f5",	-- Searing Totem VII
-		[58699] = "f5",	-- Searing Totem VIII
-		[58703] = "f5",	-- Searing Totem IX
-		[58704] = "f5",	-- Searing Totem X
 		[30706] = "f6",	-- Totem of Wrath I
-		[57720] = "f6",	-- Totem of Wrath II
-		[57721] = "f6",	-- Totem of Wrath III
-		[57722] = "f6",	-- Totem of Wrath IV
 	},
 	water = { -- Water Totems
 		[8170] = "w1",	-- Cleansing Totem
 		[8184] = "w2",	-- Fire Resistance Totem I
-		[10537] = "w2",	-- Fire Resistance Totem II
-		[10538] = "w2",	-- Fire Resistance Totem III
-		[25563] = "w2",	-- Fire Resistance Totem IV
-		[58737] = "w2",	-- Fire Resistance Totem V
-		[58739] = "w2",	-- Fire Resistance Totem VI
 		[5394] = "w3",	-- Healing Stream Totem I -- Faction Champs
-		[6375] = "w3",	-- Healing Stream Totem II
-		[6377] = "w3",	-- Healing Stream Totem III
-		[10462] = "w3",	-- Healing Stream Totem IV
-		[10463] = "w3",	-- Healing Stream Totem V
-		[25567] = "w3",	-- Healing Stream Totem VI
-		[58755] = "w3",	-- Healing Stream Totem VII
-		[58756] = "w3",	-- Healing Stream Totem VIII
-		[58757] = "w3",	-- Healing Stream Totem IX
 		[5675] = "w4",	-- Mana Spring Totem I
-		[10495] = "w4",	-- Mana Spring Totem II
-		[10496] = "w4",	-- Mana Spring Totem III
-		[10497] = "w4",	-- Mana Spring Totem IV
-		[25570] = "w4",	-- Mana Spring Totem V
-		[58771] = "w4",	-- Mana Spring Totem VI
-		[58773] = "w4",	-- Mana Spring Totem VII
-		[58774] = "w4",	-- Mana Spring Totem VIII
 		[16190] = "w5"	-- Mana Tide Totem
 	},
 	other = {
@@ -199,9 +119,7 @@ for totemSchool, totems in pairs(totemTypes) do
 		local totemName, _, texture = GetSpellInfo(spellID)
 
 		if totemName then
-			if not NP.TriggerConditions.totems[totemID] then
-				NP.TriggerConditions.totems[totemID] = {totemName, totemSchool, texture}
-			end
+			NP.TriggerConditions.totems[totemID] = {totemName, totemSchool, texture}
 
 			for _, rank in ipairs(totemRanks) do
 				NP.Totems[totemName..rank] = totemID
@@ -388,6 +306,7 @@ function NP:StyleFilterSetChanges(frame, actions, HealthColorChanged, BorderChan
 		NP:Update_Glow(frame)
 		NP:Update_RaidIcon(frame)
 		NP:Configure_NameOnlyGlow(frame)
+		if frame.unit then NP:UpdateHitTestArea(frame.unit) end
 	end
 end
 
@@ -490,6 +409,7 @@ function NP:StyleFilterClearChanges(frame, HealthColorChanged, BorderChanged, Fl
 		end
 		NP:Update_RaidIcon(frame)
 		NP:Configure_NameOnlyGlow(frame)
+		if frame.unit then NP:UpdateHitTestArea(frame.unit) end
 	end
 end
 

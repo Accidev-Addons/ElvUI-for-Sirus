@@ -2098,7 +2098,7 @@ L["Here you can add items or search terms that you want to be excluded from sort
 L["Hide Error Text"] = "Прятать сообщения об ошибках"
 L["Hides the red error text at the top of the screen while in combat."] = "Скрывать красный текст ошибок вверху экрана в бою."
 L["INTERRUPTED"] = "Прервано"
-L["Icon Frame"] = "Иконка фрейма"
+L["Icon Frame"] = "Иконка тотемов"
 L["Icon Only"] = "Только иконка"
 L["Icon Position"] = "Позиция иконки"
 L["If this list is empty, and if 'Interruptible' is checked, then the filter will activate on any type of cast that can be interrupted."] = 'Если список пуст и "Прерываемые" включено, то фильтр будет активирован при произнесении любого прерываемого заклинания.'
