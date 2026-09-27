@@ -4253,14 +4253,10 @@ do
 			end
 		end
 
-		local enable, filtersGroup = group.args.enable, group.args.filtersGroup
-		if enable then enable.hidden = sirusOwnsAuras end
-		if filtersGroup then filtersGroup.hidden = sirusOwnsAuras end
-
 		group.args.clientAuras = {
 			order = 0.5,
 			type = "description",
-			name = L["The game client decides which auras a nameplate shows: its own aura display options, buff and debuff rules, spell blacklists and crowd control. ElvUI draws those auras in its own style."],
+			name = L["The game client decides which auras a nameplate can show and in what order: its own aura display options, buff and debuff rules, spell blacklists and crowd control. ElvUI draws them in its own style. The Enable toggle and the filters below can hide some of these auras, but cannot add auras the client does not show."],
 			hidden = function() return not NP:IsSirusNameplates() end
 		}
 

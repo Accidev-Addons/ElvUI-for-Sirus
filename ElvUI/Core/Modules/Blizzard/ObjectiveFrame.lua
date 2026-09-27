@@ -23,7 +23,6 @@ function BL:ObjectiveTracker_UpdateMoverSize()
 	local height = tracker:GetHeight()
 	if not height or height <= 0 then return end
 
-	holder:SetHeight(height)
 	mover:SetHeight(height)
 end
 

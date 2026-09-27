@@ -1945,7 +1945,7 @@ function E:Initialize()
 			E:Install()
 		end
 
-		if format('%.2f', E.version or 0) ~= format('%.2f', E.Libs.version or 0) then
+		if format('%.4f', E.version or 0):sub(1, -3) ~= format('%.4f', E.Libs.version or 0):sub(1, -3) then
 			E.updateRequestTriggered = true
 			E:StaticPopup_Show('UPDATE_REQUEST')
 		end

@@ -1721,7 +1721,7 @@ L["The font that combat text will use. |cffFF3333WARNING: This requires a game r
 L["The font that the core of the UI will use."] = "Шрифт для основного интерфейса."
 L["The font that the unitframes will use."] = "Шрифт рамок юнитов."
 L["The frame is not shown unless you mouse over the frame."] = "Отображать только при наведении мыши."
-L["The game client decides which auras a nameplate shows: its own aura display options, buff and debuff rules, spell blacklists and crowd control. ElvUI draws those auras in its own style."] = "Набор аур на индикаторе определяет игровой клиент: его настройки отображения аур, правила баффов и дебаффов, чёрные списки заклинаний и контроль. ElvUI лишь отрисовывает эти ауры в своём стиле."
+L["The game client decides which auras a nameplate can show and in what order: its own aura display options, buff and debuff rules, spell blacklists and crowd control. ElvUI draws them in its own style. The Enable toggle and the filters below can hide some of these auras, but cannot add auras the client does not show."] = "Какие ауры и в каком порядке может показать индикатор, решает игровой клиент: его настройки отображения аур, правила баффов и дебаффов, чёрные списки заклинаний и контроль. ElvUI рисует их в своём стиле. Переключатель «Включить» и фильтры ниже могут скрыть часть этих аур, но не могут добавить ауры, которые клиент не показывает."
 L["The height of the action buttons."] = "Высота кнопок панели."
 L["The initial group will start near the center and grow out."] = "Первая группа появится в центре и будет расти наружу."
 L["The minimum item level required for it to be shown."] = "Минимальный уровень предмета, который будет показан в сумках."

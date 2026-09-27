@@ -25,6 +25,7 @@ local UnitFactionGroup = UnitFactionGroup
 local UnitGUID = UnitGUID
 local UnitHealth = UnitHealth
 local UnitHealthMax = UnitHealthMax
+local UnitIsDead = UnitIsDead
 local UnitIsFriend = UnitIsFriend
 local UnitIsPlayer = UnitIsPlayer
 local UnitIsUnit = UnitIsUnit
@@ -89,7 +90,7 @@ function NP:Pixel(x, even)
 end
 
 function NP:SirusPixel(x)
-	return (x or 0) / plateScale()
+	return NP:Pixel(x / plateScale())
 end
 
 function NP:GetSirusUnitFrame(plate)
@@ -111,17 +112,8 @@ function NP:GetSirusStackLayout()
 	if not NP:IsSirusNameplates() then return end
 
 	local control = _G.InterfaceOptionsNamesPanelUnitNameplatesStackLayout
-	if control and type(control.GetValue) == "function" then
-		return control:GetValue()
-	end
 
-	if GetCVar("nameplateAllowOverlap") == "1" then
-		return "OVERLAP"
-	elseif GetCVar("nameplateStackMode") == "0" then
-		return "PILE"
-	end
-
-	return "COLUMN"
+	return control and control:GetValue()
 end
 
 function NP:HookSirusStackLayout()
@@ -431,6 +423,11 @@ function NP:OnShow(isConfig, dontHideHighlight, unitToken)
 		NP:Configure_Auras(frame, "Buffs")
 		NP:Configure_Auras(frame, "Debuffs")
 
+		if frame.CrowdControl then
+			NP:Configure_Auras(frame, "CrowdControl")
+			frame.LossOfControl.anchoredIcons = 0
+		end
+
 		if NP.db.units[unitType].health.enable or (frame.isTarget and NP.db.alwaysShowTargetHealth) then
 			NP:Configure_HealthBar(frame, true)
 			NP:Configure_CastBar(frame, true)
@@ -533,6 +530,7 @@ function NP:OnHide(isConfig)
 	frame.RaidIconType = nil
 	frame.ThreatScale = nil
 	frame.ThreatStatus = nil
+	frame.isDead = nil
 	frame.snapX = nil
 	frame.snapY = nil
 
@@ -591,8 +589,9 @@ function NP:UpdateElement_All(frame, noTargetFrame, filterIgnore)
 		NP:Update_Health(frame)
 		NP:Update_HealthColor(frame)
 		NP:Update_CastBar(frame, nil, frame.unit)
-		NP:UpdateElement_Auras(frame)
 	end
+
+	NP:UpdateElement_Auras(frame)
 
 	NP:Update_RaidIcon(frame)
 	NP:Update_HealerIcon(frame)
@@ -618,8 +617,6 @@ function NP:UpdateElement_All(frame, noTargetFrame, filterIgnore)
 end
 
 function NP:SetSize(frame)
-	if frame.isTestFrame and NP:IsSirusNameplates() then return end
-
 	if InCombatLockdown() then
 		NP.ResizeQueue[frame] = true
 	else
@@ -629,6 +626,11 @@ function NP:SetSize(frame)
 
 		if NP.db.clickThrough[unitType] then
 			frame:SetSize(0.001, 0.001)
+
+			if unitFrame then
+				unitFrame:ClearAllPoints()
+				unitFrame:SetAllPoints(frame)
+			end
 		else
 			local db = NP.db.plateSize
 			local friendly = unitType == "friendly"
@@ -691,6 +693,16 @@ end
 
 local blizzardRegions = { "healthBar", "castBar", "BuffFrame", "AurasFrame", "LevelFrame", "ClassificationFrame", "RaidTargetFrame", "aggroHighlight", "aggroHighlightBase", "aggroHighlightAdditive", "aggroFlash", "selectionHighlight", "classificationIndicator", "behindCameraIcon", "name" }
 
+local function SirusPlateOnEvent(self, event, unit, ...)
+	if unit ~= self.unit then return end
+
+	if event == "UNIT_AURA" then
+		self.AurasFrame:RefreshAuras(...)
+	elseif event == "UNIT_FACTION" then
+		self:UpdateIsFriend()
+	end
+end
+
 local function muteBlizzardPlate(blizz)
 	blizz:SetAlpha(0)
 
@@ -709,12 +721,9 @@ local function muteBlizzardPlate(blizz)
 
 	local aurasFrame = blizz.AurasFrame
 	if aurasFrame and type(aurasFrame.RefreshAuras) == "function" then
-		blizz:SetScript("OnEvent", function(self, event, unit, unitAuraUpdateInfo)
-			if event == "UNIT_AURA" and unit == self.unit then
-				self.AurasFrame:RefreshAuras(unitAuraUpdateInfo)
-			end
-		end)
+		blizz:SetScript("OnEvent", SirusPlateOnEvent)
 		blizz:SetScript("OnUpdate", nil)
+		NP:HookSirusPlate(blizz)
 	elseif CompactUnitFrame_UnregisterEvents then
 		CompactUnitFrame_UnregisterEvents(blizz)
 	end
@@ -735,7 +744,7 @@ local function neutralizeDriverPlate(plate)
 	local blizz = plate.UnitFrame
 	if not (blizz and blizz.isNamePlate) then return end
 
-	NP:DisableBlizzard(plate) -- mutes the client's own plate, but keeps its aura lists updating
+	NP:DisableBlizzard(plate)
 end
 
 local plateID = 0
@@ -796,13 +805,24 @@ function NP:OnEvent(event, unit, ...)
 		NP:Update_Health(self)
 		NP:Update_HealthColor(self)
 		NP:Update_Glow(self)
-		NP:Update_Name(self)
+
+		local isDead = UnitIsDead(self.unit) and true or false
+		if self.isDead ~= isDead then
+			self.isDead = isDead
+
+			if not (self.NameOnlyChanged or self.IconOnlyChanged) then
+				NP:Update_Name(self)
+			end
+		end
+
 		NP:StyleFilterUpdate(self, "UNIT_HEALTH")
 		return
 	end
 
 	if event == "UNIT_AURA" then
-		NP:UpdateElement_Auras(self)
+		if not NP:IsSirusNameplates() then
+			NP:UpdateElement_Auras(self)
+		end
 		return
 	end
 
@@ -817,7 +837,7 @@ function NP:OnEvent(event, unit, ...)
 		end
 	end
 
-	if event == "UNIT_NAME_UPDATE" or event == "UNIT_LEVEL" then
+	if event == "UNIT_NAME_UPDATE" or event == "UNIT_LEVEL" or event == "UNIT_FACTION" then
 		NP:UpdateAllFrame(self, nil, true)
 		return
 	end
@@ -1016,6 +1036,38 @@ function NP:PixelSnap(frame)
 	health:SetPoint("TOP", frame, "TOP", frame.snapX, frame.snapY)
 end
 
+local pixelSnapper = CreateFrame("Frame")
+local healthElapsed = 0
+local snapElapsed = 0
+pixelSnapper:SetScript("OnUpdate", function(_, elapsed)
+	if not next(NP.VisiblePlates) then return end
+
+	healthElapsed = healthElapsed + elapsed
+	snapElapsed = snapElapsed + elapsed
+
+	local pollHealth = healthElapsed > 0.2
+	if pollHealth then healthElapsed = 0 end
+
+	local doSnap = snapElapsed > 0.333
+	if doSnap then snapElapsed = 0 end
+
+	for frame in pairs(NP.VisiblePlates) do
+		if doSnap then
+			NP:PixelSnap(frame)
+		end
+
+		if pollHealth and frame.unit and frame.Health:IsShown() then
+			local health, maxHealth = NP:GetHealth(frame)
+			if frame.polledHealth ~= health or frame.polledMaxHealth ~= maxHealth then
+				frame.polledHealth, frame.polledMaxHealth = health, maxHealth
+
+				NP:Update_Health(frame)
+				NP:Update_HealthColor(frame)
+			end
+		end
+	end
+end)
+
 function NP:UpdateVisiblePlates()
 	for frame in pairs(NP.VisiblePlates) do
 		NP:SetMouseoverFrame(frame)
@@ -1185,9 +1237,8 @@ function NP:SetCVars()
 	E:SetCVar('nameplateMaxDistance', NP.db.loadDistance or 41)
 	E:SetCVar('ShowClassColorInNameplate', 1)
 	E:SetCVar('showVKeyCastbar', 0)
-	E:SetCVar('nameplateAllowOverlap', NP.db.motionType == 'STACKED' and 0 or 1)
-	if NP:IsSirusNameplates() and NP.db.motionType == 'STACKED' and GetCVar('nameplateStackMode') then
-		E:SetCVar('nameplateStackMode', 1)
+	if not NP:IsSirusNameplates() then
+		E:SetCVar('nameplateAllowOverlap', NP.db.motionType == 'STACKED' and 0 or 1)
 	end
 	E:SetCVar('nameplateGlobalScale', 1)
 	E:SetCVar('nameplateMinScale', 1)
@@ -1328,21 +1379,10 @@ function NP:Initialize()
 		end)
 	end
 
-	local ElvNP_Test
-	if NP:IsSirusNameplates() and _G.NamePlatePreviewTemplate then
-		ElvNP_Test = CreateFrame("Frame", "ElvNP_Test", UIParent, "NamePlatePreviewTemplate")
-
-		ElvNP_Test.UpdateFitScale = E.noop
-		ElvNP_Test:SetSample("ElvUINamePlatePreview", "EnemyNpc")
-		ElvNP_Test:SetScript("OnUpdate", nil) -- the sample cast bar is muted anyway, no need to animate it
-	else
-		ElvNP_Test = CreateFrame("Button", "ElvNP_Test")
-		ElvNP_Test:SetScale(1)
-		ElvNP_Test:ClearAllPoints()
-		ElvNP_Test:Point("BOTTOM", UIParent, "BOTTOM", 0, 250)
-	end
-
-	ElvNP_Test.isTestFrame = true
+	local ElvNP_Test = CreateFrame("Button", "ElvNP_Test")
+	ElvNP_Test:SetScale(1)
+	ElvNP_Test:ClearAllPoints()
+	ElvNP_Test:Point("BOTTOM", UIParent, "BOTTOM", 0, 250)
 	ElvNP_Test:SetMovable(true)
 	ElvNP_Test:RegisterForDrag("LeftButton", "RightButton")
 	ElvNP_Test:SetScript("OnDragStart", function() ElvNP_Test:StartMoving() end)
@@ -1350,6 +1390,7 @@ function NP:Initialize()
 
 	NP:OnCreated(ElvNP_Test)
 
+	ElvNP_Test.isTestFrame = true
 	ElvNP_Test.ElvUIFrame.testUnitType = "ENEMY_NPC"
 	ElvNP_Test.ElvUIFrame.testMaxHealth = 100
 	ElvNP_Test.ElvUIFrame.testHealth = 70

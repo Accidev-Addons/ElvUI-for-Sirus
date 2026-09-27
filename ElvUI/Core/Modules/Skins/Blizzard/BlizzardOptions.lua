@@ -31,12 +31,8 @@ S:AddCallback("Skin_BlizzardOptions", function()
 	end
 
 	-- Game Menu Plus / Minus Buttons
-	for _, button in ipairs(InterfaceOptionsFrameAddOns.buttons) do
-		S:HandleCollapseExpandButton(button.toggle, "+", nil, 0)
-	end
-
-	for _, button in ipairs(InterfaceOptionsFrameCategories.buttons) do
-		if button.toggle then
+	for _, list in ipairs({InterfaceOptionsFrameCategories, InterfaceOptionsFrameAddOns}) do
+		for _, button in ipairs(list.buttons) do
 			S:HandleCollapseExpandButton(button.toggle, "+", nil, 0)
 		end
 	end

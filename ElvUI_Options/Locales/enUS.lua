@@ -1708,7 +1708,7 @@ L["The font that combat text will use. |cffFF3333WARNING: This requires a game r
 L["The font that the core of the UI will use."] = true
 L["The font that the unitframes will use."] = true
 L["The frame is not shown unless you mouse over the frame."] = true
-L["The game client decides which auras a nameplate shows: its own aura display options, buff and debuff rules, spell blacklists and crowd control. ElvUI draws those auras in its own style."] = true
+L["The game client decides which auras a nameplate can show and in what order: its own aura display options, buff and debuff rules, spell blacklists and crowd control. ElvUI draws them in its own style. The Enable toggle and the filters below can hide some of these auras, but cannot add auras the client does not show."] = true
 L["The height of the action buttons."] = true
 L["The initial group will start near the center and grow out."] = true
 L["The minimum item level required for it to be shown."] = true

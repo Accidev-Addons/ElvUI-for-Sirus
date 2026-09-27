@@ -406,9 +406,10 @@ end
 
 do -- expand LibCustomGlow for button handling
 	local LCG, frames, proc = E.Libs.CustomGlow, {}, { xOffset = 3, yOffset = 3 }
+	local startList, stopList = LCG.startList, LCG.stopList
 	function LCG.ShowOverlayGlow(button, custom)
 		local db = custom or E.db.general.customGlow
-		local glow = LCG.startList[db.style]
+		local glow = startList[db.style]
 		if glow then -- TODO: frameLevel isnt actually used yet
 			local color = db.useColor and ((custom and custom.color) or E.media.customGlowColor)
 
@@ -434,7 +435,7 @@ do -- expand LibCustomGlow for button handling
 	end
 
 	function LCG.HideOverlayGlow(button, style)
-		local glow = LCG.stopList[style or E.db.general.customGlow.style]
+		local glow = stopList[style or E.db.general.customGlow.style]
 		if glow then
 			glow(button)
 
