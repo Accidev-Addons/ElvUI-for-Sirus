@@ -124,21 +124,6 @@ function NP:GetSirusStackLayout()
 	return "COLUMN"
 end
 
-function NP:Construct_StackingBounds(plate, unitFrame)
-	if not (plate and plate.SetStackingBoundsFrame) then return end
-
-	local element = CreateFrame("Frame", "$parentStackingBounds", unitFrame)
-	element:SetAllPoints()
-
-	local stacking = element:CreateTexture()
-	stacking:SetColorTexture(1, 0, 0, 0)
-	stacking:SetAllPoints(element)
-
-	plate:SetStackingBoundsFrame(element)
-
-	return element
-end
-
 function NP:HookSirusStackLayout()
 	local control = _G.InterfaceOptionsNamesPanelUnitNameplatesStackLayout
 	if NP.sirusStackLayoutHooked or type(control) ~= "table" or type(control.SetValue) ~= "function" then return end
@@ -795,8 +780,6 @@ function NP:OnCreated(frame)
 
 	NP:SetSize(frame)
 
-	unitFrame.StackingBounds = NP:Construct_StackingBounds(frame, unitFrame)
-
 	NP.CreatedPlates[frame] = true
 end
 
@@ -834,7 +817,7 @@ function NP:OnEvent(event, unit, ...)
 		end
 	end
 
-	if event == "UNIT_NAME_UPDATE" or event == "UNIT_LEVEL" or event == "UNIT_FACTION" then
+	if event == "UNIT_NAME_UPDATE" or event == "UNIT_LEVEL" then
 		NP:UpdateAllFrame(self, nil, true)
 		return
 	end
