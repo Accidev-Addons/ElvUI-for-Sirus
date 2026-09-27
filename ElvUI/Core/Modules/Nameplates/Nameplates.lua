@@ -1202,8 +1202,9 @@ function NP:SetCVars()
 	E:SetCVar('nameplateMaxDistance', NP.db.loadDistance or 41)
 	E:SetCVar('ShowClassColorInNameplate', 1)
 	E:SetCVar('showVKeyCastbar', 0)
-	if not NP:IsSirusNameplates() then
-		E:SetCVar('nameplateAllowOverlap', NP.db.motionType == 'STACKED' and 0 or 1)
+	E:SetCVar('nameplateAllowOverlap', NP.db.motionType == 'STACKED' and 0 or 1)
+	if NP:IsSirusNameplates() and NP.db.motionType == 'STACKED' and GetCVar('nameplateStackMode') then
+		E:SetCVar('nameplateStackMode', 1)
 	end
 	E:SetCVar('nameplateGlobalScale', 1)
 	E:SetCVar('nameplateMinScale', 1)

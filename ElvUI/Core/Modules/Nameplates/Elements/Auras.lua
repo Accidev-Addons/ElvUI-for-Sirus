@@ -292,7 +292,11 @@ local function ResolveSirusAura(unit, item)
 end
 
 local auraItems = {}
-local auraItemsSorter = function(a, b) return a.layoutIndex < b.layoutIndex end
+local auraItemsSorter = function(a, b)
+	local ai, bi = a.layoutIndex, b.layoutIndex
+	if ai and bi then return ai < bi end
+	return b.layoutIndex ~= nil
+end
 local countSirusAuraItems = 0
 
 local function CollectSirusAuraItems(...)
@@ -312,12 +316,14 @@ local function GetSirusAuraItems(list)
 		countSirusAuraItems = 0
 		CollectSirusAuraItems(list:GetChildren())
 		count = countSirusAuraItems
-
-		sort(auraItems, auraItemsSorter)
 	end
 
 	for i = count + 1, #auraItems do
 		auraItems[i] = nil
+	end
+
+	if count > 1 then
+		sort(auraItems, auraItemsSorter)
 	end
 
 	return auraItems, count
