@@ -138,12 +138,8 @@ function C:Search_ClearResults()
 	C.SearchText = ''
 end
 
-function C:Search_FindText(text, whatsNew)
-	if whatsNew then
-		return strfind(text, E.NewSign, nil, true)
-	else
-		return strfind(strlower(E:StripString(text)), C.SearchText, nil, true)
-	end
+function C:Search_FindText(text)
+	return strfind(strlower(E:StripString(text)), C.SearchText, nil, true)
 end
 
 function C:Search_GetReturn(value, ...)
@@ -165,16 +161,16 @@ function C:Search_IsHidden(info)
 	end
 end
 
-function C:Search_Config(tbl, loc, locName, whatsNew)
-	if not whatsNew and C.SearchText == '' then return end
+function C:Search_Config(tbl, loc, locName)
+	if C.SearchText == '' then return end
 
 	for option, infoTable in pairs(tbl or E.Options.args) do
-		if not blockOption[option] and (whatsNew or not (typeInvalid[infoTable.type] or C:Search_IsHidden(infoTable))) then
+		if not blockOption[option] and not (typeInvalid[infoTable.type] or C:Search_IsHidden(infoTable)) then
 			local location, locationName = loc and (infoTable.type == 'group' and not (infoTable.inline or infoTable.guiInline or infoTable.dialogInline) and strjoin(',', loc, option) or loc) or option
 			local name = C:Search_GetReturn(infoTable.name, option)
 			if type(name) == 'string' then -- bad apples
 				locationName = locName and (strmatch(name, '%S+') and strjoin(sep, locName, name) or locName) or name
-				if C:Search_FindText(name, whatsNew) then
+				if C:Search_FindText(name) then
 					if not C.SearchCache[location] then
 						C.SearchCache[location] = locationName
 					elseif type(C.SearchCache[location]) == 'table' then
@@ -186,7 +182,7 @@ function C:Search_Config(tbl, loc, locName, whatsNew)
 					local values = (typeValue[infoTable.type] and not infoTable.dialogControl) and C:Search_GetReturn(infoTable.values, option)
 					if values then
 						for _, subName in next, values do
-							if type(subName) == 'string' and C:Search_FindText(subName, whatsNew) then
+							if type(subName) == 'string' and C:Search_FindText(subName) then
 								C.SearchCache[location] = locationName
 								break -- only need one
 							end
@@ -197,7 +193,7 @@ function C:Search_Config(tbl, loc, locName, whatsNew)
 
 			-- process objects (sometimes without a locationName)
 			if type(infoTable) == 'table' and infoTable.args then
-				C:Search_Config(infoTable.args, location, locationName, whatsNew)
+				C:Search_Config(infoTable.args, location, locationName)
 			end
 		end
 	end

@@ -29,10 +29,8 @@ function UF:Configure_RestingIndicator(frame)
 
 		if db.defaultColor then
 			Icon:SetVertexColor(1, 1, 1, 1)
-			Icon:SetDesaturated(false)
 		else
 			Icon:SetVertexColor(db.color.r, db.color.g, db.color.b, db.color.a)
-			Icon:SetDesaturated(true)
 		end
 
 		if db.texture == "CUSTOM" and db.customTexture then

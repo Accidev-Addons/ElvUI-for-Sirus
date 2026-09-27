@@ -401,9 +401,7 @@ do -- WIM replaces Blizzard globals we need to rehook
 						button.backdrop:SetOutside(check)
 					else
 						check:SetTexture([[Interface\Buttons\UI-CheckBox-Check]])
-						check:SetVertexColor(r, g, b, 1)
 						check:Size(20)
-						check:SetDesaturated(true)
 						button.backdrop:SetInside(check, 4, 4)
 					end
 

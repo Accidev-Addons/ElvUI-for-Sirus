@@ -103,7 +103,7 @@ end)
 
 hooksecurefunc('UnitPopup_HideButtons', function()
     local dropdownMenu = _G.UIDROPDOWNMENU_INIT_MENU
-    if dropdownMenu.which ~= 'RAID' or not (IsPartyLeader() or IsRaidOfficer()) then return end
+    if InCombatLockdown() or dropdownMenu.which ~= 'RAID' or not (IsPartyLeader() or IsRaidOfficer()) then return end
 
     for index, value in ipairs(_G.UnitPopupMenus[dropdownMenu.which]) do
         if value == 'RAID_MAINTANK' or value == 'RAID_MAINASSIST' then
