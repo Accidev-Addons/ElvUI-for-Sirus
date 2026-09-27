@@ -127,6 +127,23 @@ function S:Ace3_SkinButton(button)
 	if not button.isSkinned then
 		S:HandleButton(button, true)
 
+		local function KillTemplateRegions(frame)
+			for _, key in next, {'Left', 'Middle', 'Right', 'LeftDisabled', 'MiddleDisabled', 'RightDisabled'} do
+				local region = frame[key]
+				if region and region.IsShown and region:IsShown() and region.Kill then
+					region:Kill()
+				end
+			end
+
+			local highlight = frame.GetHighlightTexture and frame:GetHighlightTexture()
+			if highlight and highlight.IsShown and highlight:IsShown() and highlight.Kill then
+				highlight:Kill()
+			end
+		end
+
+		KillTemplateRegions(button)
+		button:HookScript('OnShow', KillTemplateRegions)
+
 		hooksecurefunc(button, 'SetPoint', S.Ace3_ButtonSetPoint)
 	end
 end

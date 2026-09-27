@@ -35,6 +35,12 @@ S:AddCallback("Skin_BlizzardOptions", function()
 		S:HandleCollapseExpandButton(button.toggle, "+", nil, 0)
 	end
 
+	for _, button in ipairs(InterfaceOptionsFrameCategories.buttons) do
+		if button.toggle then
+			S:HandleCollapseExpandButton(button.toggle, "+", nil, 0)
+		end
+	end
+
 	-- Interface Options Frame
 	local frames = {
 		InterfaceOptionsFrame,
