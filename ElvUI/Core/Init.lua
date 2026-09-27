@@ -29,10 +29,6 @@ local SetCVar = SetCVar
 local oUF = _G.ElvUF
 assert(oUF, 'ElvUI was unable to locate oUF.')
 
-if _G.C_NamePlate and _G.C_NamePlate.SetTargetClampingInsets then
-	_G.C_NamePlate.SetTargetClampingInsets = function() end
-end
-
 local AceAddon, AceAddonMinor = _G.LibStub('AceAddon-3.0')
 local CallbackHandler = _G.LibStub('CallbackHandler-1.0')
 
