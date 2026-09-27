@@ -126,8 +126,6 @@ function NP:Update_Health(frame)
 	if self.db.units[frame.UnitType].health.text.enable then
 		frame.Health.Text:SetText(E:GetFormattedText(self.db.units[frame.UnitType].health.text.format, health, maxHealth, nil, true))
 	end
-
-	frame.polledHealth, frame.polledMaxHealth = health, maxHealth
 end
 
 function NP:RegisterHealthBarCallbacks(frame, valueChangeCB, colorChangeCB)

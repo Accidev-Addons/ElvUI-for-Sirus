@@ -1033,38 +1033,6 @@ function NP:PixelSnap(frame)
 	health:SetPoint("TOP", frame, "TOP", frame.snapX, frame.snapY)
 end
 
-local pixelSnapper = CreateFrame("Frame")
-local healthElapsed = 0
-local snapElapsed = 0
-pixelSnapper:SetScript("OnUpdate", function(_, elapsed)
-	if not next(NP.VisiblePlates) then return end
-
-	healthElapsed = healthElapsed + elapsed
-	snapElapsed = snapElapsed + elapsed
-
-	local pollHealth = healthElapsed > 0.2
-	if pollHealth then healthElapsed = 0 end
-
-	local doSnap = snapElapsed > 0.333
-	if doSnap then snapElapsed = 0 end
-
-	for frame in pairs(NP.VisiblePlates) do
-		if doSnap then
-			NP:PixelSnap(frame)
-		end
-
-		if pollHealth and frame.unit and frame.Health:IsShown() then
-			local health, maxHealth = NP:GetHealth(frame)
-			if frame.polledHealth ~= health or frame.polledMaxHealth ~= maxHealth then
-				frame.polledHealth, frame.polledMaxHealth = health, maxHealth
-
-				NP:Update_Health(frame)
-				NP:Update_HealthColor(frame)
-			end
-		end
-	end
-end)
-
 function NP:UpdateVisiblePlates()
 	for frame in pairs(NP.VisiblePlates) do
 		NP:SetMouseoverFrame(frame)
