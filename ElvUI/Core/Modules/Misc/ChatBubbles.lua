@@ -3,7 +3,7 @@ local M = E:GetModule('Misc')
 local CH = E:GetModule('Chat')
 local LSM = E.Libs.LSM
 
-local select, unpack, ipairs = select, unpack, ipairs
+local select, unpack, ipairs, min, max = select, unpack, ipairs, min, max
 local format = format
 local strmatch, strlower, gmatch, gsub = strmatch, strlower, gmatch, gsub
 
@@ -17,6 +17,7 @@ local GetTime = GetTime
 -- [SIRUS] Keep only recent message owners; chat text is not a permanent identity.
 local messageCache, messageOrder = {}, {}
 local messageIndex, MESSAGE_LIMIT, MESSAGE_TTL = 1, 128, 30
+local BUBBLE_PADDING = 5
 
 local function ReplaceIconTags(value)
     local index = _G.ICON_TAG_LIST[strlower(value)]
@@ -44,13 +45,6 @@ function M:UpdateBubbleBorder()
 
     local text = str:GetText()
     if not text then return end
-
-    if E.private.general.chatBubbleName then
-        local message = messageCache[text]
-        if message and GetTime() - message.time <= MESSAGE_TTL then
-            M:AddChatBubbleName(self, message.guid, message.sender)
-        end
-    end
 
     local rebuiltString
     if E.private.chat.enable and E.private.general.classColorMentionsSpeech then
@@ -85,6 +79,18 @@ function M:UpdateBubbleBorder()
     if rebuiltString ~= text then
         str:SetText(E:RemoveExtraSpaces(rebuiltString))
     end
+
+    local halfWidth = min(str:GetStringWidth(), str:GetWidth()) * 0.5 + BUBBLE_PADDING
+    self:ClearAllPoints()
+    self:SetPoint('TOPLEFT', str, 'TOP', -halfWidth, BUBBLE_PADDING)
+    self:SetPoint('BOTTOMRIGHT', str, 'BOTTOM', halfWidth, -BUBBLE_PADDING)
+
+    if E.private.general.chatBubbleName then
+        local message = messageCache[text]
+        if message and GetTime() - message.time <= MESSAGE_TTL then
+            M:AddChatBubbleName(self, message.guid, message.sender)
+        end
+    end
 end
 
 function M:AddChatBubbleName(chatBubble, guid, name)
@@ -97,7 +103,7 @@ function M:AddChatBubbleName(chatBubble, guid, name)
     end
 
     chatBubble.Name:SetFormattedText('|c%s%s|r', color.colorStr, name)
-    chatBubble.Name:SetWidth(chatBubble:GetWidth()-10)
+    chatBubble.Name:SetWidth(max(chatBubble:GetWidth()-10, chatBubble.Name:GetStringWidth()))
 end
 
 local function SetFontTemplate(name, db)
@@ -163,7 +169,7 @@ function M:SkinBubble(frame)
     elseif bubbleType == 'backdrop_noborder' then
         frame:SetBackdrop(nil)
         frame.backdrop = frame.backdrop or frame:CreateTexture(nil, 'ARTWORK')
-        frame.backdrop:SetInside(frame, 4, 4)
+        frame.backdrop:SetAllPoints(frame)
         frame.backdrop:SetTexture(unpack(E.media.backdropfadecolor))
         frame:SetClampedToScreen(false)
     else
@@ -194,7 +200,12 @@ function M:IsChatBubble(frame)
 end
 
 local function ChatBubble_OnEvent(self, event, msg, sender, _, _, _, _, _, _, _, _, _, guid)
-    if E.private.general.chatBubbles == 'disabled' or not E.private.general.chatBubbleName or not msg then return end
+    if E.private.general.chatBubbles == 'disabled' then return end
+
+    self.scanFrames = 10
+    self:Show()
+
+    if not E.private.general.chatBubbleName or not msg then return end
 
     local previous = messageOrder[messageIndex]
     if previous and messageCache[previous.text] == previous then
@@ -220,6 +231,12 @@ local function ChatBubble_OnUpdate()
     GetAllChatBubbles(WorldGetChildren(WorldFrame))
 end
 
+local function ChatBubble_OnFrame(self)
+    ChatBubble_OnUpdate()
+    self.scanFrames = self.scanFrames - 1
+    if self.scanFrames <= 0 then self:Hide() end
+end
+
 function M:LoadChatBubbles()
 	yOffset = (E.private.general.chatBubbles == 'backdrop' and 2) or (E.private.general.chatBubbles == 'backdrop_noborder' and -2) or 0
 
@@ -231,6 +248,7 @@ function M:LoadChatBubbles()
         if M.BubbleFrame then
             M.BubbleFrame:UnregisterAllEvents()
             M.BubbleFrame:SetScript('OnEvent', nil)
+            M.BubbleFrame:Hide()
         end
         wipe(messageCache)
         wipe(messageOrder)
@@ -247,6 +265,8 @@ function M:LoadChatBubbles()
     M.BubbleFrame:RegisterEvent('CHAT_MSG_MONSTER_YELL')
 
     M.BubbleFrame:SetScript('OnEvent', ChatBubble_OnEvent)
+    M.BubbleFrame:SetScript('OnUpdate', ChatBubble_OnFrame)
+    M.BubbleFrame:Hide()
     local timer
     timer = M:ScheduleRepeatingTimer(function()
         if M.BubbleTimer == timer then ChatBubble_OnUpdate() end
