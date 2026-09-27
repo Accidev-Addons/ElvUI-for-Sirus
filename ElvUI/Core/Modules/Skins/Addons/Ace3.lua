@@ -202,12 +202,20 @@ function S:Ace3_SkinTab(tab)
 	end
 end
 
-function S:Ace3_SkinEditBox(editbox, button, frame)
+function S:Ace3_SkinEditBox(editbox, button, frame, label)
 	if not editbox.backdrop then
 		S:HandleEditBox(editbox)
 		S:HandleButton(button)
 
 		button:Point('RIGHT', editbox.backdrop, 'RIGHT', -2, 0)
+
+		editbox:Point('BOTTOMLEFT', frame, 'BOTTOMLEFT', 0, 2)
+		editbox:Point('BOTTOMRIGHT', frame, 'BOTTOMRIGHT', 0, 2)
+
+		if label then
+			label:Point('TOPLEFT', 0, 0)
+			label:Point('TOPRIGHT', 0, 0)
+		end
 
 		hooksecurefunc(editbox, 'SetTextInsets', S.Ace3_EditBoxSetTextInsets)
 		hooksecurefunc(editbox, 'SetPoint', S.Ace3_EditBoxSetPoint)
@@ -251,8 +259,8 @@ function S:Ace3_RegisterAsWidget(widget)
 
 		frame:StripTextures()
 		frame:CreateBackdrop()
-		frame.backdrop:Point('TOPLEFT', 15, -2)
-		frame.backdrop:Point('BOTTOMRIGHT', -21, 0)
+		frame.backdrop:Point('TOPLEFT', 15, 0)
+		frame.backdrop:Point('BOTTOMRIGHT', -21, 2)
 
 		local label = widget.label
 		if label then
@@ -283,8 +291,8 @@ function S:Ace3_RegisterAsWidget(widget)
 
 		frame:StripTextures()
 		frame:CreateBackdrop(nil, nil, nil, nil, nil, nil, nil, nil, true)
-		frame.backdrop:Point('TOPLEFT', 0, -21)
-		frame.backdrop:Point('BOTTOMRIGHT', -4, -1)
+		frame.backdrop:Point('TOPLEFT', 0, -19)
+		frame.backdrop:Point('BOTTOMRIGHT', -4, 1)
 
 		local label = frame.label
 		if label then
@@ -330,7 +338,7 @@ function S:Ace3_RegisterAsWidget(widget)
 			button:HookScript('OnClick', S.Ace3_SkinDropdown)
 		end
 	elseif TYPE == 'EditBox' or TYPE == 'EditBox-ElvUI' then
-		S:Ace3_SkinEditBox(widget.editbox, widget.button, widget.frame)
+		S:Ace3_SkinEditBox(widget.editbox, widget.button, widget.frame, widget.label)
 	elseif TYPE == 'Button' or TYPE == 'Button-ElvUI' then
 		S:Ace3_SkinButton(widget.frame)
 	elseif TYPE == 'Slider' or TYPE == 'Slider-ElvUI' then
