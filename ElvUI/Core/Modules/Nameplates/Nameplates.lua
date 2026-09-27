@@ -734,16 +734,6 @@ end
 
 local blizzardRegions = { "healthBar", "castBar", "BuffFrame", "AurasFrame", "LevelFrame", "ClassificationFrame", "RaidTargetFrame", "aggroHighlight", "aggroHighlightBase", "aggroHighlightAdditive", "aggroFlash", "selectionHighlight", "classificationIndicator", "behindCameraIcon", "name" }
 
-local function SirusPlateOnEvent(self, event, unit, ...)
-	if unit ~= self.unit then return end
-
-	if event == "UNIT_AURA" then
-		self.AurasFrame:RefreshAuras(...)
-	elseif event == "UNIT_FACTION" then
-		self:UpdateIsFriend()
-	end
-end
-
 local function muteBlizzardPlate(blizz)
 	blizz:SetAlpha(0)
 
@@ -762,7 +752,6 @@ local function muteBlizzardPlate(blizz)
 
 	local aurasFrame = blizz.AurasFrame
 	if aurasFrame and type(aurasFrame.RefreshAuras) == "function" then
-		blizz:SetScript("OnEvent", SirusPlateOnEvent)
 		blizz:SetScript("OnUpdate", nil)
 		NP:HookSirusPlate(blizz)
 	elseif CompactUnitFrame_UnregisterEvents then
