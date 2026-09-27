@@ -8,7 +8,7 @@ local next, pairs = next, pairs
 local table, setmetatable = table, setmetatable
 
 local TagGroup = ACH:Group(L["Available Tags"], nil, 3)
-TagGroup.args.guide = ACH:Input(L["Guide:"], nil, 1, nil, 400, function() return 'https://github.com/ElvUI-WotLK/ElvUI/wiki/custom-texts' end)
+TagGroup.args.guide = ACH:Input(L["Guide:"], nil, 1, nil, 400, function() return 'https://github.com/Accidev-Addons/ElvUI-for-Sirus/wiki' end)
 TagGroup.args.guide.focusSelect = true
 TagGroup.args.description = ACH:Description(L["|cffFF3333This is for information. This will not change the tags in the UI.|r"], 4, 'large')
 

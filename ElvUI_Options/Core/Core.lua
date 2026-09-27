@@ -152,7 +152,7 @@ end
 
 E.Libs.AceConfig:RegisterOptionsTable("ElvUI", E.Options)
 E.Libs.AceConfigDialog:SetDefaultSize("ElvUI", E:Config_GetDefaultSize())
-E.Options.name = format("%s: |cff99ff33%s|r", L["Version"], E.version)
+E.Options.name = format("%s: |cff99ff33%s|r", L["Version"], E.versionString)
 
 local DEVELOPERS = {
 	'Tukz',
@@ -252,11 +252,18 @@ local function SortList(a, b)
 	return E:StripString(a) < E:StripString(b)
 end
 
+local SIRUS_DEVELOPERS = {
+	'Accidev',
+	'Рэйнбоу',
+	'liwalsh'
+}
+
 sort(DEVELOPERS, SortList)
 sort(TESTERS, SortList)
 sort(DONATORS, SortList)
 
 local DEVELOPER_STRING = tconcat(DEVELOPERS, '|n')
+local SIRUS_STRING = tconcat(SIRUS_DEVELOPERS, '|n')
 local TESTER_STRING = tconcat(TESTERS, '|n')
 local DONATOR_STRING = tconcat(DONATORS, '|n')
 
@@ -277,15 +284,15 @@ E.Options.args.info.args.main = ACH:Group(L["ELVUI_DESC"], nil, 5)
 E.Options.args.info.args.main.inline = true
 
 for index, data in next, {
-	{ key = 'discord',		name = L["Discord"],				url = 'https://discord.gg/wRPF8CCpNV' },
-	{ key = 'issues',		name = L["Ticket Tracker"],			url = 'https://github.com/ElvUI-WotLK/ElvUI/issues' },
-	{ key = 'wiki',			name = L["Wiki"],					url = 'https://github.com/ElvUI-WotLK/ElvUI/wiki' },
-	{ key = 'master',		name = L["Master Version"],			url = 'https://github.com/ElvUI-WotLK/ElvUI/archive/refs/heads/master.zip' },
-	{ key = 'dev',			name = L["Development Version"],	url = 'https://github.com/ElvUI-WotLK/ElvUI/archive/refs/heads/development.zip' },
-	{ key = 'changelog',	name = L["Changelog"],				url = 'https://github.com/ElvUI-WotLK/ElvUI/blob/development/CHANGELOG.md' },
-	{ key = 'customTexts',	name = L["Custom Texts"],			url = 'https://github.com/ElvUI-WotLK/ElvUI/wiki/custom-texts' },
-	{ key = 'paging',		name = L["Action Paging"],			url = 'https://github.com/ElvUI-WotLK/ElvUI/wiki/paging' },
-	{ key = 'performance',	name = L["Performance"],			url = 'https://github.com/ElvUI-WotLK/ElvUI/wiki/performance-optimization' },
+	{ key = 'discord',		name = L["Discord"],				url = 'https://discord.gg/CXtYebMBb' },
+	{ key = 'issues',		name = L["Ticket Tracker"],			url = 'https://github.com/Accidev-Addons/ElvUI-for-Sirus/issues' },
+	{ key = 'wiki',			name = L["Wiki"],					url = 'https://github.com/Accidev-Addons/ElvUI-for-Sirus/wiki' },
+	{ key = 'master',		name = L["Master Version"],			url = 'https://github.com/Accidev-Addons/ElvUI-for-Sirus/archive/refs/heads/main.zip' },
+	{ key = 'dev',			name = L["Development Version"],	url = 'https://github.com/Accidev-Addons/ElvUI-for-Sirus/archive/refs/heads/development.zip' },
+	{ key = 'changelog',	name = L["Changelog"],				url = 'https://github.com/Accidev-Addons/ElvUI-for-Sirus/blob/main/CHANGELOG.md' },
+	{ key = 'customTexts',	name = L["Custom Texts"],			url = 'https://github.com/Accidev-Addons/ElvUI-for-Sirus/wiki/custom-texts' },
+	{ key = 'paging',		name = L["Action Paging"],			url = 'https://github.com/Accidev-Addons/ElvUI-for-Sirus/wiki/paging' },
+	{ key = 'performance',	name = L["Performance"],			url = 'https://github.com/Accidev-Addons/ElvUI-for-Sirus/wiki/performance-optimization' },
 } do
 	E.Options.args.info.args.main.args[data.key] = ACH:Input(data.name, nil, index, nil, 255, function() return data.url end)
 	E.Options.args.info.args.main.args[data.key].focusSelect = true
@@ -300,11 +307,15 @@ E.Options.args.info.args.credits.args.coding = ACH:Group(L["Coding:"], nil, 6)
 E.Options.args.info.args.credits.args.coding.inline = true
 E.Options.args.info.args.credits.args.coding.args.string = ACH:Description(DEVELOPER_STRING, 1, 'medium')
 
-E.Options.args.info.args.credits.args.testers = ACH:Group(L["Testing:"], nil, 7)
+E.Options.args.info.args.credits.args.sirus = ACH:Group(L["Sirus Development:"], nil, 5)
+E.Options.args.info.args.credits.args.sirus.inline = true
+E.Options.args.info.args.credits.args.sirus.args.string = ACH:Description(SIRUS_STRING, 1, 'medium')
+
+E.Options.args.info.args.credits.args.testers = ACH:Group(L["Testing:"], nil, 8)
 E.Options.args.info.args.credits.args.testers.inline = true
 E.Options.args.info.args.credits.args.testers.args.string = ACH:Description(TESTER_STRING, 1, 'medium')
 
-E.Options.args.info.args.credits.args.donators = ACH:Group(L["Donations:"], nil, 8)
+E.Options.args.info.args.credits.args.donators = ACH:Group(L["Donations:"], nil, 9)
 E.Options.args.info.args.credits.args.donators.inline = true
 E.Options.args.info.args.credits.args.donators.args.string = ACH:Description(DONATOR_STRING, 1, 'medium')
 

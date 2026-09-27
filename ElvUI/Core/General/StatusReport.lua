@@ -237,7 +237,7 @@ function E:UpdateStatusFrame()
 	local PluginSection = PluginFrame.SectionP
 	PluginSection.Header.Text:SetFormattedText('%s%s|r', valueColor, L["Plugins"])
 
-	StatusFrame.Section1.Content.Line1.Text:SetFormattedText('%s: |cff%s%.2f|r', L["Version of ElvUI"], (E.recievedOutOfDateMessage and 'ff3333') or (E.updateRequestTriggered and 'ff9933') or '33ff33', E.version)
+	StatusFrame.Section1.Content.Line1.Text:SetFormattedText('%s: |cff%s%s|r', L["Version of ElvUI"], (E.recievedOutOfDateMessage and 'ff3333') or (E.updateRequestTriggered and 'ff9933') or '33ff33', E.versionString)
 
 	local addons, bugs, plugins = E:AreOtherAddOnsEnabled()
 	local addonsColor, addonsText

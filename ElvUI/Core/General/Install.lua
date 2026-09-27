@@ -1288,7 +1288,7 @@ function E:SetPage(num)
 		f.Desc2:SetText(L["Please click the button below so you can setup variables and ReloadUI."])
 
 		InstallOption1Button:Show()
-		InstallOption1Button:SetScript('OnClick', function() E:StaticPopup_Show('ELVUI_EDITBOX', nil, nil, 'https://discord.gg/wRPF8CCpNV') end)
+		InstallOption1Button:SetScript('OnClick', function() E:StaticPopup_Show('ELVUI_EDITBOX', nil, nil, 'https://discord.gg/CXtYebMBb') end)
 		InstallOption1Button:SetText(L["Discord"])
 		InstallOption2Button:Show()
 		InstallOption2Button:SetScript('OnClick', function() E:SetupComplete(true) end)

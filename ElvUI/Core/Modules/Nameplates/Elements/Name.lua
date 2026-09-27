@@ -5,6 +5,7 @@ local LSM = E.Libs.LSM
 --Lua functions
 --WoW API / Variables
 local UNKNOWN = UNKNOWN
+local UnitIsDead = UnitIsDead
 
 function NP:Update_Name(frame, triggered)
 	if not triggered then
@@ -39,7 +40,7 @@ function NP:Update_Name(frame, triggered)
 
 	if useClassColor and classColor and isPlayerType then
 		r, g, b = classColor.r, classColor.g, classColor.b
-	elseif triggered or fallbackToReaction or (not self.db.units[frame.UnitType].health.enable and not frame.isTarget) then
+	elseif triggered or fallbackToReaction or (frame.unit and UnitIsDead(frame.unit)) or (not self.db.units[frame.UnitType].health.enable and not frame.isTarget) then
 		local reactionType = frame.UnitReaction
 		if reactionType then
 			local db = self.db.colors

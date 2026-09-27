@@ -2,6 +2,7 @@
 	<Include file='..\Locales\Load_Locales.xml'/>
 
 	<Script file='Core.lua'/>
+	<Script file='Changelog.lua'/>
 	<Script file='General.lua'/>
 	<Script file='ActionBars.lua'/>
 	<Script file='Auras.lua'/>

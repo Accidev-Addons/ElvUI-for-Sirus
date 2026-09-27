@@ -1227,18 +1227,7 @@ function E:Config_CreateBottomButtons(frame, unskinned)
 				return C.SearchText ~= "" or next(C.SearchCache)
 			end,
 			func = function()
-				if search then
-					E:Config_PreviousLocation(search)
-				end
-
-				C:Search_ClearResults()
-				C:Search_Config(nil, nil, nil, true)
-				C:Search_AddResults()
-
-				local ACD = E.Libs.AceConfigDialog
-				if ACD then
-					ACD:SelectGroup('ElvUI', 'search') -- trigger update
-				end
+				E.Libs.AceConfigDialog:SelectGroup('ElvUI', 'changelog')
 			end
 		},
 		{
@@ -1363,10 +1352,17 @@ function E:ToggleOptions(msg)
 
 			-- version check if it's actually enabled
 			local config = E.Config and E.Config[1]
-			if not config or (E.version ~= config.version) then
+			if not config then
 				E.updateRequestTriggered = true
 				E:StaticPopup_Show('UPDATE_REQUEST')
 				return
+			elseif E.version ~= config.version then
+				E.updateRequestTriggered = true
+				E:StaticPopup_Show('UPDATE_REQUEST')
+
+				if format('%.4f', E.version or 0):sub(1, -3) ~= format('%.4f', config.version or 0):sub(1, -3) then
+					return
+				end
 			end
 		end
 	end

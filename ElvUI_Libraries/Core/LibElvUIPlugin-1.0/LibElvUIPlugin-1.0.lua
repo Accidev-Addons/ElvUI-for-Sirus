@@ -49,7 +49,7 @@ lib.plugins = {}
 lib.groupSize = 0
 lib.index = 0
 
-local MSG_OUTDATED = "Your version of %s %s is out of date (latest is version %s). You can download the latest version from https://github.com/ElvUI-WotLK"
+local MSG_OUTDATED = "Your version of %s %s is out of date (latest is version %s). You can download the latest version from https://github.com/Accidev-Addons/ElvUI-for-Sirus"
 local HDR_INFORMATION = "LibElvUIPlugin-1.0.%d - Plugins Loaded  (Green means you have current version, Red means out of date)"
 local INFO_BY = "by"
 local INFO_VERSION = "Version:"
@@ -58,28 +58,28 @@ local LIBRARY = "Library"
 
 local locale = GetLocale()
 if locale == "deDE" then
-	MSG_OUTDATED = "Deine Version von %s %s ist veraltet (akutelle Version ist %s). Du kannst die aktuelle Version von https://github.com/ElvUI-WotLK herunterrladen."
+	MSG_OUTDATED = "Deine Version von %s %s ist veraltet (akutelle Version ist %s). Du kannst die aktuelle Version von https://github.com/Accidev-Addons/ElvUI-for-Sirus herunterrladen."
 	HDR_INFORMATION = "LibElvUIPlugin-1.0.%d - Plugins geladen (Grün bedeutet du hast die aktuelle Version, Rot bedeutet es ist veraltet)"
 	INFO_BY = "von"
 	INFO_VERSION = "Version:"
 	INFO_NEW = "Neuste:"
 	LIBRARY = "Bibliothek"
 elseif locale == "ruRU" then
-	MSG_OUTDATED = "Ваша версия %s %s устарела (последняя версия %s). Вы можете скачать последнюю версию на https://github.com/ElvUI-WotLK"
+	MSG_OUTDATED = "Ваша версия %s %s устарела (последняя версия %s). Вы можете скачать последнюю версию на https://github.com/Accidev-Addons/ElvUI-for-Sirus"
 	HDR_INFORMATION = "LibElvUIPlugin-1.0.%d - загруженные плагины (зеленый означает, что у вас последняя версия, красный - устаревшая)"
 	INFO_BY = "от"
 	INFO_VERSION = "Версия:"
 	INFO_NEW = "Последняя:"
 	LIBRARY = "Библиотека"
 elseif locale == "zhCN" then
-	MSG_OUTDATED = "你的 %s %s 版本已经过期 (最新版本是 %s)。你可以从 https://github.com/ElvUI-WotLK 下载最新版本"
+	MSG_OUTDATED = "你的 %s %s 版本已经过期 (最新版本是 %s)。你可以从 https://github.com/Accidev-Addons/ElvUI-for-Sirus 下载最新版本"
 	HDR_INFORMATION = "LibElvUIPlugin-1.0.%d - 载入的插件 (绿色表示拥有当前版本, 红色表示版本已经过期)"
 	INFO_BY = "作者"
 	INFO_VERSION = "版本:"
 	INFO_NEW = "最新:"
 	LIBRARY = "库"
 elseif locale == "zhTW" then
-	MSG_OUTDATED = "你的 %s %s 版本已經過期 (最新版本為 %s)。你可以透過 https://github.com/ElvUI-WotLK 下載最新的版本"
+	MSG_OUTDATED = "你的 %s %s 版本已經過期 (最新版本為 %s)。你可以透過 https://github.com/Accidev-Addons/ElvUI-for-Sirus 下載最新的版本"
 	HDR_INFORMATION = "LibElvUIPlugin-1.0.%d - 載入的插件 (綠色表示擁有當前版本, 紅色表示版本已經過期)"
 	INFO_BY = "作者"
 	INFO_VERSION = "版本:"
