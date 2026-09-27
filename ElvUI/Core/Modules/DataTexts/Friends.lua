@@ -189,7 +189,7 @@ local function OnEnter()
 					shouldSkip = true
 				end
 				if not shouldSkip then
-					if E.MapInfo.zoneText and (E.MapInfo.zoneText == info.zone) then zonec = activezone else zonec = inactivezone end
+					if E.MapInfo.realZoneText and (E.MapInfo.realZoneText == info.zone) then zonec = activezone else zonec = inactivezone end
 					classc, levelc = E:ClassColor(info.class), GetQuestDifficultyColor(info.level)
 					if not classc then classc = levelc end
 

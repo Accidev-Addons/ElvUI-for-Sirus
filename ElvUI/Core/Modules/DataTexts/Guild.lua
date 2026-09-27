@@ -228,7 +228,7 @@ local function Click(self, btn)
 				local name = format(levelNameString, levelc.r*255,levelc.g*255,levelc.b*255, info.level, classc.r*255,classc.g*255,classc.b*255, info.name)
 				if inGroup(info.name) ~= '' then
 					name = name..' |cffaaaaaa*|r'
-				elseif not info.zone then
+				else
 					menuCountInvites = menuCountInvites + 1
 					menuList[2].menuList[menuCountInvites] = {text = name, arg1 = info.name, notCheckable=true, func = inviteClick}
 				end
@@ -278,7 +278,7 @@ local function OnEnter(_, _, noUpdate)
 			break
 		end
 
-		if E.MapInfo.zoneText and (E.MapInfo.zoneText == info.zone) then zonec = activezone else zonec = inactivezone end
+		if E.MapInfo.realZoneText and (E.MapInfo.realZoneText == info.zone) then zonec = activezone else zonec = inactivezone end
 
 		local classc, levelc = E:ClassColor(info.class), GetQuestDifficultyColor(info.level)
 		if not classc then classc = levelc end
