@@ -72,7 +72,7 @@ G.datatexts = {
 		Stamina = { Label = '', NoLabel = false },
 		Strength = { Label = '', NoLabel = false },
 		System = { NoLabel = false, ShowOthers = true, showTooltip = true },
-		Time = { time24 = _G.GetCVar('portal') ~= 'en', localTime = true, flashInvite = true },
+		Time = { date = false, time24 = _G.GetCVar('portal') ~= 'en', localTime = true, flashInvite = true },
 		Dodge = { decimalLength = 1 },
 		Parry = { decimalLength = 1 },
 		Block = { decimalLength = 1 }
