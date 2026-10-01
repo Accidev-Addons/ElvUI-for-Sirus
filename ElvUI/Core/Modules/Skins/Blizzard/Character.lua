@@ -2495,11 +2495,22 @@ local function LoadSkin()
 		S:ColorItemCharacterBorder()
 	end
 
+	local socketDataRetry
 	local function UpdateCharacterEquipmentSockets()
 		ColorItemBorder()
 
+		local dataPending
 		for _, slotName in ipairs(slots) do
-			S:HandleSirusEquipmentSocketInfo(_G["Character"..slotName], GetInventorySlotInfo(slotName), S.EquipmentSlotAnchors[slotName], slotName)
+			if S:HandleSirusEquipmentSocketInfo(_G["Character"..slotName], GetInventorySlotInfo(slotName), S.EquipmentSlotAnchors[slotName], slotName) then
+				dataPending = true
+			end
+		end
+
+		socketDataRetry = (socketDataRetry or 0) + 1
+		if dataPending and socketDataRetry < 10 and CharacterFrame:IsShown() then
+			E:Delay(0.2, UpdateCharacterEquipmentSockets)
+		else
+			socketDataRetry = nil
 		end
 	end
 

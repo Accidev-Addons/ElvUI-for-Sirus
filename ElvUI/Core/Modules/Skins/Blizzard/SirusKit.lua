@@ -46,6 +46,14 @@ local SOCKET_COLORS = {
 	[lower(EMPTY_SOCKET_NO_COLOR or "")] = { .99, .15, .9, .5 },
 }
 
+local EMPTY_SOCKET_TEXTURES = {
+	[lower(EMPTY_SOCKET_RED or "")] = "Interface\\ItemSocketingFrame\\UI-EmptySocket-Red",
+	[lower(EMPTY_SOCKET_YELLOW or "")] = "Interface\\ItemSocketingFrame\\UI-EmptySocket-Yellow",
+	[lower(EMPTY_SOCKET_BLUE or "")] = "Interface\\ItemSocketingFrame\\UI-EmptySocket-Blue",
+	[lower(EMPTY_SOCKET_META or "")] = "Interface\\ItemSocketingFrame\\UI-EmptySocket-Meta",
+	[lower(EMPTY_SOCKET_NO_COLOR or "")] = "Interface\\ItemSocketingFrame\\UI-EmptySocket",
+}
+
 S.EquipmentSlotAnchors = {
 	HeadSlot = "RIGHT", NeckSlot = "RIGHT", ShoulderSlot = "RIGHT", ShirtSlot = "RIGHT", ChestSlot = "RIGHT",
 	WristSlot = "RIGHT", BackSlot = "RIGHT", TabardSlot = "RIGHT",
@@ -394,12 +402,14 @@ local function CreateSocketInfo(slotFrame, anchor, slotName)
 end
 
 local function SetGemSocket(socket, gemLink, texture)
+	texture = gemLink and select(10, GetItemInfo(gemLink)) or texture
+
 	socket.isEmpty = nil
 	socket.gemLink = gemLink
 	socket.lineText = nil
 	socket.canRemove = gemLink and select(3, GetItemInfo(gemLink)) == 5
 
-	if gemLink and texture then
+	if texture then
 		socket.Icon:SetTexture(texture)
 		socket.Icon:SetTexCoord(unpack(E.TexCoords))
 		socket.Icon:SetVertexColor(1, 1, 1, 1)
@@ -410,20 +420,30 @@ local function SetGemSocket(socket, gemLink, texture)
 	end
 
 	socket:Show()
+
+	return texture ~= nil
 end
 
-local function SetEmptySocket(socket, name, color)
+local function SetEmptySocket(socket, name, color, texture)
 	socket.isEmpty = true
 	socket.gemLink = nil
 	socket.lineText = name
 	socket.canRemove = nil
-	socket.Icon:SetTexture(E.Media.Textures.NormTex2)
-	socket.Icon:SetTexCoord(0, 1, 0, 1)
-	socket.Icon:SetVertexColor(unpack(color))
+
+	if texture then
+		socket.Icon:SetTexture(texture)
+		socket.Icon:SetTexCoord(0, 1, 0, 1)
+		socket.Icon:SetVertexColor(1, 1, 1, 1)
+	else
+		socket.Icon:SetTexture(E.Media.Textures.NormTex2)
+		socket.Icon:SetTexCoord(0, 1, 0, 1)
+		socket.Icon:SetVertexColor(unpack(color))
+	end
+
 	socket:Show()
 end
 
-local gemFields, gemTextures, emptyNames, emptyColors = {}, {}, {}, {}
+local gemTextures, emptyNames, emptyColors, emptyTextures = {}, {}, {}, {}
 function S:HandleSirusEquipmentSocketInfo(slotFrame, inventorySlot, anchor, slotName, unit)
 	local hasUnknown
 	if not slotFrame or not inventorySlot then return end
@@ -462,6 +482,7 @@ function S:HandleSirusEquipmentSocketInfo(slotFrame, inventorySlot, anchor, slot
 				if socketColor then
 					emptyNames[#emptyNames + 1] = plain
 					emptyColors[#emptyColors + 1] = socketColor
+					emptyTextures[#emptyTextures + 1] = EMPTY_SOCKET_TEXTURES[lower(plain)]
 				elseif showEnchants and not enchantText then
 					enchantText = MatchEnchant(line, plain, lower(plain), slotName)
 				end
@@ -471,18 +492,18 @@ function S:HandleSirusEquipmentSocketInfo(slotFrame, inventorySlot, anchor, slot
 		tooltip:Hide()
 
 		if showGems then
-			gemFields[1], gemFields[2], gemFields[3] = strmatch(link, "item:%-?%d+:%-?%d+:(%-?%d+):(%-?%d+):(%-?%d+)")
-
 			local nextTexture, nextEmpty = 1, 1
 			for index = 1, MAX_DISPLAYED_SOCKETS do
 				local socket = info.slots[index]
-				local field = gemFields[index]
-				if field and field ~= "0" then
-					local _, gemLink = GetItemGem(link, index)
-					SetGemSocket(socket, gemLink, gemLink and gemTextures[nextTexture])
-					if gemLink then nextTexture = nextTexture + 1 else hasUnknown = true end
+				local _, gemLink = GetItemGem(link, index)
+
+				if gemLink then
+					if not SetGemSocket(socket, gemLink, gemTextures[nextTexture]) then
+						hasUnknown = true
+					end
+					nextTexture = nextTexture + 1
 				elseif emptyNames[nextEmpty] then
-					SetEmptySocket(socket, emptyNames[nextEmpty], emptyColors[nextEmpty])
+					SetEmptySocket(socket, emptyNames[nextEmpty], emptyColors[nextEmpty], emptyTextures[nextEmpty])
 					nextEmpty = nextEmpty + 1
 				else
 					break
@@ -497,6 +518,7 @@ function S:HandleSirusEquipmentSocketInfo(slotFrame, inventorySlot, anchor, slot
 		wipe(gemTextures)
 		wipe(emptyNames)
 		wipe(emptyColors)
+		wipe(emptyTextures)
 	end
 
 	for index = numSockets + 1, MAX_DISPLAYED_SOCKETS do

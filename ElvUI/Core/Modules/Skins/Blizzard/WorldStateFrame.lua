@@ -5,6 +5,17 @@ local S = E:GetModule("Skins")
 local _G = _G
 local ipairs, unpack = ipairs, unpack
 
+local function DeferCaptureBarWork(func)
+	return function(id)
+		C_Timer:After(0, function()
+			local bar = _G["WorldStateCaptureBar"..id]
+			if bar and bar.CanChangeProtectedState and not bar:CanChangeProtectedState() then return end
+
+			func(id)
+		end)
+	end
+end
+
 S:AddCallback("Skin_WorldStateFrame", function()
 	if not E.private.skins.blizzard.enable or not E.private.skins.blizzard.worldState then return end
 
@@ -64,11 +75,10 @@ S:AddCallback("Skin_WorldStateFrame", function()
 		bar.spark:Size(4, 18)
 	end
 
-	hooksecurefunc(ExtendedUI["CAPTUREPOINT"], "create", captureBarCreate)
+	hooksecurefunc(ExtendedUI["CAPTUREPOINT"], "create", DeferCaptureBarWork(captureBarCreate))
 
 	local topCenter = _G.WorldStateTopCenterFrame
 	if topCenter then
-		topCenter:SetToplevel(false)
 		local barColors = { { 0, .44, .87 }, { .77, .12, .23 } }
 
 		for id, bar in ipairs({ topCenter.LeftBar, topCenter.RightBar }) do
@@ -93,22 +103,26 @@ S:AddCallback("Skin_WorldStateFrame", function()
 	end
 
 	hooksecurefunc(ExtendedUI["CAPTUREPOINT"], "update", function(id, value, neutralPercent)
-		local bar = _G["WorldStateCaptureBar"..id]
-		local middleBar = _G["WorldStateCaptureBar"..id.."MiddleBar"]
+		C_Timer:After(0, function()
+			local bar = _G["WorldStateCaptureBar"..id]
+			if not bar then return end
 
-		local barSize = 173
-		local position = math.max(2, math.min(171, barSize * (1 - value / 100)))
+			local middleBar = _G["WorldStateCaptureBar"..id.."MiddleBar"]
 
-		if neutralPercent == 0 then
-			middleBar:Width(1)
-		else
-			middleBar:Width(neutralPercent / 100 * barSize)
-		end
+			local barSize = 173
+			local position = math.max(2, math.min(171, barSize * (1 - value / 100)))
 
-		if bar.spark then
-			bar.spark:Point("CENTER", bar, "LEFT", position, 0)
-		else
-			captureBarCreate(id)
-		end
+			if neutralPercent == 0 then
+				middleBar:Width(1)
+			else
+				middleBar:Width(neutralPercent / 100 * barSize)
+			end
+
+			if bar.spark then
+				bar.spark:Point("CENTER", bar, "LEFT", position, 0)
+			elseif not bar.CanChangeProtectedState or bar:CanChangeProtectedState() then
+				captureBarCreate(id)
+			end
+		end)
 	end)
 end)
