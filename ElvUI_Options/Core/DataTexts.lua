@@ -248,6 +248,7 @@ local function CreateDTOptions(name, data)
 			optionTable.args.iconSize = ACH:Range(L["Icon Size"], nil, 4, { min = 10, softMax = 24, step = 1})
 			optionTable.args.autoEquipmentSet = ACH:Toggle(L["Auto Equipment Set"], L["Automatically equip the equipment set whose name matches the name of the talent group after switching specialization."], 6)
 		elseif name == 'Time' then
+			optionTable.args.date = ACH:Toggle(L["Show Date"], L["Display the date next to the time."], 4)
 			optionTable.args.time24 = ACH:Toggle(L["24-Hour Time"], L["Toggle 24-hour mode for the time datatext."], 5)
 			optionTable.args.seconds = ACH:Toggle(L["Seconds"], L["Show seconds on the time display."], 6)
 			optionTable.args.localTime = ACH:Toggle(L["Local Time"], L["If not set to true then the server time will be displayed instead."], 7)

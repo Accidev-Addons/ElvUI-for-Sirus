@@ -36,6 +36,7 @@ local displayFormats = {
 	na_color = '',
 	eu_color = ''
 }
+local dateColor
 
 local OnUpdate, db
 
@@ -58,7 +59,8 @@ end
 
 local function GetTimeValues(tooltip)
 	local dateTable = E:GetDateTime((tooltip and not db.localTime) or (not tooltip and db.localTime))
-	return ConvertTime(dateTable.hour, dateTable.min, dateTable.sec)
+	local Hr, Min, Sec, AmPm = ConvertTime(dateTable.hour, dateTable.min, dateTable.sec)
+	return Hr, Min, Sec, AmPm, dateTable
 end
 
 local function OnClick(_, btn)
@@ -244,14 +246,22 @@ function OnUpdate(self, t)
 		OnEnter(self)
 	end
 
-	local Hr, Min, Sec, AmPm = GetTimeValues()
-	self.text:SetFormattedText(displayFormats[AmPm == -1 and 'eu_color' or 'na_color'], Hr, Min, Sec, APM[AmPm])
+	local Hr, Min, Sec, AmPm, dateTable = GetTimeValues()
+
+	local timeText = format(displayFormats[AmPm == -1 and 'eu_color' or 'na_color'], Hr, Min, Sec, APM[AmPm])
+	if db.date then
+		timeText = timeText..' '..dateColor..format('%02d.%02d.%02d', dateTable.day, dateTable.month, dateTable.year % 100)..'|r'
+	end
+
+	self.text:SetText(timeText)
 end
 
 local function ApplySettings(self, hex)
 	if not db then
 		db = E.global.datatexts.settings[self.name]
 	end
+
+	dateColor = hex
 
 	updateTime = db.seconds and 1 or 5
 
