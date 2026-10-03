@@ -2307,7 +2307,8 @@ local function GetUnitSettings(unit, name)
 						type = "select",
 						name = L["Attach To"],
 						values = {
-							["FRAME"] = L["Nameplate"]
+							["FRAME"] = L["Nameplate"],
+							["BUFFS"] = L["Buffs"],
 						}
 					},
 					growthX = {
@@ -2959,6 +2960,376 @@ local function GetUnitSettings(unit, name)
 								end,
 								get = function(info, value)
 									local str = E.db.nameplates.units[unit].debuffs.filters.priority
+									if str == "" then return end
+									local tbl = {strsplit(",", str)}
+									return tbl[value]
+								end,
+								set = function(info)
+									NP:ConfigureAll()
+								end
+							},
+							spacer3 = {
+								order = 9,
+								type = "description",
+								name = L["Use drag and drop to rearrange filter priority or right click to remove a filter."]
+							}
+						}
+					}
+				}
+			},
+			crowdControlGroup = {
+				order = 4.5,
+				type = "group",
+				name = L["Crowd Control"],
+				get = function(info)
+					return E.db.nameplates.units[unit].crowdcontrol[info[#info]]
+				end,
+				set = function(info, value)
+					E.db.nameplates.units[unit].crowdcontrol[info[#info]] = value
+					NP:ConfigureAll()
+				end,
+				args = {
+					header = {
+						order = 0,
+						type = "header",
+						name = L["Crowd Control"]
+					},
+					enable = {
+						order = 1,
+						type = "toggle",
+						name = L["Enable"]
+					},
+					perrow = {
+						order = 2,
+						type = "range",
+						name = L["Per Row"],
+						min = 1, max = 20, step = 1,
+					},
+					numrows = {
+						order = 3,
+						type = "range",
+						name = L["Num Rows"],
+						min = 1, max = 10, step = 1
+					},
+					size = {
+						order = 4,
+						type = "range",
+						name = L["Icon Size"],
+						min = 6, max = 60, step = 1
+					},
+					spacing = {
+						order = 5,
+						type = "range",
+						name = L["Spacing"],
+						min = 0, max = 60, step = 1
+					},
+					xOffset = {
+						order = 6,
+						type = "range",
+						name = L["X-Offset"],
+						min = -100, max = 100, step = 1
+					},
+					yOffset = {
+						order = 7,
+						type = "range",
+						name = L["Y-Offset"],
+						min = -100, max = 100, step = 1
+					},
+					anchorPoint = {
+						order = 8,
+						type = "select",
+						name = L["Anchor Point"],
+						desc = L["What point to anchor to the frame you set to attach to."],
+						values = positionValues
+					},
+					attachTo = {
+						order = 9,
+						type = "select",
+						name = L["Attach To"],
+						values = {
+							["FRAME"] = L["Nameplate"],
+							["BUFFS"] = L["Buffs"],
+						}
+					},
+					growthX = {
+						order = 10,
+						type = "select",
+						name = L["Growth X-Direction"],
+						values = {
+							["LEFT"] = L["Left"],
+							["RIGHT"] = L["Right"]
+						}
+					},
+					growthY = {
+						order = 11,
+						type = "select",
+						name = L["Growth Y-Direction"],
+						values = {
+							["UP"] = L["Up"],
+							["DOWN"] = L["Down"]
+						}
+					},
+					cooldownOrientation = {
+						order = 12,
+						type = "select",
+						name = L["Cooldown Orientation"],
+						values = {
+							["VERTICAL"] = L["Vertical"],
+							["HORIZONTAL"] = L["Horizontal"]
+						}
+					},
+					reverseCooldown = {
+						order = 13,
+						type = "toggle",
+						name = L["Reverse Cooldown"],
+					},
+					stacks = {
+						order = 14,
+						type = "group",
+						name = L["Stack Counter"],
+						guiInline = true,
+						get = function(info, value)
+							return E.db.nameplates.units[unit].crowdcontrol[info[#info]]
+						end,
+						set = function(info, value)
+							E.db.nameplates.units[unit].crowdcontrol[info[#info]] = value
+							NP:ConfigureAll()
+						end,
+						args = {
+							countFont = {
+								order = 1,
+								type = "select",
+								name = L["Font"],
+								dialogControl = "LSM30_Font",
+								values = AceGUIWidgetLSMlists.font
+							},
+							countFontSize = {
+								order = 2,
+								type = "range",
+								name = L["Font Size"],
+								min = 4, max = 20, step = 1 -- max 20 cause otherwise it looks weird
+							},
+							countFontOutline = {
+								order = 3,
+								type = "select",
+								name = L["Font Outline"],
+								desc = L["Set the font outline."],
+								values = C.Values.FontFlags,
+								sorting = C.Values.FontSorting
+							},
+							countPosition = {
+								order = 4,
+								type = "select",
+								name = L["Position"],
+								values = {
+									["TOP"] = "TOP",
+									["LEFT"] = "LEFT",
+									["BOTTOM"] = "BOTTOM",
+									["CENTER"] = "CENTER",
+									["TOPLEFT"] = "TOPLEFT",
+									["BOTTOMLEFT"] = "BOTTOMLEFT",
+									["BOTTOMRIGHT"] = "BOTTOMRIGHT",
+									["RIGHT"] = "RIGHT",
+									["TOPRIGHT"] = "TOPRIGHT"
+								}
+							},
+							countXOffset = {
+								order = 5,
+								name = L["X-Offset"],
+								type = "range",
+								min = -100, max = 100, step = 1
+							},
+							countYOffset = {
+								order = 6,
+								name = L["Y-Offset"],
+								type = "range",
+								min = -100, max = 100, step = 1
+							}
+						}
+					},
+					duration = {
+						order = 15,
+						type = "group",
+						name = L["Duration"],
+						guiInline = true,
+						get = function(info)
+							return E.db.nameplates.units[unit].crowdcontrol[info[#info]]
+						end,
+						set = function(info, value)
+							E.db.nameplates.units[unit].crowdcontrol[info[#info]] = value
+							NP:ConfigureAll()
+						end,
+						args = {
+							durationFont = {
+								order = 1,
+								type = "select",
+								name = L["Font"],
+								dialogControl = "LSM30_Font",
+								values = AceGUIWidgetLSMlists.font
+							},
+							durationFontSize = {
+								order = 2,
+								type = "range",
+								name = L["Font Size"],
+								min = 4, max = 20, step = 1 -- max 20 cause otherwise it looks weird
+							},
+							durationFontOutline = {
+								order = 3,
+								type = "select",
+								name = L["Font Outline"],
+								desc = L["Set the font outline."],
+								values = C.Values.FontFlags,
+								sorting = C.Values.FontSorting
+							},
+							durationPosition = {
+								order = 4,
+								type = "select",
+								name = L["Position"],
+								values = {
+									["TOP"] = "TOP",
+									["LEFT"] = "LEFT",
+									["BOTTOM"] = "BOTTOM",
+									["CENTER"] = "CENTER",
+									["TOPLEFT"] = "TOPLEFT",
+									["BOTTOMLEFT"] = "BOTTOMLEFT",
+									["BOTTOMRIGHT"] = "BOTTOMRIGHT",
+									["RIGHT"] = "RIGHT",
+									["TOPRIGHT"] = "TOPRIGHT"
+								}
+							},
+							durationXOffset = {
+								order = 5,
+								name = L["X-Offset"],
+								type = "range",
+								min = -100, max = 100, step = 1
+							},
+							durationYOffset = {
+								order = 6,
+								name = L["Y-Offset"],
+								type = "range",
+								min = -100, max = 100, step = 1
+							}
+						}
+					},
+					filtersGroup = {
+						order = 16,
+						type = "group",
+						name = L["Filters"],
+						get = function(info)
+							return E.db.nameplates.units[unit].crowdcontrol.filters[info[#info]]
+						end,
+						set = function(info, value)
+							E.db.nameplates.units[unit].crowdcontrol.filters[info[#info]] = value
+							NP:ConfigureAll()
+						end,
+						guiInline = true,
+						args = {
+							minDuration = {
+								order = 1,
+								type = "range",
+								name = L["Minimum Duration"],
+								desc = L["Don't display auras that are shorter than this duration (in seconds). Set to zero to disable."],
+								min = 0, max = 10800, step = 1
+							},
+							maxDuration = {
+								order = 2,
+								type = "range",
+								name = L["Maximum Duration"],
+								desc = L["Don't display auras that are longer than this duration (in seconds). Set to zero to disable."],
+								min = 0, max = 10800, step = 1
+							},
+							jumpToFilter = {
+								order = 3,
+								type = "execute",
+								name = L["Filters Page"],
+								desc = L["Shortcut to global filters."],
+								func = function()
+									ACD:SelectGroup("ElvUI", "filters")
+								end
+							},
+							spacer1 = {
+								order = 4,
+								type = "description",
+								name = " "
+							},
+							specialFilters = {
+								order = 5,
+								type = "select",
+								sortByValue = true,
+								name = L["Add Special Filter"],
+								desc = L["These filters don't use a list of spells like the regular filters. Instead they use the WoW API and some code logic to determine if an aura should be allowed or blocked."],
+								values = function()
+									local filters = {}
+									local list = E.global.nameplates.specialFilters
+									if not (list and next(list)) then return filters end
+
+									for filter in pairs(list) do
+										filters[filter] = L[filter]
+									end
+									return filters
+								end,
+								set = function(info, value)
+									filterPriority("crowdcontrol", unit, value)
+									NP:ConfigureAll()
+								end
+							},
+							filter = {
+								order = 6,
+								type = "select",
+								name = L["Add Regular Filter"],
+								desc = L["These filters use a list of spells to determine if an aura should be allowed or blocked. The content of these filters can be modified in the 'Filters' section of the config."],
+								values = function()
+									local filters = {}
+									local list = E.global.unitframe.aurafilters
+									if not (list and next(list)) then return filters end
+
+									for filter in pairs(list) do
+										filters[filter] = filter
+									end
+									return filters
+								end,
+								set = function(info, value)
+									filterPriority("crowdcontrol", unit, value)
+									NP:ConfigureAll()
+								end
+							},
+							resetPriority = {
+								order = 7,
+								type = "execute",
+								name = L["Reset Priority"],
+								desc = L["Reset filter priority to the default state."],
+								func = function()
+									E.db.nameplates.units[unit].crowdcontrol.filters.priority = P.nameplates.units[unit].crowdcontrol.filters.priority
+									NP:ConfigureAll()
+								end
+							},
+							filterPriority = {
+								order = 8,
+								type = "multiselect",
+								name = L["Filter Priority"],
+								dragdrop = true,
+								dragOnLeave = E.noop, --keep this here
+								dragOnEnter = function(info)
+									carryFilterTo = info.obj.value
+								end,
+								dragOnMouseDown = function(info)
+									carryFilterFrom, carryFilterTo = info.obj.value, nil
+								end,
+								dragOnMouseUp = function(info)
+									filterPriority("crowdcontrol", unit, carryFilterTo, nil, carryFilterFrom) --add it in the new spot
+									carryFilterFrom, carryFilterTo = nil, nil
+								end,
+								dragOnClick = function(info)
+									filterPriority("crowdcontrol", unit, carryFilterFrom, true)
+								end,
+								stateSwitchGetText = stateSwitchGetText,
+								values = function()
+									local str = E.db.nameplates.units[unit].crowdcontrol.filters.priority
+									if str == "" then return {} end
+									return {strsplit(",", str)}
+								end,
+								get = function(info, value)
+									local str = E.db.nameplates.units[unit].crowdcontrol.filters.priority
 									if str == "" then return end
 									local tbl = {strsplit(",", str)}
 									return tbl[value]
@@ -4240,18 +4611,8 @@ for i = 1, 5 do
 end
 
 do
-	local sirusOwnsAuras = function() return NP:IsSirusNameplates() end
-	local hiddenInSirus = { "perrow", "numrows", "size", "spacing", "xOffset", "yOffset", "anchorPoint", "attachTo", "growthX", "growthY" }
-
-	local function HideSirusOwnedAuraLayout(group)
+	local function AddClientAuraNotice(group)
 		if not (group and group.args) then return end
-
-		for _, key in next, hiddenInSirus do
-			local option = group.args[key]
-			if option then
-				option.hidden = sirusOwnsAuras
-			end
-		end
 
 		group.args.clientAuras = {
 			order = 0.5,
@@ -4259,26 +4620,17 @@ do
 			name = L["The game client decides which auras a nameplate can show and in what order: its own aura display options, buff and debuff rules, spell blacklists and crowd control. ElvUI draws them in its own style. The Enable toggle and the filters below can hide some of these auras, but cannot add auras the client does not show."],
 			hidden = function() return not NP:IsSirusNameplates() end
 		}
-
-		group.args.clientLayout = {
-			order = 1.5,
-			type = "description",
-			name = L["Aura positions, sizes, spacing and the amount of icons are set in the game client's nameplate options."],
-			hidden = function() return not NP:IsSirusNameplates() end
-		}
 	end
 
 	for _, group in pairs(E.Options.args.nameplates.args) do
 		if type(group) == "table" and group.args then
-			HideSirusOwnedAuraLayout(group.args.buffsGroup)
-			HideSirusOwnedAuraLayout(group.args.debuffsGroup)
+			AddClientAuraNotice(group.args.buffsGroup)
+			AddClientAuraNotice(group.args.debuffsGroup)
+			AddClientAuraNotice(group.args.crowdControlGroup)
 		end
 	end
 
 	local general = E.Options.args.nameplates.args.generalGroup.args.general.args
-	if general.motionType then
-		general.motionType.hidden = sirusOwnsAuras
-	end
 
 	general.clientStacking = {
 		order = 3,

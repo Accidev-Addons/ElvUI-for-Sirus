@@ -461,6 +461,7 @@ P.nameplates = {
 
 	loadDistance = 41,
 
+
 	lowHealthThreshold = 0.4,
 
 	showFriendlyCombat = "DISABLED",
@@ -1099,6 +1100,35 @@ P.nameplates = {
 		}
 	}
 }
+
+for _, unitContent in pairs(P.nameplates.units) do
+	if unitContent.buffs then
+		unitContent.buffs.attachTo = "FRAME"
+		unitContent.buffs.anchorPoint = "LEFT"
+		unitContent.buffs.growthX = "LEFT"
+		unitContent.buffs.growthY = "UP"
+		unitContent.buffs.xOffset = -5
+		unitContent.buffs.yOffset = 0
+	end
+
+	if unitContent.debuffs then
+		unitContent.debuffs.attachTo = "FRAME"
+		unitContent.debuffs.anchorPoint = "TOPLEFT"
+		unitContent.debuffs.growthX = "RIGHT"
+		unitContent.debuffs.growthY = "UP"
+		unitContent.debuffs.xOffset = 0
+		unitContent.debuffs.yOffset = 5
+
+		local cc = CopyTable(unitContent.debuffs)
+		cc.enable = true
+		cc.anchorPoint = "RIGHT"
+		cc.growthX = "RIGHT"
+		cc.xOffset = 5
+		cc.yOffset = 0
+		cc.filters.priority = "Blacklist,CCDebuffs"
+		unitContent.crowdcontrol = cc
+	end
+end
 
 local TopAuras = {
 	barColor = { r = 0, g = .8, b = 0 },

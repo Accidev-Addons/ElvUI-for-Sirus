@@ -5,11 +5,10 @@ local LSM = E.Libs.LSM
 --Lua functions
 local select, wipe = select, wipe
 local tinsert = table.insert
-local floor, ceil, min = math.floor, math.ceil, math.min
+local floor, min = math.floor, math.min
 local split = string.split
 --WoW API / Variables
 local CreateFrame = CreateFrame
-local GetCVar = GetCVar
 local GetSpellInfo = GetSpellInfo
 local GetTime = GetTime
 local UnitAura = UnitAura
@@ -145,7 +144,14 @@ local function GetAuraDB(frame, auraType)
 	local units = NP.db.units[frame.UnitType]
 	if not units then return end
 
-	return units[auraType] or units.debuffs
+	local db = units[auraType]
+
+	if not db then
+		local defaults = P.nameplates.units[frame.UnitType]
+		db = defaults and defaults[auraType]
+	end
+
+	return db or units.debuffs
 end
 
 local function GetSirusAurasFrame(frame)
@@ -168,41 +174,55 @@ local sirusAuraLists = {
 
 local sirusContainers = { "Buffs", "Debuffs", "CrowdControl", "LossOfControl" }
 
-local namePointsAbove = {
-	TOP = true,
-	TOPLEFT = true,
-	TOPRIGHT = true
+local sirusAnchorPoints = {
+	BOTTOM = "TOP",
+	BOTTOMLEFT = "TOPLEFT",
+	BOTTOMRIGHT = "TOPRIGHT",
+	CENTER = "CENTER",
+	LEFT = "RIGHT",
+	RIGHT = "LEFT",
+	TOP = "BOTTOM",
+	TOPLEFT = "BOTTOMLEFT",
+	TOPRIGHT = "BOTTOMRIGHT"
 }
 
 local function GetSirusAuraAnchor(frame, auraType)
-	local db = NP.db.units[frame.UnitType]
+	local units = NP.db.units[frame.UnitType]
 
-	if auraType == "debuffs" then
-		local padding = NP:SirusPixel(tonumber(GetCVar(_G.NamePlateConstants.DEBUFF_PADDING_CVAR)) or 0)
+	if auraType == "loss of control" then
+		local level = units and units.level
 
-		return "BOTTOMLEFT", (db.name.enable and namePointsAbove[db.name.position]) and frame.Name or frame.Health, "TOPLEFT", 0, padding
-	elseif auraType == "buffs" then
-		return "RIGHT", frame.Health, "LEFT", -NP:SirusPixel(5), 0
+		return "LEFT", (level and level.enable and level.position == "RIGHT") and frame.Level or frame.Health, "RIGHT", NP:SirusPixel(5), 0
 	end
 
-	return "LEFT", (db.level.enable and db.level.position == "RIGHT") and frame.Level or frame.Health, "RIGHT", NP:SirusPixel(5), 0
+	local db = GetAuraDB(frame, auraType)
+
+	if not (db and db.anchorPoint) then
+		return "BOTTOM", frame.Health, "TOP", 0, 0
+	end
+
+	local anchorPoint = db.anchorPoint
+	local attachTo = (db.attachTo == "BUFFS") and frame.Buffs or frame.Health
+
+	return sirusAnchorPoints[anchorPoint] or anchorPoint, attachTo, anchorPoint, NP:SirusPixel(db.xOffset or 0), NP:SirusPixel(db.yOffset or 0)
 end
 
 local function ConfigureSirusAuras(frame, auras, aurasFrame)
+	local db = GetAuraDB(frame, auras.type)
+	if not db then return end
+
 	local list = aurasFrame[sirusListFrames[auras.type]]
 	local itemScale = aurasFrame.auraItemScale
-	local stride, limit = list.stride, list.maxAuraItemsDisplayed
-	local perrow = min(stride, limit)
-	local numrows = ceil(limit / perrow)
+	local stride = list.stride
+	local perrow, numrows = db.perrow, db.numrows
 	local size = NP:SirusPixel(_G.NamePlateConstants.AURA_ITEM_HEIGHT * (itemScale or 1))
 	local spacing, rowSpacing = NP:SirusPixel(list.childXPadding), NP:SirusPixel(list.childYPadding)
-	local goingUp, goingRight = list.layoutFramesGoingUp, list.layoutFramesGoingRight
 
 	local layout = auras.sirusLayout or {}
-	layout.point = (goingUp and "BOTTOM" or "TOP") .. (goingRight and "LEFT" or "RIGHT")
-	layout.growthX = goingRight and "RIGHT" or "LEFT"
-	layout.growthY = goingUp and "UP" or "DOWN"
+	layout.point = (db.growthY == "UP" and "BOTTOM" or "TOP") .. (db.growthX == "RIGHT" and "LEFT" or "RIGHT")
+	layout.growthX, layout.growthY = db.growthX, db.growthY
 	layout.size, layout.spacing, layout.rowSpacing, layout.perrow = size, spacing, rowSpacing, perrow
+	layout.numrows = numrows
 
 	auras.sirusLayout, auras.sirusList, auras.sirusScale, auras.sirusStride = layout, list, itemScale, stride
 	auras.anchoredIcons = 0
@@ -247,11 +267,13 @@ local function UpdateSirusAuraList(frame, auras, aurasFrame, draw)
 		ConfigureSirusAuras(frame, auras, aurasFrame)
 	end
 
+	local maxIcons = db and (db.perrow * db.numrows) or count
+
 	for index = 1, count do
 		local item = sirusItems[index]
 		sirusItems[index] = nil
 
-		local aura = show and item and auraList and auraList[item.auraInstanceID]
+		local aura = visible < maxIcons and show and item and auraList and auraList[item.auraInstanceID]
 		if aura and NP:SirusAuraAllowed(db, aura) then
 			visible = visible + 1
 
@@ -353,6 +375,25 @@ local function SirusAnchorsUpdated(unitFrame)
 	for _, key in next, sirusContainers do
 		local auras = frame[key]
 		auras:ClearAndSetPoint(GetSirusAuraAnchor(frame, auras.type))
+	end
+end
+
+function NP:RefreshSirusAuraAnchors()
+	if not NP:IsSirusNameplates() then return end
+
+	for plate in pairs(NP.CreatedPlates) do
+		local frame = plate.ElvUIFrame
+		if frame and frame.UnitType and frame.Health:IsShown() then
+			local unitFrame = NP:GetSirusUnitFrame(plate)
+			if unitFrame and unitFrame.AurasFrame then
+				for _, key in next, sirusContainers do
+					local auras = frame[key]
+					if auras then
+						auras:ClearAndSetPoint(GetSirusAuraAnchor(frame, auras.type))
+					end
+				end
+			end
+		end
 	end
 end
 
@@ -577,6 +618,19 @@ function NP:Configure_Auras(frame, auraType)
 	local aurasFrame = GetSirusAurasFrame(frame)
 	if aurasFrame then
 		ConfigureSirusAuras(frame, auras, aurasFrame)
+
+		local maxIcons = db.perrow * db.numrows
+		for i = 1, #auras do
+			if i > maxIcons then
+				auras[i]:Hide()
+			end
+		end
+
+		if #auras > 0 then
+			NP:Update_AurasPosition(auras, db, auras.sirusLayout)
+			auras.anchoredIcons = min(#auras, maxIcons)
+		end
+
 		return
 	end
 

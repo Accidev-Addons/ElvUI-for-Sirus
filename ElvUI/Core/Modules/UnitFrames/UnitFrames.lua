@@ -1254,12 +1254,15 @@ local function HandleCompactPartyFrames()
 	local unregister = _G.CompactUnitFrame_UnregisterEvents
 	if not frame or not unregister then return end
 
+	frame:UnregisterAllEvents()
 	for _, member in pairs(frame.memberUnitFrames or {}) do
 		unregister(member)
+		member:SetParent(nil)
 	end
 
 	for _, pet in pairs(frame.petUnitFrames or {}) do
 		unregister(pet)
+		pet:SetParent(nil)
 	end
 end
 

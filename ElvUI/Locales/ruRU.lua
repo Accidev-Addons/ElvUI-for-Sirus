@@ -119,6 +119,7 @@ L["Confused.. Try Again!"] = "Что за?.. Попробуйте еще раз!
 L["Continue"] = "Продолжить"
 L["Coords"] = "Коорд."
 L["copperabbrev"] = "|cffeda55fм|r"
+L["Crowd Control"] = "Эффекты контроля"
 L["Current Difficulties:"] = "Текущая сложность:"
 L["Current Level:"] = "Текущий уровень:"
 L["CVars Set"] = "Настройки сброшены"
