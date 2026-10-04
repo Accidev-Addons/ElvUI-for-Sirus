@@ -536,6 +536,7 @@ function TT:GameTooltip_OnTooltipCleared(tt)
 	end
 
 	tt.ItemLevelShown = nil
+	tt.ItemInfoShown = nil
 
 	if tt.ItemTooltip then
 		tt.ItemTooltip:Hide()
@@ -544,6 +545,10 @@ function TT:GameTooltip_OnTooltipCleared(tt)
 	-- This code is to reset stuck widgets.
 	GameTooltip_ClearMoney(tt)
 	GameTooltip_ClearStatusBars(tt)
+end
+
+function TT:ShoppingTooltip_OnTooltipCleared()
+	self.ItemInfoShown = nil
 end
 
 function TT:GameTooltip_OnTooltipSetItem(data)
@@ -562,6 +567,10 @@ function TT:GameTooltip_OnTooltipSetItem(data)
 	if GetItem then
 		local _, link = GetItem(self)
 		if not link then return end
+
+		-- items with an embedded item tooltip (heirloom tokens, recipes) fire OnTooltipSetItem twice
+		if self.ItemInfoShown then return end
+		self.ItemInfoShown = true
 
 		local _, _, quality, _, _, _, _, stack = C_Item_GetItemInfo(link)
 
@@ -839,6 +848,8 @@ function TT:Initialize()
 	TT:SecureHookScript(GameTooltip, 'OnTooltipSetItem', TT.GameTooltip_OnTooltipSetItem)
 	TT:SecureHookScript(ShoppingTooltip1, 'OnTooltipSetItem', TT.GameTooltip_OnTooltipSetItem)
 	TT:SecureHookScript(ShoppingTooltip2, 'OnTooltipSetItem', TT.GameTooltip_OnTooltipSetItem)
+	TT:SecureHookScript(ShoppingTooltip1, 'OnTooltipCleared', TT.ShoppingTooltip_OnTooltipCleared)
+	TT:SecureHookScript(ShoppingTooltip2, 'OnTooltipCleared', TT.ShoppingTooltip_OnTooltipCleared)
 	TT:SecureHookScript(GameTooltip, 'OnTooltipSetUnit', TT.GameTooltip_OnTooltipSetUnit)
 	TT:SecureHookScript(E.SpellBookTooltip, 'OnTooltipSetSpell', TT.GameTooltip_OnTooltipSetSpell)
 
