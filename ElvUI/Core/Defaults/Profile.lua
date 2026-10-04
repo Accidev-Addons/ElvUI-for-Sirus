@@ -189,6 +189,25 @@ P.general = {
 	characterInfo = {
 		showGems = true,
 		showEnchants = false,
+		socketPosition = "default",
+		socketXOffset = 0,
+		socketYOffset = 0,
+		enchantPosition = "default",
+		enchantXOffset = 0,
+		enchantYOffset = 0,
+		showItemLevel = true,
+		itemLevelQualityColor = true,
+		itemLevelPosition = "BOTTOMLEFT",
+		itemLevelXOffset = 1,
+		itemLevelYOffset = 4,
+		showDurability = true,
+		durabilityOnlyDamaged = false,
+		durabilityPosition = "TOPLEFT",
+		durabilityXOffset = 0,
+		durabilityYOffset = 0,
+		font = "PT Sans Narrow",
+		fontSize = 10,
+		fontOutline = "OUTLINE",
 	},
 	lootRoll = {
 		width = 325,
@@ -766,7 +785,7 @@ P.nameplates = {
 				filters = {
 					minDuration = 0,
 					maxDuration = 300,
-					priority = "Blacklist,PlayerBuffs,TurtleBuffs" --NamePlate EnemyPlayer Buffs
+					priority = "Blacklist,Dispellable" --NamePlate EnemyPlayer Buffs
 				},
 			},
 			debuffs = {
@@ -1041,7 +1060,7 @@ P.nameplates = {
 				filters = {
 					minDuration = 0,
 					maxDuration = 0,
-					priority = "Blacklist,blockNoDuration,PlayerBuffs,TurtleBuffs" --NamePlate EnemyNPC Buffs
+					priority = "Blacklist,Dispellable" --NamePlate EnemyNPC Buffs
 				},
 			},
 			debuffs = {

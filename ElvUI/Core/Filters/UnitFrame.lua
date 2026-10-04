@@ -37,7 +37,12 @@ G.unitframe.aurafilters.CCDebuffs = {
 		[64803] = List(2), -- Entrapment
 	-- Mage
 		[118] = List(2), -- Polymorph (Sheep)
-		[122] = List(2), -- Frost Nova
+		[122] = List(2), -- Frost Nova (Rank 1)
+		[865] = List(2), -- Frost Nova (Rank 2)
+		[6131] = List(2), -- Frost Nova (Rank 3)
+		[10230] = List(2), -- Frost Nova (Rank 4)
+		[27088] = List(2), -- Frost Nova (Rank 5)
+		[42917] = List(2), -- Frost Nova (Rank 6)
 		[18469] = List(2), -- Silenced - Improved Counterspell (Rank 1)
 		[31589] = List(2), -- Slow
 		[31661] = List(2), -- Dragon's Breath

@@ -193,6 +193,10 @@ E.StyleFilterDefaults = {
 G.nameplates.specialFilters = {
 	Personal = true,
 	nonPersonal = true,
+	Dispellable = true,
+	notDispellable = true,
 	blockNonPersonal = true,
-	blockNoDuration = true
+	blockNoDuration = true,
+	blockDispellable = true,
+	blockNotDispellable = true
 }

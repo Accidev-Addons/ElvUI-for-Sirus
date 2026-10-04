@@ -8,6 +8,37 @@ local hooksecurefunc = hooksecurefunc
 local GetBuybackItemInfo = GetBuybackItemInfo
 local GetItemInfo = GetItemInfo
 local GetMerchantNumItems = GetMerchantNumItems
+local GetMerchantItemMaxStack = GetMerchantItemMaxStack
+local GetMoney = GetMoney
+local IsAltKeyDown = IsAltKeyDown
+local floor = math.floor
+
+local function MerchantItemButton_AltStackBuy(button)
+	if not IsAltKeyDown() or _G.MerchantFrame.selectedTab ~= 1 then return end
+
+	local index = button:GetID()
+	local maxStack = GetMerchantItemMaxStack(index)
+	if not maxStack or maxStack < 1 then return end
+
+	if button.price and button.price > 0 then
+		local canAfford = floor(GetMoney() / button.price)
+		if canAfford < maxStack then
+			maxStack = canAfford
+		end
+	end
+
+	if maxStack < 1 then return end
+
+	button:SplitStack(maxStack)
+end
+
+local function MerchantItemButton_AltStackHint(tooltip)
+	if _G.MerchantFrame.selectedTab ~= 1 or not tooltip.merchantSlotIndex then return end
+
+	tooltip:AddLine(L["Alt-click to buy the full stack"], 1, 1, 1)
+end
+
+hooksecurefunc(_G.GameTooltip, "SetMerchantItem", MerchantItemButton_AltStackHint)
 
 local function LoadSkin()
 	if not E.private.skins.blizzard.enable or not E.private.skins.blizzard.merchant then return end
@@ -64,6 +95,7 @@ local function LoadSkin()
 		button:SetTemplate("Default", true)
 		button:Size(40)
 		button:Point("TOPLEFT", item, "TOPLEFT", 4, -4)
+		button:HookScript("OnClick", MerchantItemButton_AltStackBuy)
 
 		icon:SetTexCoords()
 		icon:SetInside()
@@ -144,7 +176,7 @@ local function LoadSkin()
 				if button.link then
 					_, _, quality = GetItemInfo(button.link)
 
-					if quality and quality > 1 then
+					if quality then
 						local r, g, b = E:GetItemQualityColor(quality)
 						button:SetBackdropBorderColor(r, g, b)
 						name:SetTextColor(r, g, b)
@@ -162,7 +194,7 @@ local function LoadSkin()
 			if buybackName then
 				_, _, quality = GetItemInfo(buybackName)
 
-				if quality and quality > 1 then
+				if quality then
 					local r, g, b = E:GetItemQualityColor(quality)
 					MerchantBuyBackItemItemButton:SetBackdropBorderColor(r, g, b)
 					MerchantBuyBackItemName:SetTextColor(r, g, b)
@@ -189,7 +221,7 @@ local function LoadSkin()
 					name = _G["MerchantItem"..i.."Name"]
 					_, _, quality = GetItemInfo(buybackName)
 
-					if quality and quality > 1 then
+					if quality then
 						local r, g, b = E:GetItemQualityColor(quality)
 						button:SetBackdropBorderColor(r, g, b)
 						name:SetTextColor(r, g, b)

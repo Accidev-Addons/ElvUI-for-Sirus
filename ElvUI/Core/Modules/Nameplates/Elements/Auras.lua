@@ -166,12 +166,6 @@ local sirusListFrames = {
 	crowdcontrol = "CrowdControlListFrame"
 }
 
-local sirusAuraLists = {
-	buffs = "buffList",
-	debuffs = "debuffList",
-	crowdcontrol = "crowdControlList"
-}
-
 local sirusContainers = { "Buffs", "Debuffs", "CrowdControl", "LossOfControl" }
 
 local sirusAnchorPoints = {
@@ -231,55 +225,77 @@ local function ConfigureSirusAuras(frame, auras, aurasFrame)
 	auras:ClearAndSetPoint(GetSirusAuraAnchor(frame, auras.type))
 end
 
-local sirusItems = {}
-local numSirusItems = 0
-
-local function CollectSirusAuraItems(...)
-	numSirusItems = 0
-
+local function HideSirusAuraItems(...)
 	for i = 1, select("#", ...) do
-		local item = select(i, ...)
-		local index = item.layoutIndex
+		select(i, ...):Hide()
+	end
+end
 
-		if index then
-			sirusItems[index] = item
+local sirusAuraFilters = {
+	buffs = "HELPFUL",
+	debuffs = "HARMFUL",
+	crowdcontrol = "HARMFUL"
+}
 
-			if index > numSirusItems then
-				numSirusItems = index
-			end
-		end
+local function IsSirusCrowdControl(aura)
+	return NP:CheckFilter(aura.name, aura.spellId, aura.isFromPlayerOrPlayerPet, true, (aura.duration or 0) == 0, aura.canDispell, "CCDebuffs") == true
+end
 
-		item:Hide()
+local function IsSirusAuraInGroup(auraType, aura)
+	if auraType == "buffs" then
+		return true
 	end
 
-	return numSirusItems
+	local isCrowdControl = IsSirusCrowdControl(aura)
+
+	if auraType == "crowdcontrol" then
+		return isCrowdControl
+	end
+
+	return not isCrowdControl
 end
 
 local function UpdateSirusAuraList(frame, auras, aurasFrame, draw)
 	local list = aurasFrame[sirusListFrames[auras.type]]
-	local count = CollectSirusAuraItems(list:GetChildren())
 	local db = GetAuraDB(frame, auras.type)
-	local show = draw and db and db.enable and list:IsVisible()
-	local auraList = aurasFrame[sirusAuraLists[auras.type]]
-	local visible = 0
+	local unit = frame.unit
+	local show = draw and db and db.enable and unit and list:IsVisible()
+
+	HideSirusAuraItems(list:GetChildren())
 
 	if show and (auras.sirusList ~= list or auras.sirusScale ~= aurasFrame.auraItemScale or auras.sirusStride ~= list.stride) then
 		ConfigureSirusAuras(frame, auras, aurasFrame)
 	end
 
-	local maxIcons = db and (db.perrow * db.numrows) or count
+	local maxIcons = (show and db.perrow * db.numrows) or 0
+	local filter = sirusAuraFilters[auras.type]
+	local visible, index = 0, 1
 
-	for index = 1, count do
-		local item = sirusItems[index]
-		sirusItems[index] = nil
+	while visible < maxIcons do
+		local name, _, texture, count, debuffType, duration, expiration, caster, isStealable, _, spellID = UnitAura(unit, index, filter)
+		if not name then break end
 
-		local aura = visible < maxIcons and show and item and auraList and auraList[item.auraInstanceID]
-		if aura and NP:SirusAuraAllowed(db, aura) then
+		local aura = {
+			name = name,
+			icon = texture,
+			applications = count,
+			dispelName = debuffType,
+			duration = duration,
+			expirationTime = expiration,
+			spellId = spellID,
+			isFromPlayerOrPlayerPet = (caster == "player" or caster == "pet"),
+			isStealable = isStealable,
+			canDispell = (isStealable and true) or (debuffType and E:IsDispellableByMe(debuffType)) or false
+		}
+
+		if IsSirusAuraInGroup(auras.type, aura) and NP:SirusAuraAllowed(db, aura) then
 			visible = visible + 1
 
 			local button = auras[visible] or NP:Construct_AuraIcon(auras, visible)
 			NP:StyleAura(button, visible, aura.icon, aura.applications or 0, aura.dispelName, aura.duration, aura.expirationTime, auras.type ~= "buffs", aura.spellId, aura.name)
 		end
+
+		index = index + 1
 	end
 
 	for i = visible + 1, #auras do
@@ -329,12 +345,6 @@ local function MirrorSirusAuras(frame, aurasFrame, draw)
 	UpdateSirusAuraList(frame, frame.Buffs, aurasFrame, draw)
 	UpdateSirusAuraList(frame, frame.Debuffs, aurasFrame, draw)
 	UpdateSirusAuraList(frame, frame.CrowdControl, aurasFrame, draw)
-end
-
-local function HideSirusAuraItems(...)
-	for i = 1, select("#", ...) do
-		select(i, ...):Hide()
-	end
 end
 
 local function SirusAurasRefreshed(aurasFrame)
@@ -426,7 +436,7 @@ function NP:SirusAuraAllowed(db, aura)
 		return false
 	end
 
-	return filters.priority == "" or NP:CheckFilter(aura.name, aura.spellId, aura.isFromPlayerOrPlayerPet, true, noDuration, split(",", filters.priority)) ~= false
+	return filters.priority == "" or NP:CheckFilter(aura.name, aura.spellId, aura.isFromPlayerOrPlayerPet, true, noDuration, aura.canDispell, split(",", filters.priority)) == true
 end
 
 function NP:StyleAuraButton(button, db)
@@ -652,7 +662,7 @@ function NP:ConstructElement_Auras(frame, auraType)
 	return auras
 end
 
-function NP:CheckFilter(name, spellID, isPlayer, allowDuration, noDuration, ...)
+function NP:CheckFilter(name, spellID, isPlayer, allowDuration, noDuration, canDispell, ...)
 	for i = 1, select("#", ...) do
 		local filterName = select(i, ...)
 		if G.nameplates.specialFilters[filterName] or E.global.unitframe.aurafilters[filterName] then
@@ -671,9 +681,17 @@ function NP:CheckFilter(name, spellID, isPlayer, allowDuration, noDuration, ...)
 				return true
 			elseif filterName == "nonPersonal" and (not isPlayer) and allowDuration then
 				return true
+			elseif filterName == "Dispellable" and canDispell and allowDuration then
+				return true
+			elseif filterName == "notDispellable" and (not canDispell) and allowDuration then
+				return true
 			elseif filterName == "blockNoDuration" and noDuration then
 				return false
 			elseif filterName == "blockNonPersonal" and (not isPlayer) then
+				return false
+			elseif filterName == "blockDispellable" and canDispell then
+				return false
+			elseif filterName == "blockNotDispellable" and (not canDispell) then
 				return false
 			end
 		end
@@ -698,9 +716,10 @@ function NP:AuraFilter(unit, button, name, texture, count, debuffType, duration,
 	local noDuration = (not duration or duration == 0)
 	local allowDuration = noDuration or (duration and (duration > 0) and db.filters.maxDuration == 0 or duration <= db.filters.maxDuration) and (db.filters.minDuration == 0 or duration >= db.filters.minDuration)
 	local filterCheck
+	local canDispell = (debuffType and E:IsDispellableByMe(debuffType)) or false
 
 	if priority ~= "" then
-		filterCheck = NP:CheckFilter(name, spellID, isPlayer, allowDuration, noDuration, split(",", priority))
+		filterCheck = NP:CheckFilter(name, spellID, isPlayer, allowDuration, noDuration, canDispell, split(",", priority))
 	else
 		filterCheck = allowDuration and true -- Allow all auras to be shown when the filter list is empty, while obeying duration sliders
 	end

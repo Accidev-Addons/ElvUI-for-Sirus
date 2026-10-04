@@ -1,5 +1,6 @@
 local E, L, V, P, G = unpack(ElvUI)
 local S = E:GetModule("Skins")
+local LSM = E.Libs.LSM
 
 local _G = _G
 local select, next, ipairs, pairs, tonumber, getmetatable = select, next, ipairs, pairs, tonumber, getmetatable
@@ -2437,6 +2438,13 @@ local function LoadSkin()
 		[15] = "BackSlot", [16] = "MainHandSlot", [17] = "SecondaryHandSlot", [18] = "RangedSlot", [19] = "TabardSlot"
 	}
 
+	local durabilitySlots = {
+		HeadSlot = true, ShoulderSlot = true, ChestSlot = true, WristSlot = true, HandsSlot = true,
+		WaistSlot = true, LegsSlot = true, FeetSlot = true, MainHandSlot = true, SecondaryHandSlot = true, RangedSlot = true
+	}
+
+	local itemLevelExcluded = { ShirtSlot = true, TabardSlot = true }
+
 	for _, slotName in ipairs(slots) do
 		local slotFrame = _G["Character"..slotName]
 		local icon = _G["Character"..slotName.."IconTexture"]
@@ -2446,6 +2454,14 @@ local function LoadSkin()
 		slotFrame:StripTextures()
 		slotFrame:StyleButton(false)
 		slotFrame:SetTemplate("Default", true, true)
+
+		if not itemLevelExcluded[slotName] then
+			slotFrame.ItemLevel = slotFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+		end
+
+		if durabilitySlots[slotName] then
+			slotFrame.DurabilityInfo = slotFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+		end
 
 		icon:SetTexCoords()
 		icon:SetInside()
@@ -2495,9 +2511,70 @@ local function LoadSkin()
 		S:ColorItemCharacterBorder()
 	end
 
+	local function UpdateEquipmentInfo()
+		local db = E.db.general.characterInfo
+
+		for _, slotName in ipairs(slots) do
+			local slotFrame = _G["Character"..slotName]
+			local slotId = GetInventorySlotInfo(slotName)
+
+			if slotFrame then
+				if slotFrame.ItemLevel then
+					local text, r, g, b = ""
+
+					if db.showItemLevel then
+						local itemId = GetInventoryItemID("player", slotId)
+
+						if itemId then
+							local _, _, rarity, itemLevel = GetItemInfo(itemId)
+
+							if itemLevel then
+								text = tostring(itemLevel)
+
+								if db.itemLevelQualityColor then
+									r, g, b = E:GetItemQualityColor(rarity)
+								end
+							end
+						end
+					end
+
+					if r then
+						slotFrame.ItemLevel:SetTextColor(r, g, b)
+					else
+						slotFrame.ItemLevel:SetTextColor(1, 1, 1)
+					end
+
+					slotFrame.ItemLevel:ClearAllPoints()
+					slotFrame.ItemLevel:SetPoint(db.itemLevelPosition, slotFrame, db.itemLevelXOffset, db.itemLevelYOffset)
+					slotFrame.ItemLevel:FontTemplate(LSM:Fetch("font", db.font), db.fontSize, db.fontOutline)
+					slotFrame.ItemLevel:SetText(text)
+				end
+
+				if slotFrame.DurabilityInfo then
+					local text = ""
+
+					if db.showDurability then
+						local current, maximum = GetInventoryItemDurability(slotId)
+
+						if current and maximum and maximum > 0 and (not db.durabilityOnlyDamaged or current < maximum) then
+							local r, g, b = E:ColorGradient(current / maximum, 1, 0, 0, 1, 1, 0, 0, 1, 0)
+							text = format("%s%.0f%%|r", E:RGBToHex(r, g, b), (current / maximum) * 100)
+						end
+					end
+
+					slotFrame.DurabilityInfo:ClearAllPoints()
+					slotFrame.DurabilityInfo:SetPoint(db.durabilityPosition, slotFrame, db.durabilityXOffset, db.durabilityYOffset)
+					slotFrame.DurabilityInfo:FontTemplate(LSM:Fetch("font", db.font), db.fontSize, db.fontOutline)
+					slotFrame.DurabilityInfo:SetText(text)
+				end
+			end
+		end
+	end
+
 	local socketDataRetry
 	local function UpdateCharacterEquipmentSockets()
 		ColorItemBorder()
+		UpdateEquipmentInfo()
 
 		local dataPending
 		for _, slotName in ipairs(slots) do
@@ -2526,6 +2603,8 @@ local function LoadSkin()
 	equipmentWatcher:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
 	equipmentWatcher:RegisterEvent("UNIT_INVENTORY_CHANGED")
 	equipmentWatcher:RegisterEvent("SOCKET_INFO_CLOSE")
+	equipmentWatcher:RegisterEvent("GET_ITEM_INFO_RECEIVED")
+	equipmentWatcher:RegisterEvent("UPDATE_INVENTORY_DURABILITY")
 	equipmentWatcher:SetScript("OnEvent", function(_, event, unit)
 		if (event == "UNIT_INVENTORY_CHANGED" and unit ~= "player") or not CharacterFrame:IsShown() or socketUpdateTimer then return end
 		socketUpdateTimer = E:Delay(0.1, SocketUpdateDelayed)

@@ -71,10 +71,17 @@ local function SkinToast(f)
 	SkinToastCloseButton(f)
 end
 
+local function ResizeToast(f)
+	if not f or not f.TitleText or not f.BodyText then return end
+
+	f:SetHeight(math.max(50, 29 + f.TitleText:GetHeight() + f.BodyText:GetHeight()))
+end
+
 local function SkinActiveToasts(anchor)
 	if not anchor or not anchor.activeToasts then return end
 	for _, toastFrame in ipairs(anchor.activeToasts) do
 		SkinToast(toastFrame)
+		ResizeToast(toastFrame)
 	end
 end
 
@@ -172,7 +179,9 @@ S:AddCallback("Skin_Toast", function()
 
 	if SocialToastSystemMixin and SocialToastSystemMixin.ShowToast then
 		hooksecurefunc(SocialToastSystemMixin, 'ShowToast', function(self, toastFrame)
-			SkinToast(toastFrame or self.activeToasts[#self.activeToasts])
+			local f = toastFrame or self.activeToasts[#self.activeToasts]
+			SkinToast(f)
+			ResizeToast(f)
 		end)
 	end
 
@@ -191,6 +200,7 @@ S:AddCallback("Skin_Toast", function()
 		hooksecurefunc('AlertFrame_ShowNewAlert', function(frame)
 			if frame and frame.TitleText and frame.BodyText then
 				SkinToast(frame)
+				ResizeToast(frame)
 			end
 		end)
 	end
