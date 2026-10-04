@@ -252,6 +252,7 @@ function MBG:GrabMinimapButtons()
 	end
 
 	if _G.AtlasButton then MBG:SkinMinimapButton(_G.AtlasButton) end
+	if _G.AccountantButton then MBG:SkinMinimapButton(_G.AccountantButton) end
 	if _G.FishingBuddyMinimapButton then MBG:SkinMinimapButton(_G.FishingBuddyMinimapButton) end
 	if _G.HealBot_MMButton then MBG:SkinMinimapButton(_G.HealBot_MMButton) end
 
