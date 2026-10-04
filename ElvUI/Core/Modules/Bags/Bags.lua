@@ -495,7 +495,7 @@ function B:UpdateSlotColors(slot, isQuestItem, questId, isActiveQuest)
 
 	if questColors then
 		r, g, b, a = unpack(questColors)
-	elseif B.db.qualityColors and slot.rarity ~= nil then
+	elseif B.db.qualityColors and (slot.rarity and slot.rarity > 1) then
 		r, g, b = qR, qG, qB
 	else
 		local bag = slot.bagFrame.Bags[slot.BagID]
