@@ -18,6 +18,8 @@ local GetCurrencyListInfo = GetCurrencyListInfo
 local GetGuildInfo = GetGuildInfo
 local GetItemCount = GetItemCount
 local GetItemLevelColor = GetItemLevelColor
+local GetCVar, SetCVar = GetCVar, SetCVar
+local C_Heirloom = C_Heirloom
 local C_Item_GetItemInfo = C_Item.GetItemInfo
 local C_Inspect_GetAvgItemLevel = C_Inspect and C_Inspect.GetAvgItemLevel
 local C_Inspect_RequestAvgItemLevel = C_Inspect and C_Inspect.RequestAvgItemLevel
@@ -551,6 +553,73 @@ function TT:ShoppingTooltip_OnTooltipCleared()
 	self.ItemInfoShown = nil
 end
 
+local heirloomClassTokens = { 'WARRIOR', 'PALADIN', 'HUNTER', 'ROGUE', 'PRIEST', 'DEATHKNIGHT', 'SHAMAN', 'MAGE', 'WARLOCK', false, 'DRUID' }
+local heirloomTokenPrefix = _G.COLLECTION_HEIRLOOM_HYPERLINK_FORMAT and strmatch(_G.COLLECTION_HEIRLOOM_HYPERLINK_FORMAT, '%[(.-)%%s%]')
+local heirloomClasses -- [heirloom name] = { [class token] = true }
+
+-- C_Heirloom keeps the class masks private, so read them once through the collection class filter
+local function BuildHeirloomClasses()
+	local oldClass, oldSpec = C_Heirloom.GetClassAndSpecFilters()
+	local oldCollected, oldUncollected = C_Heirloom.GetCollectedHeirloomFilter(), C_Heirloom.GetUncollectedHeirloomFilter()
+	local oldSources = GetCVar('heirloomSourceFilters')
+
+	SetCVar('heirloomSourceFilters', '0')
+	C_Heirloom.SetCollectedHeirloomFilter(true)
+	C_Heirloom.SetUncollectedHeirloomFilter(true)
+
+	heirloomClasses = {}
+	for classID, token in ipairs(heirloomClassTokens) do
+		if token then
+			C_Heirloom.SetClassAndSpecFilters(classID, 0)
+			for i = 1, C_Heirloom.GetNumDisplayedHeirlooms() do
+				local name = C_Heirloom.GetHeirloomInfo(C_Heirloom.GetHeirloomItemIDFromDisplayedIndex(i))
+				if name then
+					heirloomClasses[name] = heirloomClasses[name] or {}
+					heirloomClasses[name][token] = true
+				end
+			end
+		end
+	end
+
+	SetCVar('heirloomSourceFilters', oldSources)
+	C_Heirloom.SetCollectedHeirloomFilter(oldCollected)
+	C_Heirloom.SetUncollectedHeirloomFilter(oldUncollected)
+	C_Heirloom.SetClassAndSpecFilters(oldClass, oldSpec)
+
+	if not next(heirloomClasses) then
+		heirloomClasses = nil -- collection data is not loaded yet, try again next time
+	end
+end
+
+function TT:AddHeirloomClasses(tt, name)
+	if not (heirloomTokenPrefix and C_Heirloom and name) or strsub(name, 1, #heirloomTokenPrefix) ~= heirloomTokenPrefix then return end
+
+	if not heirloomClasses then BuildHeirloomClasses() end
+	local classes = heirloomClasses and heirloomClasses[strsub(name, #heirloomTokenPrefix + 1)]
+	if not classes then return end
+
+	local list, total = {}, 0
+	for _, token in ipairs(heirloomClassTokens) do
+		if token then
+			total = total + 1
+			if classes[token] then
+				tinsert(list, format('|c%s%s|r', E:ClassColor(token).colorStr, _G.LOCALIZED_CLASS_NAMES_MALE[token]))
+			end
+		end
+	end
+	local text = format(_G.ITEM_CLASSES_ALLOWED, #list == total and _G.ALL or tconcat(list, ', '))
+
+	local ttName = tt:GetName()
+	for i = 2, tt:NumLines() do
+		local line = _G[ttName..'TextLeft'..i]
+		local lineText = line and line:GetText()
+		if lineText and strfind(lineText, _G.ITEM_SPELL_TRIGGER_ONUSE, 1, true) == 1 then
+			line:SetText(lineText..'\n|cffffffff'..text..'|r')
+			return
+		end
+	end
+end
+
 function TT:GameTooltip_OnTooltipSetItem(data)
 	if (self ~= GameTooltip and self ~= _G.ShoppingTooltip1 and self ~= _G.ShoppingTooltip2) or not TT.db.visibility then return end
 
@@ -565,12 +634,14 @@ function TT:GameTooltip_OnTooltipSetItem(data)
 	local modKey = TT:IsModKeyDown()
 	local GetItem = self.GetItem
 	if GetItem then
-		local _, link = GetItem(self)
+		local name, link = GetItem(self)
 		if not link then return end
 
 		-- items with an embedded item tooltip (heirloom tokens, recipes) fire OnTooltipSetItem twice
 		if self.ItemInfoShown then return end
 		self.ItemInfoShown = true
+
+		TT:AddHeirloomClasses(self, name)
 
 		local _, _, quality, _, _, _, _, stack = C_Item_GetItemInfo(link)
 
