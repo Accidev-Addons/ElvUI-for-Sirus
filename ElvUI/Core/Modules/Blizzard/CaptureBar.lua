@@ -8,6 +8,8 @@ local InCombatLockdown = InCombatLockdown
 local captureBarHolder = CreateFrame('Frame', 'ElvUI_CaptureBarHolder', E.UIParent)
 local pvpHolder = CreateFrame('Frame', 'ElvUI_PvPHolder', E.UIParent)
 
+local numAlwaysUpFrames = 0
+
 local function CanChangeProtectedState(frame)
 	if frame.CanChangeProtectedState then
 		return frame:CanChangeProtectedState()
@@ -20,12 +22,11 @@ local function captureBarUpdate(id)
 	local captureBar = _G['WorldStateCaptureBar'..id]
 	if not captureBar or not CanChangeProtectedState(captureBar) then return end
 
-	captureBar.ignoreInLayout = true
-
 	captureBar:ClearAllPoints()
 
 	if id == 1 then
 		captureBar:Point('CENTER', captureBarHolder, 'CENTER', 0, 0)
+		captureBar.SetPoint = E.noop
 	else
 		captureBar:Point('TOPLEFT', _G['WorldStateCaptureBar'..id - 1], 'TOPLEFT', 0, -45)
 	end
@@ -33,7 +34,8 @@ end
 
 local function alwaysUpFrameUpdate(id)
 	local frame = _G['AlwaysUpFrame'..id]
-	if not frame or not CanChangeProtectedState(frame) then return end
+	if not frame then return true end
+	if not CanChangeProtectedState(frame) then return false end
 
 	local text = _G['AlwaysUpFrame'..id..'Text']
 	local icon = _G['AlwaysUpFrame'..id..'Icon']
@@ -57,14 +59,20 @@ local function alwaysUpFrameUpdate(id)
 	if id == 1 then
 		frame:ClearAllPoints()
 		frame:Point('CENTER', pvpHolder, 'CENTER', 0, 5)
+		frame.SetPoint = E.noop
 	end
+
+	return true
 end
 
 local function alwaysUpFramesUpdate()
 	local numFrames = _G.NUM_ALWAYS_UP_UI_FRAMES or 0
 
-	for id = 1, numFrames do
-		alwaysUpFrameUpdate(id)
+	if numAlwaysUpFrames >= numFrames then return end
+
+	for id = numAlwaysUpFrames + 1, numFrames do
+		if not alwaysUpFrameUpdate(id) then return end
+		numAlwaysUpFrames = id
 	end
 end
 
@@ -73,6 +81,7 @@ function BL:PositionAlwaysUpFrame()
 	pvpHolder:Point('TOP', E.UIParent, 'TOP', 0, -4)
 
 	hooksecurefunc('WorldStateAlwaysUpFrame_Update', function()
+		if numAlwaysUpFrames >= (_G.NUM_ALWAYS_UP_UI_FRAMES or 0) then return end
 		C_Timer:After(0, alwaysUpFramesUpdate)
 	end)
 
