@@ -9,6 +9,7 @@ local captureBarHolder = CreateFrame('Frame', 'ElvUI_CaptureBarHolder', E.UIPare
 local pvpHolder = CreateFrame('Frame', 'ElvUI_PvPHolder', E.UIParent)
 
 local numAlwaysUpFrames = 0
+local numExtendedUIFrames = 0
 
 local function CanChangeProtectedState(frame)
 	if frame.CanChangeProtectedState then
@@ -20,7 +21,8 @@ end
 
 local function captureBarUpdate(id)
 	local captureBar = _G['WorldStateCaptureBar'..id]
-	if not captureBar or not CanChangeProtectedState(captureBar) then return end
+	if not captureBar then return true end
+	if not CanChangeProtectedState(captureBar) then return false end
 
 	captureBar:ClearAllPoints()
 
@@ -30,6 +32,8 @@ local function captureBarUpdate(id)
 	else
 		captureBar:Point('TOPLEFT', _G['WorldStateCaptureBar'..id - 1], 'TOPLEFT', 0, -45)
 	end
+
+	return true
 end
 
 local function alwaysUpFrameUpdate(id)
@@ -76,13 +80,29 @@ local function alwaysUpFramesUpdate()
 	end
 end
 
+local function captureBarsUpdate()
+	local numFrames = _G.NUM_EXTENDED_UI_FRAMES or 0
+
+	if numExtendedUIFrames >= numFrames then return end
+
+	for id = numExtendedUIFrames + 1, numFrames do
+		if not captureBarUpdate(id) then return end
+		numExtendedUIFrames = id
+	end
+end
+
 function BL:PositionAlwaysUpFrame()
 	pvpHolder:SetSize(30, 70)
 	pvpHolder:Point('TOP', E.UIParent, 'TOP', 0, -4)
 
 	hooksecurefunc('WorldStateAlwaysUpFrame_Update', function()
-		if numAlwaysUpFrames >= (_G.NUM_ALWAYS_UP_UI_FRAMES or 0) then return end
-		C_Timer:After(0, alwaysUpFramesUpdate)
+		if numAlwaysUpFrames < (_G.NUM_ALWAYS_UP_UI_FRAMES or 0) then
+			C_Timer:After(0, alwaysUpFramesUpdate)
+		end
+
+		if numExtendedUIFrames < (_G.NUM_EXTENDED_UI_FRAMES or 0) then
+			C_Timer:After(0, captureBarsUpdate)
+		end
 	end)
 
 	alwaysUpFramesUpdate()
@@ -94,15 +114,7 @@ function BL:PositionCaptureBar()
 	captureBarHolder:SetSize(172, 16)
 	captureBarHolder:Point('TOP', E.UIParent, 'TOP', 0, -150)
 
-	hooksecurefunc(ExtendedUI['CAPTUREPOINT'], 'create', function(id)
-		C_Timer:After(0, function() captureBarUpdate(id) end)
-	end)
-
-	if _G.NUM_EXTENDED_UI_FRAMES and _G.NUM_EXTENDED_UI_FRAMES > 0 then
-		for id = 1, _G.NUM_EXTENDED_UI_FRAMES do
-			captureBarUpdate(id)
-		end
-	end
+	captureBarsUpdate()
 
 	E:CreateMover(captureBarHolder, 'CaptureBarMover', L["Capture Bar"], nil, nil, nil, 'ALL')
 end

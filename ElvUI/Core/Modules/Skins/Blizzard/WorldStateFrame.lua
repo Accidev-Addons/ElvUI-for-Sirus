@@ -75,8 +75,6 @@ S:AddCallback("Skin_WorldStateFrame", function()
 		bar.spark:Size(4, 18)
 	end
 
-	hooksecurefunc(ExtendedUI["CAPTUREPOINT"], "create", DeferCaptureBarWork(captureBarCreate))
-
 	local topCenter = _G.WorldStateTopCenterFrame
 	if topCenter then
 		local barColors = { { 0, .44, .87 }, { .77, .12, .23 } }
@@ -102,27 +100,25 @@ S:AddCallback("Skin_WorldStateFrame", function()
 		topCenter.BottomLabel:FontTemplate()
 	end
 
-	hooksecurefunc(ExtendedUI["CAPTUREPOINT"], "update", function(id, value, neutralPercent)
-		C_Timer:After(0, function()
+	local numSkinnedCaptureBars = 0
+
+	local function captureBarSkinsUpdate()
+		local numFrames = _G.NUM_EXTENDED_UI_FRAMES or 0
+
+		if numSkinnedCaptureBars >= numFrames then return end
+
+		for id = numSkinnedCaptureBars + 1, numFrames do
 			local bar = _G["WorldStateCaptureBar"..id]
 			if not bar then return end
 
-			local middleBar = _G["WorldStateCaptureBar"..id.."MiddleBar"]
+			DeferCaptureBarWork(captureBarCreate)(id)
+			numSkinnedCaptureBars = id
+		end
+	end
 
-			local barSize = 173
-			local position = math.max(2, math.min(171, barSize * (1 - value / 100)))
-
-			if neutralPercent == 0 then
-				middleBar:Width(1)
-			else
-				middleBar:Width(neutralPercent / 100 * barSize)
-			end
-
-			if bar.spark then
-				bar.spark:Point("CENTER", bar, "LEFT", position, 0)
-			elseif not bar.CanChangeProtectedState or bar:CanChangeProtectedState() then
-				captureBarCreate(id)
-			end
-		end)
+	hooksecurefunc('WorldStateAlwaysUpFrame_Update', function()
+		if numSkinnedCaptureBars < (_G.NUM_EXTENDED_UI_FRAMES or 0) then
+			C_Timer:After(0, captureBarSkinsUpdate)
+		end
 	end)
 end)
