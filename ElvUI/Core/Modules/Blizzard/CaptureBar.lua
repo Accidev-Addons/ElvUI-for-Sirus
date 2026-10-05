@@ -28,7 +28,6 @@ local function captureBarUpdate(id)
 
 	if id == 1 then
 		captureBar:Point('CENTER', captureBarHolder, 'CENTER', 0, 0)
-		captureBar.SetPoint = E.noop
 	else
 		captureBar:Point('TOPLEFT', _G['WorldStateCaptureBar'..id - 1], 'TOPLEFT', 0, -45)
 	end
@@ -63,7 +62,6 @@ local function alwaysUpFrameUpdate(id)
 	if id == 1 then
 		frame:ClearAllPoints()
 		frame:Point('CENTER', pvpHolder, 'CENTER', 0, 5)
-		frame.SetPoint = E.noop
 	end
 
 	return true
@@ -110,11 +108,26 @@ function BL:PositionAlwaysUpFrame()
 	E:CreateMover(pvpHolder, 'PvPMover', L["PvP"], nil, nil, nil, 'ALL')
 end
 
+local function reanchorManagedFrames()
+	if InCombatLockdown() then return end
+
+	captureBarUpdate(1)
+	alwaysUpFrameUpdate(1)
+end
+
 function BL:PositionCaptureBar()
 	captureBarHolder:SetSize(172, 16)
 	captureBarHolder:Point('TOP', E.UIParent, 'TOP', 0, -150)
 
 	captureBarsUpdate()
+
+	if not BL.CaptureBarLayoutHooked then
+		local container = _G.UIParentRightManagedFrameContainer
+		if container and container.Layout then
+			hooksecurefunc(container, 'Layout', reanchorManagedFrames)
+			BL.CaptureBarLayoutHooked = true
+		end
+	end
 
 	E:CreateMover(captureBarHolder, 'CaptureBarMover', L["Capture Bar"], nil, nil, nil, 'ALL')
 end
