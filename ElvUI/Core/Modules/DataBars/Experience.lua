@@ -216,6 +216,8 @@ function DB:ExperienceBar_Toggle()
 		DB:UnregisterEvent('QUEST_LOG_UPDATE')
 		DB:UnregisterEvent('ZONE_CHANGED')
 		DB:UnregisterEvent('ZONE_CHANGED_NEW_AREA')
+
+		DB:SetVisibility(bar)
 	end
 end
 
