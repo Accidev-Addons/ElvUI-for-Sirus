@@ -2360,8 +2360,36 @@ local function LoadSkin()
 	PaperDollFrame.StatsInset:StripTextures()
 	PaperDollFrame.EquipInset:StripTextures()
 	CharacterModelFrame:CreateBackdrop()
-	CharacterModelFrame.backdrop:SetOutside(CharacterModelFrameBackgroundOverlay)
 	CharacterModelFrame:DisableDrawLayer("OVERLAY")
+
+	-- the model background fills the whole space between the slot columns, down to the weapon row
+	local modelBackdrop = CharacterModelFrame.backdrop
+	modelBackdrop:ClearAllPoints()
+	modelBackdrop:SetPoint("TOPLEFT", CharacterHeadSlot, "TOPRIGHT", 1, 0)
+	modelBackdrop:SetPoint("RIGHT", CharacterHandsSlot, "LEFT", -1, 0)
+	modelBackdrop:SetPoint("BOTTOM", CharacterMainHandSlot, "BOTTOM")
+
+	local backgroundTL, backgroundTR = CharacterModelFrameBackgroundTopLeft, CharacterModelFrameBackgroundTopRight
+	local backgroundBL, backgroundBR = CharacterModelFrameBackgroundBotLeft, CharacterModelFrameBackgroundBotRight
+	backgroundTL:ClearAllPoints()
+	backgroundTL:SetPoint("TOPLEFT", modelBackdrop, "TOPLEFT", 1, -1)
+	backgroundTR:ClearAllPoints()
+	backgroundTR:SetPoint("TOPLEFT", backgroundTL, "TOPRIGHT")
+	backgroundBL:ClearAllPoints()
+	backgroundBL:SetPoint("TOPLEFT", backgroundTL, "BOTTOMLEFT")
+	backgroundBR:ClearAllPoints()
+	backgroundBR:SetPoint("TOPLEFT", backgroundTL, "BOTTOMRIGHT")
+	CharacterModelFrameBackgroundOverlay:SetInside(modelBackdrop)
+
+	-- keep the original 214x245 / 23x122 split of the four background pieces
+	modelBackdrop:HookScript("OnSizeChanged", function(self, width, height)
+		width, height = width - 2, height - 2
+		local leftWidth, topHeight = width * 214 / 237, height * 245 / 367
+		backgroundTL:SetSize(leftWidth, topHeight)
+		backgroundTR:SetSize(width - leftWidth, topHeight)
+		backgroundBL:SetSize(leftWidth, height - topHeight)
+		backgroundBR:SetSize(width - leftWidth, height - topHeight)
+	end)
 
 	S:HandleControlFrame(CharacterModelFrame.controlFrame)
 
