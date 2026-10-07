@@ -578,7 +578,8 @@ function CH:AddMessageEdits(frame, msg, isHistory, historyTime)
 		end
 
 		if CH.db.copyChatLines then
-			msg = format('|Hcpl:%s|h%s|h %s', frame:GetID(), E:TextureString(E.Media.Textures.ArrowRight, ':24'), msg)
+			-- crop the empty right part of the 32x32 arrow so the timestamp sits closer
+			msg = format('|Hcpl:%s|h|T%s:24:17:0:0:32:32:0:22:0:32|t|h %s', frame:GetID(), E.Media.Textures.ArrowRight, msg)
 		end
 	end
 
