@@ -444,8 +444,8 @@ function S:Ace3_RefreshTree(scrollToSelection)
 		local userdata = self.userdata
 		local dataoption = userdata and userdata.option
 		if dataoption and dataoption.childGroups == 'ElvUI_HiddenTree' then
-			border:Point('TOPLEFT', treeframe, 'TOPRIGHT', 1, 13)
-			border:Point('BOTTOMRIGHT', self.frame, 'BOTTOMRIGHT', 6, 0)
+			border:Point('TOPLEFT', treeframe, 'TOPRIGHT', 1, -1)
+			border:Point('BOTTOMRIGHT', self.frame, 'BOTTOMRIGHT', 0, 0)
 
 			treeframe:Point('TOPLEFT', 0, 0)
 
