@@ -349,6 +349,30 @@ local function CreateSocket(info, index, anchor)
 	return socket
 end
 
+-- Sockets hang on the free side of the item (beside the columns, under the weapons); the position only aligns them along it
+local function PlaceSocketRow(info, numSockets)
+	local slotFrame, anchor, row = info:GetParent(), info.anchor, info.socketRow
+	local db = E.db.general.characterInfo
+	local position = db.socketPosition or "default"
+	if position == "default" then position = "BOTTOMLEFT" end
+	local x, y = db.socketXOffset or 0, db.socketYOffset or 0
+
+	row:ClearAllPoints()
+	row:SetSize(math.max(numSockets, 1) * SOCKET_STEP - 1, SOCKET_SIZE)
+
+	if anchor == "TOP" then
+		local h = string.find(position, "LEFT") and "LEFT" or string.find(position, "RIGHT") and "RIGHT" or ""
+		row:SetPoint("TOP"..h, slotFrame, "BOTTOM"..h, x, -1 + y)
+	else
+		local v = string.find(position, "TOP") and "TOP" or string.find(position, "BOTTOM") and "BOTTOM" or ""
+		if anchor == "RIGHT" then
+			row:SetPoint(v.."LEFT", slotFrame, v.."RIGHT", 1 + x, y)
+		else
+			row:SetPoint(v.."RIGHT", slotFrame, v.."LEFT", -1 + x, y)
+		end
+	end
+end
+
 local function ApplySocketInfoLayout(info)
 	if not info then return end
 
@@ -357,17 +381,14 @@ local function ApplySocketInfoLayout(info)
 	if not slotFrame or not anchor then return end
 
 	local db = E.db.general.characterInfo
-	local socketPosition, socketX, socketY = db.socketPosition or "default", db.socketXOffset or 0, db.socketYOffset or 0
 	local enchantPosition, enchantX, enchantY = db.enchantPosition or "default", db.enchantXOffset or 0, db.enchantYOffset or 0
 	local slotWidth = slotFrame:GetWidth() or 0
 
 	info:ClearAllPoints()
-	info.socketRow:ClearAllPoints()
 	info.enchant:ClearAllPoints()
+	PlaceSocketRow(info, info.numSockets or 0)
 
 	if anchor == "TOP" then
-		info.socketRow:SetPoint("TOPLEFT", slotFrame, "BOTTOMLEFT", socketX, -1 + socketY)
-
 		if slotName == "MainHandSlot" then
 			info:SetPoint("TOPRIGHT", slotFrame, "BOTTOMLEFT", -3, -3)
 			info.enchant:SetJustifyH("RIGHT")
@@ -387,19 +408,12 @@ local function ApplySocketInfoLayout(info)
 		end
 	elseif anchor == "RIGHT" then
 		info:SetPoint("LEFT", slotFrame, "RIGHT", 3, 0)
-		info.socketRow:SetPoint("BOTTOMLEFT", slotFrame, "BOTTOMRIGHT", 1 + socketX, socketY)
 		info.enchant:SetJustifyH("LEFT")
 		info.enchant:SetPoint("BOTTOMLEFT", info.socketRow, "TOPLEFT", enchantX, 1 + enchantY)
 	else
 		info:SetPoint("RIGHT", slotFrame, "LEFT", -3, 0)
-		info.socketRow:SetPoint("BOTTOMRIGHT", slotFrame, "BOTTOMLEFT", -1 + socketX, socketY)
 		info.enchant:SetJustifyH("RIGHT")
 		info.enchant:SetPoint("BOTTOMRIGHT", info.socketRow, "TOPRIGHT", enchantX, 1 + enchantY)
-	end
-
-	if socketPosition ~= "default" then
-		info.socketRow:ClearAllPoints()
-		info.socketRow:SetPoint(socketPosition, slotFrame, socketX, socketY)
 	end
 
 	if enchantPosition ~= "default" then
@@ -565,6 +579,9 @@ function S:HandleSirusEquipmentSocketInfo(slotFrame, inventorySlot, anchor, slot
 	for index = numSockets + 1, MAX_DISPLAYED_SOCKETS do
 		info.slots[index]:Hide()
 	end
+
+	info.numSockets = numSockets
+	PlaceSocketRow(info, numSockets)
 
 	enchantText = enchantText and ShortenEnchantText(enchantText)
 	info.enchant:FontTemplate(LSM:Fetch("font", db.font), db.fontSize, db.fontOutline)
