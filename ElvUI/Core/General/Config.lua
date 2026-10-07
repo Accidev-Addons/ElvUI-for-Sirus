@@ -1094,8 +1094,8 @@ end
 
 function E:Config_ContentPlacement(frame, content, unskinned, statusShown)
 	content:ClearAllPoints()
-	content:Point('TOPLEFT', frame, 'TOPLEFT', unskinned and 13 or 7, -(frame.bottomHolder:GetHeight() + (unskinned and 46 or 41)))
-	content:Point('BOTTOMRIGHT', frame, 'BOTTOMRIGHT', -(unskinned and 18 or 8), (statusShown and (unskinned and 32 or 25)) or (unskinned and 12) or 2)
+	content:Point('TOPLEFT', frame, 'TOPLEFT', unskinned and 13 or 7, -(frame.bottomHolder:GetHeight() + (unskinned and 46 or 27)))
+	content:Point('BOTTOMRIGHT', frame, 'BOTTOMRIGHT', -(unskinned and 18 or 2), (statusShown and (unskinned and 32 or 25)) or (unskinned and 12) or 2)
 end
 
 function E:Config_SetStatusText(text)
