@@ -340,7 +340,7 @@ local function CreateSocket(info, index, anchor)
 	socket.Icon:SetInside()
 
 	local offset = (index - 1) * SOCKET_STEP
-	if anchor == "RIGHT" then
+	if anchor == "RIGHT" or anchor == "TOP" then
 		socket:SetPoint("LEFT", info.socketRow, "LEFT", offset, 0)
 	elseif anchor == "LEFT" then
 		socket:SetPoint("RIGHT", info.socketRow, "RIGHT", -offset, 0)
@@ -366,7 +366,7 @@ local function ApplySocketInfoLayout(info)
 	info.enchant:ClearAllPoints()
 
 	if anchor == "TOP" then
-		info.socketRow:SetPoint("BOTTOM", slotFrame, "TOP", socketX, 3 + socketY)
+		info.socketRow:SetPoint("TOPLEFT", slotFrame, "BOTTOMLEFT", socketX, -1 + socketY)
 
 		if slotName == "MainHandSlot" then
 			info:SetPoint("TOPRIGHT", slotFrame, "BOTTOMLEFT", -3, -3)
@@ -387,12 +387,12 @@ local function ApplySocketInfoLayout(info)
 		end
 	elseif anchor == "RIGHT" then
 		info:SetPoint("LEFT", slotFrame, "RIGHT", 3, 0)
-		info.socketRow:SetPoint("LEFT", slotFrame, "RIGHT", 3 + socketX, -3 + socketY)
+		info.socketRow:SetPoint("BOTTOMLEFT", slotFrame, "BOTTOMRIGHT", 1 + socketX, socketY)
 		info.enchant:SetJustifyH("LEFT")
 		info.enchant:SetPoint("BOTTOMLEFT", info.socketRow, "TOPLEFT", enchantX, 1 + enchantY)
 	else
 		info:SetPoint("RIGHT", slotFrame, "LEFT", -3, 0)
-		info.socketRow:SetPoint("RIGHT", slotFrame, "LEFT", -3 + socketX, -3 + socketY)
+		info.socketRow:SetPoint("BOTTOMRIGHT", slotFrame, "BOTTOMLEFT", -1 + socketX, socketY)
 		info.enchant:SetJustifyH("RIGHT")
 		info.enchant:SetPoint("BOTTOMRIGHT", info.socketRow, "TOPRIGHT", enchantX, 1 + enchantY)
 	end
@@ -564,12 +564,6 @@ function S:HandleSirusEquipmentSocketInfo(slotFrame, inventorySlot, anchor, slot
 
 	for index = numSockets + 1, MAX_DISPLAYED_SOCKETS do
 		info.slots[index]:Hide()
-	end
-
-	if info.anchor == "TOP" then
-		for index = 1, numSockets do
-			info.slots[index]:SetPoint("CENTER", info.socketRow, "CENTER", (index - (numSockets + 1) / 2) * SOCKET_STEP, 0)
-		end
 	end
 
 	enchantText = enchantText and ShortenEnchantText(enchantText)
