@@ -184,10 +184,10 @@ local function LoadSkin()
 	if _G.SpellFlyout then
 		local flyout = _G.SpellFlyout
 
-		flyout.BgEnd:Kill()
-		flyout.HorizBg:Kill()
-		flyout.VertBg:Kill()
-		flyout.BgStart:Kill()
+		flyout.BgEnd:SetAlpha(0)
+		flyout.HorizBg:SetAlpha(0)
+		flyout.VertBg:SetAlpha(0)
+		flyout.BgStart:SetAlpha(0)
 		flyout:SetTemplate("Transparent")
 
 		local function SkinFlyoutButton(button)

@@ -2424,6 +2424,14 @@ function B:OpenAllBags(frame)
 	end
 end
 
+function B:OpenBackpack()
+	if B.BagFrame and B.BagFrame:IsShown() then return end
+
+	if B.db.autoToggle.vendor then
+		B:OpenBags()
+	end
+end
+
 function B:ToggleSortButtonState(isBank)
 	local button = (isBank and B.BankFrame.sortButton) or B.BagFrame.sortButton
 	button:SetEnabled(not B.db[isBank and 'disableBankSort' or 'disableBagSort'])
@@ -3097,6 +3105,7 @@ function B:Initialize()
 	B:SecureHook('ToggleBackpack')
 	B:SecureHook('CloseAllBags')
 	B:SecureHook('OpenAllBags')
+	B:RawHook('OpenBackpack')
 
 	B:SetupAutoToggle()
 	B:DisableBlizzard()

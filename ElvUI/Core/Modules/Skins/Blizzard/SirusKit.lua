@@ -1,5 +1,6 @@
 local E, L, V, P, G = unpack(ElvUI)
 local S = E:GetModule("Skins")
+local LSM = E.Libs.LSM
 
 local _G = _G
 local unpack = unpack
@@ -44,6 +45,14 @@ local SOCKET_COLORS = {
 	[lower(EMPTY_SOCKET_BLUE or "")] = { .08, .26, 1, .5 },
 	[lower(EMPTY_SOCKET_META or "")] = { 1, 1, 1, 1 },
 	[lower(EMPTY_SOCKET_NO_COLOR or "")] = { .99, .15, .9, .5 },
+}
+
+local EMPTY_SOCKET_TEXTURES = {
+	[lower(EMPTY_SOCKET_RED or "")] = "Interface\\ItemSocketingFrame\\UI-EmptySocket-Red",
+	[lower(EMPTY_SOCKET_YELLOW or "")] = "Interface\\ItemSocketingFrame\\UI-EmptySocket-Yellow",
+	[lower(EMPTY_SOCKET_BLUE or "")] = "Interface\\ItemSocketingFrame\\UI-EmptySocket-Blue",
+	[lower(EMPTY_SOCKET_META or "")] = "Interface\\ItemSocketingFrame\\UI-EmptySocket-Meta",
+	[lower(EMPTY_SOCKET_NO_COLOR or "")] = "Interface\\ItemSocketingFrame\\UI-EmptySocket",
 }
 
 S.EquipmentSlotAnchors = {
@@ -157,7 +166,9 @@ local function ShortenEnchantText(text)
 	text = gsub(text, "%s+", " ")
 	text = strtrim(text)
 	text = gsub(text, "^%s*([0-9]+)%s*", "%1 ")
-	text = gsub(text, "[Ии]%s+увеличение скорости передвижения на%s+(%d+%%%s*)", " и %1 бег")
+	text = gsub(text, "%sй%s", " и ")
+	text = gsub(text, "%sи%s", " и ")
+	text = gsub(text, "и%s+увеличение скорости передвижения на%s+(%d+%%%s*)", " и %1 бег")
 	text = gsub(text, "увеличение скорости передвижения на%s+(%d+%%%s*)", "%1 бег")
 	text = gsub(text, "снижение угрозы на%s+(%d+%%%s*)", "-%1 угрозы")
 
@@ -338,68 +349,106 @@ local function CreateSocket(info, index, anchor)
 	return socket
 end
 
+local function ApplySocketInfoLayout(info)
+	if not info then return end
+
+	local slotFrame = info:GetParent()
+	local anchor, slotName = info.anchor, info.slotName
+	if not slotFrame or not anchor then return end
+
+	local db = E.db.general.characterInfo
+	local socketPosition, socketX, socketY = db.socketPosition or "default", db.socketXOffset or 0, db.socketYOffset or 0
+	local enchantPosition, enchantX, enchantY = db.enchantPosition or "default", db.enchantXOffset or 0, db.enchantYOffset or 0
+	local slotWidth = slotFrame:GetWidth() or 0
+
+	info:ClearAllPoints()
+	info.socketRow:ClearAllPoints()
+	info.enchant:ClearAllPoints()
+
+	if anchor == "TOP" then
+		info.socketRow:SetPoint("BOTTOM", slotFrame, "TOP", socketX, 3 + socketY)
+
+		if slotName == "MainHandSlot" then
+			info:SetPoint("TOPRIGHT", slotFrame, "BOTTOMLEFT", -3, -3)
+			info.enchant:SetJustifyH("RIGHT")
+			info.enchant:SetPoint("BOTTOMRIGHT", slotFrame, "BOTTOMLEFT", -3 + enchantX, 1 + enchantY)
+		elseif slotName == "SecondaryHandSlot" then
+			info:SetPoint("TOPLEFT", slotFrame, "BOTTOMRIGHT", 3, -3)
+			info.enchant:SetJustifyH("LEFT")
+			info.enchant:SetPoint("TOPLEFT", slotFrame, "TOPRIGHT", slotWidth + 8 + enchantX, -3 + enchantY)
+		elseif slotName == "RangedSlot" then
+			info:SetPoint("BOTTOM", slotFrame, "TOP", 0, 4)
+			info.enchant:SetJustifyH("LEFT")
+			info.enchant:SetPoint("BOTTOMLEFT", slotFrame, "BOTTOMRIGHT", 3 + enchantX, -3 + enchantY)
+		else
+			info:SetPoint("BOTTOM", slotFrame, "TOP", 0, 4)
+			info.enchant:SetJustifyH("CENTER")
+			info.enchant:SetPoint("BOTTOM", info.socketRow, "TOP", enchantX, 1 + enchantY)
+		end
+	elseif anchor == "RIGHT" then
+		info:SetPoint("LEFT", slotFrame, "RIGHT", 3, 0)
+		info.socketRow:SetPoint("LEFT", slotFrame, "RIGHT", 3 + socketX, -3 + socketY)
+		info.enchant:SetJustifyH("LEFT")
+		info.enchant:SetPoint("BOTTOMLEFT", info.socketRow, "TOPLEFT", enchantX, 1 + enchantY)
+	else
+		info:SetPoint("RIGHT", slotFrame, "LEFT", -3, 0)
+		info.socketRow:SetPoint("RIGHT", slotFrame, "LEFT", -3 + socketX, -3 + socketY)
+		info.enchant:SetJustifyH("RIGHT")
+		info.enchant:SetPoint("BOTTOMRIGHT", info.socketRow, "TOPRIGHT", enchantX, 1 + enchantY)
+	end
+
+	if socketPosition ~= "default" then
+		info.socketRow:ClearAllPoints()
+		info.socketRow:SetPoint(socketPosition, slotFrame, socketX, socketY)
+	end
+
+	if enchantPosition ~= "default" then
+		info.enchant:ClearAllPoints()
+		info.enchant:SetPoint(enchantPosition, slotFrame, enchantX, enchantY)
+
+		if string.find(enchantPosition, "LEFT") then
+			info.enchant:SetJustifyH("LEFT")
+		elseif string.find(enchantPosition, "RIGHT") then
+			info.enchant:SetJustifyH("RIGHT")
+		else
+			info.enchant:SetJustifyH("CENTER")
+		end
+	end
+end
+
 local function CreateSocketInfo(slotFrame, anchor, slotName)
 	local info = CreateFrame("Frame", nil, slotFrame)
 	info:SetFrameLevel(slotFrame:GetFrameLevel() + 1)
 	info:SetSize(220, anchor == "TOP" and 46 or 31)
 	info.slots = {}
 	info.anchor = anchor
+	info.slotName = slotName
 
 	info.socketRow = CreateFrame("Frame", nil, info)
 	info.socketRow:SetSize(SOCKET_STEP * MAX_DISPLAYED_SOCKETS, SOCKET_STEP)
 	info.enchant = info:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
 	info.enchant:SetTextColor(0.1, 1, 0.1)
 	info.enchant:SetWordWrap(false)
-	info.enchant:SetSize(220, 14)
-
-	if anchor == "TOP" then
-		info.socketRow:SetPoint("BOTTOM", slotFrame, "TOP", 0, 3)
-
-		if slotName == "MainHandSlot" then
-			info:SetPoint("TOPRIGHT", slotFrame, "BOTTOMLEFT", -3, -3)
-			info.enchant:SetJustifyH("RIGHT")
-			info.enchant:SetPoint("BOTTOMRIGHT", slotFrame, "BOTTOMLEFT", -3, 1)
-		elseif slotName == "SecondaryHandSlot" then
-			info:SetPoint("TOPLEFT", slotFrame, "BOTTOMRIGHT", 3, -3)
-			info.enchant:SetJustifyH("LEFT")
-			info.enchant:SetPoint("TOPLEFT", slotFrame, "TOPRIGHT", slotFrame:GetWidth() + 8, -3)
-		elseif slotName == "RangedSlot" then
-			info:SetPoint("BOTTOM", slotFrame, "TOP", 0, 4)
-			info.enchant:SetJustifyH("LEFT")
-			info.enchant:SetPoint("BOTTOMLEFT", slotFrame, "BOTTOMRIGHT", 3, -3)
-		else
-			info:SetPoint("BOTTOM", slotFrame, "TOP", 0, 4)
-			info.enchant:SetJustifyH("CENTER")
-			info.enchant:SetPoint("BOTTOM", info.socketRow, "TOP", 0, 1)
-		end
-	else
-		if anchor == "RIGHT" then
-			info:SetPoint("LEFT", slotFrame, "RIGHT", 3, 0)
-			info.socketRow:SetPoint("LEFT", slotFrame, "RIGHT", 3, -3)
-			info.enchant:SetJustifyH("LEFT")
-			info.enchant:SetPoint("BOTTOMLEFT", info.socketRow, "TOPLEFT", 0, 1)
-		else
-			info:SetPoint("RIGHT", slotFrame, "LEFT", -3, 0)
-			info.socketRow:SetPoint("RIGHT", slotFrame, "LEFT", -3, -3)
-			info.enchant:SetJustifyH("RIGHT")
-			info.enchant:SetPoint("BOTTOMRIGHT", info.socketRow, "TOPRIGHT", 0, 1)
-		end
-	end
+	info.enchant:SetWidth(220)
 
 	for index = 1, MAX_DISPLAYED_SOCKETS do
 		info.slots[index] = CreateSocket(info, index, anchor)
 	end
 
+	ApplySocketInfoLayout(info)
+
 	return info
 end
 
 local function SetGemSocket(socket, gemLink, texture)
+	texture = gemLink and select(10, GetItemInfo(gemLink)) or texture
+
 	socket.isEmpty = nil
 	socket.gemLink = gemLink
 	socket.lineText = nil
 	socket.canRemove = gemLink and select(3, GetItemInfo(gemLink)) == 5
 
-	if gemLink and texture then
+	if texture then
 		socket.Icon:SetTexture(texture)
 		socket.Icon:SetTexCoord(unpack(E.TexCoords))
 		socket.Icon:SetVertexColor(1, 1, 1, 1)
@@ -410,20 +459,30 @@ local function SetGemSocket(socket, gemLink, texture)
 	end
 
 	socket:Show()
+
+	return texture ~= nil
 end
 
-local function SetEmptySocket(socket, name, color)
+local function SetEmptySocket(socket, name, color, texture)
 	socket.isEmpty = true
 	socket.gemLink = nil
 	socket.lineText = name
 	socket.canRemove = nil
-	socket.Icon:SetTexture(E.Media.Textures.NormTex2)
-	socket.Icon:SetTexCoord(0, 1, 0, 1)
-	socket.Icon:SetVertexColor(unpack(color))
+
+	if texture then
+		socket.Icon:SetTexture(texture)
+		socket.Icon:SetTexCoord(0, 1, 0, 1)
+		socket.Icon:SetVertexColor(1, 1, 1, 1)
+	else
+		socket.Icon:SetTexture(E.Media.Textures.NormTex2)
+		socket.Icon:SetTexCoord(0, 1, 0, 1)
+		socket.Icon:SetVertexColor(unpack(color))
+	end
+
 	socket:Show()
 end
 
-local gemFields, gemTextures, emptyNames, emptyColors = {}, {}, {}, {}
+local gemTextures, emptyNames, emptyColors, emptyTextures = {}, {}, {}, {}
 function S:HandleSirusEquipmentSocketInfo(slotFrame, inventorySlot, anchor, slotName, unit)
 	local hasUnknown
 	if not slotFrame or not inventorySlot then return end
@@ -434,6 +493,8 @@ function S:HandleSirusEquipmentSocketInfo(slotFrame, inventorySlot, anchor, slot
 		info = CreateSocketInfo(slotFrame, anchor or "RIGHT", slotName)
 		slotFrame.sirusSocketInfo = info
 	end
+
+	ApplySocketInfoLayout(info)
 
 	local db = E.db.general.characterInfo
 	local showGems, showEnchants = db.showGems, db.showEnchants and unit == "player"
@@ -462,6 +523,7 @@ function S:HandleSirusEquipmentSocketInfo(slotFrame, inventorySlot, anchor, slot
 				if socketColor then
 					emptyNames[#emptyNames + 1] = plain
 					emptyColors[#emptyColors + 1] = socketColor
+					emptyTextures[#emptyTextures + 1] = EMPTY_SOCKET_TEXTURES[lower(plain)]
 				elseif showEnchants and not enchantText then
 					enchantText = MatchEnchant(line, plain, lower(plain), slotName)
 				end
@@ -471,18 +533,18 @@ function S:HandleSirusEquipmentSocketInfo(slotFrame, inventorySlot, anchor, slot
 		tooltip:Hide()
 
 		if showGems then
-			gemFields[1], gemFields[2], gemFields[3] = strmatch(link, "item:%-?%d+:%-?%d+:(%-?%d+):(%-?%d+):(%-?%d+)")
-
 			local nextTexture, nextEmpty = 1, 1
 			for index = 1, MAX_DISPLAYED_SOCKETS do
 				local socket = info.slots[index]
-				local field = gemFields[index]
-				if field and field ~= "0" then
-					local _, gemLink = GetItemGem(link, index)
-					SetGemSocket(socket, gemLink, gemLink and gemTextures[nextTexture])
-					if gemLink then nextTexture = nextTexture + 1 else hasUnknown = true end
+				local _, gemLink = GetItemGem(link, index)
+
+				if gemLink then
+					if not SetGemSocket(socket, gemLink, gemTextures[nextTexture]) then
+						hasUnknown = true
+					end
+					nextTexture = nextTexture + 1
 				elseif emptyNames[nextEmpty] then
-					SetEmptySocket(socket, emptyNames[nextEmpty], emptyColors[nextEmpty])
+					SetEmptySocket(socket, emptyNames[nextEmpty], emptyColors[nextEmpty], emptyTextures[nextEmpty])
 					nextEmpty = nextEmpty + 1
 				else
 					break
@@ -497,6 +559,7 @@ function S:HandleSirusEquipmentSocketInfo(slotFrame, inventorySlot, anchor, slot
 		wipe(gemTextures)
 		wipe(emptyNames)
 		wipe(emptyColors)
+		wipe(emptyTextures)
 	end
 
 	for index = numSockets + 1, MAX_DISPLAYED_SOCKETS do
@@ -510,6 +573,7 @@ function S:HandleSirusEquipmentSocketInfo(slotFrame, inventorySlot, anchor, slot
 	end
 
 	enchantText = enchantText and ShortenEnchantText(enchantText)
+	info.enchant:FontTemplate(LSM:Fetch("font", db.font), db.fontSize, db.fontOutline)
 	info.enchant:SetText(enchantText)
 	info.enchant:SetShown(enchantText ~= nil)
 	info:SetShown(numSockets > 0 or enchantText ~= nil)

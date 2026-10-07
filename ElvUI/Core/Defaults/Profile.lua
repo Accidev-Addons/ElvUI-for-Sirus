@@ -189,6 +189,25 @@ P.general = {
 	characterInfo = {
 		showGems = true,
 		showEnchants = false,
+		socketPosition = "default",
+		socketXOffset = 0,
+		socketYOffset = 0,
+		enchantPosition = "default",
+		enchantXOffset = 0,
+		enchantYOffset = 0,
+		showItemLevel = true,
+		itemLevelQualityColor = true,
+		itemLevelPosition = "BOTTOMLEFT",
+		itemLevelXOffset = 1,
+		itemLevelYOffset = 4,
+		showDurability = true,
+		durabilityOnlyDamaged = false,
+		durabilityPosition = "TOPLEFT",
+		durabilityXOffset = 0,
+		durabilityYOffset = 0,
+		font = "PT Sans Narrow",
+		fontSize = 10,
+		fontOutline = "OUTLINE",
 	},
 	lootRoll = {
 		width = 325,
@@ -460,6 +479,7 @@ P.nameplates = {
 	motionType = "OVERLAP",
 
 	loadDistance = 41,
+
 
 	lowHealthThreshold = 0.4,
 
@@ -765,7 +785,7 @@ P.nameplates = {
 				filters = {
 					minDuration = 0,
 					maxDuration = 300,
-					priority = "Blacklist,PlayerBuffs,TurtleBuffs" --NamePlate EnemyPlayer Buffs
+					priority = "Blacklist,Dispellable" --NamePlate EnemyPlayer Buffs
 				},
 			},
 			debuffs = {
@@ -1040,7 +1060,7 @@ P.nameplates = {
 				filters = {
 					minDuration = 0,
 					maxDuration = 0,
-					priority = "Blacklist,blockNoDuration,PlayerBuffs,TurtleBuffs" --NamePlate EnemyNPC Buffs
+					priority = "Blacklist,Dispellable" --NamePlate EnemyNPC Buffs
 				},
 			},
 			debuffs = {
@@ -1099,6 +1119,35 @@ P.nameplates = {
 		}
 	}
 }
+
+for _, unitContent in pairs(P.nameplates.units) do
+	if unitContent.buffs then
+		unitContent.buffs.attachTo = "FRAME"
+		unitContent.buffs.anchorPoint = "LEFT"
+		unitContent.buffs.growthX = "LEFT"
+		unitContent.buffs.growthY = "UP"
+		unitContent.buffs.xOffset = -5
+		unitContent.buffs.yOffset = 0
+	end
+
+	if unitContent.debuffs then
+		unitContent.debuffs.attachTo = "FRAME"
+		unitContent.debuffs.anchorPoint = "TOPLEFT"
+		unitContent.debuffs.growthX = "RIGHT"
+		unitContent.debuffs.growthY = "UP"
+		unitContent.debuffs.xOffset = 0
+		unitContent.debuffs.yOffset = 5
+
+		local cc = CopyTable(unitContent.debuffs)
+		cc.enable = true
+		cc.anchorPoint = "RIGHT"
+		cc.growthX = "RIGHT"
+		cc.xOffset = 5
+		cc.yOffset = 0
+		cc.filters.priority = "Blacklist,CCDebuffs"
+		unitContent.crowdcontrol = cc
+	end
+end
 
 local TopAuras = {
 	barColor = { r = 0, g = .8, b = 0 },

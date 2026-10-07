@@ -88,6 +88,21 @@ function TT:IsModKeyDown(db)
 	return k == 'SHOW' or ((k == 'SHIFT' and IsShiftKeyDown()) or (k == 'CTRL' and IsControlKeyDown()) or (k == 'ALT' and IsAltKeyDown()))
 end
 
+function TT:TooltipHasIDLine(tt, lineText)
+	local name = tt.GetName and tt:GetName()
+	if not name then return false end
+
+	for i = 1, tt:NumLines() do
+		local line = _G[name..'TextLeft'..i]
+		local text = line and line:GetText()
+		if text and strfind(text, lineText, 1, true) then
+			return true
+		end
+	end
+
+	return false
+end
+
 function TT:GameTooltip_SetDefaultAnchor(tt, parent)
 	if not E.private.tooltip.enable or not TT.db.visibility or tt:GetAnchorType() ~= 'ANCHOR_NONE' then
 		return
@@ -778,8 +793,11 @@ function TT:SetCurrencyToken(tt, index)
 	local id = index and select(9, GetCurrencyListInfo(index))
 	if not id then return end
 
+	local lineText = format(IDLine, _G.ID, id)
+	if TT:TooltipHasIDLine(tt, lineText) then return end
+
 	tt:AddLine(' ')
-	tt:AddLine(format(IDLine, _G.ID, id))
+	tt:AddLine(lineText)
 	tt:Show()
 end
 
@@ -787,7 +805,10 @@ function TT:SetBackpackToken(tt, id)
 	if id and TT:IsModKeyDown() then
 		local _, _, _, _, itemID = GetBackpackCurrencyInfo(id)
 		if itemID then
-			tt:AddLine(format(IDLine, _G.ID, itemID))
+			local lineText = format(IDLine, _G.ID, itemID)
+			if TT:TooltipHasIDLine(tt, lineText) then return end
+
+			tt:AddLine(lineText)
 			tt:Show()
 		end
 	end

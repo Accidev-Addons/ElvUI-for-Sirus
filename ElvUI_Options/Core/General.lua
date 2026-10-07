@@ -326,12 +326,55 @@ blizz.queueStatus.args.fontGroup.args.xOffset = ACH:Range(L["X-Offset"], nil, 12
 blizz.queueStatus.args.fontGroup.args.yOffset = ACH:Range(L["Y-Offset"], nil, 13, { min = -30, max = 30, step = 1 })
 blizz.queueStatus.args.fontGroup.inline = true
 
-blizz.characterInfo = ACH:Group(L["Character Information"], nil, 100, nil, function(info) return E.db.general.characterInfo[info[#info]] end, function(info, value)
+local function CharInfoGet(info) return E.db.general.characterInfo[info[#info]] end
+local function CharInfoSet(info, value)
 	E.db.general.characterInfo[info[#info]] = value
 	if SK.UpdateCharacterEquipmentSockets then
 		SK:UpdateCharacterEquipmentSockets()
 	end
-end)
-blizz.characterInfo.args.showGems = ACH:Toggle(L["Display Gems"], nil, 1)
-blizz.characterInfo.args.showEnchants = ACH:Toggle(L["Display Enchants"], nil, 2)
-blizz.characterInfo.inline = true
+end
+local function CharInfoDisabled(key)
+	return function() return not E.db.general.characterInfo[key] end
+end
+local characterInfoPositions = { default = L["Default"], TOPLEFT = 'TOPLEFT', TOP = 'TOP', TOPRIGHT = 'TOPRIGHT', LEFT = 'LEFT', CENTER = 'CENTER', RIGHT = 'RIGHT', BOTTOMLEFT = 'BOTTOMLEFT', BOTTOM = 'BOTTOM', BOTTOMRIGHT = 'BOTTOMRIGHT' }
+
+blizz.characterInfo = ACH:Group(L["Character Information"], nil, 100, nil, CharInfoGet, CharInfoSet)
+
+blizz.characterInfo.args.gemsAndEnchants = ACH:Group(L["Gems and Enchants"], nil, 1, nil, CharInfoGet, CharInfoSet)
+blizz.characterInfo.args.gemsAndEnchants.args.showGems = ACH:Toggle(L["Display Gems"], nil, 1)
+blizz.characterInfo.args.gemsAndEnchants.args.showEnchants = ACH:Toggle(L["Display Enchants"], nil, 2)
+blizz.characterInfo.args.gemsAndEnchants.inline = true
+
+blizz.characterInfo.args.socketGroup = ACH:Group(L["Sockets"], nil, 2, nil, CharInfoGet, CharInfoSet, CharInfoDisabled("showGems"))
+blizz.characterInfo.args.socketGroup.args.socketPosition = ACH:Select(L["Position"], nil, 1, characterInfoPositions)
+blizz.characterInfo.args.socketGroup.args.socketXOffset = ACH:Range(L["X-Offset"], nil, 2, { min = -120, max = 120, step = 1 })
+blizz.characterInfo.args.socketGroup.args.socketYOffset = ACH:Range(L["Y-Offset"], nil, 3, { min = -120, max = 120, step = 1 })
+blizz.characterInfo.args.socketGroup.inline = true
+
+blizz.characterInfo.args.enchantGroup = ACH:Group(L["Enchant Text"], nil, 3, nil, CharInfoGet, CharInfoSet, CharInfoDisabled("showEnchants"))
+blizz.characterInfo.args.enchantGroup.args.enchantPosition = ACH:Select(L["Position"], nil, 1, characterInfoPositions)
+blizz.characterInfo.args.enchantGroup.args.enchantXOffset = ACH:Range(L["X-Offset"], nil, 2, { min = -120, max = 120, step = 1 })
+blizz.characterInfo.args.enchantGroup.args.enchantYOffset = ACH:Range(L["Y-Offset"], nil, 3, { min = -120, max = 120, step = 1 })
+blizz.characterInfo.args.enchantGroup.inline = true
+
+blizz.characterInfo.args.itemLevelGroup = ACH:Group(L["Item Level"], nil, 4, nil, CharInfoGet, CharInfoSet)
+blizz.characterInfo.args.itemLevelGroup.args.showItemLevel = ACH:Toggle(L["Display Item Level"], nil, 1)
+blizz.characterInfo.args.itemLevelGroup.args.itemLevelQualityColor = ACH:Toggle(L["Quality Color"], nil, 2, nil, nil, nil, nil, nil, CharInfoDisabled("showItemLevel"))
+blizz.characterInfo.args.itemLevelGroup.args.itemLevelPosition = ACH:Select(L["Position"], nil, 3, C.Values.TextPositions, nil, nil, nil, nil, CharInfoDisabled("showItemLevel"))
+blizz.characterInfo.args.itemLevelGroup.args.itemLevelXOffset = ACH:Range(L["X-Offset"], nil, 4, { min = -30, max = 30, step = 1 }, nil, nil, nil, CharInfoDisabled("showItemLevel"))
+blizz.characterInfo.args.itemLevelGroup.args.itemLevelYOffset = ACH:Range(L["Y-Offset"], nil, 5, { min = -30, max = 30, step = 1 }, nil, nil, nil, CharInfoDisabled("showItemLevel"))
+blizz.characterInfo.args.itemLevelGroup.inline = true
+
+blizz.characterInfo.args.durabilityGroup = ACH:Group(L["Durability"], nil, 5, nil, CharInfoGet, CharInfoSet)
+blizz.characterInfo.args.durabilityGroup.args.showDurability = ACH:Toggle(L["Display Durability"], nil, 1)
+blizz.characterInfo.args.durabilityGroup.args.durabilityOnlyDamaged = ACH:Toggle(L["Only Damaged"], nil, 2, nil, nil, nil, nil, nil, CharInfoDisabled("showDurability"))
+blizz.characterInfo.args.durabilityGroup.args.durabilityPosition = ACH:Select(L["Position"], nil, 3, C.Values.TextPositions, nil, nil, nil, nil, CharInfoDisabled("showDurability"))
+blizz.characterInfo.args.durabilityGroup.args.durabilityXOffset = ACH:Range(L["X-Offset"], nil, 4, { min = -30, max = 30, step = 1 }, nil, nil, nil, CharInfoDisabled("showDurability"))
+blizz.characterInfo.args.durabilityGroup.args.durabilityYOffset = ACH:Range(L["Y-Offset"], nil, 5, { min = -30, max = 30, step = 1 }, nil, nil, nil, CharInfoDisabled("showDurability"))
+blizz.characterInfo.args.durabilityGroup.inline = true
+
+blizz.characterInfo.args.fontGroup = ACH:Group(L["Font"], nil, 6, nil, CharInfoGet, CharInfoSet)
+blizz.characterInfo.args.fontGroup.args.font = ACH:SharedMediaFont(L["Font"], nil, 1)
+blizz.characterInfo.args.fontGroup.args.fontSize = ACH:Range(L["Font Size"], nil, 2, C.Values.FontSize)
+blizz.characterInfo.args.fontGroup.args.fontOutline = ACH:FontFlags(L["Font Outline"], nil, 3)
+blizz.characterInfo.args.fontGroup.inline = true

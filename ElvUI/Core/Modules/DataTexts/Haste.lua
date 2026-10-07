@@ -18,7 +18,7 @@ local SPELL_HASTE = SPELL_HASTE
 local SPELL_HASTE_ABBR = SPELL_HASTE_ABBR
 local SPELL_HASTE_TOOLTIP = SPELL_HASTE_TOOLTIP
 
-local haste
+local haste, hastePercent
 local displayString, db = ''
 
 local casterClass = { MAGE = true, WARLOCK = true, PRIEST = true }
@@ -59,16 +59,21 @@ end
 local function OnEvent(self)
 	if IsCaster() then
 		haste = GetCombatRating(CR_HASTE_SPELL)
+		hastePercent = GetCombatRatingBonus(CR_HASTE_SPELL)
 	elseif E.myclass == 'HUNTER' then
 		haste = GetCombatRating(CR_HASTE_RANGED)
+		hastePercent = GetCombatRatingBonus(CR_HASTE_RANGED)
 	else
 		haste = GetCombatRating(CR_HASTE_MELEE)
+		hastePercent = GetCombatRatingBonus(CR_HASTE_MELEE)
 	end
 
+	hastePercent = hastePercent or 0
+
 	if db.NoLabel then
-		self.text:SetFormattedText(displayString, haste)
+		self.text:SetFormattedText(displayString, hastePercent)
 	else
-		self.text:SetFormattedText(displayString, db.Label ~= '' and db.Label or SPELL_HASTE_ABBR..': ', haste)
+		self.text:SetFormattedText(displayString, db.Label ~= '' and db.Label or SPELL_HASTE_ABBR..': ', hastePercent)
 	end
 end
 

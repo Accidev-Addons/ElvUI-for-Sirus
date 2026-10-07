@@ -1249,6 +1249,23 @@ local HandleFrame = function(baseName)
 	end
 end
 
+local function HandleCompactPartyFrames()
+	local frame = _G.CompactPartyFrame
+	local unregister = _G.CompactUnitFrame_UnregisterEvents
+	if not frame or not unregister then return end
+
+	frame:UnregisterAllEvents()
+	for _, member in pairs(frame.memberUnitFrames or {}) do
+		unregister(member)
+		member:SetParent(nil)
+	end
+
+	for _, pet in pairs(frame.petUnitFrames or {}) do
+		unregister(pet)
+		pet:SetParent(nil)
+	end
+end
+
 function ElvUF:DisableBlizzard(unit)
 	if (not unit) or InCombatLockdown() then return end
 
@@ -1325,6 +1342,11 @@ do
 		if not hasEnteredWorld then
 			--We only want to run Update_AllFrames once when we first log in or /reload
 			UF:Update_AllFrames()
+
+			if E.private.unitframe.disabledBlizzardFrames.party then
+				HandleCompactPartyFrames()
+			end
+
 			hasEnteredWorld = true
 		else
 			local _, instanceType = IsInInstance()
@@ -1598,6 +1620,8 @@ function UF:Initialize()
 
 		HandleFrame(_G.CompactRaidFrameContainer)
 		HandleFrame(_G.CompactRaidFrameManager)
+
+		HandleCompactPartyFrames()
 
 		local displayFrame = _G.CompactRaidFrameManager and _G.CompactRaidFrameManager.displayFrame
 		local assistButton = displayFrame and displayFrame.everyoneIsAssistButton

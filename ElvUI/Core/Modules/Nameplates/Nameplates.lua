@@ -172,6 +172,15 @@ function NP:SetFrameScale(frame, scale, noPlayAnimation)
 		NP:Configure_CastBarScale(frame, scale, noPlayAnimation)
 		NP:Configure_CPointsScale(frame, scale, noPlayAnimation)
 		frame.currentScale = scale
+
+		if NP:IsSirusNameplates() then
+			NP:Configure_Auras(frame, "Buffs")
+			NP:Configure_Auras(frame, "Debuffs")
+
+			if frame.CrowdControl then
+				NP:Configure_Auras(frame, "CrowdControl")
+			end
+		end
 	end
 end
 
@@ -572,6 +581,7 @@ function NP:ConfigureAll()
 
 	NP:StyleFilterConfigure()
 	NP:ForEachPlate("UpdateAllFrame", true, true)
+	NP:RefreshSirusAuraAnchors()
 	NP:SetCVars()
 	NP:UpdateClickableSizes()
 end
@@ -850,9 +860,7 @@ function NP:OnEvent(event, unit, ...)
 	end
 
 	if event == "UNIT_AURA" then
-		if not NP:IsSirusNameplates() then
-			NP:UpdateElement_Auras(self)
-		end
+		NP:UpdateElement_Auras(self)
 		return
 	end
 
@@ -1141,6 +1149,9 @@ function NP:ResetAuraPriority()
 			end
 			if content.debuffs and content.debuffs.filters then
 				content.debuffs.filters.priority = default.debuffs.filters.priority
+			end
+			if content.crowdcontrol and content.crowdcontrol.filters then
+				content.crowdcontrol.filters.priority = default.crowdcontrol.filters.priority
 			end
 		end
 	end
