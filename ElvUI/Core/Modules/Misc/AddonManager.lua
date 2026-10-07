@@ -833,6 +833,13 @@ function AM:SetupGameMenu()
 		addons.Show = E.noop
 		button.replacingAddons = true
 
+		-- DF UI has its own AddOns button in the same slot
+		local sirusAddons = _G.GameMenuButtonAddOns
+		if sirusAddons then
+			sirusAddons:Hide()
+			sirusAddons.Show = E.noop
+		end
+
 		AM:PositionGameMenuButton()
 		hooksecurefunc(E, 'PositionGameMenuButton', AM.PositionGameMenuButton)
 	else
