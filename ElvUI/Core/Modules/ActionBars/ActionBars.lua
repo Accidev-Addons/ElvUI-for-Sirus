@@ -816,6 +816,24 @@ function AB:SetNoopsi(frame)
 end
 
 do
+	local EMM = _G.EditModeManagerFrame
+	if EMM and EMM.GetRightActionBarTopLimit and EMM.GetRightActionBarBottomLimit then
+		local GetRightActionBarTopLimit = EMM.GetRightActionBarTopLimit
+
+		function EMM:GetRightActionBarTopLimit()
+			local top = GetRightActionBarTopLimit(self)
+			local bottom = self:GetRightActionBarBottomLimit()
+
+			if top and bottom and ((top - bottom) <= 0) then
+				top = UIParent:GetTop()
+			end
+
+			return top
+		end
+	end
+end
+
+do
 	local untaint = {
 		ShapeshiftBarFrame = false,
 		MainMenuBarArtFrame = true,
