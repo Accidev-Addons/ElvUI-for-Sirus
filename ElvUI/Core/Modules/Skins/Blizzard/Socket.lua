@@ -10,7 +10,13 @@ local GetSocketTypes = GetSocketTypes
 S:AddCallbackForAddon("Blizzard_ItemSocketingUI", "Skin_Blizzard_ItemSocketingUI", function()
 	if not E.private.skins.blizzard.enable or not E.private.skins.blizzard.socket then return end
 
-	ITEM_SOCKETING_DESCRIPTION_MIN_WIDTH = 278
+	local minWidthBusy
+	hooksecurefunc(ItemSocketingDescription, "SetMinimumWidth", function(tooltip, width, ...)
+		if minWidthBusy or width < ITEM_SOCKETING_DESCRIPTION_MIN_WIDTH then return end
+		minWidthBusy = true
+		tooltip:SetMinimumWidth(width + 278 - ITEM_SOCKETING_DESCRIPTION_MIN_WIDTH, ...)
+		minWidthBusy = nil
+	end)
 
 	ItemSocketingFrame:StripTextures()
 	ItemSocketingFrame:CreateBackdrop("Transparent")

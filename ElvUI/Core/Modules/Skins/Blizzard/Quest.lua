@@ -251,7 +251,11 @@ local function UpdateCollapseIcon(button)
 		local texture = isCollapsed and E.Media.Textures.Plus or E.Media.Textures.Minus
 
 		normal:SetTexture(texture)
-		if pushed then pushed:SetTexture(texture) end
+		normal:SetTexCoord(0, 1, 0, 1)
+		if pushed then
+			pushed:SetTexture(texture)
+			pushed:SetTexCoord(0, 1, 0, 1)
+		end
 	else
 		normal:SetTexture(0, 0, 0, 0)
 		if pushed then pushed:SetTexture(0, 0, 0, 0) end
@@ -330,8 +334,6 @@ local function LoadSkin()
 	if QuestLogScrollFrame and QuestLogScrollFrame.buttons then
 		for _, questLogTitle in ipairs(QuestLogScrollFrame.buttons) do
 			if not questLogTitle.isSkinned then
-				questLogTitle.SetNormalAtlas = E.noop
-				questLogTitle.SetPushedAtlas = E.noop
 				S:HandleCollapseExpandButton(questLogTitle, "+")
 			end
 
@@ -384,18 +386,15 @@ local function LoadSkin()
 	end
 
 	if GreetingText then
-		ColorWhite(GreetingText)
-		GreetingText.SetTextColor = E.noop
+		E:LockMethod(GreetingText, "SetTextColor", 1, 1, 1)
 	end
 
 	if CurrentQuestsText then
-		ColorGold(CurrentQuestsText)
-		CurrentQuestsText.SetTextColor = E.noop
+		E:LockMethod(CurrentQuestsText, "SetTextColor", 1, 0.80, 0.10)
 	end
 
 	if AvailableQuestsText then
-		ColorGold(AvailableQuestsText)
-		AvailableQuestsText.SetTextColor = E.noop
+		E:LockMethod(AvailableQuestsText, "SetTextColor", 1, 0.80, 0.10)
 	end
 
 	for i = 1, MAX_NUM_QUESTS do

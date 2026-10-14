@@ -72,10 +72,9 @@ local function LoadSkin()
 	RankFrame:StripTextures()
 	RankFrame:CreateBackdrop()
 	RankFrame:SetStatusBarTexture(E.media.normTex)
-	RankFrame:SetStatusBarColor(0.22, 0.39, 0.84)
-	RankFrame.SetStatusBarColor = E.noop
+	E:LockMethod(RankFrame, "SetStatusBarColor", 0.22, 0.39, 0.84)
 	E:RegisterStatusBar(RankFrame)
-	E:SetSmoothing(RankFrame, 1)
+	E:SetSmoothing(RankFrame, 1, true)
 
 	S:HandleTab(TradeSkillFrame.LearnedTab)
 	S:HandleTab(TradeSkillFrame.UnlearnedTab)
@@ -100,8 +99,7 @@ local function LoadSkin()
 		S:HandleCollapseExpandButton(skillButton, "+", nil, nil, 1)
 
 		if skillButtonHighlight then
-			skillButtonHighlight:SetTexture("")
-			skillButtonHighlight.SetTexture = E.noop
+			E:LockMethod(skillButtonHighlight, "SetTexture", "")
 		end
 	end
 
@@ -117,7 +115,6 @@ local function LoadSkin()
 	ResultIcon:SetTemplate("Default")
 	ResultIcon.IconBorder:SetAlpha(0)
 	ResultIcon.ResultBorder:SetAlpha(0)
-	ResultIcon.ResultBorder.SetAtlas = E.noop
 
 	_G.TradeSkillRequirementLabel:SetTextColor(1, 0.80, 0.10)
 

@@ -507,9 +507,10 @@ function CH:StyleChat(frame)
 	local clientCopyButton = frame.CopyChatButton
 	if clientCopyButton then clientCopyButton:Kill() end
 
-	if frame.buttonFrame2 then
-		frame.buttonFrame2:Hide()
-		frame.buttonFrame2.Show = frame.buttonFrame2.Hide
+	local buttonFrame2 = frame.buttonFrame2
+	if buttonFrame2 then
+		buttonFrame2:Hide()
+		hooksecurefunc(buttonFrame2, 'Show', buttonFrame2.Hide)
 	end
 
 	_G.ChatFrameMenuButton:Kill()
@@ -980,11 +981,12 @@ function CH:SnappingChanged(chat)
 	end
 end
 
-function CH:ShowBackground(background, show)
+function CH:ShowBackground(chat, show)
+	local background = chat.Background
 	if not background then return end
 
 	if show then
-		background.Show = nil
+		background:SetParent(chat)
 		background:Show()
 	else
 		background:Kill()
@@ -1020,7 +1022,7 @@ function CH:PositionChat(chat)
 		chat:SetPoint('BOTTOMLEFT', _G.LeftChatPanel, 'BOTTOMLEFT', 5, 5)
 		chat:SetSize(CH.db.panelWidth - 10, CH.db.panelHeight - BASE_OFFSET - LOG_OFFSET)
 
-		CH:ShowBackground(chat.Background, false)
+		CH:ShowBackground(chat, false)
 	elseif chat == CH.RightChatWindow then
 		local LOG_OFFSET = chat:GetID() == 2 and (_G.LeftChatTab:GetHeight() + 4) or 0
 
@@ -1028,9 +1030,9 @@ function CH:PositionChat(chat)
 		chat:SetPoint('BOTTOMLEFT', _G.RightChatPanel, 'BOTTOMLEFT', 5, 5)
 		chat:SetSize((CH.db.separateSizes and CH.db.panelWidthRight or CH.db.panelWidth) - 10, (CH.db.separateSizes and CH.db.panelHeightRight or CH.db.panelHeight) - BASE_OFFSET - LOG_OFFSET)
 
-		CH:ShowBackground(chat.Background, false)
+		CH:ShowBackground(chat, false)
 	else -- show if: not docked, or ChatFrame1, or attached to ChatFrame1
-		CH:ShowBackground(chat.Background, CH:IsUndocked(chat, docker))
+		CH:ShowBackground(chat, CH:IsUndocked(chat, docker))
 	end
 end
 
@@ -1854,18 +1856,25 @@ do
 		end
 	end
 
-	local overflow_SetAlpha
+	local overflowAlphaBusy
 	function CH:Overflow_SetAlpha(alpha)
+		if overflowAlphaBusy then return end
+
+		local wanted = alpha
 		if self.alerting then
-			alpha = 1
+			wanted = 1
 		elseif alpha < 0.5 then
 			local hooks = CH.hooks and CH.hooks[_G.GeneralDockManager.primary]
 			if not (hooks and hooks.OnEnter) then
-				alpha = 0.5
+				wanted = 0.5
 			end
 		end
 
-		overflow_SetAlpha(self, alpha)
+		if wanted ~= alpha then
+			overflowAlphaBusy = true
+			self:SetAlpha(wanted)
+			overflowAlphaBusy = nil
+		end
 	end
 
 	function CH:StyleOverflowButton()
@@ -1875,8 +1884,7 @@ do
 		btn:SetHighlightTexture(E.Media.Textures.ArrowUpGlow)
 
 		if not wasSkinned then
-			overflow_SetAlpha = btn.SetAlpha
-			btn.SetAlpha = CH.Overflow_SetAlpha
+			hooksecurefunc(btn, 'SetAlpha', CH.Overflow_SetAlpha)
 
 			btn:HookScript('OnEnter', CH.Overflow_OnEnter)
 			btn:HookScript('OnLeave', CH.Overflow_OnLeave)

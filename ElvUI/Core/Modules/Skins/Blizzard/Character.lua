@@ -3,7 +3,7 @@ local S = E:GetModule("Skins")
 local LSM = E.Libs.LSM
 
 local _G = _G
-local select, next, ipairs, pairs, tonumber, getmetatable = select, next, ipairs, pairs, tonumber, getmetatable
+local select, next, ipairs, pairs, tonumber = select, next, ipairs, pairs, tonumber
 local abs, floor, max, min = math.abs, math.floor, math.max, math.min
 local find, format, gmatch, lower, sub, trim = string.find, string.format, string.gmatch, string.lower, string.sub, string.trim
 local tinsert, tremove, sort, wipe = table.insert, table.remove, table.sort, table.wipe
@@ -1046,7 +1046,7 @@ local function StrengthenCategoryReset_OnEnter(self)
 	GameTooltip:SetText(RESET, 1, 1, 1)
 	local cost = C_PlayerInfo.GetResetBonusStatsCost()
 	if cost and cost > 0 then
-		SetTooltipMoney(GameTooltip, cost)
+		GameTooltip:AddLine(GetMoneyString(cost), 1, 1, 1)
 	end
 	GameTooltip:AddLine("Сбросить все очки усилений", 1, 0.82, 0)
 	GameTooltip:Show()
@@ -1809,23 +1809,21 @@ function S:CharacterInit()
 
 	CreateSmoothScrollAnimation(titlePane.scrollBar, true)
 
-	titlePane.scrollBar.Show = function(self)
+	hooksecurefunc(titlePane.scrollBar, "Show", function()
 		titlePane:Width(SCROLL_WIDTH_SIRUS_STATS_CHILD)
 		titlePane:Point("TOPRIGHT", CharacterFrame, -24, -55)
 		for _, button in next, titlePane.buttons do
 			button:Width(SCROLL_WIDTH_SIRUS_STATS_CHILD)
 		end
-		getmetatable(self).__index.Show(self)
-	end
+	end)
 
-	titlePane.scrollBar.Hide = function(self)
+	hooksecurefunc(titlePane.scrollBar, "Hide", function()
 		titlePane:Width(SCROLL_WIDTH_SIRUS_STATS_CHILD)
 		titlePane:Point("TOPRIGHT", CharacterFrame, -6, -55)
 		for _, button in next, titlePane.buttons do
 			button:Width(SCROLL_WIDTH_SIRUS_STATS_CHILD)
 		end
-		getmetatable(self).__index.Hide(self)
-	end
+	end)
 
 	titlePane:SetFrameLevel(CharacterFrame:GetFrameLevel() + 1)
 
@@ -1905,7 +1903,7 @@ function S:CharacterInit()
 
 	statsPane:SetScrollChild(statsPaneScrollChild)
 
-	CharacterStatsPaneScrollBar.Show = function(self)
+	hooksecurefunc(CharacterStatsPaneScrollBar, "Show", function()
 		statsPane:Width(SCROLL_WIDTH_SIRUS_STATS_CHILD)
 		statsPane:Point("TOPRIGHT", CharacterFrame, -24, -55)
 		statsPaneScrollChild:Width(SCROLL_WIDTH_SIRUS_STATS_CHILD)
@@ -1913,10 +1911,9 @@ function S:CharacterInit()
 			button:Width(SCROLL_WIDTH_SIRUS_STATS_CHILD)
 			button.Toolbar:Width(241 - 18)
 		end
-		getmetatable(self).__index.Show(self)
-	end
+	end)
 
-	CharacterStatsPaneScrollBar.Hide = function(self)
+	hooksecurefunc(CharacterStatsPaneScrollBar, "Hide", function()
 		statsPane:Width(SCROLL_WIDTH_SIRUS_STATS_CHILD + 18)
 		statsPane:Point("TOPRIGHT", CharacterFrame, -6, -55)
 		statsPaneScrollChild:Width(SCROLL_WIDTH_SIRUS_STATS_CHILD + 18)
@@ -1924,8 +1921,7 @@ function S:CharacterInit()
 			button:Width(SCROLL_WIDTH_SIRUS_STATS_CHILD + 18)
 			button.Toolbar:Width(246)
 		end
-		getmetatable(self).__index.Hide(self)
-	end
+	end)
 
 	statsPane:Width(SCROLL_WIDTH_SIRUS_STATS_CHILD + 18)
 	statsPane:Point("TOPRIGHT", CharacterFrame, -6, -55)
@@ -1990,23 +1986,21 @@ function S:CharacterInit()
 
 	CreateSmoothScrollAnimation(equipmentManagerPane.scrollBar, true)
 
-	equipmentManagerPane.scrollBar.Show = function(self)
+	hooksecurefunc(equipmentManagerPane.scrollBar, "Show", function()
 		equipmentManagerPane:Width(SCROLL_WIDTH_SIRUS_STATS_CHILD)
 		equipmentManagerPane:Point("TOPRIGHT", CharacterFrame, -24, -55)
 		for _, button in next, equipmentManagerPane.buttons do
 			button:Width(SCROLL_WIDTH_SIRUS_STATS_CHILD)
 		end
-		getmetatable(self).__index.Show(self)
-	end
+	end)
 
-	equipmentManagerPane.scrollBar.Hide = function(self)
+	hooksecurefunc(equipmentManagerPane.scrollBar, "Hide", function()
 		equipmentManagerPane:Width(SCROLL_WIDTH_SIRUS_STATS_CHILD)
 		equipmentManagerPane:Point("TOPRIGHT", CharacterFrame, -6, -55)
 		for _, button in next, equipmentManagerPane.buttons do
 			button:Width(SCROLL_WIDTH_SIRUS_STATS_CHILD)
 		end
-		getmetatable(self).__index.Hide(self)
-	end
+	end)
 
 	equipmentManagerPane:SetFrameLevel(CharacterFrame:GetFrameLevel() + 1)
 	equipmentManagerPane.EquipSet:SetFrameLevel(equipmentManagerPane:GetFrameLevel() + 3)
@@ -2710,9 +2704,6 @@ local function LoadSkin()
 		factionRow:StripTextures(true)			S:HandleSirusStatusBar(factionBar)
 
 		factionButton:SetNormalTexture(E.Media.Textures.Minus)
-		factionButton.SetNormalTexture = E.noop
-		factionButton.SetNormalAtlas = E.noop
-		factionButton.SetPushedAtlas = E.noop
 		factionButton:GetNormalTexture():Size(15)
 		factionButton:SetHighlightTexture(nil)
 
@@ -2748,6 +2739,17 @@ local function LoadSkin()
 				end
 
 				S:SetSirusCollapseIcon(factionButton, factionRow.isCollapsed)
+
+				local normal, pushed = factionButton:GetNormalTexture(), factionButton:GetPushedTexture()
+				if normal then
+					normal:SetTexCoord(0, 1, 0, 1)
+					normal:Size(15)
+				end
+				if pushed then
+					pushed:SetTexture(factionRow.isCollapsed and E.Media.Textures.Plus or E.Media.Textures.Minus)
+					pushed:SetTexCoord(0, 1, 0, 1)
+					pushed:Size(15)
+				end
 			end
 		end
 	end
@@ -2771,7 +2773,7 @@ local function LoadSkin()
 
 	TokenFrame:StripTextures(true)
 
-	hooksecurefunc("TokenFrame_Update", function()
+	local function SkinTokenButtons()
 		local scrollFrame = TokenFrameContainer
 		local offset = HybridScrollFrame_GetOffset(scrollFrame)
 		local buttons = scrollFrame.buttons
@@ -2837,9 +2839,9 @@ local function LoadSkin()
 				end
 			end
 		end
-	end)
-
-	TokenFrameContainer.update = TokenFrame_Update
+	end
+	hooksecurefunc("TokenFrame_Update", SkinTokenButtons)
+	hooksecurefunc(TokenFrameContainer, "update", SkinTokenButtons)
 
 	S:HandleSirusScrollBar(TokenFrameContainerScrollBar)
 

@@ -31,7 +31,6 @@ local function LoadSkin()
 		TabardFrameEmblemBottomLeft,
 	} do
 		frame:SetParent(TabardModel)
-		frame.Show = nil
 		frame:Show()
 	end
 

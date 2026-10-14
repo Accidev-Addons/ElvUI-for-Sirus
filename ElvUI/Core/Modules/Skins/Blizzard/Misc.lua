@@ -66,8 +66,8 @@ S:AddCallback('Skin_GameMenu', function()
 
 	local editMode = _G.GameMenuButtonEditMode
 	if editMode then
+		editMode:SetParent(E.HiddenFrame)
 		editMode:Hide()
-		editMode.Show = E.noop
 
 		local keybindings = _G.GameMenuButtonKeybindings
 		local uiOptions = _G.GameMenuButtonUIOptions

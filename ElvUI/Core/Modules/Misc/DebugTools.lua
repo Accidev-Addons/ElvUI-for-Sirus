@@ -1,5 +1,6 @@
 local E, L, V, P, G = unpack(ElvUI)
 local D = E:GetModule("DebugTools")
+local S = E:GetModule("Skins")
 
 --Lua functions
 local format = string.format
@@ -145,16 +146,26 @@ function D:ScriptErrorsFrame_OnError(_, keepHidden)
 end
 
 function D:PLAYER_REGEN_ENABLED()
-	ScriptErrorsFrame:SetParent(E.UIParent)
+	if ScriptErrorsFrame then
+		ScriptErrorsFrame:SetParent(E.UIParent)
+	end
 	D.MessagePrinted = nil
 end
 
 function D:PLAYER_REGEN_DISABLED()
-	ScriptErrorsFrame:SetParent(D.HideFrame)
+	if ScriptErrorsFrame then
+		ScriptErrorsFrame:SetParent(D.HideFrame)
+	end
 end
 
 function D:TaintError(event, addonName, addonFunc)
 	if not GetCVarBool("scriptErrors") or E.db.general.taintLog ~= true then return end
+
+	if not ScriptErrorsFrame_OnError then
+		LoadAddOn("Blizzard_DebugTools")
+		if not ScriptErrorsFrame_OnError then return end
+	end
+
 	ScriptErrorsFrame_OnError(format(L["%s: %s tried to call the protected function '%s'."], event, addonName or "<name>", addonFunc or "<func>"), false)
 end
 
@@ -164,19 +175,21 @@ function D:StaticPopup_Show(name)
 	end
 end
 
+function D:SetupErrorFrame()
+	D:ModifyErrorFrame()
+	D:SecureHook("ScriptErrorsFrame_UpdateButtons")
+	D:SecureHook("ScriptErrorsFrame_OnError")
+end
+
 function D:Initialize()
 	D.Initialized = true
 	D.HideFrame = CreateFrame("Frame")
 	D.HideFrame:Hide()
 
-	if not IsAddOnLoaded("Blizzard_DebugTools") then
-		LoadAddOn("Blizzard_DebugTools")
-	end
-
-	D:ModifyErrorFrame()
 	D:PositionErrorFrame()
-	D:SecureHook("ScriptErrorsFrame_UpdateButtons")
-	D:SecureHook("ScriptErrorsFrame_OnError")
+
+	S:AddCallbackForAddon("Blizzard_DebugTools", "ElvUI_DebugTools", D.SetupErrorFrame, nil, nil, 1)
+
 	D:SecureHook("StaticPopup_Show")
 	D:RegisterEvent("PLAYER_REGEN_DISABLED")
 	D:RegisterEvent("PLAYER_REGEN_ENABLED")

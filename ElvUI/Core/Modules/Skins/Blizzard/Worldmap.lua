@@ -178,7 +178,7 @@ S:AddCallback("Skin_WorldMap", function()
 
 	WorldMapFrameSizeDownButton:ClearAllPoints()
 	WorldMapFrameSizeDownButton:Point("RIGHT", WorldMapFrameCloseButton, "LEFT", 4, 0)
-	WorldMapFrameSizeDownButton.SetPoint = E.noop
+	E:LockPoints(WorldMapFrameSizeDownButton)
 	WorldMapFrameSizeDownButton:GetHighlightTexture():Kill()
 	S:HandleNextPrevButton(WorldMapFrameSizeDownButton, "down", nil, true)
 	WorldMapFrameSizeDownButton:Size(26)
@@ -211,9 +211,13 @@ S:AddCallback("Skin_WorldMap", function()
 	WorldMapZoneInfo:FontTemplate(nil, 27, "OUTLINE")
 	WorldMapZoneInfo:SetShadowOffset(2, -2)
 
-	WorldMapLevelDropDown.SetPoint = E.noop
+	E:LockPoints(WorldMapLevelDropDown)
 
-	local setPoint = UIParent.SetPoint
+	local rawSetPoint = UIParent.SetPoint
+	local function setPoint(frame, ...)
+		rawSetPoint(frame, ...)
+		E:LockPoints(frame)
+	end
 	local currentMapMode
 
 	local function SmallSkin()
@@ -279,8 +283,7 @@ S:AddCallback("Skin_WorldMap", function()
 	end
 
 	if not E.private.worldmap.enable then
-		WorldMapFrame:EnableMouse(false)
-		WorldMapFrame.EnableMouse = E.noop
+		E:LockMethod(WorldMapFrame, "EnableMouse", false)
 	end
 
 	WorldMapTitleButton:Hide()

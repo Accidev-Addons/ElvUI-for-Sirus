@@ -2,6 +2,7 @@ local E, L = unpack(ElvUI)
 local BL = E:GetModule('Blizzard')
 
 local _G = _G
+local abs = abs
 local UnitIsUnit = UnitIsUnit
 local hooksecurefunc = hooksecurefunc
 
@@ -16,6 +17,24 @@ do
 	if slider and not slider.value then
 		slider.value = tonumber(GetCVar('spellActivationButtonOpacity')) or 1
 	end
+end
+
+local DURABILITY_SCALE = 0.6
+
+local function Durability_SetScale(frame)
+	if abs(frame:GetScale() - DURABILITY_SCALE) > 0.001 then
+		frame:SetScaleBase(DURABILITY_SCALE)
+	end
+end
+
+local function Durability_SetPoint(frame, _, relativeTo)
+	local minimap = _G.Minimap
+	if relativeTo == minimap then return end
+
+	local offset = (_G.DurabilityShield:IsShown() or _G.DurabilityOffWeapon:IsShown() or _G.DurabilityRanged:IsShown()) and -7 or 8
+
+	frame:ClearAllPointsBase()
+	frame:SetPointBase('RIGHT', minimap, 'RIGHT', E:Scale(offset), 0)
 end
 
 function BL:HandleMiscFrames()
@@ -48,33 +67,18 @@ function BL:HandleMiscFrames()
 	end)
 
 	-- durability frame
-	_G.DurabilityFrame:SetFrameStrata('HIGH')
-	_G.DurabilityFrame:SetScale(0.6)
-
-	if _G.DurabilityFrame.BreakFromFrameManager then
-		_G.DurabilityFrame:BreakFromFrameManager()
-	end
-
-	if _G.DurabilityFrame.systemInfo then
-		_G.DurabilityFrame.systemInfo.isInDefaultPosition = false
-	end
+	local durability = _G.DurabilityFrame
+	durability:SetFrameStrata('HIGH')
+	durability:SetScaleBase(DURABILITY_SCALE)
 
 	_G.DurabilityWeapon:Point('RIGHT', _G.DurabilityWrists, 'LEFT', 6, 0)
 	_G.DurabilityShield:Point('LEFT', _G.DurabilityWrists, 'RIGHT', -6, 10)
 	_G.DurabilityOffWeapon:Point('LEFT', _G.DurabilityWrists, 'RIGHT', -6, 0)
 	_G.DurabilityRanged:Point('TOP', _G.DurabilityShield, 'BOTTOM', -1, 0)
 
-	hooksecurefunc(_G.DurabilityFrame, 'SetPoint', function(self, _, point)
-		if point ~= Minimap then
-			self:ClearAllPoints()
-
-			if _G.DurabilityShield:IsShown() or _G.DurabilityOffWeapon:IsShown() or _G.DurabilityRanged:IsShown() then
-				self:Point('RIGHT', Minimap, 'RIGHT', -7, 0)
-			else
-				self:Point('RIGHT', Minimap, 'RIGHT', 8, 0)
-			end
-		end
-	end)
+	hooksecurefunc(durability, 'SetScale', Durability_SetScale)
+	hooksecurefunc(durability, 'SetPoint', Durability_SetPoint)
+	Durability_SetPoint(durability)
 
 	-- kill the ui scale option
 	_G.VideoOptionsResolutionPanelUseUIScale:Kill()

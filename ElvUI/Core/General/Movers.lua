@@ -122,9 +122,16 @@ function E:SetMoverPoints(name, parent)
 	end
 
 	if parent then
-		parent:ClearAllPoints()
+		if parent.snappedToFrame and parent.ClearFrameSnap then
+			parent:ClearFrameSnap()
+		end
+
+		local clearAllPoints = parent.ClearAllPointsBase or parent.ClearAllPoints
+		clearAllPoints(parent)
+
 		if point1 then
-			parent:SetPoint(point1, parent.mover, 0, 0)
+			local setPoint = parent.SetPointBase or parent.SetPoint
+			setPoint(parent, point1, parent.mover, 0, 0)
 		end
 	end
 

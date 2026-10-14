@@ -300,20 +300,28 @@ function M:QUEST_COMPLETE()
 	end
 end
 
+local function TutorialPointer_Update()
+	local pointer = _G.NPE_TutorialPointerFrame
+	local parent = E.db.general.hideTutorialFrames and E.HiddenFrame or _G.UIParent
+	for i = 1, pointer.FrameCount or 0 do
+		local frame = _G['NPE_PointerFrame_'..i]
+		if frame and frame:GetParent() ~= parent then
+			frame:SetParent(parent)
+		end
+	end
+end
+
 function M:HideTutorialFrames()
 	local enabled = E.db.general.hideTutorialFrames
 	local pointer = _G.NPE_TutorialPointerFrame
 
 	if pointer then
-		if enabled and not M.TutorialPointerMethods then
-			M.TutorialPointerMethods = { Show = pointer.Show, Hide = pointer.Hide }
-			pointer.Show = E.noop
-			pointer.Hide = E.noop
-		elseif not enabled and M.TutorialPointerMethods then
-			pointer.Show = M.TutorialPointerMethods.Show
-			pointer.Hide = M.TutorialPointerMethods.Hide
-			M.TutorialPointerMethods = nil
+		if enabled and not M.TutorialPointerHooked then
+			M.TutorialPointerHooked = true
+			hooksecurefunc(pointer, 'Show', TutorialPointer_Update)
 		end
+
+		TutorialPointer_Update()
 	end
 
 	if not enabled then return end

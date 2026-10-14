@@ -2,7 +2,6 @@ local E, L, V, P, G = unpack(ElvUI)
 local S = E:GetModule("Skins")
 
 local _G = _G
-local getmetatable = getmetatable
 local ipairs = ipairs
 local unpack = unpack
 local hooksecurefunc = hooksecurefunc
@@ -39,8 +38,7 @@ local function skinAchievement(achievement, biggerIcon)
 	end
 
 	if achievement.description then
-		achievement.description:SetTextColor(.6, .6, .6)
-		achievement.description.SetTextColor = E.noop
+		E:LockMethod(achievement.description, "SetTextColor", .6, .6, .6)
 	end
 
 	if achievement.hiddenDescription then
@@ -206,8 +204,8 @@ S:AddCallbackForAddon("Blizzard_AchievementUI", "Skin_Blizzard_AchievementUI", f
 
 	AchievementFrameHeaderShield:SetParent(AchievementFrame)
 
+	AchievementFrameHeader:SetParent(E.HiddenFrame)
 	AchievementFrameHeader:Hide()
-	AchievementFrameHeader.Show = E.noop
 
 	AchievementFrame:Size(737, 485)
 	AchievementFrame:SetTemplate("Transparent")
@@ -256,89 +254,79 @@ S:AddCallbackForAddon("Blizzard_AchievementUI", "Skin_Blizzard_AchievementUI", f
 	AchievementFrameComparisonStatsContainerScrollBar:Point("TOPLEFT", AchievementFrameComparisonStatsContainer, "TOPRIGHT", 3, -16)
 	AchievementFrameComparisonStatsContainerScrollBar:Point("BOTTOMLEFT", AchievementFrameComparisonStatsContainer, "BOTTOMRIGHT", 3, 14)
 
-	AchievementFrameAchievementsContainerScrollBar.Show = function(self)
+	hooksecurefunc(AchievementFrameAchievementsContainerScrollBar, "Show", function()
 		AchievementFrameAchievements:SetWidth(500)
 		for _, button in ipairs(AchievementFrameAchievements.buttons) do
 			button:SetWidth(496)
 		end
-		getmetatable(self).__index.Show(self)
-	end
+	end)
 
-	AchievementFrameAchievementsContainerScrollBar.Hide = function(self)
+	hooksecurefunc(AchievementFrameAchievementsContainerScrollBar, "Hide", function()
 		AchievementFrameAchievements:SetWidth(521)
 		for _, button in ipairs(AchievementFrameAchievements.buttons) do
 			button:SetWidth(517)
 		end
-		getmetatable(self).__index.Hide(self)
-	end
+	end)
 
-	AchievementFrameStatsContainerScrollBar.Show = function(self)
+	hooksecurefunc(AchievementFrameStatsContainerScrollBar, "Show", function()
 		AchievementFrameStats:SetWidth(500)
 		for _, button in ipairs(AchievementFrameStats.buttons) do
 			button:SetWidth(494)
 		end
-		getmetatable(self).__index.Show(self)
-	end
+	end)
 
-	AchievementFrameStatsContainerScrollBar.Hide = function(self)
+	hooksecurefunc(AchievementFrameStatsContainerScrollBar, "Hide", function()
 		AchievementFrameStats:SetWidth(521)
 		for _, button in ipairs(AchievementFrameStats.buttons) do
 			button:SetWidth(515)
 		end
-		getmetatable(self).__index.Hide(self)
-	end
+	end)
 
-	AchievementFrameComparisonContainerScrollBar.Hide = function(self)
+	hooksecurefunc(AchievementFrameComparisonContainerScrollBar, "Hide", function()
 		AchievementFrameComparison:SetWidth(647)
 		AchievementFrameComparisonSummaryPlayer:SetWidth(519)
 		for _, button in ipairs(AchievementFrameComparisonContainer.buttons) do
 			button:SetWidth(637)
 			button.player:SetWidth(519)
 		end
-		getmetatable(self).__index.Hide(self)
-	end
+	end)
 
-	AchievementFrameComparisonStatsContainerScrollBar.Hide = function(self)
+	hooksecurefunc(AchievementFrameComparisonStatsContainerScrollBar, "Hide", function()
 		AchievementFrameComparison:SetWidth(647)
 		for _, button in ipairs(AchievementFrameComparisonStatsContainer.buttons) do
 			button:SetWidth(637)
 		end
-		getmetatable(self).__index.Hide(self)
-	end
+	end)
 
+	local categoriesHooked
 	local function categoriesContainerScripts()
-		AchievementFrameCategoriesContainerScrollBar.Show = function(self)
-			ACHIEVEMENTUI_CATEGORIESWIDTH = 176
+		if categoriesHooked or not AchievementFrameCategoriesContainer.update then return end
+		categoriesHooked = true
 
+		hooksecurefunc(AchievementFrameCategoriesContainerScrollBar, "Show", function()
 			AchievementFrameCategories:SetWidth(176)
 			AchievementFrameCategoriesContainer:GetScrollChild():SetWidth(176)
 
 			AchievementFrameAchievements:SetPoint("TOPLEFT", "$parentCategories", "TOPRIGHT", 24, 0)
 			AchievementFrameStats:SetPoint("TOPLEFT", "$parentCategories", "TOPRIGHT", 24, 0)
 			AchievementFrameComparison:SetPoint("TOPLEFT", "$parentCategories", "TOPRIGHT", 24, 0)
+		end)
 
-			for _, button in ipairs(AchievementFrameCategoriesContainer.buttons) do
-				AchievementFrameCategories_DisplayButton(button, button.element)
-			end
-			getmetatable(self).__index.Show(self)
-		end
-
-		AchievementFrameCategoriesContainerScrollBar.Hide = function(self)
-			ACHIEVEMENTUI_CATEGORIESWIDTH = 197
-
+		hooksecurefunc(AchievementFrameCategoriesContainerScrollBar, "Hide", function()
 			AchievementFrameCategories:SetWidth(197)
 			AchievementFrameCategoriesContainer:GetScrollChild():SetWidth(197)
 
 			AchievementFrameAchievements:SetPoint("TOPLEFT", "$parentCategories", "TOPRIGHT", 3, 0)
 			AchievementFrameStats:SetPoint("TOPLEFT", "$parentCategories", "TOPRIGHT", 3, 0)
 			AchievementFrameComparison:SetPoint("TOPLEFT", "$parentCategories", "TOPRIGHT", 3, 0)
-
-			for _, button in ipairs(AchievementFrameCategoriesContainer.buttons) do
-				AchievementFrameCategories_DisplayButton(button, button.element)
-			end
-			getmetatable(self).__index.Hide(self)
-		end
+		end)
 	end
+
+	hooksecurefunc("AchievementFrameCategories_DisplayButton", function(button)
+		if ACHIEVEMENTUI_CATEGORIESWIDTH == 175 then
+			button:SetWidth(button:GetWidth() + 1)
+		end
+	end)
 
 	if AchievementFrameCategoriesContainer.update then
 		categoriesContainerScripts()
@@ -455,7 +443,7 @@ S:AddCallbackForAddon("Blizzard_AchievementUI", "Skin_Blizzard_AchievementUI", f
 
 			if index > 1 then
 				frame:Point("TOP", _G["AchievementFrameProgressBar"..index-1], "BOTTOM", 0, -5)
-				frame.SetPoint = E.noop
+				E:LockPoints(frame)
 			end
 
 			frame.skinned = true
@@ -531,7 +519,7 @@ S:AddCallbackForAddon("Blizzard_AchievementUI", "Skin_Blizzard_AchievementUI", f
 				else
 					mini:Point("TOPLEFT", _G["AchievementFrameMiniAchievement"..i - 1], "TOPRIGHT", 10, 0)
 				end
-				mini.SetPoint = E.noop
+				E:LockPoints(mini)
 
 				icon:SetTexCoords()
 				icon:SetInside()

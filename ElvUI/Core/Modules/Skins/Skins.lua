@@ -931,7 +931,7 @@ function S:HandleRotateButton(frame, width, height, noSize)
 	frame.isSkinned = true
 end
 
-function S:HandleControlButton(button)
+function S:HandleControlButton(button, icon)
 	if not button or button.isSkinned then return end
 
 	S:HandleButton(button)
@@ -940,8 +940,10 @@ function S:HandleControlButton(button)
 	if button.bg then
 		button.bg:SetAlpha(0)
 	end
-	if button.icon then
-		button.icon:SetInside()
+
+	icon = icon or button.icon
+	if icon then
+		icon:SetInside()
 	end
 
 	local region = select(3, button:GetRegions())
@@ -1007,9 +1009,8 @@ function S:HandleModelRotateButton(button, left, right)
 	local icon = button:CreateTexture(nil, "ARTWORK")
 	icon:SetTexture([[Interface\Common\UI-ModelControlPanel]])
 	icon:SetTexCoord(left, right, 0.2890625, 0.4140625)
-	button.icon = icon
 
-	S:HandleControlButton(button)
+	S:HandleControlButton(button, icon)
 end
 
 function S:HandleControlFrame(frame)
@@ -1138,7 +1139,10 @@ end
 function S:HandleSearchBox(frame, unskinned)
 	frame:SetTextInsets(16, 20, 0, 0)
 
-	frame.Instructions = frame.Instructions or frame:CreateFontString(nil, 'ARTWORK', 'GameFontDisableSmall')
+	if not frame.Instructions then
+		frame.Instructions = frame:CreateFontString(nil, 'ARTWORK', 'GameFontDisableSmall')
+	end
+
 	frame.Instructions:SetText(SEARCH)
 	frame.Instructions:ClearAllPoints()
 	frame.Instructions:SetPoint('TOPLEFT', frame, 'TOPLEFT', 15, 0)
@@ -1147,19 +1151,28 @@ function S:HandleSearchBox(frame, unskinned)
 	frame.Instructions:SetJustifyH('LEFT')
 	frame.Instructions:SetJustifyV('MIDDLE')
 
-	frame.searchIcon = frame.searchIcon or frame:CreateTexture(nil, 'OVERLAY')
+	if not frame.searchIcon then
+		frame.searchIcon = frame:CreateTexture(nil, 'OVERLAY')
+	end
+
 	frame.searchIcon:SetTexture([[Interface\Common\UI-Searchbox-Icon]])
 	frame.searchIcon:SetVertexColor(0.6, 0.6, 0.6)
 	frame.searchIcon:Size(14)
 	frame.searchIcon:ClearAllPoints()
 	frame.searchIcon:Point('LEFT', 0, -2)
 
-	frame.clearButton = frame.clearButton or CreateFrame('Button', nil, frame)
+	if not frame.clearButton then
+		frame.clearButton = CreateFrame('Button', nil, frame)
+	end
+
 	frame.clearButton:Size(14)
 	frame.clearButton:ClearAllPoints()
 	frame.clearButton:Point('RIGHT', -3, 0)
 
-	frame.clearButton.texture = frame.clearButton.texture or frame.clearButton:CreateTexture()
+	if not frame.clearButton.texture then
+		frame.clearButton.texture = frame.clearButton:CreateTexture()
+	end
+
 	frame.clearButton.texture:SetTexture([[Interface\FriendsFrame\ClearBroadcastIcon]])
 	frame.clearButton.texture:SetAlpha(0.5)
 	frame.clearButton.texture:Size(16)
@@ -1233,10 +1246,11 @@ function S:HandleDropDownBox(frame, width, template)
 	frame.backdrop:Point('TOPLEFT', 20, -2)
 	frame.backdrop:Point('BOTTOMRIGHT', button, 'BOTTOMRIGHT', 2, -2)
 
+	E:UnlockPoints(button)
 	button:ClearAllPoints()
 	button:Point('RIGHT', frame, 'RIGHT', -10, 3)
 
-	button.SetPoint = E.noop
+	E:LockPoints(button)
 	S:HandleNextPrevButton(button, 'down')
 
 	if text then
@@ -1646,46 +1660,88 @@ function S:SetNextPrevButtonDirection(frame, arrowDir)
 	frame:GetPushedTexture():SetRotation(direction)
 end
 
-local function collapseSetNormalTexture_Text(self, texture)
+local collapseStates = setmetatable({}, { __mode = 'k' })
+local collapseTexts = setmetatable({}, { __mode = 'k' })
+
+local function collapseClearTexture(texture)
 	if texture then
-		if strfind(texture, 'MinusButton', 1, true) or strfind(texture, 'ZoomOutButton', 1, true) then
-			self.collapseText:SetText('-')
-			return
-		elseif strfind(texture, 'PlusButton', 1, true) or strfind(texture, 'ZoomInButton', 1, true) then
-			self.collapseText:SetText('+')
-			return
-		end
+		texture:SetTexture('')
 	end
-	self.collapseText:SetText('')
 end
-local function collapseSetNormalTexture_Texture(self, texture)
-	if texture then
-		if strfind(texture, 'MinusButton', 1, true) or strfind(texture, 'ZoomOutButton', 1, true) then
-			self:GetNormalTexture():SetTexture(E.Media.Textures.Minus)
-			self:GetPushedTexture():SetTexture(E.Media.Textures.Minus)
-			self:GetDisabledTexture():SetTexture(E.Media.Textures.Minus)
-			return
-		elseif strfind(texture, 'PlusButton', 1, true) or strfind(texture, 'ZoomInButton', 1, true) then
-			self:GetNormalTexture():SetTexture(E.Media.Textures.Plus)
-			self:GetPushedTexture():SetTexture(E.Media.Textures.Plus)
-			self:GetDisabledTexture():SetTexture(E.Media.Textures.Plus)
-			return
-		end
+
+local function collapseSetTexture(texture, path)
+	if not texture then return end
+
+	if path then
+		texture:SetTexture(path)
+		texture:SetTexCoord(0, 1, 0, 1)
+	else
+		texture:SetTexture(0, 0, 0, 0)
 	end
-	self:GetNormalTexture():SetTexture(0, 0, 0, 0)
-	self:GetPushedTexture():SetTexture(0, 0, 0, 0)
-	self:GetDisabledTexture():SetTexture(0, 0, 0, 0)
 end
+
+local function collapseUpdate(button)
+	local state = collapseStates[button]
+	local text = collapseTexts[button]
+	if text then
+		text:SetText(state or '')
+		collapseClearTexture(button:GetNormalTexture())
+		collapseClearTexture(button:GetPushedTexture())
+		collapseClearTexture(button:GetDisabledTexture())
+	else
+		local path = (state == '-' and E.Media.Textures.Minus) or (state == '+' and E.Media.Textures.Plus) or nil
+		collapseSetTexture(button:GetNormalTexture(), path)
+		collapseSetTexture(button:GetPushedTexture(), path)
+		collapseSetTexture(button:GetDisabledTexture(), path)
+	end
+
+	collapseClearTexture(button:GetHighlightTexture())
+end
+
+local function collapseState(texture)
+	if type(texture) ~= 'string' then return end
+	if strfind(texture, 'MinusButton', 1, true) or strfind(texture, 'ZoomOutButton', 1, true) then
+		return '-'
+	elseif strfind(texture, 'PlusButton', 1, true) or strfind(texture, 'ZoomInButton', 1, true) then
+		return '+'
+	end
+end
+
+local function collapseAtlasState(atlasName)
+	if type(atlasName) ~= 'string' then return end
+	if strfind(atlasName, 'Closed', 1, true) or strfind(atlasName, 'Plus', 1, true) then
+		return '+'
+	elseif strfind(atlasName, 'Open', 1, true) or strfind(atlasName, 'Minus', 1, true) then
+		return '-'
+	end
+end
+
+local function collapseSetNormalTexture(button, texture)
+	collapseStates[button] = collapseState(texture)
+	collapseUpdate(button)
+end
+
+local function collapseSetAtlas(button, _, useAtlasSize)
+	if useAtlasSize and not collapseTexts[button] then
+		local normal, pushed, disabled = button:GetNormalTexture(), button:GetPushedTexture(), button:GetDisabledTexture()
+		if normal then normal:Size(16) end
+		if pushed then pushed:Size(16) end
+		if disabled then disabled:Size(16) end
+	end
+
+	collapseUpdate(button)
+end
+
+local function collapseSetNormalAtlas(button, atlasName, useAtlasSize)
+	collapseStates[button] = collapseAtlasState(atlasName)
+	collapseSetAtlas(button, atlasName, useAtlasSize)
+end
+
 function S:HandleCollapseExpandButton(button, defaultState, useFontString, xOffset, yOffset)
 	if button.isSkinned then return end
 
 	if defaultState == 'auto' then
-		local texture = button:GetNormalTexture():GetTexture()
-		if strfind(texture, 'MinusButton', 1, true) or strfind(texture, 'ZoomOutButton', 1, true) then
-			defaultState = '-'
-		elseif strfind(texture, 'PlusButton', 1, true) or strfind(texture, 'ZoomInButton', 1, true) then
-			defaultState = '+'
-		end
+		defaultState = collapseState(button:GetNormalTexture():GetTexture())
 	end
 
 	button:SetNormalTexture('')
@@ -1693,55 +1749,44 @@ function S:HandleCollapseExpandButton(button, defaultState, useFontString, xOffs
 	button:SetHighlightTexture('')
 	button:SetDisabledTexture('')
 
-	button.SetPushedTexture = E.noop
-	button.SetHighlightTexture = E.noop
-	button.SetDisabledTexture = E.noop
-
 	if useFontString then
-		button.collapseText = button:CreateFontString(nil, 'OVERLAY')
-		button.collapseText:FontTemplate(nil, 22)
-		button.collapseText:Point('LEFT', xOffset or 5, yOffset or 0)
-		button.collapseText:SetText('')
-
-		if defaultState == '+' then
-			button.collapseText:SetText('+')
-		elseif defaultState == '-' then
-			button.collapseText:SetText('-')
-		end
-
-		button.SetNormalTexture = collapseSetNormalTexture_Text
+		local text = button:CreateFontString(nil, 'OVERLAY')
+		text:FontTemplate(nil, 22)
+		text:Point('LEFT', xOffset or 5, yOffset or 0)
+		collapseTexts[button] = text
 	else
 		local normalTexture = button:GetNormalTexture()
 		normalTexture:Size(16)
 		normalTexture:ClearAllPoints()
 		normalTexture:Point('LEFT', xOffset or 3, yOffset or 0)
-		normalTexture.SetPoint = E.noop
+		E:LockPoints(normalTexture)
 
 		local pushedTexture = button:GetPushedTexture()
 		pushedTexture:Size(16)
 		pushedTexture:ClearAllPoints()
 		pushedTexture:Point('LEFT', xOffset or 3, yOffset or 0)
-		pushedTexture.SetPoint = E.noop
+		E:LockPoints(pushedTexture)
 
 		local disabledTexture = button:GetDisabledTexture()
 		disabledTexture:Size(16)
 		disabledTexture:ClearAllPoints()
 		disabledTexture:Point('LEFT', xOffset or 3, yOffset or 0)
-		disabledTexture.SetPoint = E.noop
+		E:LockPoints(disabledTexture)
 		disabledTexture:SetVertexColor(0.6, 0.6, 0.6)
-
-		if defaultState == '+' then
-			normalTexture:SetTexture(E.Media.Textures.Plus)
-			pushedTexture:SetTexture(E.Media.Textures.Plus)
-			disabledTexture:SetTexture(E.Media.Textures.Plus)
-		elseif defaultState == '-' then
-			normalTexture:SetTexture(E.Media.Textures.Minus)
-			pushedTexture:SetTexture(E.Media.Textures.Minus)
-			disabledTexture:SetTexture(E.Media.Textures.Minus)
-		end
-
-		button.SetNormalTexture = collapseSetNormalTexture_Texture
 	end
+
+	collapseStates[button] = (defaultState == '+' or defaultState == '-') and defaultState or nil
+	collapseUpdate(button)
+
+	hooksecurefunc(button, 'SetNormalTexture', collapseSetNormalTexture)
+	hooksecurefunc(button, 'SetPushedTexture', collapseUpdate)
+	hooksecurefunc(button, 'SetHighlightTexture', collapseUpdate)
+	hooksecurefunc(button, 'SetDisabledTexture', collapseUpdate)
+
+	if button.SetNormalAtlas then hooksecurefunc(button, 'SetNormalAtlas', collapseSetNormalAtlas) end
+	if button.SetPushedAtlas then hooksecurefunc(button, 'SetPushedAtlas', collapseSetAtlas) end
+	if button.SetDisabledAtlas then hooksecurefunc(button, 'SetDisabledAtlas', collapseSetAtlas) end
+	if button.SetHighlightAtlas then hooksecurefunc(button, 'SetHighlightAtlas', collapseUpdate) end
 
 	button.isSkinned = true
 end

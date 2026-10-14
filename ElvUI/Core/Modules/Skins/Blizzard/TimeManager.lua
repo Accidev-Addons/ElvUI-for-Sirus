@@ -27,10 +27,8 @@ S:AddCallbackForAddon("Blizzard_TimeManager", "Skin_Blizzard_TimeManager", funct
 
 	S:HandleEditBox(TimeManagerAlarmMessageEditBox)
 
-	TimeManagerAlarmEnabledButton:SetNormalTexture(nil)
-	TimeManagerAlarmEnabledButton.SetNormalTexture = E.noop
-	TimeManagerAlarmEnabledButton:SetPushedTexture(nil)
-	TimeManagerAlarmEnabledButton.SetPushedTexture = E.noop
+	E:LockMethod(TimeManagerAlarmEnabledButton, "SetNormalTexture", nil)
+	E:LockMethod(TimeManagerAlarmEnabledButton, "SetPushedTexture", nil)
 	S:HandleButton(TimeManagerAlarmEnabledButton)
 
 	S:HandleCheckBox(TimeManagerMilitaryTimeCheck)

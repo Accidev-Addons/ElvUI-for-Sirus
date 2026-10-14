@@ -24,18 +24,19 @@ local INVERTED_POINTS = {
 }
 
 local function BlobFrameHide()
-	M.blobWasVisible = nil
+	if M.blobDetached then
+		M.blobWasVisible = nil
+	end
 end
 
 local function BlobFrameShow()
-	M.blobWasVisible = true
+	if M.blobDetached then
+		M.blobWasVisible = true
+	end
 end
 
 function M:PLAYER_REGEN_ENABLED()
-	_G.WorldMapBlobFrame.SetFrameLevel = nil
-	_G.WorldMapBlobFrame.SetScale = nil
-	_G.WorldMapBlobFrame.Hide = nil
-	_G.WorldMapBlobFrame.Show = nil
+	M.blobDetached = nil
 
 	_G.WorldMapBlobFrame:SetParent(WorldMapFrame)
 	_G.WorldMapBlobFrame:ClearAllPoints()
@@ -64,15 +65,12 @@ end
 function M:PLAYER_REGEN_DISABLED()
 	M.blobWasVisible = _G.WorldMapFrame:IsShown() and _G.WorldMapBlobFrame:IsShown()
 
-	_G.WorldMapBlobFrame:SetParent(nil)
+	_G.WorldMapBlobFrame:SetParent(E.HiddenFrame)
 	_G.WorldMapBlobFrame:ClearAllPoints()
 	_G.WorldMapBlobFrame:SetPoint('TOP', UIParent, 'BOTTOM')
 	_G.WorldMapBlobFrame:Hide()
-	_G.WorldMapBlobFrame.Hide = BlobFrameHide
-	_G.WorldMapBlobFrame.Show = BlobFrameShow
-	_G.WorldMapBlobFrame.SetFrameLevel = E.noop
-	_G.WorldMapBlobFrame.SetScale = E.noop
 
+	M.blobDetached = true
 	M.blobNewScale = nil
 end
 
@@ -232,19 +230,18 @@ function M:Initialize()
 	if E.global.general.smallerWorldMap or (E.private.skins.blizzard.enable and E.private.skins.blizzard.worldmap) then
 		M:RegisterEvent('PLAYER_REGEN_ENABLED')
 		M:RegisterEvent('PLAYER_REGEN_DISABLED')
+
+		hooksecurefunc(_G.WorldMapBlobFrame, 'Show', BlobFrameShow)
+		hooksecurefunc(_G.WorldMapBlobFrame, 'Hide', BlobFrameHide)
 	end
 
-	_G.WorldMapFrame:EnableMouse(false)
-	_G.WorldMapFrame.EnableMouse = E.noop
+	E:LockMethod(_G.WorldMapFrame, 'EnableMouse', false)
 
 	if E.global.general.smallerWorldMap then
 		_G.BlackoutWorld:SetTexture(nil)
 
-		_G.WorldMapFrame:SetParent(E.UIParent)
-		_G.WorldMapFrame.SetParent = E.noop
-
-		_G.WorldMapFrame:EnableKeyboard(false)
-		_G.WorldMapFrame.EnableKeyboard = E.noop
+		E:LockMethod(_G.WorldMapFrame, 'SetParent', E.UIParent)
+		E:LockMethod(_G.WorldMapFrame, 'EnableKeyboard', false)
 
 		if not GetCVarBool('miniWorldMap') then
 			ShowUIPanel(_G.WorldMapFrame)
@@ -265,7 +262,6 @@ function M:Initialize()
 		end)
 
 		hooksecurefunc('WorldMapQuestPOI_OnLeave', function()
-			_G.WorldMapPOIFrame.allowBlobTooltip = true
 			_G.WorldMapTooltip:Hide()
 		end)
 	end

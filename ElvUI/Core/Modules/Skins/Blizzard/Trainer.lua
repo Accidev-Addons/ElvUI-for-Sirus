@@ -44,8 +44,7 @@ local function LoadSkin()
 		S:HandleCollapseExpandButton(skillButton, "+", nil, nil, 1)
 
 		if highlight then
-			highlight:SetTexture("")
-			highlight.SetTexture = E.noop
+			E:LockMethod(highlight, "SetTexture", "")
 		end
 	end
 

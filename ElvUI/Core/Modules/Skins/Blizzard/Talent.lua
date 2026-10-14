@@ -20,10 +20,25 @@ local function KillPanelCorners(prefix)
 	for _, corner in ipairs(panelCorners) do
 		local piece = _G[prefix..corner]
 		if piece then
-			piece:SetTexture(nil)
-			piece.SetTexture = E.noop
+			E:LockMethod(piece, "SetTexture", nil)
 		end
 	end
+end
+
+local function LockStyledTexture(button, setter, getter, anchor, r, g, b, a)
+	local busy
+	hooksecurefunc(button, setter, function(self)
+		if busy then return end
+		busy = true
+		self[setter](self, E.media.blankTex)
+		local texture = self[getter](self)
+		if texture then
+			texture:SetAllPoints(anchor)
+			texture:SetBlendMode("ADD")
+			texture:SetTexture(r, g, b, a)
+		end
+		busy = nil
+	end)
 end
 
 local function SkinIconHolder(holder, icon)
@@ -167,8 +182,8 @@ local function SkinSpecTabs(frame)
 			tab:GetRegions():Hide()
 			tab:SetTemplate()
 			tab:StyleButton(nil, true)
-			tab:GetHighlightTexture().SetTexture = E.noop
-			tab:GetCheckedTexture().SetTexture = E.noop
+			E:LockMethod(tab:GetHighlightTexture(), "SetTexture", 1, 1, 1, 0.3)
+			E:LockMethod(tab:GetCheckedTexture(), "SetTexture", 1, 1, 1, 0.3)
 			tab:GetNormalTexture():SetInside()
 			tab:GetNormalTexture():SetTexCoords()
 
@@ -483,15 +498,15 @@ local function LoadSkin()
 				button:StyleButton()
 				button:SetFrameLevel(button:GetFrameLevel() + 1)
 
-				button.SetHighlightTexture = E.noop
 				button:GetHighlightTexture():SetAllPoints(icon)
-				button.SetPushedTexture = E.noop
+				LockStyledTexture(button, "SetHighlightTexture", "GetHighlightTexture", icon, 1, 1, 1, 0.3)
 				local gpt = button:GetPushedTexture()
 				if gpt then
 					gpt:SetAllPoints(icon)
 
 					button:GetPushedTexture():SetTexCoords()
 				end
+				LockStyledTexture(button, "SetPushedTexture", "GetPushedTexture", icon, 0.9, 0.8, 0.1, 0.3)
 				local gnt = button:GetNormalTexture()
 				if gnt then
 

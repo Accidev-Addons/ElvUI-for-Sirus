@@ -221,13 +221,10 @@ local function LoadSkin()
 				S:HandleButton(header.button)
 				header.button:SetTemplate("Transparent")
 
-				header.button.title:SetTextColor(unpack(E.media.rgbvaluecolor))
-				header.button.title.SetTextColor = E.noop
-				header.button.expandedIcon:SetTextColor(1, 1, 1)
-				header.button.expandedIcon.SetTextColor = E.noop
+				E:LockMethod(header.button.title, "SetTextColor", unpack(E.media.rgbvaluecolor))
+				E:LockMethod(header.button.expandedIcon, "SetTextColor", 1, 1, 1)
 
-				header.description:SetTextColor(1, 1, 1)
-				header.description.SetTextColor = E.noop
+				E:LockMethod(header.description, "SetTextColor", 1, 1, 1)
 
 				header.isSkinned = true
 			end

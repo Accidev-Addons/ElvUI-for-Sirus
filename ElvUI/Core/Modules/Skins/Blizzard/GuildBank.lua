@@ -17,10 +17,12 @@ S:AddCallbackForAddon("Blizzard_GuildBankUI", "Skin_Blizzard_GuildBankUI", funct
 	GuildBankFrame.backdrop:Point("TOPLEFT", 11, -12)
 	GuildBankFrame.backdrop:Point("BOTTOMRIGHT", 0, 8)
 
-	S:HookScript(GuildBankFrame, "OnShow", function(self)
+	local guildBankShown
+	GuildBankFrame:HookScript("OnShow", function(self)
+		if guildBankShown then return end
+		guildBankShown = true
 		S:SetUIPanelWindowInfo(self, "width", nil, 35)
 		S:SetBackdropHitRect(self)
-		S:Unhook(self, "OnShow")
 	end)
 
 	GuildBankFrame.inset = CreateFrame("Frame", nil, GuildBankFrame)

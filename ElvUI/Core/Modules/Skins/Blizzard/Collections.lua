@@ -73,7 +73,7 @@ local function LoadSkin()
 	for _, button in ipairs(MountJournal.CategoryScrollFrame.buttons) do
 		button:SetHighlightTexture(E.Media.Textures.Highlight)
 		button:GetHighlightTexture():SetVertexColor(1, 1, 1)
-		button:GetHighlightTexture().SetAlpha = E.noop
+		E:LockMethod(button:GetHighlightTexture(), "SetAlpha", button:GetHighlightTexture():GetAlpha())
 
 		button.Background:SetTexture()
 

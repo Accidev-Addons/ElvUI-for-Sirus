@@ -3,6 +3,7 @@ local E, L, V, P, G = unpack(ElvUI)
 -- Credit: ls- (lightspark)
 local abs, next, Lerp = abs, next, Lerp
 local tonumber, assert = tonumber, assert
+local getmetatable, hooksecurefunc = getmetatable, hooksecurefunc
 local activeObjects = {}
 local handledObjects = {}
 local TARGET_FPS = 60
@@ -81,17 +82,41 @@ local function bar_SetSmoothedMinMaxValues(self, min, max)
 	self._max = max
 end
 
-local function SmoothBar(bar)
+local function bar_SecureSetValue(self, value)
+	if not handledObjects[self] then return end
+
+	self:SetValue_(self._value or value)
+	bar_SetSmoothedValue(self, value)
+end
+
+local function bar_SecureSetMinMaxValues(self, min, max)
+	if not handledObjects[self] then return end
+
+	bar_SetSmoothedMinMaxValues(self, min, max)
+end
+
+local function SmoothBar(bar, secure)
 	bar._min, bar._max = bar:GetMinMaxValues()
 	bar._value = bar:GetValue()
 
-	if not bar.SetValue_ then
-		bar.SetValue_ = bar.SetValue
-		bar.SetValue = bar_SetSmoothedValue
-	end
-	if not bar.SetMinMaxValues_ then
-		bar.SetMinMaxValues_ = bar.SetMinMaxValues
-		bar.SetMinMaxValues = bar_SetSmoothedMinMaxValues
+	if secure then
+		if not bar._smoothHooked then
+			local proto = getmetatable(bar).__index
+			bar.SetValue_ = proto.SetValue
+			bar.SetMinMaxValues_ = proto.SetMinMaxValues
+			hooksecurefunc(bar, 'SetValue', bar_SecureSetValue)
+			hooksecurefunc(bar, 'SetMinMaxValues', bar_SecureSetMinMaxValues)
+			bar._smoothHooked = true
+		end
+	else
+		if not bar.SetValue_ then
+			bar.SetValue_ = bar.SetValue
+			bar.SetValue = bar_SetSmoothedValue
+		end
+		if not bar.SetMinMaxValues_ then
+			bar.SetMinMaxValues_ = bar.SetMinMaxValues
+			bar.SetMinMaxValues = bar_SetSmoothedMinMaxValues
+		end
 	end
 
 	if not frame:GetScript('OnUpdate') then
@@ -111,13 +136,15 @@ local function DesmoothBar(bar)
 		handledObjects[bar] = nil
 	end
 
-	if bar.SetValue_ then
-		bar.SetValue = bar.SetValue_
-		bar.SetValue_ = nil
-	end
-	if bar.SetMinMaxValues_ then
-		bar.SetMinMaxValues = bar.SetMinMaxValues_
-		bar.SetMinMaxValues_ = nil
+	if not bar._smoothHooked then
+		if bar.SetValue_ then
+			bar.SetValue = bar.SetValue_
+			bar.SetValue_ = nil
+		end
+		if bar.SetMinMaxValues_ then
+			bar.SetMinMaxValues = bar.SetMinMaxValues_
+			bar.SetMinMaxValues_ = nil
+		end
 	end
 
 	if not next(handledObjects) then
@@ -129,9 +156,9 @@ function E:SetSmoothingAmount(amount)
 	AMOUNT = clamp(amount, 0.2, 0.8)
 end
 
-function E:SetSmoothing(bar, enable)
+function E:SetSmoothing(bar, enable, secure)
 	if enable then
-		SmoothBar(bar)
+		SmoothBar(bar, secure)
 	else
 		DesmoothBar(bar)
 	end

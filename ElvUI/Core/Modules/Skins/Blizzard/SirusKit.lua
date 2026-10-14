@@ -740,17 +740,20 @@ end
 function S:HandleSirusCollapseToggle(button, size)
 	if not button then return end
 
-	button:SetNormalTexture(E.Media.Textures.Plus)
-	button.SetNormalTexture = E.noop
+	local current = E.Media.Textures.Plus
+	button:SetNormalTexture(current)
 	button:GetNormalTexture():Size(size or 16)
 	button:SetHighlightTexture(nil)
 
 	hooksecurefunc(button, "SetNormalTexture", function(self, texture)
-		if find(texture, "MinusButton") then
-			self:GetNormalTexture():SetTexture(E.Media.Textures.Minus)
-		elseif find(texture, "PlusButton") then
-			self:GetNormalTexture():SetTexture(E.Media.Textures.Plus)
+		if type(texture) == "string" then
+			if find(texture, "MinusButton") then
+				current = E.Media.Textures.Minus
+			elseif find(texture, "PlusButton") then
+				current = E.Media.Textures.Plus
+			end
 		end
+		self:GetNormalTexture():SetTexture(current)
 	end)
 
 	return button

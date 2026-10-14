@@ -3,13 +3,16 @@ local UF = E:GetModule('UnitFrames')
 local NP = E:GetModule('NamePlates')
 
 local _G = _G
-local pairs, pcall, unpack = pairs, pcall, unpack
-local strsub, type, next = strsub, type, next
+local pairs, ipairs, pcall, unpack = pairs, ipairs, pcall, unpack
+local strsub, type, next, select = strsub, type, next, select
+local setmetatable = setmetatable
 local hooksecurefunc = hooksecurefunc
+local geterrorhandler = geterrorhandler
 local getmetatable = getmetatable
 
 local EnumerateFrames = EnumerateFrames
 local CreateFrame = CreateFrame
+local InCombatLockdown = InCombatLockdown
 local GetTime = GetTime
 
 local backdropr, backdropg, backdropb, backdropa = 0, 0, 0, 1
@@ -417,15 +420,156 @@ local function CreateShadow(frame, size, pass)
 	end
 end
 
+local killedRegions = setmetatable({}, { __mode = 'k' })
+local function KillRegionShow(region)
+	region:Hide()
+end
+
 local function Kill(object)
 	if object.UnregisterAllEvents then
 		object:UnregisterAllEvents()
 		object:SetParent(E.HiddenFrame)
-	else
-		object.Show = object.Hide
+	elseif not killedRegions[object] then
+		killedRegions[object] = true
+		hooksecurefunc(object, 'Show', KillRegionShow)
 	end
 
 	object:Hide()
+end
+
+local lockQueue = {}
+local lockFrame = CreateFrame('Frame')
+lockFrame:SetScript('OnEvent', function(frame)
+	frame:UnregisterEvent('PLAYER_REGEN_ENABLED')
+
+	local pending = {}
+	for lock, object in next, lockQueue do
+		pending[#pending + 1] = lock
+		pending[#pending + 1] = object
+		lockQueue[lock] = nil
+	end
+
+	for i = 1, #pending, 2 do
+		pending[i].apply(pending[i + 1])
+	end
+end)
+
+local function IsLockProtected(object, anchored)
+	if object.IsProtected and object:IsProtected() then
+		return true
+	end
+
+	if anchored and object.GetParent then
+		local parent = object:GetParent()
+		return parent and parent.IsProtected and parent:IsProtected()
+	end
+end
+
+local function LockDeferred(lock, object, anchored)
+	if InCombatLockdown() and IsLockProtected(object, anchored) then
+		lockQueue[lock] = object
+		lockFrame:RegisterEvent('PLAYER_REGEN_ENABLED')
+		return true
+	end
+end
+
+local function RunLock(lock, func, ...)
+	lock.busy = true
+	local ok, err = pcall(func, ...)
+	lock.busy = nil
+
+	if not ok then
+		geterrorhandler()(err)
+	end
+
+	return ok
+end
+
+local methodLocks = setmetatable({}, { __mode = 'k' })
+local function ApplyMethodLock(lock, object, method)
+	object[method](object, unpack(lock, 1, lock.n))
+end
+
+function E:LockMethod(object, method, ...)
+	local locks = methodLocks[object]
+	if not locks then
+		locks = {}
+		methodLocks[object] = locks
+	end
+
+	local lock = locks[method]
+	if not lock then
+		lock = {}
+		locks[method] = lock
+
+		lock.apply = function(obj)
+			if lock.busy or LockDeferred(lock, obj) then return end
+			RunLock(lock, ApplyMethodLock, lock, obj, method)
+		end
+
+		hooksecurefunc(object, method, lock.apply)
+	end
+
+	for i = 1, lock.n or 0 do
+		lock[i] = nil
+	end
+
+	lock.n = select('#', ...)
+	for i = 1, lock.n do
+		lock[i] = (select(i, ...))
+	end
+
+	RunLock(lock, ApplyMethodLock, lock, object, method)
+end
+
+local pointLocks = setmetatable({}, { __mode = 'k' })
+local function ReapplyPoints(object, lock)
+	local clear = object.ClearAllPointsBase or object.ClearAllPoints
+	local set = object.SetPointBase or object.SetPoint
+
+	clear(object)
+	for _, point in ipairs(lock) do
+		set(object, point[1], point[2], point[3], point[4], point[5])
+	end
+end
+
+local function ApplyPointLock(object)
+	local lock = pointLocks[object]
+	if not lock or lock.busy or not lock[1] or LockDeferred(lock, object, true) then return end
+
+	if not RunLock(lock, ReapplyPoints, object, lock) then
+		E:UnlockPoints(object)
+	end
+end
+
+function E:LockPoints(object)
+	local lock = pointLocks[object]
+	if not lock then
+		lock = { apply = ApplyPointLock }
+		pointLocks[object] = lock
+
+		hooksecurefunc(object, 'SetPoint', ApplyPointLock)
+		hooksecurefunc(object, 'ClearAllPoints', ApplyPointLock)
+	end
+
+	for i = #lock, 1, -1 do
+		lock[i] = nil
+	end
+
+	for i = 1, object:GetNumPoints() do
+		local point, relativeTo, relativePoint, x, y = object:GetPoint(i)
+		lock[i] = { point, relativeTo, relativePoint, x, y }
+	end
+end
+
+function E:UnlockPoints(object)
+	local lock = pointLocks[object]
+	if not lock then return end
+
+	lockQueue[lock] = nil
+	for i = #lock, 1, -1 do
+		lock[i] = nil
+	end
 end
 
 local STRIP_TEX = 'Texture'

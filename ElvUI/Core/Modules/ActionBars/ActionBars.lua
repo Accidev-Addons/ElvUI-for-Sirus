@@ -2,16 +2,13 @@ local E, L, V, P, G = unpack(ElvUI)
 local AB = E:GetModule('ActionBars')
 
 local _G = _G
-local ipairs, pairs, next, unpack = ipairs, pairs, next, unpack
+local ipairs, pairs, next, pcall, unpack = ipairs, pairs, next, pcall, unpack
 local format, gsub, strmatch, strsplit, strupper = format, gsub, strmatch, strsplit, strupper
 
 local ClearOverrideBindings = ClearOverrideBindings
 local CreateFrame = CreateFrame
 local GetActionBarToggles = GetActionBarToggles
 local GetBindingKey = GetBindingKey
-local GetCurrencyListInfo = GetCurrencyListInfo
-local GetCurrencyListSize = GetCurrencyListSize
-local GetCVarBool = GetCVarBool
 local hooksecurefunc = hooksecurefunc
 local InCombatLockdown = InCombatLockdown
 local IsPossessBarVisible = IsPossessBarVisible
@@ -20,7 +17,6 @@ local RegisterStateDriver = RegisterStateDriver
 local SecureHandlerExecute = SecureHandlerExecute
 local SecureHandlerSetFrameRef = SecureHandlerSetFrameRef
 local SetActionBarToggles = SetActionBarToggles
-local SetCVar = SetCVar
 local SetModifiedClick = SetModifiedClick
 local SetOverrideBindingClick = SetOverrideBindingClick
 local UnitAffectingCombat = UnitAffectingCombat
@@ -483,9 +479,9 @@ end
 function AB:RepointExtraActionBar()
 	local container = _G.ExtraAbilityContainer
 	local holder = _G.ExtraActionBarHolder
-	container:ClearAllPoints()
+	container:ClearAllPointsBase()
 	container:SetParent(E.UIParent)
-	container:Point('CENTER', holder)
+	container:SetPointBase('CENTER', holder, 'CENTER', 0, 0)
 end
 
 function AB:CreateExtraActionBar()
@@ -528,7 +524,7 @@ function AB:UpdateExtraActionBar()
 	local container = _G.ExtraAbilityContainer
 	local scale = db.size / 52
 
-	container:SetScale(scale)
+	container:SetScaleBase(scale)
 	container:SetFrameStrata(db.strata)
 	_G.ExtraActionBarHolder:Size(256 * scale, 128 * scale)
 
@@ -805,49 +801,47 @@ do
 	end
 end
 
-local noops = { 'ClearAllPoints', 'SetPoint', 'SetScale', 'SetShown' }
-function AB:SetNoopsi(frame)
-	if not frame then return end
-	for _, func in pairs(noops) do
-		if frame[func] ~= E.noop then
-			frame[func] = E.noop
-		end
-	end
-end
-
-do
+function AB:CheckRightActionBarLimits()
 	local EMM = _G.EditModeManagerFrame
-	if EMM and EMM.GetRightActionBarTopLimit and EMM.GetRightActionBarBottomLimit then
-		local GetRightActionBarTopLimit = EMM.GetRightActionBarTopLimit
+	if AB.RightActionBarLimitFixed or not (EMM and EMM.GetRightActionBarTopLimit and EMM.GetRightActionBarBottomLimit) then return end
 
-		function EMM:GetRightActionBarTopLimit()
-			local top = GetRightActionBarTopLimit(self)
-			local bottom = self:GetRightActionBarBottomLimit()
+	local right, left = _G.MultiBarRight, _G.MultiBarLeft
+	if not ((right and right:IsShown()) or (left and left:IsShown())) then return end
 
-			if top and bottom and ((top - bottom) <= 0) then
-				top = UIParent:GetTop()
-			end
+	local topOK, top = pcall(EMM.GetRightActionBarTopLimit, EMM)
+	local bottomOK, bottom = pcall(EMM.GetRightActionBarBottomLimit, EMM)
+	if not (topOK and bottomOK and top and bottom) or (top - bottom) > 0 then return end
 
-			return top
+	AB.RightActionBarLimitFixed = true
+
+	local GetRightActionBarTopLimit = EMM.GetRightActionBarTopLimit
+	function EMM:GetRightActionBarTopLimit()
+		local limitTop = GetRightActionBarTopLimit(self)
+		local limitBottom = self:GetRightActionBarBottomLimit()
+
+		if limitTop and limitBottom and ((limitTop - limitBottom) <= 0) then
+			limitTop = UIParent:GetTop()
 		end
+
+		return limitTop
 	end
 end
 
 do
 	local untaint = {
-		ShapeshiftBarFrame = false,
-		MainMenuBarArtFrame = true,
-		ReputationWatchBar = true,
-		MainMenuExpBar = true,
-		MultiBarLeft = false,
-		VehicleMenuBar = true,
-		MultiBarRight = false,
-		MultiBarBottomLeft = false,
-		MultiBarBottomRight = false,
-		MainMenuBar = false,
-		BonusActionBarFrame = true,
-		PetActionBarFrame = false,
-		PossessBarFrame = false
+		'ShapeshiftBarFrame',
+		'MainMenuBarArtFrame',
+		'ReputationWatchBar',
+		'MainMenuExpBar',
+		'MultiBarLeft',
+		'VehicleMenuBar',
+		'MultiBarRight',
+		'MultiBarBottomLeft',
+		'MultiBarBottomRight',
+		'MainMenuBar',
+		'BonusActionBarFrame',
+		'PetActionBarFrame',
+		'PossessBarFrame'
 	}
 
 	function AB:ButtonEventsRegisterFrame(added)
@@ -867,7 +861,6 @@ do
 		end
 	end
 
-	local currencyWatcher
 	local secureHider
 
 	local function SecureHideButton(button)
@@ -880,73 +873,28 @@ do
 		]])
 	end
 
-	local function CurrencyTab_Pulse()
-		local CharacterFrame, TokenFrame = _G.CharacterFrame, _G.TokenFrame
-		local MicroButtonPulse, SetButtonPulse = _G.MicroButtonPulse, _G.SetButtonPulse
-		local micro, tab = _G.CharacterMicroButton, _G.CharacterFrameTab4
+	local function SecureHideBar(bar)
+		if not bar then return end
 
-		if MicroButtonPulse and micro and CharacterFrame and not CharacterFrame:IsVisible() then
-			MicroButtonPulse(micro, 60)
-		end
-
-		if SetButtonPulse and tab and TokenFrame and not TokenFrame:IsVisible() then
-			SetButtonPulse(tab, 60, 1)
-		end
-	end
-
-	local function CurrencyTab_Refresh()
-		local LoadUI, Update, BackpackUpdate = _G.TokenFrame_LoadUI, _G.TokenFrame_Update, _G.BackpackTokenFrame_Update
-		local tab = _G.CharacterFrameTab4
-
-		local showTokenFrame, showTokenFrameHonor = GetCVarBool('showTokenFrame'), GetCVarBool('showTokenFrameHonor')
-		if not showTokenFrame or not showTokenFrameHonor then
-			local hasPVPTokens, hasNormalTokens
-			for index = 1, GetCurrencyListSize() do
-				local _, isHeader, _, _, _, count, extraCurrencyType = GetCurrencyListInfo(index)
-				count, extraCurrencyType = count or 0, extraCurrencyType or 0
-
-				if not isHeader and extraCurrencyType > 0 and count > 0 then
-					hasPVPTokens = true
-				elseif not isHeader and extraCurrencyType <= 0 and count > 0 then
-					hasNormalTokens = true
-				end
-			end
-
-			if not showTokenFrame and hasNormalTokens then
-				SetCVar('showTokenFrame', 1)
-				CurrencyTab_Pulse()
-			end
-
-			if not showTokenFrameHonor and hasPVPTokens then
-				SetCVar('showTokenFrameHonor', 1)
-				CurrencyTab_Pulse()
-			end
-
-			if hasNormalTokens or hasPVPTokens or showTokenFrame or showTokenFrameHonor then
-				if LoadUI then LoadUI() end
-				if Update then Update() end
-				if BackpackUpdate then BackpackUpdate() end
-			elseif tab then
-				tab:Hide()
-			end
-		else
-			if LoadUI then LoadUI() end
-			if Update then Update() end
-			if BackpackUpdate then BackpackUpdate() end
-		end
+		SecureHandlerSetFrameRef(secureHider, 'bar', bar)
+		SecureHandlerExecute(secureHider, [[
+			self:GetFrameRef('bar'):Hide()
+		]])
 	end
 
 	function AB:DisableBlizzard()
-		for name, noop in next, untaint do
+		for _, name in ipairs(untaint) do
 			local frame = _G[name]
 			if frame then
 				frame:SetParent(E.HiddenFrame)
 				frame:UnregisterAllEvents()
-
-				if noop then
-					AB:SetNoopsi(frame)
-				end
 			end
+		end
+
+		local currencyFrame = _G.MainMenuBarArtFrame
+		if currencyFrame then
+			currencyFrame:RegisterEvent('KNOWN_CURRENCY_TYPES_UPDATE')
+			currencyFrame:RegisterEvent('CURRENCY_DISPLAY_UPDATE')
 		end
 
 		local bottomLeft, bottomRight = GetActionBarToggles()
@@ -955,15 +903,6 @@ do
 		if _G.ActionBarButtonEventsFrame then
 			hooksecurefunc(_G.ActionBarButtonEventsFrame, 'RegisterFrame', AB.ButtonEventsRegisterFrame)
 			AB.ButtonEventsRegisterFrame()
-		end
-
-		if not currencyWatcher then
-			currencyWatcher = CreateFrame('Frame', 'Elv_CurrencyTabWatcher', E.HiddenFrame)
-			currencyWatcher:Hide()
-			currencyWatcher:RegisterEvent('KNOWN_CURRENCY_TYPES_UPDATE')
-			currencyWatcher:RegisterEvent('CURRENCY_DISPLAY_UPDATE')
-			currencyWatcher:RegisterEvent('PLAYER_ENTERING_WORLD')
-			currencyWatcher:SetScript('OnEvent', CurrencyTab_Refresh)
 		end
 
 		-- MultiActionBar_*AllGrids не занулять: SpellBookFrame_OnShow читает эти глобалы,
@@ -984,6 +923,11 @@ do
 			secureHider = CreateFrame('Frame', nil, nil, 'SecureHandlerBaseTemplate')
 		end
 
+		if not InCombatLockdown() then
+			SecureHideBar(_G.MultiBarRight)
+			SecureHideBar(_G.MultiBarLeft)
+		end
+
 		for i = 1, 12 do
 			for _, buttonPrefix in ipairs(buttons) do
 				local button = _G[buttonPrefix..i]
@@ -994,8 +938,7 @@ do
 			end
 		end
 
-		_G.InterfaceOptionsActionBarsPanelRightTwoText:SetTextColor(1,1,1) -- no yellow
-		_G.InterfaceOptionsActionBarsPanelRightTwoText.SetTextColor = E.noop -- i said no yellow
+		E:LockMethod(_G.InterfaceOptionsActionBarsPanelRightTwoText, 'SetTextColor', 1, 1, 1)
 		_G.InterfaceOptionsActionBarsPanelAlwaysShowActionBars:EnableMouse(false)
 		_G.InterfaceOptionsActionBarsPanelAlwaysShowActionBars:SetAlpha(0)
 		_G.InterfaceOptionsActionBarsPanelLockActionBars:SetScale(0.0001)
@@ -1316,6 +1259,7 @@ function AB:LAB_CooldownUpdate(button, start, duration)
 end
 
 function AB:PLAYER_ENTERING_WORLD(event)
+	AB:CheckRightActionBarLimits()
 	AB:AdjustMaxStanceButtons(event)
 	AB:UpdatePet(event)
 
@@ -1390,6 +1334,11 @@ function AB:Initialize()
 	end
 
 	AB:RegisterEvent('PLAYER_ENTERING_WORLD')
+	AB:RegisterEvent('UI_SCALE_CHANGED', 'CheckRightActionBarLimits')
+	AB:RegisterEvent('DISPLAY_SIZE_CHANGED', 'CheckRightActionBarLimits')
+	AB:SecureHook(E, 'SaveMoverPosition', 'CheckRightActionBarLimits')
+	AB:SecureHook(E, 'SetMoversPositions', 'CheckRightActionBarLimits')
+	AB:SecureHook('MultiActionBar_Update', 'CheckRightActionBarLimits')
 	AB:RegisterEvent('UPDATE_BINDINGS', 'ReassignBindings')
 	AB:RegisterEvent('UNIT_ENTERED_VEHICLE', 'UpdateVehicleShown')
 	AB:RegisterEvent('UNIT_EXITED_VEHICLE', 'UpdateVehicleShown')

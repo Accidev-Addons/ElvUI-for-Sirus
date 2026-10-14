@@ -156,7 +156,8 @@ function M:CreateMinimapTrackingDropdown()
 	dropdown:SetClampedToScreen(true)
 	dropdown:Hide()
 
-	_G.UIDropDownMenu_Initialize(dropdown, _G.MiniMapTrackingDropDown_Initialize, 'MENU')
+	_G.UIDropDownMenu_SetInitializeFunction(dropdown, _G.MiniMapTrackingDropDown_Initialize)
+	_G.UIDropDownMenu_SetDisplayMode(dropdown, 'MENU')
 	dropdown.noResize = true
 
 	return dropdown
@@ -540,7 +541,8 @@ function M:UpdateSettings()
 		_G.MiniMapMailIcon:Size(20)
 	end
 
-	MinimapCluster:SetScale(mmScale)
+	local setScale = MinimapCluster.SetScaleBase or MinimapCluster.SetScale
+	setScale(MinimapCluster, mmScale)
 
 	local height, width = 20 * mmScale, mWidth
 	M.ClusterHolder:SetSize(width, height)
@@ -561,13 +563,11 @@ function M:UpdateSettings()
 			M:RegisterEvent('ADDON_LOADED')
 		end
 	else
-		_G.MinimapZoneTextButton.Show = nil
 		_G.MinimapZoneTextButton:SetParent(MinimapCluster)
 		_G.MinimapZoneTextButton:RegisterEvent('UPDATE_BINDINGS')
 		_G.MinimapZoneTextButton:Show()
 
 		if _G.TimeManagerClockButton then
-			_G.TimeManagerClockButton.Show = nil
 			_G.TimeManagerClockButton:SetParent(MinimapCluster)
 			_G.TimeManagerClockButton:Show()
 		else
@@ -593,8 +593,11 @@ function M:ClusterPoint(_, anchor)
 	local frame = (noCluster and UIParent) or M.ClusterHolder
 
 	if anchor ~= frame then
-		MinimapCluster:ClearAllPoints()
-		MinimapCluster:Point('TOPRIGHT', frame, 0, noCluster and 0 or 1)
+		local clearAllPoints = MinimapCluster.ClearAllPointsBase or MinimapCluster.ClearAllPoints
+		local setPoint = MinimapCluster.SetPointBase or MinimapCluster.SetPoint
+
+		clearAllPoints(MinimapCluster)
+		setPoint(MinimapCluster, 'TOPRIGHT', frame, E:Scale(0, MinimapCluster), E:Scale(noCluster and 0 or 1, MinimapCluster))
 	end
 end
 

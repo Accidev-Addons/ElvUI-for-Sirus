@@ -155,37 +155,55 @@ local FrameStackHighlightHitRect = FrameStackHighlight:CreateTexture('$parentHit
 FrameStackHighlightHitRect:SetTexture(0, 0, 1, 0.5)
 FrameStackHighlightHitRect:SetBlendMode('ADD')
 
-hooksecurefunc('FrameStackTooltip_Toggle', function()
-	if not _G.FrameStackTooltip:IsVisible() then
-		FrameStackHighlight:Hide()
-	end
-end)
-
-local _timeSinceLast = 0
-_G.FrameStackTooltip:HookScript('OnUpdate', function(_, elapsed)
-	_timeSinceLast = _timeSinceLast - elapsed
-	if _timeSinceLast <= 0 then
-		_timeSinceLast = FRAMESTACK_UPDATE_TIME
-		local highlightFrame = GetMouseFocus()
-
-		if highlightFrame and highlightFrame ~= WorldFrame then
-			FrameStackHighlight:ClearAllPoints()
-			FrameStackHighlight:SetPoint('BOTTOMLEFT', highlightFrame)
-			FrameStackHighlight:SetPoint('TOPRIGHT', highlightFrame)
-			FrameStackHighlight:Show()
-
-			local l, r, t, b = highlightFrame:GetHitRectInsets()
-			if l ~= 0 or r ~= 0 or t ~= 0 or b ~= 0 then
-				local scale = highlightFrame:GetEffectiveScale()
-				FrameStackHighlightHitRect:ClearAllPoints()
-				FrameStackHighlightHitRect:SetPoint('TOPLEFT', highlightFrame, l * scale, -t * scale)
-				FrameStackHighlightHitRect:SetPoint('BOTTOMRIGHT', highlightFrame, -r * scale, b * scale)
-				FrameStackHighlightHitRect:Show()
-			else
-				FrameStackHighlightHitRect:Hide()
-			end
+local function HookFrameStack()
+	hooksecurefunc('FrameStackTooltip_Toggle', function()
+		local tooltip = _G.FrameStackTooltip
+		if tooltip:IsVisible() then
+			tooltip:SetScale(ElvUI[1].uiscale)
 		else
 			FrameStackHighlight:Hide()
 		end
-	end
-end)
+	end)
+
+	local _timeSinceLast = 0
+	_G.FrameStackTooltip:HookScript('OnUpdate', function(_, elapsed)
+		_timeSinceLast = _timeSinceLast - elapsed
+		if _timeSinceLast <= 0 then
+			_timeSinceLast = FRAMESTACK_UPDATE_TIME
+			local highlightFrame = GetMouseFocus()
+
+			if highlightFrame and highlightFrame ~= WorldFrame then
+				FrameStackHighlight:ClearAllPoints()
+				FrameStackHighlight:SetPoint('BOTTOMLEFT', highlightFrame)
+				FrameStackHighlight:SetPoint('TOPRIGHT', highlightFrame)
+				FrameStackHighlight:Show()
+
+				local l, r, t, b = highlightFrame:GetHitRectInsets()
+				if l ~= 0 or r ~= 0 or t ~= 0 or b ~= 0 then
+					local scale = highlightFrame:GetEffectiveScale()
+					FrameStackHighlightHitRect:ClearAllPoints()
+					FrameStackHighlightHitRect:SetPoint('TOPLEFT', highlightFrame, l * scale, -t * scale)
+					FrameStackHighlightHitRect:SetPoint('BOTTOMRIGHT', highlightFrame, -r * scale, b * scale)
+					FrameStackHighlightHitRect:Show()
+				else
+					FrameStackHighlightHitRect:Hide()
+				end
+			else
+				FrameStackHighlight:Hide()
+			end
+		end
+	end)
+end
+
+if IsAddOnLoaded('Blizzard_DebugTools') then
+	HookFrameStack()
+else
+	local loader = CreateFrame('Frame')
+	loader:RegisterEvent('ADDON_LOADED')
+	loader:SetScript('OnEvent', function(self, _, addon)
+		if addon == 'Blizzard_DebugTools' then
+			self:UnregisterEvent('ADDON_LOADED')
+			HookFrameStack()
+		end
+	end)
+end

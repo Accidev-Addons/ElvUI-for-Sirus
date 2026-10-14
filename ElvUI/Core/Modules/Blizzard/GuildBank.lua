@@ -3,7 +3,7 @@ local BL = E:GetModule('Blizzard')
 local B = E:GetModule('Bags')
 local LSM = E.Libs.LSM
 
-local unpack = unpack
+local unpack, setmetatable = unpack, setmetatable
 
 local _G = _G
 local C_Item = C_Item
@@ -14,17 +14,21 @@ local hooksecurefunc = hooksecurefunc
 local NUM_SLOTS_PER_GUILDBANK_GROUP = 14
 local NUM_GUILDBANK_COLUMNS = 7
 
+local itemLevelTexts = setmetatable({}, { __mode = 'k' })
+
 function BL:GuildBank_ItemLevel(button)
 	local db = E.db.general.guildBank
 	if not db then return end
 
-	if not button.itemLevel then
-		button.itemLevel = button:CreateFontString(nil, 'ARTWORK', nil, 1)
+	local itemLevelText = itemLevelTexts[button]
+	if not itemLevelText then
+		itemLevelText = button:CreateFontString(nil, 'ARTWORK', nil, 1)
+		itemLevelTexts[button] = itemLevelText
 	end
 
-	button.itemLevel:ClearAllPoints()
-	button.itemLevel:Point(db.itemLevelPosition, db.itemLevelxOffset, db.itemLevelyOffset)
-	button.itemLevel:FontTemplate(LSM:Fetch('font', db.itemLevelFont), db.itemLevelFontSize, db.itemLevelFontOutline)
+	itemLevelText:ClearAllPoints()
+	itemLevelText:Point(db.itemLevelPosition, db.itemLevelxOffset, db.itemLevelyOffset)
+	itemLevelText:FontTemplate(LSM:Fetch('font', db.itemLevelFont), db.itemLevelFontSize, db.itemLevelFontOutline)
 
 	local ilvl, r, g, b
 	local tab = (db.itemLevel or db.itemQuality) and GetCurrentGuildBankTab()
@@ -57,19 +61,19 @@ function BL:GuildBank_ItemLevel(button)
 		button:SetBackdropBorderColor(unpack(E.media.bordercolor))
 	end
 
-	button.itemLevel:SetText(ilvl and ilvl >= db.itemLevelThreshold and ilvl or '')
-	button.itemLevel:SetTextColor(r or 1, g or 1, b or 1)
+	itemLevelText:SetText(ilvl and ilvl >= db.itemLevelThreshold and ilvl or '')
+	itemLevelText:SetTextColor(r or 1, g or 1, b or 1)
 end
 
 function BL:GuildBank_CountText(button)
 	local db = E.db.general.guildBank
 	if not db then return end
 
-    button.Count = _G[button:GetName()..'Count']
-	button.Count:ClearAllPoints()
-	button.Count:Point(db.countPosition, db.countxOffset, db.countyOffset)
-	button.Count:FontTemplate(LSM:Fetch('font', db.countFont), db.countFontSize, db.countFontOutline)
-	button.Count:SetTextColor(db.countFontColor.r, db.countFontColor.g, db.countFontColor.b)
+	local count = button.Count or _G[button:GetName()..'Count']
+	count:ClearAllPoints()
+	count:Point(db.countPosition, db.countxOffset, db.countyOffset)
+	count:FontTemplate(LSM:Fetch('font', db.countFont), db.countFontSize, db.countFontOutline)
+	count:SetTextColor(db.countFontColor.r, db.countFontColor.g, db.countFontColor.b)
 end
 
 function BL:GuildBank_Update()

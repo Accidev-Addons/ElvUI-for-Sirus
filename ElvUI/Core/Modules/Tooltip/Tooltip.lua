@@ -11,7 +11,6 @@ local floor, tonumber, strlower = floor, tonumber, strlower
 local strfind, format, strmatch, strsub, gsub = strfind, format, strmatch, strsub, gsub
 
 local CreateFrame = CreateFrame
-local GameTooltip_ClearMoney = GameTooltip_ClearMoney
 local GameTooltip_ClearStatusBars = GameTooltip_ClearStatusBars
 local GetBackpackCurrencyInfo = GetBackpackCurrencyInfo
 local GetCurrencyListInfo = GetCurrencyListInfo
@@ -34,7 +33,6 @@ local IsAltKeyDown = IsAltKeyDown
 local IsControlKeyDown = IsControlKeyDown
 local IsModifierKeyDown = IsModifierKeyDown
 local IsShiftKeyDown = IsShiftKeyDown
-local SetTooltipMoney = SetTooltipMoney
 local ShoppingTooltip1, ShoppingTooltip2 = ShoppingTooltip1, ShoppingTooltip2
 local UIParent = UIParent
 local UnitAura = UnitAura
@@ -560,7 +558,6 @@ function TT:GameTooltip_OnTooltipCleared(tt)
 	end
 
 	-- This code is to reset stuck widgets.
-	GameTooltip_ClearMoney(tt)
 	GameTooltip_ClearStatusBars(tt)
 end
 
@@ -814,19 +811,33 @@ function TT:SetBackpackToken(tt, id)
 	end
 end
 
+function TT:SetTooltipMoneyFonts(first)
+	local num = GameTooltip.numMoneyFrames or 0
+	if num < first then return end
+
+	local font, fontSize, fontOutline = LSM:Fetch('font', TT.db.font), TT.db.textFontSize, TT.db.fontOutline
+	for i = first, num do
+		_G['GameTooltipMoneyFrame'..i..'PrefixText']:FontTemplate(font, fontSize, fontOutline)
+		_G['GameTooltipMoneyFrame'..i..'SuffixText']:FontTemplate(font, fontSize, fontOutline)
+		_G['GameTooltipMoneyFrame'..i..'GoldButtonText']:FontTemplate(font, fontSize, fontOutline)
+		_G['GameTooltipMoneyFrame'..i..'SilverButtonText']:FontTemplate(font, fontSize, fontOutline)
+		_G['GameTooltipMoneyFrame'..i..'CopperButtonText']:FontTemplate(font, fontSize, fontOutline)
+	end
+
+	TT.moneyFramesStyled = num
+end
+
+function TT:SetTooltipMoney(tt)
+	if tt == GameTooltip then
+		TT:SetTooltipMoneyFonts((TT.moneyFramesStyled or 0) + 1)
+	end
+end
+
 function TT:SetTooltipFonts()
 	local font, fontSize, fontOutline = LSM:Fetch('font', TT.db.font), TT.db.textFontSize, TT.db.fontOutline
 	_G.GameTooltipText:FontTemplate(font, fontSize, fontOutline)
 
-	if GameTooltip.hasMoney then
-		for i = 1, GameTooltip.numMoneyFrames do
-			_G['GameTooltipMoneyFrame'..i..'PrefixText']:FontTemplate(font, fontSize, fontOutline)
-			_G['GameTooltipMoneyFrame'..i..'SuffixText']:FontTemplate(font, fontSize, fontOutline)
-			_G['GameTooltipMoneyFrame'..i..'GoldButtonText']:FontTemplate(font, fontSize, fontOutline)
-			_G['GameTooltipMoneyFrame'..i..'SilverButtonText']:FontTemplate(font, fontSize, fontOutline)
-			_G['GameTooltipMoneyFrame'..i..'CopperButtonText']:FontTemplate(font, fontSize, fontOutline)
-		end
-	end
+	TT:SetTooltipMoneyFonts(1)
 
 	-- Header has its own font settings
 	_G.GameTooltipHeaderText:FontTemplate(LSM:Fetch('font', TT.db.headerFont), TT.db.headerFontSize, TT.db.headerFontOutline)
@@ -879,8 +890,6 @@ end
 function TT:Initialize()
 	TT.db = E.db.tooltip
 
-	_G.FrameStackTooltip:SetScale(E.uiscale)
-
 	_G.BNToastFrame:Point('TOPRIGHT', _G.MinimapCluster, 'BOTTOMRIGHT', 0, -10)
 	E:CreateMover(_G.BNToastFrame, 'BNETMover', L["BNet Frame"], nil, nil, PostBNToastMove)
 	TT:SecureHook(_G.BNToastFrame, 'SetPoint', 'RepositionBNET')
@@ -899,14 +908,8 @@ function TT:Initialize()
 	statusText:Point('CENTER', statusBar, 0, 0)
 	statusBar.text = statusText
 
-	--Tooltip Fonts
-	if not GameTooltip.hasMoney then
-		--Force creation of the money lines, so we can set font for it
-		SetTooltipMoney(GameTooltip, 1, nil, '', '')
-		SetTooltipMoney(GameTooltip, 1, nil, '', '')
-		GameTooltip_ClearMoney(GameTooltip)
-	end
 	TT:SetTooltipFonts()
+	TT:SecureHook('SetTooltipMoney')
 
 	local GameTooltipAnchor = CreateFrame('Frame', 'GameTooltipAnchor', E.UIParent)
 	GameTooltipAnchor:Point('BOTTOMRIGHT', _G.RightChatToggleButton, 'BOTTOMRIGHT')

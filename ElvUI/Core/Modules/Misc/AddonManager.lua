@@ -829,15 +829,15 @@ function AM:SetupGameMenu()
 		button:Size(addons:GetSize())
 		button:Point(point or 'TOPLEFT', relTo or frame, relPoint or 'TOPLEFT', xOfs or 0, yOfs or 0)
 
+		addons:SetParent(E.HiddenFrame)
 		addons:Hide()
-		addons.Show = E.noop
 		button.replacingAddons = true
 
 		-- DF UI has its own AddOns button in the same slot
 		local sirusAddons = _G.GameMenuButtonAddOns
 		if sirusAddons then
+			sirusAddons:SetParent(E.HiddenFrame)
 			sirusAddons:Hide()
-			sirusAddons.Show = E.noop
 		end
 
 		AM:PositionGameMenuButton()

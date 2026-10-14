@@ -5,8 +5,9 @@ local _G = _G
 local ipairs = ipairs
 local next = next
 local type = type
+local setmetatable = setmetatable
 local floor = math.floor
-local format = string.format
+local find, format = string.find, string.format
 local GetQuestLogTitle = GetQuestLogTitle
 local GetSpellCooldown = GetSpellCooldown
 local GetTime = GetTime
@@ -36,6 +37,10 @@ local TrackerTextColors = {
 
 local TrackerTimerColor = { 0.26, 0.42, 1 }
 
+local trackerStyleColors = {}
+local trackerBlockColors = setmetatable({}, { __mode = "k" })
+local trackerHookedBlocks = setmetatable({}, { __mode = "k" })
+
 local TrackerModuleColors = {
 	AchievementObjectiveTracker = { r = 0.6, g = 0.4, b = 0.9 },
 	ProfessionsRecipeTracker = { r = 0.4, g = 0.7, b = 1 },
@@ -48,16 +53,65 @@ local function ClearTrackerTexture(texture)
 	end
 end
 
-local function ColorTrackerText()
+local function BuildTrackerStyleColors()
 	local colors = _G.OBJECTIVE_TRACKER_COLOR
 	if not colors then return end
 
 	for key, color in next, TrackerTextColors do
 		local style = colors[key]
 		if style then
-			style.r, style.g, style.b = color[1], color[2], color[3]
+			trackerStyleColors[style] = color
 		end
 	end
+end
+
+local function ColorTrackerText(fontString)
+	local color = fontString and trackerStyleColors[fontString.colorStyle]
+	if color then
+		fontString:SetTextColor(color[1], color[2], color[3])
+	end
+end
+
+local function ColorTrackerBlock(block)
+	ColorTrackerText(block.HeaderText)
+
+	local lines = block.usedLines
+	if lines then
+		for _, line in next, lines do
+			ColorTrackerText(line.Text)
+		end
+	end
+end
+
+local function RestoreBlockColor(block)
+	local color = not block.isHighlighted and trackerBlockColors[block]
+	if color and block.HeaderText then
+		block.HeaderText:SetTextColor(color.r, color.g, color.b)
+	end
+end
+
+local function TrackerBlockHighlight(block)
+	ColorTrackerBlock(block)
+
+	local lines = block.usedLines
+	if lines then
+		local dashColor = TrackerTextColors[block.isHighlighted and "NormalHighlight" or "Normal"]
+		for _, line in next, lines do
+			local style = line.Text and line.Text.colorStyle
+			if line.Dash and style and style.reverse then
+				line.Dash:SetTextColor(dashColor[1], dashColor[2], dashColor[3])
+			end
+		end
+	end
+
+	RestoreBlockColor(block)
+end
+
+local function HookTrackerBlock(block)
+	if trackerHookedBlocks[block] or not block.UpdateHighlight then return end
+
+	trackerHookedBlocks[block] = true
+	hooksecurefunc(block, "UpdateHighlight", TrackerBlockHighlight)
 end
 
 local function SetTrackerCollapseTexture(button, collapsed)
@@ -330,6 +384,41 @@ end
 
 local ForceScenarioBarFill
 
+local function GetTrackerBarHeight(progressBar)
+	local bar = progressBar.Bar
+	local barHeight = bar and bar.GetHeight and bar:GetHeight()
+	if barHeight and barHeight > 0 then
+		return barHeight
+	end
+end
+
+local function FitTrackerProgressBar(progressBar)
+	local barHeight = GetTrackerBarHeight(progressBar)
+	if not barHeight then return end
+
+	if progressBar:GetHeight() > barHeight then
+		progressBar:SetHeight(barHeight)
+	end
+
+	if progressBar.height and progressBar.height > barHeight then
+		progressBar.height = barHeight
+	end
+end
+
+local function TrackerAcquireFrame(manager, _, template)
+	if type(template) ~= "string" or not find(template, "ProgressBar", 1, true) then return end
+
+	local pool = manager.poolCollection and manager.poolCollection:GetPool(template)
+	if not pool then return end
+
+	for progressBar in next, pool.activeObjects do
+		local barHeight = GetTrackerBarHeight(progressBar)
+		if barHeight and progressBar:GetHeight() > barHeight then
+			progressBar:SetHeight(barHeight)
+		end
+	end
+end
+
 local function TrackerProgressBar(module, key)
 	local progressBars = module.usedProgressBars
 	local progressBar = progressBars and progressBars[key]
@@ -338,13 +427,7 @@ local function TrackerProgressBar(module, key)
 
 	SkinTrackerBar(bar)
 
-	if progressBar.GetHeight and progressBar.SetHeight and bar.GetHeight then
-		local barHeight = bar:GetHeight()
-		if barHeight and barHeight > 0 and progressBar:GetHeight() > barHeight then
-			progressBar:SetHeight(barHeight)
-			progressBar.height = barHeight
-		end
-	end
+	FitTrackerProgressBar(progressBar)
 
 	local label = bar.Label
 	if label then
@@ -381,24 +464,11 @@ local function TrackerTimerBar(module, key)
 	SkinTrackerBar(bar, TrackerTimerColor)
 end
 
-local function TrackerBlockHighlight(block)
-	local color = not block.isHighlighted and block.diffColor
-	if color and block.HeaderText then
-		block.HeaderText:SetTextColor(color.r, color.g, color.b)
-	end
-end
-
 local function ApplyBlockColor(block, color)
-	block.diffColor = color
+	trackerBlockColors[block] = color
 
-	if not block.diffHooked then
-		hooksecurefunc(block, "UpdateHighlight", TrackerBlockHighlight)
-		block.diffHooked = true
-	end
-
-	if not block.isHighlighted then
-		block.HeaderText:SetTextColor(color.r, color.g, color.b)
-	end
+	HookTrackerBlock(block)
+	RestoreBlockColor(block)
 end
 
 local function TrackerQuestDifficulty(module, index)
@@ -418,6 +488,10 @@ end
 
 local function TrackerBlockColor(module, block)
 	if not block or not block.HeaderText then return end
+
+	HookTrackerBlock(block)
+	ColorTrackerBlock(block)
+	RestoreBlockColor(block)
 
 	local name = module.GetName and module:GetName()
 	local color = name and TrackerModuleColors[name]
@@ -545,7 +619,7 @@ end
 local function LoadTrackerSkin()
 	if not E.private.skins.blizzard.enable or not E.private.skins.blizzard.objectiveTracker then return end
 
-	ColorTrackerText()
+	BuildTrackerStyleColors()
 
 	local tracker = _G.ObjectiveTrackerFrame
 	if not tracker then return end
@@ -575,6 +649,16 @@ local function LoadTrackerSkin()
 	local recipeModule = _G.ProfessionsRecipeTracker
 	if recipeModule and recipeModule.AddRecipe and recipeModule.GetExistingBlock then
 		hooksecurefunc(recipeModule, "AddRecipe", TrackerRecipeCooldown)
+	end
+
+	local returningModule = _G.ReturningCharacterQuestTracker
+	if returningModule and returningModule.AddBlock then
+		hooksecurefunc(returningModule, "AddBlock", TrackerBlockColor)
+	end
+
+	local manager = _G.ObjectiveTrackerManager
+	if manager and manager.AcquireFrame then
+		hooksecurefunc(manager, "AcquireFrame", TrackerAcquireFrame)
 	end
 end
 
@@ -681,13 +765,7 @@ local function FixScenarioBarArt(module, key)
 
 	progressBar.isScenarioEnemyForces = true
 
-	if progressBar.GetHeight and progressBar.SetHeight and bar.GetHeight then
-		local barHeight = bar:GetHeight()
-		if barHeight and barHeight > 0 and progressBar:GetHeight() > barHeight then
-			progressBar:SetHeight(barHeight)
-			progressBar.height = barHeight
-		end
-	end
+	FitTrackerProgressBar(progressBar)
 
 	if bar.BarFrame then bar.BarFrame:Hide() end
 	if bar.IconBG then bar.IconBG:Hide() end

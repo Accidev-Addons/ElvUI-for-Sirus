@@ -165,11 +165,13 @@ S:AddCallback("Skin_BattlegroundInvite", function()
 	popup.Title:SetTextColor(1, 1, 1)
 	popup.Timer:FontTemplate(nil, 24, "OUTLINE")
 
-	local SetTextColor = popup.Timer.SetTextColor
-	popup.Timer.SetTextColor = function(fs, r, g, b, a)
-		if r == 0 and g == 0 and b == 0 then r, g, b = 1, 1, 1 end
-		SetTextColor(fs, r, g, b, a)
-	end
+	local timerColorBusy
+	hooksecurefunc(popup.Timer, "SetTextColor", function(fs, r, g, b, a)
+		if timerColorBusy or r ~= 0 or g ~= 0 or b ~= 0 then return end
+		timerColorBusy = true
+		fs:SetTextColor(1, 1, 1, a)
+		timerColorBusy = nil
+	end)
 	popup.Timer:SetTextColor(1, 1, 1)
 
 	S:HandleButton(popup.EnterButton)

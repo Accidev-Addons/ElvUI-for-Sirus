@@ -155,10 +155,10 @@ local function LoadSkin()
 			_G.WardrobeOutfitDropDownText:Point("LEFT", dropDown.backdrop, "LEFT", 6, 0)
 
 			local button = _G.WardrobeOutfitDropDownButton
-			button.SetPoint = nil
+			E:UnlockPoints(button)
 			button:ClearAllPoints()
 			button:Point("RIGHT", dropDown, "RIGHT", -10, -2)
-			button.SetPoint = E.noop
+			E:LockPoints(button)
 
 			if dropDown.SaveButton then
 				S:HandleButton(dropDown.SaveButton, true)

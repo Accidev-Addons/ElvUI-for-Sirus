@@ -76,8 +76,7 @@ local function SkinItemButton(button)
 		button.IconBorder:SetAlpha(0)
 	end
 
-	button.IconQuestTexture:SetTexture(E.Media.Textures.BagQuestIcon)
-	button.IconQuestTexture.SetTexture = E.noop
+	E:LockMethod(button.IconQuestTexture, "SetTexture", E.Media.Textures.BagQuestIcon)
 	button.IconQuestTexture:SetTexCoord(0, 1, 0, 1)
 	button.IconQuestTexture:SetInside()
 
@@ -154,30 +153,28 @@ S:AddCallback("Skin_Bags", function()
 	local BAGS_PER_COLUMN = 3
 	local BAG_WIDTH = (BAG_COLUMNS * BAG_ITEM_SIZE) + ((BAG_COLUMNS - 1) * BAG_SPACING) + 14
 
-	local function GetColumns()
-		return BAG_COLUMNS
-	end
-
-	local function GetAnchorLayout(self)
-		return AnchorUtil.CreateGridLayout(GridLayoutMixin.Direction.BottomRightToTopLeft, self:GetColumns(), BAG_SPACING, BAG_SPACING)
-	end
-
-	local function CalculateWidth()
-		return BAG_WIDTH
-	end
-
-	local function CalculateHeight(self)
+	local function UpdateFrameSize(self)
 		local rows = self:GetRows()
-		return (rows * BAG_ITEM_SIZE) + ((rows - 1) * BAG_SPACING) + self:GetPaddingHeight() + self:CalculateExtraHeight()
+		self:SetSize(BAG_WIDTH, (rows * BAG_ITEM_SIZE) + ((rows - 1) * BAG_SPACING) + self:GetPaddingHeight() + self:CalculateExtraHeight())
 	end
 
-	local function SetSearchBoxPoint(self, searchBox)
-		searchBox:ClearAllPoints()
-		searchBox:Point("TOPLEFT", self, "TOPLEFT", 10, -44)
-		searchBox:Width(BAG_WIDTH - 44)
+	local function UpdateItemLayout(self)
+		local items = {}
+		for _, itemButton in self:EnumerateValidItems() do
+			items[#items + 1] = itemButton
+		end
+
+		AnchorUtil.GridLayout(items, self:GetInitialItemAnchor(), AnchorUtil.CreateGridLayout(GridLayoutMixin.Direction.BottomRightToTopLeft, BAG_COLUMNS, BAG_SPACING, BAG_SPACING))
 	end
 
-	local function AnchorKeyRing(self)
+	local function AnchorSearchBox(self)
+		local searchBox = _G.BagItemSearchBox
+		if searchBox and searchBox.anchorBag == self then
+			searchBox:ClearAllPoints()
+			searchBox:Point("TOPLEFT", self, "TOPLEFT", 10, -44)
+			searchBox:Width(BAG_WIDTH - 44)
+		end
+
 		local keyRingFrame = _G.BagKeyRingFrame
 		if keyRingFrame:GetParent() == self then
 			keyRingFrame:ClearAllPoints()
@@ -199,12 +196,9 @@ S:AddCallback("Skin_Bags", function()
 		frame.backdrop:Point("TOPLEFT", 3, -4)
 		frame.backdrop:Point("BOTTOMRIGHT", -4, 1)
 
-		frame.GetColumns = GetColumns
-		frame.GetAnchorLayout = GetAnchorLayout
-		frame.CalculateWidth = CalculateWidth
-		frame.CalculateHeight = CalculateHeight
-		frame.SetSearchBoxPoint = SetSearchBoxPoint
-		hooksecurefunc(frame, "UpdateSearchBox", AnchorKeyRing)
+		hooksecurefunc(frame, "UpdateFrameSize", UpdateFrameSize)
+		hooksecurefunc(frame, "UpdateItemLayout", UpdateItemLayout)
+		hooksecurefunc(frame, "UpdateSearchBox", AnchorSearchBox)
 
 		local titleText = frame.TitleText
 		if titleText then
@@ -214,9 +208,11 @@ S:AddCallback("Skin_Bags", function()
 			titleText:SetJustifyH("LEFT")
 		end
 
-		S:HookScript(frame, "OnShow", function(self)
+		local hitRectSet
+		frame:HookScript("OnShow", function(self)
+			if hitRectSet then return end
+			hitRectSet = true
 			S:SetBackdropHitRect(self)
-			S:Unhook(self, "OnShow")
 		end)
 
 		S:HandleCloseButton(closeButton, frame.backdrop)
@@ -372,10 +368,12 @@ S:AddCallback("Skin_Bags", function()
 		titleText:Point("TOP", BankFrame.backdrop, "TOP", 0, -8)
 	end
 
-	S:HookScript(BankFrame, "OnShow", function(self)
+	local bankShown
+	BankFrame:HookScript("OnShow", function(self)
+		if bankShown then return end
+		bankShown = true
 		S:SetUIPanelWindowInfo(self, "width")
 		S:SetBackdropHitRect(self)
-		S:Unhook(self, "OnShow")
 	end)
 
 	S:HandleCloseButton(BankFrame.CloseButton, BankFrame.backdrop)
@@ -500,8 +498,7 @@ S:AddCallback("Skin_Bags", function()
 				button.IconBorder:SetAlpha(0)
 			end
 
-			button.IconQuestTexture:SetTexture(E.Media.Textures.BagQuestIcon)
-			button.IconQuestTexture.SetTexture = E.noop
+			E:LockMethod(button.IconQuestTexture, "SetTexture", E.Media.Textures.BagQuestIcon)
 			button.IconQuestTexture:SetTexCoord(0, 1, 0, 1)
 			button.IconQuestTexture:SetInside()
 

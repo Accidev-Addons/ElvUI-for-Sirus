@@ -11,10 +11,12 @@ S:AddCallback("Skin_LFR", function()
 	LFRParentFrame.backdrop:Point("TOPLEFT", 11, -12)
 	LFRParentFrame.backdrop:Point("BOTTOMRIGHT", -3, 4)
 
-	S:HookScript(LFRParentFrame, "OnShow", function(self)
+	local lfrShown
+	LFRParentFrame:HookScript("OnShow", function(self)
+		if lfrShown then return end
+		lfrShown = true
 		S:SetUIPanelWindowInfo(self, "width")
 		S:SetBackdropHitRect(self)
-		S:Unhook(self, "OnShow")
 	end)
 
 	S:HandleCloseButton((LFRParentFrame:GetChildren()), LFRParentFrame.backdrop)

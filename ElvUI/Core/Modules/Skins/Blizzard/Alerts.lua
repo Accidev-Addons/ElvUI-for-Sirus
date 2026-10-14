@@ -3,16 +3,12 @@ local S = E:GetModule("Skins")
 
 --Lua functions
 local _G = _G
-local tonumber = tonumber
-local match = string.match
 --WoW API / Variables
 
 S:AddCallback("Skin_Alerts", function()
 	if not E.private.skins.blizzard.enable or not E.private.skins.blizzard.alertframes then return end
 
-	S:RawHook("AchievementAlertFrame_GetAlertFrame", function()
-		local frame = S.hooks.AchievementAlertFrame_GetAlertFrame()
-
+	local function SkinAchievementAlert(frame)
 		if frame and not frame.isSkinned then
 			local name = frame:GetName()
 
@@ -39,14 +35,14 @@ S:AddCallback("Skin_Alerts", function()
 			icon.backdrop:SetOutside(icon.texture)
 
 			frame.isSkinned = true
-
-			if tonumber(match(name, "(%d+)$")) == MAX_ACHIEVEMENT_ALERTS then
-				S:Unhook("AchievementAlertFrame_GetAlertFrame")
-			end
 		end
+	end
 
-		return frame
-	end, true)
+	hooksecurefunc("AchievementAlertFrame_ShowAlert", function()
+		for i = 1, MAX_ACHIEVEMENT_ALERTS do
+			SkinAchievementAlert(_G["AchievementAlertFrame"..i])
+		end
+	end)
 
 	local frame = DungeonCompletionAlertFrame1
 	frame:DisableDrawLayer("BORDER")

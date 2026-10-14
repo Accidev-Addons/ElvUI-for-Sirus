@@ -3,14 +3,44 @@ local BL = E:GetModule('Blizzard')
 
 local _G = _G
 local hooksecurefunc = hooksecurefunc
+local InCombatLockdown = InCombatLockdown
 local GetVehicleUIIndicator = GetVehicleUIIndicator
 local GetVehicleUIIndicatorSeat = GetVehicleUIIndicatorSeat
+
+local hooked
+local SetVehiclePoint
+
+local function Vehicle_Regen()
+	E:UnregisterEventForObject('PLAYER_REGEN_ENABLED', Vehicle_Regen, Vehicle_Regen)
+
+	SetVehiclePoint()
+end
+
+function SetVehiclePoint()
+	local indicator = _G.VehicleSeatIndicator
+	if InCombatLockdown() and indicator:IsProtected() then
+		E:RegisterEventForObject('PLAYER_REGEN_ENABLED', Vehicle_Regen, Vehicle_Regen)
+
+		return
+	end
+
+	local clearAllPoints = indicator.ClearAllPointsBase or indicator.ClearAllPoints
+	local setPoint = indicator.SetPointBase or indicator.SetPoint
+	local mover = indicator.mover
+
+	clearAllPoints(indicator)
+
+	if mover then
+		setPoint(indicator, 'TOPLEFT', mover, 'TOPLEFT', 0, 0)
+	else
+		setPoint(indicator, 'TOPRIGHT', _G.MinimapCluster, 'BOTTOMRIGHT', 0, 0)
+	end
+end
 
 function BL:SetVehiclePosition(_, relativeTo)
 	local mover = _G.VehicleSeatIndicator.mover
 	if mover and relativeTo ~= mover then
-		_G.VehicleSeatIndicator:ClearAllPoints()
-		_G.VehicleSeatIndicator:Point('TOPLEFT', mover, 'TOPLEFT', 0, 0)
+		SetVehiclePoint()
 	end
 end
 
@@ -41,16 +71,15 @@ end
 
 function BL:PositionVehicleFrame()
 	local indicator = _G.VehicleSeatIndicator
-	if not indicator.PositionVehicleFrameHooked then
+	if not hooked then
 		hooksecurefunc(indicator, 'SetPoint', BL.SetVehiclePosition)
 		hooksecurefunc('VehicleSeatIndicator_SetUpVehicle', BL.SetUpVehicle)
 
-		indicator:ClearAllPoints()
-		indicator:SetPoint('TOPRIGHT', _G.MinimapCluster, 'BOTTOMRIGHT', 0, 0)
+		SetVehiclePoint()
 		indicator:Size(E.db.general.vehicleSeatIndicatorSize)
 
 		E:CreateMover(indicator, 'VehicleSeatMover', L["Vehicle Seat Frame"], nil, nil, nil, nil, nil, 'general,blizzardImprovements')
-		indicator.PositionVehicleFrameHooked = true
+		hooked = true
 	end
 
 	BL:UpdateVehicleFrame()
