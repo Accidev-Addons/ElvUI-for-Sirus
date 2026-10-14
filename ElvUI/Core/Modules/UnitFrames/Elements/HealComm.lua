@@ -247,8 +247,8 @@ function UF:Configure_HealComm(frame)
 			UF:SetVisibility_HealComm(healPrediction)
 		end
 
-		if not frame:IsElementEnabled("HealComm4") then
-			frame:EnableElement("HealComm4")
+		if not frame:IsElementEnabled("SirusHealPrediction") then
+			frame:EnableElement("SirusHealPrediction")
 		end
 
 		if frame.db.health then
@@ -304,8 +304,8 @@ function UF:Configure_HealComm(frame)
 			healPrediction.absorbBar:SetStatusBarColor(c.absorbs.r, c.absorbs.g, c.absorbs.b, c.absorbs.a)
 			healPrediction.healAbsorbBar:SetStatusBarColor(c.healAbsorbs.r, c.healAbsorbs.g, c.healAbsorbs.b, c.healAbsorbs.a)
 		end
-	elseif frame:IsElementEnabled("HealComm4") then
-		frame:DisableElement("HealComm4")
+	elseif frame:IsElementEnabled("SirusHealPrediction") then
+		frame:DisableElement("SirusHealPrediction")
 	end
 end
 

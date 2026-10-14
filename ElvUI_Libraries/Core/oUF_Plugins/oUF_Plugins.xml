@@ -4,7 +4,7 @@
 	<Script file="oUF_RaidDebuffs\oUF_RaidDebuffs.lua"/>
 	<Script file="oUF_DebuffHighlight\oUF_DebuffHighlight.lua"/>
 	<Script file="oUF_Trinkets\oUF_Trinkets.lua"/>
-	<Include file="oUF_HealComm4\oUF_HealComm4.xml"/>
+	<Script file="oUF_SirusHealPrediction\oUF_SirusHealPrediction.lua"/>
 	<Include file="oUF_ResComm\oUF_ResComm.xml"/>
 	<Script file="oUF_GPS\oUF_GPS.lua"/>
 	<Script file="oUF_Fader\oUF_Fader.lua"/>

@@ -50,7 +50,6 @@ local UnitSex = UnitSex
 
 local IsRenegade = C_Unit and C_Unit.IsRenegade
 local GetUnitClassification = C_Unit and C_Unit.GetClassification
-local HealComm = _G.LibStub and _G.LibStub('LibHealComm-4.0', true)
 
 local GetCVarBool = GetCVarBool
 local PowerBarColor = PowerBarColor
@@ -1138,44 +1137,20 @@ E:AddTag('pvp:rank', 'UNIT_NAME_UPDATE', function(unit)
 	end
 end)
 
-if HealComm then
-	local ALL_HEALS = HealComm.ALL_HEALS
-
-	local function HealAmount(unit, casterGUID, others)
-		local guid = UnitGUID(unit)
-		if not guid then return 0 end
-
-		local amount
-		if others then
-			amount = HealComm:GetOthersHealAmount(guid, ALL_HEALS)
-		else
-			amount = HealComm:GetHealAmount(guid, ALL_HEALS, nil, casterGUID)
-		end
-
-		return (amount or 0) * (HealComm:GetHealModifier(guid) or 1)
-	end
-
-	E:AddTag('incomingheals', 0.2, function(unit)
-		local amount = HealAmount(unit)
-		if amount > 0 then
-			return E:ShortValue(amount)
-		end
-	end)
-
-	E:AddTag('incomingheals:personal', 0.2, function(unit)
-		local amount = HealAmount(unit, UnitGUID('player'))
-		if amount > 0 then
-			return E:ShortValue(amount)
-		end
-	end)
-
-	E:AddTag('incomingheals:others', 0.2, function(unit)
-		local amount = HealAmount(unit, nil, true)
-		if amount > 0 then
-			return E:ShortValue(amount)
-		end
-	end)
-end
+-- Client prediction is authoritative, independent of another addon shipping HealComm.
+local healEvents = "UNIT_HEAL_PREDICTION UNIT_HEALTH UNIT_MAXHEALTH"
+E:AddTag('incomingheals', healEvents, function(unit)
+	local amount = UnitGetIncomingHeals(unit) or 0
+	if amount > 0 then return E:ShortValue(amount) end
+end)
+E:AddTag('incomingheals:personal', healEvents, function(unit)
+	local amount = UnitGetIncomingHeals(unit, "player") or 0
+	if amount > 0 then return E:ShortValue(amount) end
+end)
+E:AddTag('incomingheals:others', healEvents, function(unit)
+	local amount = math.max(0, (UnitGetIncomingHeals(unit) or 0) - (UnitGetIncomingHeals(unit, "player") or 0))
+	if amount > 0 then return E:ShortValue(amount) end
+end)
 
 --Expose local functions for plugins onto this table
 E.TagFunctions = {
