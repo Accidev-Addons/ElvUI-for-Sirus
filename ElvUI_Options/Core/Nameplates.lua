@@ -1870,6 +1870,24 @@ function C:StyleFilterDeleted(value)
 end
 
 local ORDER = 100
+local function PlateLabelOptions(unit, key, name, order)
+	return {
+		order = order, type = "group", name = name,
+		get = function(info) return E.db.nameplates.units[unit][key][info[#info]] end,
+		set = function(info, value) E.db.nameplates.units[unit][key][info[#info]] = value NP:ConfigureAll() end,
+		args = {
+			enable = { order = 1, type = "toggle", name = L["Enable"] },
+			position = { order = 2, type = "select", name = L["Position"], values = { TOPLEFT = "TOPLEFT", TOP = "TOP", TOPRIGHT = "TOPRIGHT", LEFT = "LEFT", CENTER = "CENTER", RIGHT = "RIGHT", BOTTOMLEFT = "BOTTOMLEFT", BOTTOM = "BOTTOM", BOTTOMRIGHT = "BOTTOMRIGHT" } },
+			xOffset = { order = 3, type = "range", name = L["X-Offset"], min = -200, max = 200, step = 1 },
+			yOffset = { order = 4, type = "range", name = L["Y-Offset"], min = -200, max = 200, step = 1 },
+			font = { order = 5, type = "select", name = L["Font"], dialogControl = "LSM30_Font", values = AceGUIWidgetLSMlists.font },
+			fontSize = { order = 6, type = "range", name = L["Font Size"], min = 6, max = 32, step = 1 },
+			fontOutline = { order = 7, type = "select", name = L["Font Outline"], values = { NONE = L["None"], OUTLINE = "OUTLINE", THICKOUTLINE = "THICKOUTLINE" } },
+			justifyH = { order = 8, type = "select", name = L["JustifyH"], values = { LEFT = L["Left"], CENTER = L["Center"], RIGHT = L["Right"] } }
+		}
+	}
+end
+
 local function GetUnitSettings(unit, name)
 	local copyValues = {}
 	for x, y in pairs(NP.db.units) do
@@ -3615,6 +3633,9 @@ local function GetUnitSettings(unit, name)
 			showText = { order = 2, type = "toggle", name = "Объём поглощения" }
 		}
 	}
+	if unit == "ENEMY_NPC" then
+		group.args.threatText = PlateLabelOptions(unit, "threatText", "Уровень угрозы", 8)
+	end
 	if unit == "FRIENDLY_PLAYER" or unit == "ENEMY_PLAYER" then
 		if unit == "ENEMY_PLAYER" then
 			group.args.markHealers = {

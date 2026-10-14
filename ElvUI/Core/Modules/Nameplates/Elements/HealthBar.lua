@@ -258,3 +258,34 @@ function NP:Update_Absorb(frame)
 	text:FontTemplate(LSM:Fetch("font", db.text.font), db.text.fontSize, db.text.fontOutline)
 	text:SetText("+"..E:ShortValue(absorb))
 end
+
+function NP:Configure_PlateLabel(frame, key)
+	local db = self.db.units[frame.UnitType][key]
+	local text = frame[key]
+	if not text then
+		text = frame.Health:CreateFontString(nil, "OVERLAY")
+		text:SetWordWrap(false)
+		frame[key] = text
+	end
+	text:FontTemplate(LSM:Fetch("font", db.font), db.fontSize, db.fontOutline)
+	text:ClearAllPoints()
+	text:SetPoint(db.position, frame.Health, db.position, NP:Pixel(db.xOffset), NP:Pixel(db.yOffset))
+	text:SetJustifyH(db.justifyH)
+	return text, db
+end
+
+function NP:Update_ThreatText(frame)
+	local text, db = NP:Configure_PlateLabel(frame, "threatText")
+	local _, status, percent
+	if frame.unit and frame.UnitType == "ENEMY_NPC" and UnitCanAttack("player", frame.unit) then
+		_, status, percent = UnitDetailedThreatSituation("player", frame.unit)
+	end
+	local show = db.enable and frame.Health:IsShown() and percent ~= nil
+	text:SetShown(show)
+	if show then
+		text:SetText(string.format("%.0f%%", percent))
+		text:SetTextColor(GetThreatStatusColor(status or 0))
+	else
+		text:SetText("")
+	end
+end

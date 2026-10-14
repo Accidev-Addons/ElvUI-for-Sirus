@@ -1119,6 +1119,10 @@ P.nameplates = {
 }
 
 for _, unitContent in pairs(P.nameplates.units) do
+	unitContent.threatText = {
+		enable = true, position = "BOTTOMRIGHT", justifyH = "RIGHT", xOffset = 0, yOffset = -16,
+		font = "PT Sans Narrow", fontSize = 12, fontOutline = "OUTLINE"
+	}
 	if unitContent.health then unitContent.health.absorb = { enable = true, showText = true } end
 	if unitContent.buffs then
 		unitContent.buffs.attachTo = "FRAME"

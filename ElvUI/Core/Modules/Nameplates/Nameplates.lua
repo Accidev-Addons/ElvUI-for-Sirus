@@ -620,6 +620,7 @@ function NP:UpdateElement_All(frame, noTargetFrame, filterIgnore)
 	end
 
 	NP:UpdateElement_Auras(frame)
+	NP:Update_ThreatText(frame)
 
 	NP:Update_RaidIcon(frame)
 	NP:Update_HealerIcon(frame)
@@ -1104,6 +1105,7 @@ pixelSnapper:SetScript("OnUpdate", function(_, elapsed)
 
 		if pollHealth and frame.unit and frame.Health:IsShown() then
 			NP:Update_Absorb(frame)
+			NP:Update_ThreatText(frame)
 			local health, maxHealth = NP:GetHealth(frame)
 			if frame.polledHealth ~= health or frame.polledMaxHealth ~= maxHealth then
 				frame.polledHealth, frame.polledMaxHealth = health, maxHealth
@@ -1248,6 +1250,7 @@ function NP:UNIT_THREAT_LIST_UPDATE(_, unit)
 
 	for frame in pairs(NP.VisiblePlates) do
 		if frame.unit and UnitIsUnit(frame.unit, unit) then
+			NP:Update_ThreatText(frame)
 			local status = NP:UnitDetailedThreatSituation(frame)
 			if frame.ThreatStatus ~= status then
 				frame.ThreatStatus = status
@@ -1468,6 +1471,7 @@ function NP:Initialize()
 	NP:RegisterEvent("NAME_PLATE_UNIT_ADDED")
 	NP:RegisterEvent("NAME_PLATE_UNIT_REMOVED")
 	NP:RegisterEvent("UNIT_THREAT_LIST_UPDATE")
+	NP:RegisterEvent("UNIT_THREAT_SITUATION_UPDATE", "UNIT_THREAT_LIST_UPDATE")
 
 	NP:RegisterEvent("PLAYER_ENTERING_WORLD")
 	NP:RegisterEvent("PLAYER_REGEN_ENABLED")
