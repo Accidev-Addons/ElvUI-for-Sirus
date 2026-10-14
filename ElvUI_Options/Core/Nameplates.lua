@@ -1888,6 +1888,50 @@ local function PlateLabelOptions(unit, key, name, order)
 	}
 end
 
+local function CustomTextOptions(unit)
+	local group = { order = 8.2, type = "group", name = L["Custom Texts"], args = {} }
+	local function Refresh()
+		local args = group.args
+		for key in pairs(args) do args[key] = nil end
+		args.create = {
+			order = 1, type = "input", name = L["Create Custom Text"], width = "full",
+			get = function() return "" end,
+			set = function(_, name)
+				name = name:match("^%s*(.-)%s*$")
+				local configs = E.db.nameplates.units[unit].customTexts
+				if name == "" or configs[name] then return end
+				configs[name] = {
+					enable = true, text_format = "[name]", size = 12, font = "PT Sans Narrow",
+					fontOutline = "OUTLINE", justifyH = "CENTER", position = "CENTER",
+					attachTextTo = "Health", xOffset = 0, yOffset = 0
+				}
+				Refresh()
+				NP:ConfigureAll()
+			end
+		}
+		for name in pairs(E.db.nameplates.units[unit].customTexts or {}) do
+			local textName = name
+			local settings = PlateLabelOptions(unit, "customTexts", textName, 2)
+			settings.get = function(info) return E.db.nameplates.units[unit].customTexts[textName][info[#info]] end
+			settings.set = function(info, value) E.db.nameplates.units[unit].customTexts[textName][info[#info]] = value NP:ConfigureAll() end
+			settings.args.fontSize = nil
+			settings.args.size = { order = 6, type = "range", name = L["Font Size"], min = 6, max = 32, step = 1 }
+			settings.args.attachTextTo = { order = 9, type = "select", name = L["Attach Text To"], values = { Health = L["Health"], Name = L["Name"], CastBar = L["Castbar"] } }
+			settings.args.text_format = { order = 10, type = "input", name = L["Text Format"], desc = L["TEXT_FORMAT_DESC"], width = "full" }
+			settings.args.delete = { order = 11, type = "execute", name = L["Delete"], confirm = true, func = function()
+				E.db.nameplates.units[unit].customTexts[textName] = nil
+				Refresh()
+				NP:ConfigureAll()
+			end }
+			-- Keep arbitrary user names out of AceConfig's reserved/control keys.
+			args["text:"..textName] = settings
+		end
+	end
+	group.hidden = function() Refresh() return false end
+	Refresh()
+	return group
+end
+
 local function GetUnitSettings(unit, name)
 	local copyValues = {}
 	for x, y in pairs(NP.db.units) do
@@ -3637,6 +3681,7 @@ local function GetUnitSettings(unit, name)
 		group.args.threatText = PlateLabelOptions(unit, "threatText", "Уровень угрозы", 8)
 	end
 	group.args.targetText = PlateLabelOptions(unit, "targetText", "Цель индикатора", 8.1)
+	group.args.customText = CustomTextOptions(unit)
 	if unit == "FRIENDLY_PLAYER" or unit == "ENEMY_PLAYER" then
 		if unit == "ENEMY_PLAYER" then
 			group.args.markHealers = {

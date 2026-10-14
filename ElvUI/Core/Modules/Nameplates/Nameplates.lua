@@ -468,6 +468,7 @@ function NP:OnShow(isConfig, dontHideHighlight, unitToken)
 
 	frame.CutawayHealth:Hide()
 
+	NP:Configure_CustomTexts(frame)
 	NP:RegisterEvents(frame)
 	NP:UpdateElement_All(frame, nil, true)
 
@@ -492,6 +493,7 @@ function NP:OnHide(isConfig)
 	local frame = self.ElvUIFrame
 	if not frame then return end
 
+	NP:Clear_CustomTexts(frame)
 	NP.VisiblePlates[frame] = nil
 
 	if frame.unit and NP.PlatesByUnit[frame.unit] == self then

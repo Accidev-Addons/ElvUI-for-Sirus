@@ -1119,6 +1119,7 @@ P.nameplates = {
 }
 
 for _, unitContent in pairs(P.nameplates.units) do
+	unitContent.customTexts = {}
 	unitContent.targetText = {
 		enable = true, position = "BOTTOMLEFT", justifyH = "LEFT", xOffset = 0, yOffset = -16,
 		font = "PT Sans Narrow", fontSize = 12, fontOutline = "OUTLINE"
