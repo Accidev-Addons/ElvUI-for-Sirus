@@ -3606,6 +3606,15 @@ local function GetUnitSettings(unit, name)
 		}
 	}
 
+	group.args.healthGroup.args.absorb = {
+		order = 6, type = "group", name = "Поглощение", guiInline = true,
+		get = function(info) return E.db.nameplates.units[unit].health.absorb[info[#info]] end,
+		set = function(info, value) E.db.nameplates.units[unit].health.absorb[info[#info]] = value NP:ConfigureAll() end,
+		args = {
+			enable = { order = 1, type = "toggle", name = L["Enable"] },
+			showText = { order = 2, type = "toggle", name = "Объём поглощения" }
+		}
+	}
 	if unit == "FRIENDLY_PLAYER" or unit == "ENEMY_PLAYER" then
 		if unit == "ENEMY_PLAYER" then
 			group.args.markHealers = {

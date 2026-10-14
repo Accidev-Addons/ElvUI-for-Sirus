@@ -128,6 +128,7 @@ function NP:Update_Health(frame)
 	end
 
 	frame.polledHealth, frame.polledMaxHealth = health, maxHealth
+	NP:Update_Absorb(frame)
 end
 
 function NP:RegisterHealthBarCallbacks(frame, valueChangeCB, colorChangeCB)
@@ -195,6 +196,7 @@ local function HealthBar_OnSizeChanged(self, width)
 	if not maxHealth or maxHealth == 0 then return end
 
 	self:GetStatusBarTexture():SetPoint("TOPRIGHT", -(width * ((maxHealth - health) / maxHealth)), 0)
+	if self:GetParent().UnitType then NP:Update_Absorb(self:GetParent()) end
 end
 
 function NP:Construct_HealthBar(parent)
@@ -223,4 +225,36 @@ function NP:Construct_HealthBar(parent)
 	frame:Hide()
 
 	return frame
+end
+-- Damage absorption is independent of current health and is capped visually
+-- at one health-bar width. The text always shows the full shield amount.
+function NP:Update_Absorb(frame)
+	local healthBar = frame.Health
+	local db = self.db.units[frame.UnitType].health
+	local absorbDB = db.absorb
+	local absorb = frame.unit and UnitGetTotalAbsorbs and UnitGetTotalAbsorbs(frame.unit) or 0
+	local _, maxHealth = NP:GetHealth(frame)
+	local show = healthBar:IsShown() and absorbDB and absorbDB.enable and absorb > 0 and maxHealth > 0
+	local overlay, text = healthBar.Absorb, healthBar.AbsorbText
+	if not overlay then
+		overlay = healthBar:CreateTexture(nil, "ARTWORK")
+		overlay:SetTexture(E.media.blankTex)
+		overlay:SetVertexColor(0.3, 0.75, 1, 0.55)
+		healthBar.Absorb = overlay
+		text = healthBar:CreateFontString(nil, "OVERLAY")
+		text:SetPoint("LEFT", healthBar, "LEFT", 4, 0)
+		text:SetWordWrap(false)
+		healthBar.AbsorbText = text
+	end
+
+	overlay:SetShown(show)
+	text:SetShown(show and absorbDB.showText)
+	if not show then text:SetText("") return end
+
+	overlay:ClearAllPoints()
+	overlay:SetPoint("TOPRIGHT", healthBar, "TOPRIGHT", 0, 0)
+	overlay:SetPoint("BOTTOMRIGHT", healthBar, "BOTTOMRIGHT", 0, 0)
+	overlay:SetWidth(healthBar:GetWidth() * math.min(absorb / maxHealth, 1))
+	text:FontTemplate(LSM:Fetch("font", db.text.font), db.text.fontSize, db.text.fontOutline)
+	text:SetText("+"..E:ShortValue(absorb))
 end

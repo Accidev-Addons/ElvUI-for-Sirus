@@ -1119,6 +1119,7 @@ P.nameplates = {
 }
 
 for _, unitContent in pairs(P.nameplates.units) do
+	if unitContent.health then unitContent.health.absorb = { enable = true, showText = true } end
 	if unitContent.buffs then
 		unitContent.buffs.attachTo = "FRAME"
 		unitContent.buffs.anchorPoint = "LEFT"
