@@ -6,6 +6,7 @@ local B = E:GetModule("Bags")
 local _G = _G
 local ipairs = ipairs
 local select = select
+local setmetatable = setmetatable
 local unpack = unpack
 --WoW API / Variables
 local ContainerIDToInventoryID = ContainerIDToInventoryID
@@ -60,14 +61,30 @@ local function UpdateSlotBorder(button, bagID, slotID, questTexture)
 	return SetItemBorder(button, QualityColor(select(3, GetItemInfo(link))))
 end
 
+local emptySlotHooked = setmetatable({}, { __mode = "k" })
+
+local function ClearEmptySlot(button, texture)
+	if texture then return end
+
+	local icon = button.icon
+	icon:Hide()
+	icon:SetTexture(nil)
+	icon:SetTexCoords()
+end
+
+local function HookEmptySlot(button)
+	if emptySlotHooked[button] or not button.SetItemButtonTexture then return end
+
+	emptySlotHooked[button] = true
+	hooksecurefunc(button, "SetItemButtonTexture", ClearEmptySlot)
+end
+
 local function SkinItemButton(button)
 	if button.elvSkinned then return end
 
 	button:SetNormalTexture(nil)
 	button:SetTemplate("Default", true)
 	button:StyleButton()
-	button.emptyBackgroundAtlas = nil
-	button.emptyBackgroundTexture = nil
 
 	button.icon:SetInside()
 	button.icon:SetTexCoords()
@@ -144,8 +161,7 @@ S:AddCallback("Skin_Bags", function()
 
 		for _, button in ipairs(frame.Items) do
 			SkinItemButton(button)
-			button.emptyBackgroundAtlas = nil
-			button.emptyBackgroundTexture = nil
+			HookEmptySlot(button)
 		end
 	end
 
@@ -478,6 +494,18 @@ S:AddCallback("Skin_Bags", function()
 	if reagentBankFrame then
 		reagentBankFrame:StripTextures(true)
 
+		local function ReagentTooltip_OnEnter(self)
+			local link = GetContainerItemLink(REAGENTBANK_CONTAINER, self:GetID())
+			if link then
+				GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+				GameTooltip:SetHyperlink(link)
+				GameTooltip:Show()
+			else
+				GameTooltip:Hide()
+			end
+			ResetCursor()
+		end
+
 		local function SkinReagentBankSlot(button)
 			if button.elvSkinned then return end
 
@@ -488,8 +516,6 @@ S:AddCallback("Skin_Bags", function()
 			button:SetNormalTexture(nil)
 			button:SetTemplate("Transparent")
 			button:StyleButton()
-			button.emptyBackgroundAtlas = nil
-			button.emptyBackgroundTexture = nil
 
 			button.icon:SetInside()
 			button.icon:SetTexCoords()
@@ -505,21 +531,9 @@ S:AddCallback("Skin_Bags", function()
 			button.Cooldown.CooldownOverride = "bags"
 			E:RegisterCooldown(button.Cooldown)
 
-			if not button.reagentTooltipFixed then
-				local function ReagentTooltip_OnEnter(self)
-					local link = GetContainerItemLink(REAGENTBANK_CONTAINER, self:GetID())
-					if link then
-						GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-						GameTooltip:SetHyperlink(link)
-						GameTooltip:Show()
-					else
-						GameTooltip:Hide()
-					end
-					ResetCursor()
-				end
-				button:SetScript("OnEnter", ReagentTooltip_OnEnter)
-				button.UpdateTooltip = ReagentTooltip_OnEnter
-				button.reagentTooltipFixed = true
+			button:HookScript("OnEnter", ReagentTooltip_OnEnter)
+			if button.UpdateTooltip then
+				hooksecurefunc(button, "UpdateTooltip", ReagentTooltip_OnEnter)
 			end
 
 			button.elvSkinned = true
