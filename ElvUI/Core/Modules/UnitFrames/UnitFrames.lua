@@ -5,7 +5,7 @@ local ElvUF = E.oUF
 
 local _G = _G
 local select, pairs, type, unpack, assert, tostring = select, pairs, type, unpack, assert, tostring
-local tremove, tinsert = table.remove, table.insert
+local tinsert = table.insert
 local find, gsub, format = string.find, string.gsub, string.format
 local max = math.max
 
@@ -1576,15 +1576,6 @@ function UF:Initialize()
 
 	UF:LoadUnits()
 	UF:RegisterEvent("PLAYER_ENTERING_WORLD")
-
-	for _, menu in pairs(UnitPopupMenus) do
-		for x = #menu, 1, -1 do
-			local y = menu[x]
-			if y == "SET_FOCUS" or y == "CLEAR_FOCUS" or (E.myclass == "HUNTER" and y == "PET_DISMISS") then
-				tremove(menu, x)
-			end
-		end
-	end
 
 	if E.private.unitframe.disabledBlizzardFrames.arena and E.private.unitframe.disabledBlizzardFrames.focus and E.private.unitframe.disabledBlizzardFrames.party then
 		HideOptionsCategory(_G.UNITFRAME_LABEL)
