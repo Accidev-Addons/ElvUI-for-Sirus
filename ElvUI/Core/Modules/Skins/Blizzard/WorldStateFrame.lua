@@ -5,13 +5,30 @@ local S = E:GetModule("Skins")
 local _G = _G
 local ipairs, unpack = ipairs, unpack
 
+local function UpdateCaptureProgress(id, value, neutralPercent)
+	local bar = _G["WorldStateCaptureBar"..id]
+	if not bar then return end
+	bar.elvCaptureValue, bar.elvNeutralPercent = value, neutralPercent
+	if not bar.spark or (bar.CanChangeProtectedState and not bar:CanChangeProtectedState()) then return end
+
+	local width = bar:GetWidth()
+	local fraction = math.max(0, math.min(1, 1 - (value or 50) / 100))
+	local indicator = _G["WorldStateCaptureBar"..id.."Indicator"]
+	indicator:ClearAllPoints()
+	indicator:SetPoint("CENTER", bar, "LEFT", width * fraction, 0)
+	_G["WorldStateCaptureBar"..id.."MiddleBar"]:SetWidth(math.max(1, width * (neutralPercent or 0) / 100))
+end
+
 local function DeferCaptureBarWork(func)
 	return function(id)
 		C_Timer:After(0, function()
 			local bar = _G["WorldStateCaptureBar"..id]
 			if bar and bar.CanChangeProtectedState and not bar:CanChangeProtectedState() then return end
 
-			func(id)
+			if bar and not bar.elvCaptureSkinned then
+				func(id)
+				bar.elvCaptureSkinned = true
+			end
 		end)
 	end
 end
@@ -38,7 +55,13 @@ S:AddCallback("Skin_WorldStateFrame", function()
 		_G["WorldStateCaptureBar"..id.."LeftIconHighlight"]:SetTexture(nil)
 		_G["WorldStateCaptureBar"..id.."RightIconHighlight"]:SetTexture(nil)
 
-		_G["WorldStateCaptureBar"..id.."Indicator"]:StripTextures()
+		local indicator = _G["WorldStateCaptureBar"..id.."Indicator"]
+		-- Keep the direction arrows; only replace the central tick texture.
+		for _, region in ipairs({ indicator:GetRegions() }) do
+			if region:GetObjectType() == "Texture" and not region:GetName() then
+				region:SetTexture(nil)
+			end
+		end
 
 		bar:Size(173, 16)
 		bar:CreateBackdrop("Default")
@@ -73,6 +96,10 @@ S:AddCallback("Skin_WorldStateFrame", function()
 		bar.spark = CreateFrame("Frame", "$parentSpark", bar)
 		bar.spark:SetTemplate("Default", true)
 		bar.spark:Size(4, 18)
+		bar.spark:SetFrameLevel(indicator:GetFrameLevel() + 1)
+		bar.spark:SetPoint("CENTER", indicator, "CENTER", 0, 0)
+		bar.spark:SetBackdropColor(1, 1, 1, 1)
+		UpdateCaptureProgress(id, bar.elvCaptureValue or 50, bar.elvNeutralPercent or 0)
 	end
 
 	local topCenter = _G.WorldStateTopCenterFrame
@@ -100,25 +127,33 @@ S:AddCallback("Skin_WorldStateFrame", function()
 		topCenter.BottomLabel:FontTemplate()
 	end
 
-	local numSkinnedCaptureBars = 0
+	hooksecurefunc('CaptureBar_Update', UpdateCaptureProgress)
+
 
 	local function captureBarSkinsUpdate()
 		local numFrames = _G.NUM_EXTENDED_UI_FRAMES or 0
 
-		if numSkinnedCaptureBars >= numFrames then return end
-
-		for id = numSkinnedCaptureBars + 1, numFrames do
+		for id = 1, numFrames do
 			local bar = _G["WorldStateCaptureBar"..id]
 			if not bar then return end
 
 			DeferCaptureBarWork(captureBarCreate)(id)
-			numSkinnedCaptureBars = id
 		end
 	end
 
-	hooksecurefunc('WorldStateAlwaysUpFrame_Update', function()
-		if numSkinnedCaptureBars < (_G.NUM_EXTENDED_UI_FRAMES or 0) then
-			C_Timer:After(0, captureBarSkinsUpdate)
+	-- A private event frame must not replace Skins' combat-deferred callbacks.
+	local regen = CreateFrame("Frame")
+	regen:RegisterEvent("PLAYER_REGEN_ENABLED")
+	regen:SetScript("OnEvent", function()
+		captureBarSkinsUpdate()
+		for id = 1, _G.NUM_EXTENDED_UI_FRAMES or 0 do
+			local bar = _G["WorldStateCaptureBar"..id]
+			if bar and bar.spark then UpdateCaptureProgress(id, bar.elvCaptureValue, bar.elvNeutralPercent) end
 		end
+	end)
+	captureBarSkinsUpdate()
+
+	hooksecurefunc('WorldStateAlwaysUpFrame_Update', function()
+		C_Timer:After(0, captureBarSkinsUpdate)
 	end)
 end)
