@@ -13,23 +13,49 @@ local GetMoney = GetMoney
 local IsAltKeyDown = IsAltKeyDown
 local floor = math.floor
 
-local function MerchantItemButton_AltStackBuy(button)
-	if not IsAltKeyDown() or _G.MerchantFrame.selectedTab ~= 1 then return end
+local function MerchantItemButton_AltStackBuy(button, mouseButton)
+	if not IsAltKeyDown() or IsControlKeyDown() or IsShiftKeyDown()
+		or _G.MerchantFrame.selectedTab ~= 1
+		or (mouseButton ~= "LeftButton" and mouseButton ~= "RightButton")
+		or InRepairMode() or GetCursorInfo() or _G.MerchantFrame.refundItem then return false end
 
 	local index = button:GetID()
-	local maxStack = GetMerchantItemMaxStack(index)
-	if not maxStack or maxStack < 1 then return end
+	local link = GetMerchantItemLink(index)
+	local stackSize = link and select(8, GetItemInfo(link))
+	-- Do not guess a stack size when the item cache has not loaded yet.
+	if not stackSize or stackSize <= 1 then return false end
 
-	if button.price and button.price > 0 then
-		local canAfford = floor(GetMoney() / button.price)
-		if canAfford < maxStack then
-			maxStack = canAfford
+	local _, _, price, bundleSize, stock, _, extendedCost = GetMerchantItemInfo(index)
+	bundleSize = math.max(1, bundleSize or 1)
+	-- The Sirus confirmation API expects number of purchases, not number of items.
+	local purchases = floor(stackSize / bundleSize)
+	local vendorLimit = GetMerchantItemMaxStack(index)
+	if vendorLimit and vendorLimit > 1 then purchases = math.min(purchases, vendorLimit) end
+	if stock and stock >= 0 then purchases = math.min(purchases, floor(stock / bundleSize)) end
+	if price and price > 0 then purchases = math.min(purchases, floor(GetMoney() / price)) end
+
+	if extendedCost then
+		local honor, arena, itemCount = GetMerchantItemCostInfo(index)
+		if honor and honor > 0 then purchases = math.min(purchases, floor((GetHonorCurrency() or 0) / honor)) end
+		if arena and arena > 0 then purchases = math.min(purchases, floor((GetArenaCurrency() or 0) / arena)) end
+		for i = 1, itemCount or 0 do
+			local _, cost, itemLink = GetMerchantItemCostItem(index, i)
+			if not itemLink or not cost or cost <= 0 then return true end
+			purchases = math.min(purchases, floor(GetItemCount(itemLink) / cost))
 		end
 	end
 
-	if maxStack < 1 then return end
-
-	button:SplitStack(maxStack)
+	-- Consume the Alt click even when nothing can be bought; never fall through
+	-- to the native one-item purchase after a full-stack request.
+	if purchases < 1 then return true end
+	if extendedCost then
+		MerchantFrame_ConfirmExtendedItemCost(button, purchases)
+	elseif price and price * purchases >= _G.MERCHANT_HIGH_PRICE_COST then
+		MerchantFrame_ConfirmHighCostItem(button, purchases)
+	else
+		BuyMerchantItem(index, purchases)
+	end
+	return true
 end
 
 local function MerchantItemButton_AltStackHint(tooltip)
@@ -95,7 +121,28 @@ local function LoadSkin()
 		button:SetTemplate("Default", true)
 		button:Size(40)
 		button:Point("TOPLEFT", item, "TOPLEFT", 4, -4)
-		button:HookScript("OnClick", MerchantItemButton_AltStackBuy)
+		-- Consume Alt clicks with an addon-owned hit target. Do not replace the
+		-- client's script or post-hook a purchase that already happened.
+		local altButton = CreateFrame("Button", nil, button)
+		altButton:SetAllPoints(button)
+		altButton:SetFrameLevel(button:GetFrameLevel() + 1)
+		altButton:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+		altButton:EnableMouse(false)
+		altButton:SetScript("OnClick", function(_, mouseButton)
+			if not MerchantItemButton_AltStackBuy(button, mouseButton) then
+				local originalClick = button:GetScript("OnClick")
+				if originalClick then originalClick(button, mouseButton) end
+			end
+		end)
+		altButton:SetScript("OnEnter", function() MerchantItemButton_OnEnter(button) end)
+		altButton:SetScript("OnLeave", function() GameTooltip:Hide() end)
+		local function UpdateAltMouse()
+			altButton:EnableMouse(IsAltKeyDown() and not IsControlKeyDown() and not IsShiftKeyDown())
+		end
+		altButton:RegisterEvent("MODIFIER_STATE_CHANGED")
+		altButton:SetScript("OnEvent", UpdateAltMouse)
+		altButton:SetScript("OnShow", UpdateAltMouse)
+		UpdateAltMouse()
 
 		icon:SetTexCoords()
 		icon:SetInside()
