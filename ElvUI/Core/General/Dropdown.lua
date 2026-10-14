@@ -10,6 +10,8 @@ local InCombatLockdown = InCombatLockdown
 local IsPartyLeader = IsPartyLeader
 local IsRaidOfficer = IsRaidOfficer
 local UIDropDownMenu_Refresh = UIDropDownMenu_Refresh
+local UnitIsSameServer = UnitIsSameServer
+local issecurevariable = issecurevariable
 
 local hooksecurefunc = hooksecurefunc
 local CloseDropDownMenus = CloseDropDownMenus
@@ -62,7 +64,7 @@ end
 
 local function SetButton(unit, button, newButton)
     newButton:SetAllPoints(button)
-    newButton:SetAttribute('unit', unit or 'target')
+    newButton:SetAttribute('unit', unit or 'none')
 
     CopyScript('OnEnter', button, newButton)
     CopyScript('OnLeave', button, newButton)
@@ -76,11 +78,24 @@ end
 local secureClearFocusButton = CreateSecureMenuButton('ElvUI_SecureClearFocusButton', 'macro')
 secureClearFocusButton:SetAttribute('macrotext', '/clearfocus')
 
+local secureTargetButton = CreateSecureMenuButton('ElvUI_SecureTargetButton', 'macro')
+local forcedTarget
+
 local menuButtons = {
     RAID_MAINTANK = CreateSecurePromoteButton('ElvUI_SecureTankButton', 'maintank'),
     RAID_MAINASSIST = CreateSecurePromoteButton('ElvUI_SecureAssistButton', 'mainassist'),
     CLEAR_FOCUS = secureClearFocusButton,
+    TARGET = secureTargetButton,
 }
+
+local function GetFullName(dropdownMenu)
+    local name, server = dropdownMenu.name, dropdownMenu.server
+    if server and (not dropdownMenu.unit or not UnitIsSameServer('player', dropdownMenu.unit)) then
+        return name..'-'..server
+    end
+
+    return name
+end
 
 local function RefreshDropdown(button)
     if button == 'RAID_MAINTANK' or button == 'RAID_MAINASSIST' then
@@ -100,26 +115,37 @@ hooksecurefunc('UnitPopup_ShowMenu', function(_, _, unit)
     for i = 1, _G.UIDROPDOWNMENU_MAXBUTTONS do
         local button = _G['DropDownList1Button'..i]
         local newButton = button and button:IsShown() and button.value and menuButtons[button.value]
-        if newButton then
+        if newButton and (newButton ~= secureTargetButton or forcedTarget) then
             SetButton(unit, button, newButton)
         end
     end
+
+    forcedTarget = nil
 end)
 
 hooksecurefunc('UnitPopup_HideButtons', function()
     local dropdownMenu = _G.UIDROPDOWNMENU_INIT_MENU
+    local menu = _G.UnitPopupMenus[_G.UIDROPDOWNMENU_MENU_VALUE] or _G.UnitPopupMenus[dropdownMenu.which]
+    local shown = _G.UnitPopupShown[_G.UIDROPDOWNMENU_MENU_LEVEL]
 
     if InCombatLockdown() then
-        if dropdownMenu == _G.FocusFrameDropDown then return end
+        if issecurevariable(dropdownMenu, 'initialize') then return end
 
-        local menu = _G.UnitPopupMenus[_G.UIDROPDOWNMENU_MENU_VALUE] or _G.UnitPopupMenus[dropdownMenu.which]
         for index, value in ipairs(menu) do
             if value == 'CLEAR_FOCUS' then
-                _G.UnitPopupShown[_G.UIDROPDOWNMENU_MENU_LEVEL][index] = 0
+                shown[index] = 0
             end
         end
 
         return
+    end
+
+    for index, value in ipairs(menu) do
+        if value == 'TARGET' and shown[index] == 0 and dropdownMenu.name and dropdownMenu ~= _G.PVPDropDown then
+            forcedTarget = GetFullName(dropdownMenu)
+            secureTargetButton:SetAttribute('macrotext', '/targetexact '..forcedTarget)
+            shown[index] = 1
+        end
     end
 
     if dropdownMenu.which ~= 'RAID' or not (IsPartyLeader() or IsRaidOfficer()) then return end

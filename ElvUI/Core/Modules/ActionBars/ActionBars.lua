@@ -407,10 +407,6 @@ function AB:PLAYER_REGEN_ENABLED()
 		AB:MultiCastRecallSpellButton_Update()
 		AB.NeedsRecallButtonUpdate = nil
 	end
-	if AB.NeedsExtraActionRepoint then
-		AB:RepointExtraActionBar()
-		AB.NeedsExtraActionRepoint = nil
-	end
 	if AB.NeedsExtraActionUpdate then
 		AB:UpdateExtraActionBar()
 		AB.NeedsExtraActionUpdate = nil
@@ -476,25 +472,8 @@ function AB:UpdateVehicleLeave()
 	end
 end
 
-function AB:RepointExtraActionBar()
-	local container = _G.ExtraAbilityContainer
-	local holder = _G.ExtraActionBarHolder
-	container:ClearAllPointsBase()
-	container:SetParent(E.UIParent)
-	container:SetPointBase('CENTER', holder, 'CENTER', 0, 0)
-end
-
 function AB:CreateExtraActionBar()
-	local container = _G.ExtraAbilityContainer
-	if not container then return end
-
-	local holder = CreateFrame('Frame', 'ExtraActionBarHolder', E.UIParent)
-	holder:Point('BOTTOM', E.UIParent, 0, 320)
-	holder:Size(256, 128)
-	E:CreateMover(holder, 'ExtraActionMover', L["Special Panel"], nil, nil, nil, 'ALL,ACTIONBARS', nil, 'actionbar,extraActionButton')
-
-	container.ignoreFramePositionManager = true
-	AB:RepointExtraActionBar()
+	if not _G.ExtraAbilityContainer then return end
 
 	for _, button in ipairs(_G.ExtraActionBarFrame.Buttons) do
 		button.icon:SetTexCoords()
@@ -508,12 +487,6 @@ function AB:CreateExtraActionBar()
 		button:HookScript('OnLeave', function(btn) btn.backdrop:SetBackdropBorderColor(unpack(E.media.bordercolor)) end)
 	end
 
-	hooksecurefunc(container, 'SetPoint', function(_, _, parent)
-		if parent ~= holder and not AB:DeferOutOfCombat('NeedsExtraActionRepoint') then
-			AB:RepointExtraActionBar()
-		end
-	end)
-
 	AB:UpdateExtraActionBar()
 end
 
@@ -526,7 +499,6 @@ function AB:UpdateExtraActionBar()
 
 	container:SetScaleBase(scale)
 	container:SetFrameStrata(db.strata)
-	_G.ExtraActionBarHolder:Size(256 * scale, 128 * scale)
 
 	local alpha = db.hideTexture and 0 or 1
 	for _, button in ipairs(_G.ExtraActionBarFrame.Buttons) do

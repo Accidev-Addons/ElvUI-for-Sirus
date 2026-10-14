@@ -39,6 +39,7 @@ local UnitInRaid = UnitInRaid
 local UnitName = UnitName
 local IsInGuild = IsInGuild
 local PlaySoundFile = PlaySoundFile
+local SetCVar = SetCVar
 local GetNumFactions = GetNumFactions
 local GetFactionInfo = GetFactionInfo
 local ExpandAllFactionHeaders = ExpandAllFactionHeaders
@@ -326,10 +327,7 @@ function M:HideTutorialFrames()
 
 	if not enabled then return end
 
-	local helpTip = _G.HelpTip
-	if helpTip and helpTip.ForceHideAll then
-		helpTip:ForceHideAll()
-	end
+	SetCVar('hideHelptips', 1)
 
 	local splash = _G.BattlePassSplashFrame
 	if splash and splash.IsShown and splash.Hide then

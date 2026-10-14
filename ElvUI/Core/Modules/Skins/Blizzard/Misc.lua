@@ -64,18 +64,6 @@ S:AddCallback('Skin_GameMenu', function()
 
 	GameMenuStyleButtons()
 
-	local editMode = _G.GameMenuButtonEditMode
-	if editMode then
-		editMode:SetParent(E.HiddenFrame)
-		editMode:Hide()
-
-		local keybindings = _G.GameMenuButtonKeybindings
-		local uiOptions = _G.GameMenuButtonUIOptions
-		if keybindings and uiOptions then
-			keybindings:SetPoint('TOP', uiOptions, 'BOTTOM', 0, -1)
-		end
-	end
-
 	if GameMenuFrame_UpdateVisibleButtons then
 		hooksecurefunc('GameMenuFrame_UpdateVisibleButtons', GameMenuStyleButtons)
 	end

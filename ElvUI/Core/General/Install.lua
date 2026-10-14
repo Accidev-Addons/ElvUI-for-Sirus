@@ -421,7 +421,6 @@ function E:LayoutAnniversary()
 	E.db.general.minimap.resetZoom.enable = true
 	E.db.general.minimap.resetZoom.time = 5
 	E.db.general.minimap.size = 226
-	E.db.general.objectiveFrameHeight = 750
 	E.db.general.resurrectSound = true
 	E.db.general.totems.growthDirection = 'HORIZONTAL'
 	E.db.general.totems.size = 36
@@ -848,7 +847,6 @@ function E:LayoutNormal()
 		--General
 		E.db.general.bonusObjectivePosition = 'AUTO'
 		E.db.general.minimap.size = 220
-		E.db.general.objectiveFrameHeight = 400
 		E.db.general.totems.growthDirection = 'HORIZONTAL'
 		E.db.general.totems.size = 50
 		E.db.general.totems.spacing = 8

@@ -120,7 +120,7 @@ do
 	end
 
 	function B:GetContainerItemInfo(containerIndex, slotIndex)
-		local info = {}
+		local info, _ = {}
 
 		info.iconFileID, info.stackCount, info.isLocked, _, _, _, info.hyperlink = GetContainerItemInfo(containerIndex, slotIndex)
 		info.itemID = B:GetItemID(containerIndex, slotIndex)
