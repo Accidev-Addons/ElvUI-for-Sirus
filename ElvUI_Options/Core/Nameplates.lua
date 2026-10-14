@@ -9,6 +9,9 @@ local format, match, strsplit = string.format, string.match, strsplit
 local GetSpellInfo = GetSpellInfo
 
 local positionValues = {
+	TOP = "TOP",
+	BOTTOM = "BOTTOM",
+	CENTER = "CENTER",
 	BOTTOMLEFT = "BOTTOMLEFT",
 	BOTTOMRIGHT = "BOTTOMRIGHT",
 	LEFT = "LEFT",
@@ -3682,6 +3685,31 @@ local function GetUnitSettings(unit, name)
 	end
 	group.args.targetText = PlateLabelOptions(unit, "targetText", "Цель индикатора", 8.1)
 	group.args.customText = CustomTextOptions(unit)
+	for key, aura in pairs({ buffsGroup = "buffs", debuffsGroup = "debuffs", crowdControlGroup = "crowdcontrol" }) do
+		local args = group.args[key].args
+		args.useSirusPosition = {
+			order = 1.1, type = "toggle", name = "Положение Sirus",
+			desc = "Стандартные привязки клиента. Отключите для собственного положения аур.",
+			get = function() return E.db.nameplates.units[unit][aura].useSirusPosition ~= false end,
+			set = function(_, value) E.db.nameplates.units[unit][aura].useSirusPosition = value NP:ConfigureAll() end
+		}
+		args.useSirusSize = {
+			order = 1.2, type = "toggle", name = "Размер и интервалы Sirus",
+			get = function() return E.db.nameplates.units[unit][aura].useSirusSize ~= false end,
+			set = function(_, value) E.db.nameplates.units[unit][aura].useSirusSize = value NP:ConfigureAll() end
+		}
+		for _, name in ipairs({ "anchorPoint", "attachTo", "xOffset", "yOffset" }) do
+			args[name].disabled = function() return E.db.nameplates.units[unit][aura].useSirusPosition ~= false end
+		end
+		for _, name in ipairs({ "size", "spacing" }) do
+			if args[name] then args[name].disabled = function() return E.db.nameplates.units[unit][aura].useSirusSize ~= false end end
+		end
+		args.attachTo.values.NAME = L["Name"]
+		args.attachTo.values.LEVEL = L["Level"]
+		-- Buffs only anchor to the health/name/level axes; debuffs and controls
+		-- may additionally follow buffs without forming circular anchors.
+		if aura == "buffs" then args.attachTo.values.BUFFS = nil end
+	end
 	if unit == "FRIENDLY_PLAYER" or unit == "ENEMY_PLAYER" then
 		if unit == "ENEMY_PLAYER" then
 			group.args.markHealers = {

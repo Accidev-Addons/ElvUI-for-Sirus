@@ -1119,6 +1119,12 @@ P.nameplates = {
 }
 
 for _, unitContent in pairs(P.nameplates.units) do
+	for _, aura in ipairs({ "buffs", "debuffs" }) do
+		if unitContent[aura] then
+			unitContent[aura].useSirusPosition = true
+			unitContent[aura].useSirusSize = true
+		end
+	end
 	unitContent.customTexts = {}
 	unitContent.targetText = {
 		enable = true, position = "BOTTOMLEFT", justifyH = "LEFT", xOffset = 0, yOffset = -16,
