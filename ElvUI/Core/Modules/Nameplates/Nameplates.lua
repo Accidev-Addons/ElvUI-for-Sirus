@@ -621,6 +621,7 @@ function NP:UpdateElement_All(frame, noTargetFrame, filterIgnore)
 
 	NP:UpdateElement_Auras(frame)
 	NP:Update_ThreatText(frame)
+	NP:Update_TargetText(frame)
 
 	NP:Update_RaidIcon(frame)
 	NP:Update_HealerIcon(frame)
@@ -860,6 +861,11 @@ function NP:OnEvent(event, unit, ...)
 		return
 	end
 
+	if event == "UNIT_TARGET" then
+		NP:Update_TargetText(self)
+		return
+	end
+
 	if event == "UNIT_ABSORB_AMOUNT_CHANGED" then
 		NP:Update_Absorb(self)
 		return
@@ -893,7 +899,7 @@ function NP:OnEvent(event, unit, ...)
 end
 
 local unitEvents = {
-	"UNIT_HEALTH", "UNIT_MAXHEALTH", "UNIT_NAME_UPDATE", "UNIT_LEVEL", "UNIT_FACTION", "UNIT_AURA", "UNIT_ABSORB_AMOUNT_CHANGED"
+	"UNIT_HEALTH", "UNIT_MAXHEALTH", "UNIT_NAME_UPDATE", "UNIT_LEVEL", "UNIT_FACTION", "UNIT_AURA", "UNIT_ABSORB_AMOUNT_CHANGED", "UNIT_TARGET"
 }
 local castEvents = {
 	"UNIT_SPELLCAST_INTERRUPTED", "UNIT_SPELLCAST_DELAYED", "UNIT_SPELLCAST_CHANNEL_START",
@@ -1106,6 +1112,7 @@ pixelSnapper:SetScript("OnUpdate", function(_, elapsed)
 		if pollHealth and frame.unit and frame.Health:IsShown() then
 			NP:Update_Absorb(frame)
 			NP:Update_ThreatText(frame)
+			NP:Update_TargetText(frame)
 			local health, maxHealth = NP:GetHealth(frame)
 			if frame.polledHealth ~= health or frame.polledMaxHealth ~= maxHealth then
 				frame.polledHealth, frame.polledMaxHealth = health, maxHealth

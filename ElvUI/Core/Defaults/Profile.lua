@@ -1119,6 +1119,10 @@ P.nameplates = {
 }
 
 for _, unitContent in pairs(P.nameplates.units) do
+	unitContent.targetText = {
+		enable = true, position = "BOTTOMLEFT", justifyH = "LEFT", xOffset = 0, yOffset = -16,
+		font = "PT Sans Narrow", fontSize = 12, fontOutline = "OUTLINE"
+	}
 	unitContent.threatText = {
 		enable = true, position = "BOTTOMRIGHT", justifyH = "RIGHT", xOffset = 0, yOffset = -16,
 		font = "PT Sans Narrow", fontSize = 12, fontOutline = "OUTLINE"

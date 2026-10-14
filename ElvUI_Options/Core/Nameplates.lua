@@ -3636,6 +3636,7 @@ local function GetUnitSettings(unit, name)
 	if unit == "ENEMY_NPC" then
 		group.args.threatText = PlateLabelOptions(unit, "threatText", "Уровень угрозы", 8)
 	end
+	group.args.targetText = PlateLabelOptions(unit, "targetText", "Цель индикатора", 8.1)
 	if unit == "FRIENDLY_PLAYER" or unit == "ENEMY_PLAYER" then
 		if unit == "ENEMY_PLAYER" then
 			group.args.markHealers = {

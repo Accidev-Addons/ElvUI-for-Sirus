@@ -289,3 +289,17 @@ function NP:Update_ThreatText(frame)
 		text:SetText("")
 	end
 end
+
+function NP:Update_TargetText(frame)
+	local text, db = NP:Configure_PlateLabel(frame, "targetText")
+	local target = frame.unit and frame.unit.."target"
+	local name = target and UnitExists(target) and UnitName(target) or nil
+	local show = db.enable and frame.Health:IsShown() and name ~= nil
+	text:SetShown(show)
+	text:SetText(show and name or "")
+	if show then
+		local _, class = UnitClass(target)
+		local color = UnitIsPlayer(target) and E:ClassColor(class)
+		if color then text:SetTextColor(color.r, color.g, color.b) else text:SetTextColor(1, 1, 1) end
+	end
+end
