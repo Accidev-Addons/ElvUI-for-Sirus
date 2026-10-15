@@ -2263,3 +2263,12 @@ L["Single Bag"] = "Одна сумка"
 L["Compact"] = "Компактный"
 L["Show the reagent bank on its own tab or as an extra bag inside the bank."] = "Показывать банк материалов отдельной вкладкой или дополнительной сумкой внутри банка."
 L["Collapse the reagent bank into a single slot showing the number of free slots."] = "Свернуть банк материалов в один слот с числом свободных ячеек."
+
+-- Nameplate extensions
+L["Absorption"] = "Поглощение"
+L["Absorb Amount"] = "Объём поглощения"
+L["Threat Level"] = "Уровень угрозы"
+L["Nameplate Target"] = "Цель индикатора"
+L["Reset Position"] = "Сбросить положение"
+L["Restore the default Sirus client anchors."] = "Восстановить стандартные привязки клиента Sirus."
+L["Sirus Size and Spacing"] = "Размер и интервалы Sirus"

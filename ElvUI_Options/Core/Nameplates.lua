@@ -1880,7 +1880,7 @@ local function PlateLabelOptions(unit, key, name, order)
 		set = function(info, value) E.db.nameplates.units[unit][key][info[#info]] = value NP:ConfigureAll() end,
 		args = {
 			enable = { order = 1, type = "toggle", name = L["Enable"] },
-			position = { order = 2, type = "select", name = L["Position"], values = { TOPLEFT = "TOPLEFT", TOP = "TOP", TOPRIGHT = "TOPRIGHT", LEFT = "LEFT", CENTER = "CENTER", RIGHT = "RIGHT", BOTTOMLEFT = "BOTTOMLEFT", BOTTOM = "BOTTOM", BOTTOMRIGHT = "BOTTOMRIGHT" } },
+			position = { order = 2, type = "select", name = L["Position"], values = { TOPLEFT = L["TOPLEFT"], TOP = L["TOP"], TOPRIGHT = L["TOPRIGHT"], LEFT = L["LEFT"], CENTER = L["CENTER"], RIGHT = L["RIGHT"], BOTTOMLEFT = L["BOTTOMLEFT"], BOTTOM = L["BOTTOM"], BOTTOMRIGHT = L["BOTTOMRIGHT"] } },
 			xOffset = { order = 3, type = "range", name = L["X-Offset"], min = -200, max = 200, step = 1 },
 			yOffset = { order = 4, type = "range", name = L["Y-Offset"], min = -200, max = 200, step = 1 },
 			font = { order = 5, type = "select", name = L["Font"], dialogControl = "LSM30_Font", values = AceGUIWidgetLSMlists.font },
@@ -3672,24 +3672,24 @@ local function GetUnitSettings(unit, name)
 	}
 
 	group.args.healthGroup.args.absorb = {
-		order = 6, type = "group", name = "Поглощение", guiInline = true,
+		order = 6, type = "group", name = L["Absorption"], guiInline = true,
 		get = function(info) return E.db.nameplates.units[unit].health.absorb[info[#info]] end,
 		set = function(info, value) E.db.nameplates.units[unit].health.absorb[info[#info]] = value NP:ConfigureAll() end,
 		args = {
 			enable = { order = 1, type = "toggle", name = L["Enable"] },
-			showText = { order = 2, type = "toggle", name = "Объём поглощения" }
+			showText = { order = 2, type = "toggle", name = L["Absorb Amount"] }
 		}
 	}
 	if unit == "ENEMY_NPC" then
-		group.args.threatText = PlateLabelOptions(unit, "threatText", "Уровень угрозы", 8)
+		group.args.threatText = PlateLabelOptions(unit, "threatText", L["Threat Level"], 8)
 	end
-	group.args.targetText = PlateLabelOptions(unit, "targetText", "Цель индикатора", 8.1)
+	group.args.targetText = PlateLabelOptions(unit, "targetText", L["Nameplate Target"], 8.1)
 	group.args.customText = CustomTextOptions(unit)
 	for key, aura in pairs({ buffsGroup = "buffs", debuffsGroup = "debuffs", crowdControlGroup = "crowdcontrol" }) do
 		local args = group.args[key].args
 		args.resetSirusPosition = {
-			order = 1.1, type = "execute", name = "Сбросить положение",
-			desc = "Восстановить стандартные привязки клиента Sirus.",
+			order = 1.1, type = "execute", name = L["Reset Position"],
+			desc = L["Restore the default Sirus client anchors."],
 			func = function()
 				local db = E.db.nameplates.units[unit][aura]
 				local defaults = P.nameplates.units[unit][aura]
@@ -3699,7 +3699,7 @@ local function GetUnitSettings(unit, name)
 			end
 		}
 		args.useSirusSize = {
-			order = 1.2, type = "toggle", name = "Размер и интервалы Sirus",
+			order = 1.2, type = "toggle", name = L["Sirus Size and Spacing"],
 			get = function() return E.db.nameplates.units[unit][aura].useSirusSize ~= false end,
 			set = function(_, value) E.db.nameplates.units[unit][aura].useSirusSize = value NP:ConfigureAll() end
 		}

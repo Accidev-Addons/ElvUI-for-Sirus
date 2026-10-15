@@ -2233,3 +2233,12 @@ L["Deconstruct Blacklist (Profile)"] = true
 L["Lockbox Blacklist"] = true
 L["Lockbox Blacklist (Global)"] = true
 L["Lockbox Blacklist (Profile)"] = true
+
+-- Nameplate extensions
+L["Absorption"] = true
+L["Absorb Amount"] = true
+L["Threat Level"] = true
+L["Nameplate Target"] = true
+L["Reset Position"] = true
+L["Restore the default Sirus client anchors."] = true
+L["Sirus Size and Spacing"] = true
