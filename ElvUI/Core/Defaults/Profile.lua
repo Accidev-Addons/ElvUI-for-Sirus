@@ -1127,11 +1127,11 @@ for _, unitContent in pairs(P.nameplates.units) do
 	end
 	unitContent.customTexts = {}
 	unitContent.targetText = {
-		enable = true, position = "BOTTOMLEFT", justifyH = "LEFT", xOffset = 0, yOffset = -16,
+		enable = false, position = "BOTTOMLEFT", justifyH = "LEFT", xOffset = 0, yOffset = -16,
 		font = "PT Sans Narrow", fontSize = 12, fontOutline = "OUTLINE"
 	}
 	unitContent.threatText = {
-		enable = true, position = "BOTTOMRIGHT", justifyH = "RIGHT", xOffset = 0, yOffset = -16,
+		enable = false, position = "BOTTOMRIGHT", justifyH = "RIGHT", xOffset = 0, yOffset = -16,
 		font = "PT Sans Narrow", fontSize = 12, fontOutline = "OUTLINE"
 	}
 	if unitContent.health then unitContent.health.absorb = { enable = true, showText = true } end
