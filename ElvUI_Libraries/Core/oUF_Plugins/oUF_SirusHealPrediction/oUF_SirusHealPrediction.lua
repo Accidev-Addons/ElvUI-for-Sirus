@@ -28,10 +28,12 @@ local function Update(self)
 	local health = UnitHealth(unit)
 	local maxHealth = UnitHealthMax(unit)
 	local maxOverflowHP = maxHealth * element.maxOverflow
+	local healAbsorb = (UnitGetTotalHealAbsorbs and UnitGetTotalHealAbsorbs(unit)) or 0
+	local currentHealAbsorb = math.min(health, healAbsorb)
 	local otherIncomingHeal = 0
 
-	if health + allIncomingHeal > maxOverflowHP then
-		allIncomingHeal = math.max(0, maxOverflowHP - health)
+	if health - currentHealAbsorb + allIncomingHeal > maxOverflowHP then
+		allIncomingHeal = math.max(0, maxOverflowHP - health + currentHealAbsorb)
 	end
 
 	if allIncomingHeal < myIncomingHeal then
@@ -53,16 +55,15 @@ local function Update(self)
 	end
 
 	-- absorbs are fed by the server (UNIT_ABSORB_AMOUNT_CHANGED), LibHealComm knows nothing about them
-	local absorb, healAbsorb, hasOverAbsorb, hasOverHealAbsorb = 0, 0, false, false
+	local absorb, hasOverAbsorb, hasOverHealAbsorb = 0, false, false
 	if hasAbsorbs then
 		absorb = UnitGetTotalAbsorbs(unit) or 0
-		healAbsorb = (UnitGetTotalHealAbsorbs and UnitGetTotalHealAbsorbs(unit)) or 0
 
 		if healAbsorb > health then
 			hasOverHealAbsorb = true
 		end
 
-		if absorb > 0 and health + absorb >= maxHealth then
+		if absorb > 0 and (health + absorb >= maxHealth or health - currentHealAbsorb + allIncomingHeal + absorb >= maxHealth) then
 			hasOverAbsorb = true
 		end
 

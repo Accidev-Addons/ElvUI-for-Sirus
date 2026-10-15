@@ -327,8 +327,8 @@ class Changes(unittest.TestCase):
   self.assertEqual(l.eval('frame.HealCommBar.myBar.value'),10);self.assertEqual(l.eval('frame.HealCommBar.otherBar.value'),20)
   self.assertEqual(l.eval('frame.HealCommBar.absorbBar.value'),60);self.assertEqual(l.eval('frame.HealCommBar.healAbsorbBar.value'),50)
   self.assertTrue(l.eval('frame.events.UNIT_HEAL_PREDICTION'))
-  l.execute('personal=80; incoming=120; elem.update(frame,"UNIT_HEAL_PREDICTION","party1")');self.assertEqual(l.eval('frame.HealCommBar.myBar.value'),50)
-  l.execute('health=120; elem.update(frame,"UNIT_HEAL_PREDICTION","party1")');self.assertEqual(l.eval('frame.HealCommBar.myBar.value'),0)
+  l.execute('personal=80; incoming=120; elem.update(frame,"UNIT_HEAL_PREDICTION","party1")');self.assertEqual(l.eval('frame.HealCommBar.myBar.value'),80)
+  l.execute('health=120; elem.update(frame,"UNIT_HEAL_PREDICTION","party1")');self.assertEqual(l.eval('frame.HealCommBar.myBar.value'),50)
   l.execute('elem.disable(frame)');self.assertFalse(l.eval('frame.HealCommBar.myBar.shown'));self.assertIsNone(l.eval('frame.events.UNIT_HEAL_PREDICTION'))
  def test_custom_lifecycle(self):
   l=env();load_finalized_tags(l)

@@ -311,20 +311,21 @@ function UF:Configure_HealComm(frame)
 	end
 end
 
-local function UpdateFillBar(frame, previousTexture, bar, amount)
+local function UpdateFillBar(frame, previousTexture, bar, amount, healAbsorbOffset, maxHealth)
 	if amount == 0 then
 		bar:Hide()
 		return previousTexture
 	end
 
 	local orientation = frame:GetOrientation()
+	local offset = maxHealth and maxHealth > 0 and (healAbsorbOffset or 0) / maxHealth or 0
 	bar:ClearAllPoints()
 	if orientation == "HORIZONTAL" then
-		bar:SetPoint("TOPLEFT", previousTexture, "TOPRIGHT")
-		bar:SetPoint("BOTTOMLEFT", previousTexture, "BOTTOMRIGHT")
+		bar:SetPoint("TOPLEFT", previousTexture, "TOPRIGHT", -frame:GetWidth() * offset, 0)
+		bar:SetPoint("BOTTOMLEFT", previousTexture, "BOTTOMRIGHT", -frame:GetWidth() * offset, 0)
 	else
-		bar:SetPoint("BOTTOMRIGHT", previousTexture, "TOPRIGHT")
-		bar:SetPoint("BOTTOMLEFT", previousTexture, "TOPLEFT")
+		bar:SetPoint("BOTTOMRIGHT", previousTexture, "TOPRIGHT", 0, -frame:GetHeight() * offset)
+		bar:SetPoint("BOTTOMLEFT", previousTexture, "TOPLEFT", 0, -frame:GetHeight() * offset)
 	end
 
 	local totalWidth, totalHeight = frame:GetSize()
@@ -341,8 +342,8 @@ function UF:UpdateHealComm(_, myIncomingHeal, otherIncomingHeal, absorb, healAbs
 	local healthBar = self.health
 	local previousTexture = healthBar:GetStatusBarTexture()
 
-	previousTexture = UpdateFillBar(healthBar, previousTexture, self.myBar, myIncomingHeal)
-	UpdateFillBar(healthBar, previousTexture, self.otherBar, otherIncomingHeal)
+	previousTexture = UpdateFillBar(healthBar, previousTexture, self.myBar, myIncomingHeal, math.min(health, healAbsorb), maxHealth)
+	UpdateFillBar(healthBar, previousTexture, self.otherBar, otherIncomingHeal, myIncomingHeal == 0 and math.min(health, healAbsorb) or 0, maxHealth)
 
 	if not hasAbsorbs then return end
 
@@ -384,20 +385,17 @@ function UF:UpdateHealComm(_, myIncomingHeal, otherIncomingHeal, absorb, healAbs
 		end
 	end
 
-	if style == "NONE" or healAbsorb == 0 then
+	local remainingHealAbsorb = max(0, math.min(healAbsorb, health) - myIncomingHeal - otherIncomingHeal)
+	if style == "NONE" or remainingHealAbsorb == 0 then
 		healAbsorbBar:Hide()
 		self.overHealAbsorb:Hide()
 	else
-		SetReversedAmount(healAbsorbBar, (hasOverHealAbsorb and health) or healAbsorb, maxHealth, healthBar, orientation)
+		SetReversedAmount(healAbsorbBar, remainingHealAbsorb, maxHealth, healthBar, orientation)
 
 		local c = (hasOverHealAbsorb and colors.overhealabsorbs) or colors.healAbsorbs
 		healAbsorbBar:SetStatusBarColor(c.r, c.g, c.b, c.a)
 		healAbsorbBar:Show()
 
-		if hasOverHealAbsorb then
-			self.overHealAbsorb:Show()
-		else
-			self.overHealAbsorb:Hide()
-		end
 	end
+	if style ~= "NONE" and hasOverHealAbsorb then self.overHealAbsorb:Show() else self.overHealAbsorb:Hide() end
 end
