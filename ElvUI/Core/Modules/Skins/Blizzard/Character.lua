@@ -2858,36 +2858,15 @@ local function LoadSkin()
 		local flyoutHighlight = _G.EquipmentFlyoutFrameHighlight
 		if flyoutHighlight then flyoutHighlight:StripTextures() end
 
-		local function LayoutFlyout()
-			local source, buttons = flyoutFrame.button, flyoutFrame.buttonFrame
-			if not source or not buttons then return end
-
-			local nav = flyoutFrame.NavigationFrame
-			if source == _G.CharacterWristSlot then
-				-- Grow above the wrist, away from the weapon slots. Anchor to
-				-- the item itself so the hidden popout cannot leave a mouse gap.
-				buttons:ClearAllPoints()
-				buttons:SetPoint("TOPLEFT", source, "BOTTOMRIGHT", 0, buttons:GetHeight())
-				if nav then
-					nav:ClearAllPoints()
-					nav:SetPoint("TOPLEFT", buttons, "TOPLEFT", -5, nav:GetHeight())
-					nav.elvAboveWrist = true
-				end
-			elseif nav and nav.elvAboveWrist then
-				-- The client updates the grid anchor but not the navigation's.
-				nav:ClearAllPoints()
-				nav:SetPoint("TOPLEFT", buttons, "BOTTOMLEFT", -5, 0)
-				nav.elvAboveWrist = nil
-			end
-		end
-
-		local function RaiseFlyout()
+		local function UpdateFlyoutLayers()
 			local source = flyoutFrame.button
 			if not source then return end
 
 			-- The client resets the flyout below the item slot on every update.
 			-- Socket buttons live several levels above that slot, so lift the
 			-- entire grid (including its mouse-catching gaps), not just its art.
+			-- Geometry belongs to EquipmentFlyout_UpdateItems: keep its direction,
+			-- anchors, page dimensions and item layout unchanged for every slot.
 			local level = source:GetFrameLevel() + 10
 			flyoutFrame:SetFrameStrata("HIGH")
 			flyoutFrame:SetFrameLevel(level)
@@ -2957,8 +2936,7 @@ local function LoadSkin()
 					end
 				end
 			end
-			LayoutFlyout()
-			RaiseFlyout()
+			UpdateFlyoutLayers()
 		end
 
 		SkinFlyout()

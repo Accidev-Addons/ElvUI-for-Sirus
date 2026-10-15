@@ -184,23 +184,36 @@ class Changes(unittest.TestCase):
   self.assertEqual(l.eval('EquipmentFlyoutFrame.level'),70)
   self.assertEqual(l.eval('EquipmentFlyoutFrame.buttons[1].cooldown.level'),73)
   l.execute('EquipmentFlyoutFrame.button=nil;hooks.EquipmentFlyout_UpdateItems()')
- def test_wrist_flyout_grows_up_without_mouse_gap(self):
-  l=flyout_env();l.execute('CharacterWristSlot=EquipmentFlyoutFrame.button;EquipmentFlyoutFrame.NavigationFrame:SetHeight(41)')
-  for height in (43,85,127,169):
-   with self.subTest(grid_height=height):
-    l.execute(f'EquipmentFlyoutFrame.buttonFrame:SetHeight({height});hooks.EquipmentFlyout_UpdateItems();grid=EquipmentFlyoutFrame.buttonFrame;nav=EquipmentFlyoutFrame.NavigationFrame')
-    self.assertTrue(l.eval("#grid.points==1 and grid.points[1][1]=='TOPLEFT' and grid.points[1][2]==CharacterWristSlot and grid.points[1][3]=='BOTTOMRIGHT'"))
-    self.assertEqual(l.eval('grid.points[1][4]'),0)
-    # Grid top = wrist bottom + grid height, hence its bottom touches the wrist.
-    self.assertEqual(l.eval('grid.points[1][5]-grid.height'),0)
-    self.assertTrue(l.eval('grid.mouseEnabled and nav.mouseEnabled'))
-    self.assertTrue(l.eval("#nav.points==1 and nav.points[1][2]==grid and nav.points[1][3]=='TOPLEFT'"))
-    self.assertEqual(l.eval('nav.points[1][5]-nav.height'),0)
-  # Sirus overwrites TOPLEFT when another item/weapon slot opens its flyout.
-  l.execute("other=newFrame();EquipmentFlyoutFrame.button=other;grid:ClearAllPoints();grid:SetPoint('TOPLEFT',other,'BOTTOMLEFT',0,0);hooks.EquipmentFlyout_UpdateItems()")
-  self.assertTrue(l.eval("#grid.points==1 and grid.points[1][2]==other and grid.points[1][3]=='BOTTOMLEFT'"))
-  self.assertTrue(l.eval("#nav.points==1 and nav.points[1][3]=='BOTTOMLEFT' and nav.points[1][5]==0"))
-  self.assertIsNone(l.eval('nav.elvAboveWrist'))
+ def test_equipment_flyout_preserves_client_layout_for_every_slot(self):
+  # Wrists must follow exactly the same path as the other slots, even with
+  # several rows or navigation. No slot-specific direction/anchor overrides.
+  for slot_id in (1,9,10,16,17,18):
+   for height in (43,85,127,169):
+    with self.subTest(slot=slot_id,height=height):
+     l=flyout_env();l.globals().slotID=slot_id;l.globals().gridHeight=height
+     l.execute("""local f=EquipmentFlyoutFrame;source=f.button;grid=f.buttonFrame;nav=f.NavigationFrame
+     CharacterWristSlot=slotID==9 and source or newFrame()
+     source.verticalFlyout=slotID>=16;source.popoutButton=newFrame(source)
+     source.id=slotID;grid:SetSize(204,gridHeight)
+     local relative=source.verticalFlyout and 'BOTTOMLEFT' or 'TOPRIGHT'
+     grid:ClearAllPoints();grid:SetPoint('TOPLEFT',source.popoutButton,relative,0,source.verticalFlyout and 0 or -3)
+     nav:ClearAllPoints();nav:SetPoint('TOPLEFT',grid,'BOTTOMLEFT',-5,0)
+     source:ClearAllPoints();source:SetPoint('TOPLEFT',E.UIParent,'TOPLEFT',100,-100)
+     hooks.EquipmentFlyout_UpdateItems()
+     """)
+     self.assertTrue(l.eval("#grid.points==1 and grid.points[1][1]=='TOPLEFT' and grid.points[1][2]==source.popoutButton"))
+     self.assertEqual(l.eval('grid.points[1][3]'),'BOTTOMLEFT' if slot_id>=16 else 'TOPRIGHT')
+     self.assertEqual(l.eval('grid.points[1][5]'),0 if slot_id>=16 else -3)
+     self.assertEqual(l.eval('grid.height'),height)
+     self.assertEqual(l.eval('grid.width'),204)
+     self.assertTrue(l.eval("#nav.points==1 and nav.points[1][2]==grid and nav.points[1][3]=='BOTTOMLEFT' and nav.points[1][5]==0"))
+     self.assertTrue(l.eval('grid.mouseEnabled and nav.mouseEnabled'))
+     self.assertTrue(l.eval('grid.level>source.level and nav.level>source.level'))
+     self.assertEqual(l.eval('source.points[1][4]'),100)
+  source=(ROOT/'ElvUI/Core/Modules/Skins/Blizzard/Character.lua').read_text()
+  flyout=source[source.index('local flyoutFrame = _G.EquipmentFlyoutFrame'):source.index('if CharacterAmmoSlot then')]
+  self.assertNotIn('CharacterWristSlot',flyout)
+  self.assertNotIn('ClearAllPoints',flyout)
  def test_popup(self):
   l=env();l.execute("staticPopup=newFrame(); staticPopup.which='NOTE'; wideBox=newFrame(); wideBox.backdrop=newFrame(); StaticPopupDialogs={NOTE={hasEditBox=true,hasWideEditBox=true}}")
   code=chunk('ElvUI/Core/Modules/Skins/Blizzard/Misc.lua','\t\tlocal function UpdatePopupEditBox','\t\thooksecurefunc(\'StaticPopup_Resize\'')
