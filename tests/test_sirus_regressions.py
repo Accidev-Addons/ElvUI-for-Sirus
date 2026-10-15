@@ -340,7 +340,7 @@ class Changes(unittest.TestCase):
   self.assertEqual(l.eval('frame.customTexts.test.text'),'nameplate1')
   l.execute('NP:Clear_CustomTexts(frame)');self.assertIsNone(l.eval('frame.customTexts.test.UpdateTag'));self.assertFalse(l.eval('frame.customTexts.test.shown'))
   l.execute('frame.unit="nameplate2"; unitGUIDs.nameplate2="OTHER"; NP:Configure_CustomTexts(frame)');self.assertEqual(l.eval('frame.customTexts.test.text'),'nameplate2')
-  l.execute('NP.db.units.ENEMY_NPC.customTexts={}; NP:Configure_CustomTexts(frame)');self.assertFalse(l.eval('frame.customTexts.test.shown'))
+  l.execute('NP.db.units.ENEMY_NPC.customTexts={}; NP:Configure_CustomTexts(frame)');self.assertIsNone(l.eval('frame.customTexts.test'));self.assertFalse(l.eval('frame.customTextPool[1].shown'))
  def test_empty_custom_texts_after_finalization(self):
   l=env();load_finalized_tags(l)
   l.execute("""NP.db.units.ENEMY_NPC={customTexts={}}
