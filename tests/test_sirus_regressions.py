@@ -124,6 +124,24 @@ class Changes(unittest.TestCase):
   self.assertEqual(l.eval('AlwaysUpFrame1.points[1][1]'),'LEFT')
   l.execute('AlwaysUpFrame1.locked=false; frames[#frames].scripts.OnEvent()')
   self.assertEqual(l.eval('AlwaysUpFrame1.points[1][1]'),'CENTER')
+ def test_worldstate_text_centering(self):
+  l=env();l.execute("""InCombatLockdown=function() return false end;NUM_ALWAYS_UP_UI_FRAMES=2
+  for i=1,2 do
+   _G['AlwaysUpFrame'..i]=newFrame();local t=newFrame();_G['AlwaysUpFrame'..i..'Text']=t
+   function t:SetJustifyH(v) self.justifyH=v end
+   function t:SetWordWrap(v) self.wordWrap=v end
+   t.width=240;t.justifyH='LEFT';t.wordWrap=true
+  end""")
+  l.execute((ROOT/'ElvUI/Core/Modules/Blizzard/CaptureBar.lua').read_text());l.execute('NP:PositionAlwaysUpFrame()')
+  for i in (1,2):
+   l.execute(f't=AlwaysUpFrame{i}Text;f=AlwaysUpFrame{i}')
+   self.assertEqual(l.eval('t.width'),0)
+   self.assertEqual(l.eval('t.justifyH'),'CENTER')
+   self.assertFalse(l.eval('t.wordWrap'))
+   self.assertTrue(l.eval("#t.points==1 and t.points[1][1]=='CENTER' and t.points[1][2]==f and t.points[1][3]=='CENTER' and t.points[1][4]==0"))
+  l.execute("AlwaysUpFrame1Text.width=300;AlwaysUpFrame1Text.justifyH='LEFT';hooks.WorldStateAlwaysUpFrame_Update()")
+  self.assertEqual(l.eval('AlwaysUpFrame1Text.width'),0)
+  self.assertEqual(l.eval('AlwaysUpFrame1Text.justifyH'),'CENTER')
  def test_capture_marker(self):
   l=env();l.execute('WorldStateCaptureBar1=newFrame(); WorldStateCaptureBar1.spark={}; WorldStateCaptureBar1Indicator=newFrame(); WorldStateCaptureBar1MiddleBar=newFrame()')
   code=chunk('ElvUI/Core/Modules/Skins/Blizzard/WorldStateFrame.lua','local function UpdateCaptureProgress','local function DeferCaptureBarWork')

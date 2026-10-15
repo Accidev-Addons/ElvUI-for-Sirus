@@ -44,6 +44,10 @@ local function alwaysUpFrameUpdate(id)
 	local dynamicIconButton = _G['AlwaysUpFrame'..id..'DynamicIconButton']
 
 	if text then
+		-- Center the glyphs as well as the region; discard inherited fixed widths.
+		text:SetWidth(0)
+		text:SetJustifyH('CENTER')
+		text:SetWordWrap(false)
 		text:ClearAllPoints()
 		text:Point('CENTER', frame, 'CENTER', 0, 0)
 	end
