@@ -24,6 +24,7 @@ local INVERT_ANCHORPOINT = {
 }
 
 local ticks = {}
+local channelTicks
 
 function UF:Construct_Castbar(frame, moverName)
 	local castbar = CreateFrame("StatusBar", nil, frame)
@@ -377,8 +378,15 @@ function UF:PostCastStart(unit)
 	self.unit = unit
 
 	if self.channeling and db.castbar.ticks and unit == "player" then
-		local unitframe = E.global.unitframe
-		local baseTicks = unitframe.ChannelTicks[self.spellName]
+		-- ChannelTicks is keyed by spellID, oUF gives only the spell name
+		if not channelTicks then
+			channelTicks = {}
+			for id, num in pairs(E.global.unitframe.ChannelTicks) do
+				local name = GetSpellInfo(id)
+				if name then channelTicks[name] = num end
+			end
+		end
+		local baseTicks = channelTicks[self.spellName]
 
 		if baseTicks then
 			UF:SetCastTicks(self, baseTicks)
