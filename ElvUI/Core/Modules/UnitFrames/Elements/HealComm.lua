@@ -304,6 +304,8 @@ function UF:Configure_HealComm(frame)
 			healPrediction.absorbBar:SetStatusBarColor(c.absorbs.r, c.absorbs.g, c.absorbs.b, c.absorbs.a)
 			healPrediction.healAbsorbBar:SetStatusBarColor(c.healAbsorbs.r, c.healAbsorbs.g, c.healAbsorbs.b, c.healAbsorbs.a)
 		end
+		UF:SetAlpha_HealComm(healPrediction, true)
+		healPrediction:ForceUpdate()
 	elseif frame:IsElementEnabled("SirusHealPrediction") then
 		frame:DisableElement("SirusHealPrediction")
 	end
@@ -356,14 +358,19 @@ function UF:UpdateHealComm(_, myIncomingHeal, otherIncomingHeal, absorb, healAbs
 	else
 		if style == "REVERSED" then
 			SetReversedAmount(absorbBar, absorb, maxHealth, healthBar, orientation)
-		elseif hasOverAbsorb then
-			-- the bar is clipped by the frame, so it is capped at the missing health
-			local room = maxHealth - health
-			if style == "STACKED" then
-				room = room - myIncomingHeal - otherIncomingHeal
+		else
+			-- Keep the shield inside the health bar, even at full health. Appending
+			-- outside its full texture leaves NORMAL/STACKED with zero visible room.
+			local amount = math.min(absorb, maxHealth)
+			local incoming = style == "STACKED" and (myIncomingHeal + otherIncomingHeal) or 0
+			local offset = max(0, math.min(health + incoming, maxHealth - amount))
+			local fraction = maxHealth > 0 and offset / maxHealth or 0
+			absorbBar:SetValue(amount)
+			if orientation == "HORIZONTAL" then
+				absorbBar:SetPoint("LEFT", healthBar, "LEFT", healthBar:GetWidth() * fraction, 0)
+			else
+				absorbBar:SetPoint("BOTTOM", healthBar, "BOTTOM", 0, healthBar:GetHeight() * fraction)
 			end
-
-			absorbBar:SetValue(max(room, 0))
 		end
 
 		local c = (hasOverAbsorb and colors.overabsorbs) or colors.absorbs
