@@ -182,8 +182,14 @@ do
 	local GetActiveTalentGroup = GetActiveTalentGroup
 	local GetTalentTabInfo = GetTalentTabInfo
 	local C_Talent = _G.C_Talent
+	local C_GlobalStorage = _G.C_GlobalStorage
 	local GetSpecializationInfoForClassID = _G.GetSpecializationInfoForClassID
 	local LGTRoleTable = {melee = 'DAMAGER', caster = 'DAMAGER', healer = 'HEALER', tank = 'TANK'}
+
+	local function IsSpecInfoReady()
+		return not (C_GlobalStorage and C_GlobalStorage.GetVar) or C_GlobalStorage.GetVar('ASMSG_SPEC_INFO') ~= nil
+	end
+	E.IsSpecInfoReady = IsSpecInfoReady
 
 	local specsTable = {
 		MAGE = {62, 63, 64},
@@ -199,7 +205,7 @@ do
 	}
 
 	local function GetSpecialization(isInspect, isPet, specGroup)
-		if not isInspect and not isPet and C_Talent then
+		if not isInspect and not isPet and C_Talent and IsSpecInfoReady() then
 			local index = C_Talent.GetCurrentSpecTabIndex()
 			if index and index > 0 then
 				local name, _, points = GetTalentTabInfo(index)
@@ -262,7 +268,7 @@ do
 
 	local function GetSpecializationRole(unit)
 		if (not unit or unit == 'player') and C_Talent then
-			local role = C_Talent.GetCurrentSpecRole()
+			local role = IsSpecInfoReady() and C_Talent.GetCurrentSpecRole() or 'DAMAGER'
 			if role == 'TANK' or role == 'HEALER' or role == 'DAMAGER' then
 				return role
 			end

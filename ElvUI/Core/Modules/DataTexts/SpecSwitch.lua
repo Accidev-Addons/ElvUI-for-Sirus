@@ -28,7 +28,7 @@ local function GetGroupInfo(index)
 	local name, texture = C_Talent.GetTalentGroupSettings(index)
 
 	if not name or name == '' or not texture then
-		local tabIndex = C_Talent.GetPrimaryTabIndexForTalentGroup(index)
+		local tabIndex = E.IsSpecInfoReady() and C_Talent.GetPrimaryTabIndexForTalentGroup(index)
 
 		if tabIndex and tabIndex > 0 then
 			local tabName, tabTexture = GetTalentTabInfo(tabIndex, false, false, index <= 2 and index or 1)
@@ -105,13 +105,15 @@ local function OnEvent(self)
 	self:EnableMouseWheel(true)
 	self:SetScript('OnMouseWheel', OnMouseWheel)
 
-	maxGroups = C_Talent.GetNumTalentGroups() or 1
+	local ready = E.IsSpecInfoReady()
+
+	maxGroups = ready and C_Talent.GetNumTalentGroups() or 1
 	if maxGroups < 1 then maxGroups = 1 end
 
-	local cache = C_Talent.GetSpecInfoCache()
-	activeGroup = (cache and cache.activeTalentGroup) or C_Talent.GetActiveTalentGroup() or 1
+	local cache = ready and C_Talent.GetSpecInfoCache()
+	activeGroup = (cache and cache.activeTalentGroup) or (ready and C_Talent.GetActiveTalentGroup()) or 1
 
-	if not synced and C_Talent.IsSpecInfoLoaded() then
+	if not synced and ready and C_Talent.IsSpecInfoLoaded() then
 		synced = true
 		selectedIndex = activeGroup
 	end
