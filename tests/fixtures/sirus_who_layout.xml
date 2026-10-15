@@ -1,0 +1,208 @@
+<!-- Client FriendsFrame.xml at 1c4353a3c3144f985b90494f357b198458a9995c; relevant templates and headers. -->
+<Ui xmlns="http://www.blizzard.com/wow/ui/"><Button name="WhoFrameColumnHeaderTemplate" virtual="true">
+		<Size x="10" y="24" />
+		<Layers>
+			<Layer level="BACKGROUND">
+				<Texture name="$parentLeft" file="Interface\FriendsFrame\WhoFrame-ColumnTabs">
+					<Size x="5" y="24" />
+					<Anchors>
+						<Anchor point="TOPLEFT" />
+					</Anchors>
+					<TexCoords left="0" right="0.078125" top="0" bottom="0.75" />
+				</Texture>
+				<Texture name="$parentMiddle" file="Interface\FriendsFrame\WhoFrame-ColumnTabs">
+					<Size x="53" y="24" />
+					<Anchors>
+						<Anchor point="LEFT" relativeTo="$parentLeft" relativePoint="RIGHT" />
+					</Anchors>
+					<TexCoords left="0.078125" right="0.90625" top="0" bottom="0.75" />
+				</Texture>
+				<Texture name="$parentRight" file="Interface\FriendsFrame\WhoFrame-ColumnTabs">
+					<Size x="4" y="24" />
+					<Anchors>
+						<Anchor point="LEFT" relativeTo="$parentMiddle" relativePoint="RIGHT" />
+					</Anchors>
+					<TexCoords left="0.90625" right="0.96875" top="0" bottom="0.75" />
+				</Texture>
+			</Layer>
+		</Layers>
+		<Scripts>
+			<OnClick>
+				if ( self.sortType ) then
+					SortWho(self.sortType);
+				end
+				PlaySound("igMainMenuOptionCheckBoxOn");
+			</OnClick>
+		</Scripts>
+		<ButtonText>
+			<Anchors>
+				<Anchor point="LEFT" x="8" y="0" />
+			</Anchors>
+		</ButtonText>
+		<NormalFont style="GameFontHighlightSmall" />
+		<HighlightTexture name="$parentHighlightTexture" file="Interface\PaperDollInfoFrame\UI-Character-Tab-Highlight" alphaMode="ADD">
+			<Anchors>
+				<Anchor point="TOPLEFT" relativeTo="$parentLeft" x="-2" y="5" />
+				<Anchor point="BOTTOMRIGHT" relativeTo="$parentRight" x="2" y="-7" />
+			</Anchors>
+		</HighlightTexture>
+	</Button>
+	<Button name="FriendsFrameWhoButtonTemplate" virtual="true">
+		<Size x="298" y="16" />
+		<Layers>
+			<Layer level="BORDER">
+				<FontString name="$parentName" inherits="GameFontNormalSmall" justifyH="LEFT">
+					<Size x="72" y="14" />
+					<Anchors>
+						<Anchor point="TOPLEFT" x="10" y="-3" />
+					</Anchors>
+				</FontString>
+				<FontString name="$parentIlvl" inherits="GameFontNormalSmall" justifyH="CENTER">
+					<Size x="30" y="14" />
+					<Anchors>
+						<Anchor point="LEFT" relativeTo="$parentName" relativePoint="RIGHT" x="0" y="0" />
+					</Anchors>
+				</FontString>
+				<FontString name="$parentVariable" inherits="GameFontHighlightSmall" justifyH="LEFT">
+					<Size x="84" y="14" />
+					<Anchors>
+						<Anchor point="LEFT" relativeTo="$parentIlvl" relativePoint="RIGHT" x="6" y="0" />
+					</Anchors>
+				</FontString>
+				<FontString name="$parentLevel" inherits="GameFontHighlightSmall" justifyH="CENTER">
+					<Size x="20" y="14" />
+					<Anchors>
+						<Anchor point="LEFT" relativeTo="$parentVariable" relativePoint="RIGHT" x="8" y="0" />
+					</Anchors>
+				</FontString>
+				<FontString name="$parentClass" inherits="GameFontHighlightSmall" justifyH="LEFT">
+					<Size x="65" y="8" />
+					<Anchors>
+						<Anchor point="LEFT" relativeTo="$parentLevel" relativePoint="RIGHT" x="6" y="0" />
+					</Anchors>
+				</FontString>
+				
+			</Layer>
+		</Layers>
+		<Scripts>
+			<OnLoad>
+				self:RegisterForClicks("LeftButtonUp", "RightButtonUp");
+			</OnLoad>
+			<OnClick>
+				FriendsFrameWhoButton_OnClick(self, button);
+				PlaySound("igMainMenuOptionCheckBoxOn");
+			</OnClick>
+			<OnEnter>
+				if (self.tooltip1 and self.tooltip2) then
+					GameTooltip:SetOwner(self, "ANCHOR_LEFT");
+					GameTooltip:SetText(self.tooltip1);
+					GameTooltip:AddLine(self.tooltip2, 1, 1, 1);
+					GameTooltip:Show();
+				end
+			</OnEnter>
+			<OnLeave function="GameTooltip_Hide" />
+		</Scripts>
+		<HighlightTexture file="Interface\QuestFrame\UI-QuestTitleHighlight" alphaMode="ADD">
+			<Size x="298" y="16" />
+			<Anchors>
+				<Anchor point="TOP" x="5" y="-2" />
+			</Anchors>
+		</HighlightTexture>
+	</Button>
+	<Frame name="WhoFrame"><Frames><Button name="WhoFrameColumnHeader1" inherits="WhoFrameColumnHeaderTemplate" text="NAME">
+						<Anchors>
+							<Anchor point="TOPLEFT" x="7" y="-60" />
+						</Anchors>
+						<Scripts>
+							<OnLoad>
+								WhoFrameColumn_SetWidth(self, 73);
+								self.sortType = "name";
+							</OnLoad>
+						</Scripts>
+					</Button>
+					<Button name="WhoFrameColumnHeader5" inherits="WhoFrameColumnHeaderTemplate" text="ILEVEL_ABBR">
+						<Anchors>
+							<Anchor point="LEFT" relativeTo="WhoFrameColumnHeader1" relativePoint="RIGHT" x="-2" y="0" />
+						</Anchors>
+						<Scripts>
+							<OnLoad>
+								WhoFrameColumn_SetWidth(self, 38);
+								self.sortType = "name";
+
+								self:Disable();
+							</OnLoad>
+						</Scripts>
+					</Button>
+					<Button name="WhoFrameColumnHeader2" inherits="WhoFrameColumnHeaderTemplate">
+						<Anchors>
+							<Anchor point="LEFT" relativeTo="WhoFrameColumnHeader5" relativePoint="RIGHT" x="-2" y="0" />
+						</Anchors>
+						<Frames>
+							<Frame name="WhoFrameDropDown" inherits="UIDropDownMenuTemplate" id="1">
+								<Anchors>
+									<Anchor point="TOPLEFT" x="-15" y="0" />
+								</Anchors>
+								<HitRectInsets>
+									<AbsInset left="18" right="18" top="0" bottom="0" />
+								</HitRectInsets>
+								<Layers>
+									<Layer level="OVERLAY">
+										<Texture name="WhoFrameDropDownHighlightTexture" file="Interface\PaperDollInfoFrame\UI-Character-Tab-Highlight" alphaMode="ADD" hidden="true">
+											<Anchors>
+												<Anchor point="TOPLEFT" x="15" y="3" />
+												<Anchor point="BOTTOMRIGHT" x="-30" y="-2" />
+											</Anchors>
+										</Texture>
+									</Layer>
+								</Layers>
+								<Scripts>
+									<OnLoad function="WhoFrameDropDown_OnLoad" />
+									<OnShow>
+										UIDropDownMenu_Initialize(self, WhoFrameDropDown_Initialize);
+										UIDropDownMenu_SetSelectedID(self, 1);
+									</OnShow>
+									<OnEnter>
+										WhoFrameDropDownHighlightTexture:Show();
+									</OnEnter>
+									<OnLeave>
+										WhoFrameDropDownHighlightTexture:Hide();
+									</OnLeave>
+									<OnMouseUp>
+										if ( WHOFRAME_DROPDOWN_LIST[UIDropDownMenu_GetSelectedID(self)].sortType ) then
+											SortWho(WHOFRAME_DROPDOWN_LIST[UIDropDownMenu_GetSelectedID(self)].sortType);
+											PlaySound("igMainMenuOptionCheckBoxOn");
+										end
+									</OnMouseUp>
+								</Scripts>
+							</Frame>
+						</Frames>
+						<Scripts>
+							<OnLoad>
+								WhoFrameColumn_SetWidth(self, 100);
+							</OnLoad>
+						</Scripts>
+					</Button>
+					<Button name="WhoFrameColumnHeader3" inherits="WhoFrameColumnHeaderTemplate" text="LEVEL_ABBR">
+						<Anchors>
+							<Anchor point="LEFT" relativeTo="WhoFrameColumnHeader2" relativePoint="RIGHT" x="-2" y="0" />
+						</Anchors>
+						<Scripts>
+							<OnLoad>
+								WhoFrameColumn_SetWidth(self, 28);
+								self.sortType = "level";
+							</OnLoad>
+						</Scripts>
+					</Button>
+					<Button name="WhoFrameColumnHeader4" inherits="WhoFrameColumnHeaderTemplate" text="CLASS">
+						<Anchors>
+							<Anchor point="LEFT" relativeTo="WhoFrameColumnHeader3" relativePoint="RIGHT" x="-2" y="0" />
+						</Anchors>
+						<Scripts>
+							<OnLoad>
+								WhoFrameColumn_SetWidth(self, 72);
+								self.sortType = "class";
+							</OnLoad>
+						</Scripts>
+					</Button>
+					
+					</Frames></Frame></Ui>
