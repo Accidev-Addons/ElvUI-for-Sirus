@@ -103,9 +103,16 @@ class Changes(unittest.TestCase):
   function NP:ConfigureAll() end; positionValues={}
   """)
   s=(ROOT/'ElvUI_Options/Core/Nameplates.lua').read_text();l.execute(s[s.index('local ORDER = 100'):s.index('E.Options.args.nameplates =')]+' getOptions=GetUnitSettings')
-  l.execute('opts=getOptions("ENEMY_NPC","Enemy"); opts.args.customText.args.create.set(nil,"My text"); opts.args.buffsGroup.args.useSirusPosition.set(nil,false)')
+  l.execute('opts=getOptions("ENEMY_NPC","Enemy"); opts.args.customText.args.create.set(nil,"My text"); opts.args.buffsGroup.args.xOffset.set({"xOffset"},17)')
   self.assertEqual(l.eval('E.db.nameplates.units.ENEMY_NPC.customTexts["My text"].text_format'),'[name]')
   self.assertFalse(l.eval('E.db.nameplates.units.ENEMY_NPC.buffs.useSirusPosition'));self.assertTrue(l.eval('E.db.nameplates.units.ENEMY_NPC.crowdcontrol.useSirusPosition'))
+  self.assertIsNone(l.eval('opts.args.buffsGroup.args.useSirusPosition'))
+  self.assertIsNone(l.eval('opts.args.buffsGroup.args.xOffset.disabled'))
+  self.assertEqual(l.eval('E.db.nameplates.units.ENEMY_NPC.buffs.xOffset'),17)
+  l.execute('opts.args.buffsGroup.args.resetSirusPosition.func()')
+  self.assertTrue(l.eval('E.db.nameplates.units.ENEMY_NPC.buffs.useSirusPosition'))
+  self.assertTrue(l.eval('E.db.nameplates.units.ENEMY_NPC.buffs.xOffset==P.nameplates.units.ENEMY_NPC.buffs.xOffset'))
+  self.assertNotIn('AddClientAuraNotice',s)
   l.execute('opts.args.customText.args["text:My text"].args.delete.func()');self.assertIsNone(l.eval('E.db.nameplates.units.ENEMY_NPC.customTexts["My text"]'))
  def test_pvp_each_update_and_combat(self):
   l=env();l.execute("InCombatLockdown=function() return false end; NUM_ALWAYS_UP_UI_FRAMES=2; AlwaysUpFrame1=newFrame(); AlwaysUpFrame2=newFrame(); AlwaysUpFrame1Text=newFrame(); AlwaysUpFrame2Text=newFrame()")
@@ -202,6 +209,30 @@ class Changes(unittest.TestCase):
   l.execute('NP.db.units.ENEMY_NPC.debuffs.useSirusPosition=false; anchor(frame,frame.Debuffs)');self.assertEqual(l.eval('frame.Debuffs.points[1][4]'),11)
   l.execute('anchor(frame,frame.LossOfControl)');self.assertTrue(l.eval('frame.LossOfControl.points[1][2]==frame.Level'))
   self.assertTrue(l.eval('auradb(frame,"lossofcontrol")==NP.db.units.ENEMY_NPC.crowdcontrol'))
+ def test_sirus_default_anchors_follow_client(self):
+  l=env();l.execute("""frame=newFrame();frame.UnitType='ENEMY_NPC'
+  frame.Health=newFrame();frame.Name=newFrame();frame.Level=newFrame();frame.Elite=newFrame()
+  native={healthBar=newFrame(),name=newFrame(),LevelFrame=newFrame(),ClassificationFrame=newFrame(),AurasFrame={}}
+  NP.db.units.ENEMY_NPC={}
+  function NP:GetSirusUnitFrame() return native end
+  for key,list in pairs({Buffs='BuffListFrame',Debuffs='DebuffListFrame',CrowdControl='CrowdControlListFrame',LossOfControl='LossOfControlFrame'}) do
+   local group=newFrame();group.type=string.lower(key);frame[key]=group
+   NP.db.units.ENEMY_NPC[group.type=='lossofcontrol' and 'crowdcontrol' or group.type]={useSirusPosition=true}
+   local source=newFrame();native.AurasFrame[list]=source
+   function source:GetNumPoints() return #self.points end
+   function source:GetPoint(i) return unpack(self.points[i]) end
+   source:SetPoint('LEFT',native.healthBar,'RIGHT',3,4)
+   source:SetPoint('BOTTOM',native.name,'TOP',5,6)
+  end""")
+  l.execute(chunk('ElvUI/Core/Modules/Nameplates/Elements/Auras.lua','local function GetAuraDB','local function ConfigureSirusAuras')+' anchor=AnchorSirusAuras')
+  for key,listname in [('Buffs','BuffListFrame'),('Debuffs','DebuffListFrame'),('CrowdControl','CrowdControlListFrame'),('LossOfControl','LossOfControlFrame')]:
+   with self.subTest(group=key):
+    l.execute(f'group=frame.{key};source=native.AurasFrame.{listname};anchor(frame,group)')
+    self.assertTrue(l.eval('#group.points==2 and group.points[1][2]==frame.Health and group.points[2][2]==frame.Name'))
+    self.assertEqual(l.eval('group.points[2][5]'),6)
+    l.execute("source:ClearAllPoints();source:SetPoint('TOP',native.LevelFrame,'BOTTOM',9,13);anchor(frame,group)")
+    self.assertTrue(l.eval('#group.points==1 and group.points[1][2]==frame.Level'))
+    self.assertEqual(l.eval('group.points[1][5]'),13)
  def test_client_heals_without_lib(self):
   l=env();l.execute('''LibStub=function() error('must not load HealComm') end
    UnitHealth=function() return health end; UnitHealthMax=function() return 100 end

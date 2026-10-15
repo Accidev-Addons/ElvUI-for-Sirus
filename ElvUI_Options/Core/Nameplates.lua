@@ -3687,11 +3687,16 @@ local function GetUnitSettings(unit, name)
 	group.args.customText = CustomTextOptions(unit)
 	for key, aura in pairs({ buffsGroup = "buffs", debuffsGroup = "debuffs", crowdControlGroup = "crowdcontrol" }) do
 		local args = group.args[key].args
-		args.useSirusPosition = {
-			order = 1.1, type = "toggle", name = "Положение Sirus",
-			desc = "Стандартные привязки клиента. Отключите для собственного положения аур.",
-			get = function() return E.db.nameplates.units[unit][aura].useSirusPosition ~= false end,
-			set = function(_, value) E.db.nameplates.units[unit][aura].useSirusPosition = value NP:ConfigureAll() end
+		args.resetSirusPosition = {
+			order = 1.1, type = "execute", name = "Сбросить положение",
+			desc = "Восстановить стандартные привязки клиента Sirus.",
+			func = function()
+				local db = E.db.nameplates.units[unit][aura]
+				local defaults = P.nameplates.units[unit][aura]
+				for _, key in ipairs({ "anchorPoint", "attachTo", "xOffset", "yOffset" }) do db[key] = defaults[key] end
+				db.useSirusPosition = true
+				NP:ConfigureAll()
+			end
 		}
 		args.useSirusSize = {
 			order = 1.2, type = "toggle", name = "Размер и интервалы Sirus",
@@ -3699,7 +3704,12 @@ local function GetUnitSettings(unit, name)
 			set = function(_, value) E.db.nameplates.units[unit][aura].useSirusSize = value NP:ConfigureAll() end
 		}
 		for _, name in ipairs({ "anchorPoint", "attachTo", "xOffset", "yOffset" }) do
-			args[name].disabled = function() return E.db.nameplates.units[unit][aura].useSirusPosition ~= false end
+			args[name].set = function(info, value)
+				local db = E.db.nameplates.units[unit][aura]
+				db[info[#info]] = value
+				db.useSirusPosition = false
+				NP:ConfigureAll()
+			end
 		end
 		for _, name in ipairs({ "size", "spacing" }) do
 			if args[name] then args[name].disabled = function() return E.db.nameplates.units[unit][aura].useSirusSize ~= false end end
