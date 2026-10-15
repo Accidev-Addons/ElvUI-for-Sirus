@@ -4715,25 +4715,6 @@ for i = 1, 5 do
 end
 
 do
-	local function AddClientAuraNotice(group)
-		if not (group and group.args) then return end
-
-		group.args.clientAuras = {
-			order = 0.5,
-			type = "description",
-			name = L["The game client decides which auras a nameplate can show and in what order: its own aura display options, buff and debuff rules, spell blacklists and crowd control. ElvUI draws them in its own style. The Enable toggle and the filters below can hide some of these auras, but cannot add auras the client does not show."],
-			hidden = function() return not NP:IsSirusNameplates() end
-		}
-	end
-
-	for _, group in pairs(E.Options.args.nameplates.args) do
-		if type(group) == "table" and group.args then
-			AddClientAuraNotice(group.args.buffsGroup)
-			AddClientAuraNotice(group.args.debuffsGroup)
-			AddClientAuraNotice(group.args.crowdControlGroup)
-		end
-	end
-
 	local general = E.Options.args.nameplates.args.generalGroup.args.general.args
 
 	general.clientStacking = {
