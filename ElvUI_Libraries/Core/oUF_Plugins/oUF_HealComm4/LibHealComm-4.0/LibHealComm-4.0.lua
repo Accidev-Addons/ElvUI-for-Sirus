@@ -1,1 +1,0 @@
--- Retired in Sirus: use UnitGetIncomingHeals and client absorb APIs.
