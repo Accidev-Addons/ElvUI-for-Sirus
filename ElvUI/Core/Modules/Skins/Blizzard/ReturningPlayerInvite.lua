@@ -12,7 +12,12 @@ local function LoadSkin()
 		toggle:SetTemplate("Default")
 		toggle:StyleButton()
 		if icon then
-			icon:SetTexture(texture)
+			-- The Friends skin may already have cleared this BACKGROUND texture.
+			icon:SetTexture(texture and texture ~= E.ClearTexture and texture ~= "" and texture or [[Interface\Icons\SOR-mail]])
+			icon:SetDrawLayer("ARTWORK")
+			toggle:EnableDrawLayer("ARTWORK")
+			icon:SetVertexColor(1, 1, 1)
+			icon:Show()
 			icon:SetAlpha(1)
 			icon:SetTexCoords()
 			icon:SetInside()

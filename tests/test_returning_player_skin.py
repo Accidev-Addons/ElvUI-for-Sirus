@@ -23,6 +23,7 @@ def setup(global_enabled=True, friends_enabled=True, with_frames=True):
       function f:StripTextures() self.stripped=true;if self.Icon then self.Icon:SetTexture(nil);self.Icon:SetAlpha(0) end end
       function f:SetTemplate(template) self.template=template;self.templateCalls=(self.templateCalls or 0)+1 end
       function f:StyleButton() self.styled=true end
+      function f:EnableDrawLayer(layer) self.enabledLayer=layer end
       function f:HookScript(name,fn) self.hooked=self.hooked or {};self.hooked[name]=fn end
       return f
     end
@@ -40,7 +41,7 @@ def setup(global_enabled=True, friends_enabled=True, with_frames=True):
         l.execute('''
         ReturningPlayerInviteToggleButton=skinFrame();local t=ReturningPlayerInviteToggleButton;t.Icon=newFrame()
         t.Icon.texture='SOR-mail';function t.Icon:GetTexture() return self.texture end
-        function t.Icon:SetTexture(v) self.texture=v end;function t.Icon:SetAlpha(v) self.alpha=v end
+        function t.Icon:SetTexture(v) self.texture=v end;function t.Icon:SetAlpha(v) self.alpha=v end;function t.Icon:SetDrawLayer(v) self.layer=v end
         t.scripts.OnClick=function() toggled=true end
         ReturningPlayerInviteFrame=skinFrame();f=ReturningPlayerInviteFrame
         ReturningPlayerInviteFrameCloseButton=skinFrame()
@@ -106,3 +107,12 @@ class ReturningPlayerSkin(unittest.TestCase):
 
 if __name__=='__main__':
     unittest.main()
+
+class ReturningPlayerIcon(unittest.TestCase):
+    def test_icon_is_above_backdrop(self):
+        l=setup()
+        self.assertEqual(l.eval('ReturningPlayerInviteToggleButton.Icon.layer'),'ARTWORK')
+        self.assertTrue(l.eval('ReturningPlayerInviteToggleButton.Icon.shown'))
+    def test_native_texture_restored_if_prior_skin_cleared_it(self):
+        l=setup();l.execute('ReturningPlayerInviteToggleButton.elvReturningPlayerSkinned=nil;ReturningPlayerInviteToggleButton.Icon.texture=nil;loadSkin()')
+        self.assertEqual(l.eval('ReturningPlayerInviteToggleButton.Icon.texture'),r'Interface\Icons\SOR-mail')
