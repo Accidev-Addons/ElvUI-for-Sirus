@@ -399,7 +399,7 @@ class Changes(unittest.TestCase):
   l.execute('DAN:OnDisable()');self.assertIsNone(l.eval('DAN.DmgTextFrame.events.COMBAT_LOG_EVENT_UNFILTERED'))
  def test_plugin_lookup(self):
   if not (PLUGIN/"Core/Core.lua").exists(): self.skipTest("Clone ElvUI_DmgAtNameplates alongside ElvUI to test plugin integration")
-  l=env();l.execute('DAN={}; NP.VisiblePlates={}; frame=newFrame(); frame.guid="NPC"; frame.unit="nameplate1"; unitGUIDs.nameplate1="NPC"; NP.VisiblePlates[frame]=1')
+  l=env();l.execute('GetTime=function() return 0 end; DAN={}; NP.VisiblePlates={}; frame=newFrame(); frame.guid="NPC"; frame.unit="nameplate1"; unitGUIDs.nameplate1="NPC"; NP.VisiblePlates[frame]=1')
   s=(PLUGIN/'Core/Core.lua').read_text();a=s.index('local platesByGUID');b=s.index('function DAN:GetFrame',a);l.execute(s[a:b])
   self.assertTrue(l.eval('DAN:GetNameplateFrame("NPC")==frame'))
   l.execute('frame.shown=false');self.assertIsNone(l.eval('DAN:GetNameplateFrame("NPC")'))
