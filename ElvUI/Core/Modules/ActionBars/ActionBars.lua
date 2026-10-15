@@ -672,6 +672,21 @@ function AB:StyleButton(button, noBackdrop, useMasque, ignoreNormal)
 		button:StyleButton()
 		AB:TrimIcon(button)
 		icon:SetInside()
+
+		-- Клиент WotLK рисует pushed-текстуру кнопки ПОД содержимым,
+		-- поэтому штатная "анимация нажатия" оказывается под иконкой.
+		-- Рисуем собственный блик нажатия поверх иконки (ниже текстов hotkey/count).
+		if not button.press then
+			local press = button:CreateTexture(nil, 'OVERLAY', nil, -5)
+			press:SetInside()
+			press:SetTexture(E.media.blankTex)
+			press:SetVertexColor(0.9, 0.8, 0.1, 0.3)
+			press:SetBlendMode('ADD')
+			press:Hide()
+			button.press = press
+		else
+			button.press:SetInside()
+		end
 	end
 
 	if shine then
@@ -1179,14 +1194,20 @@ function AB:SetButtonDesaturation(button, duration)
 end
 
 function AB:LAB_MouseUp()
-	if self.config.clickOnDown then
-		self:GetPushedTexture():SetAlpha(0)
+	if self.press then
+		self.press:Hide()
+	elseif self.config.clickOnDown then
+		local pushed = self:GetPushedTexture()
+		if pushed then pushed:SetAlpha(0) end
 	end
 end
 
 function AB:LAB_MouseDown()
-	if self.config.clickOnDown then
-		self:GetPushedTexture():SetAlpha(1)
+	if self.press then
+		self.press:Show()
+	elseif self.config.clickOnDown then
+		local pushed = self:GetPushedTexture()
+		if pushed then pushed:SetAlpha(1) end
 	end
 end
 
@@ -1194,6 +1215,7 @@ function AB:LAB_ButtonCreated(button)
 	-- this fixes Key Down getting the pushed texture stuck
 	button:HookScript('OnMouseUp', AB.LAB_MouseUp)
 	button:HookScript('OnMouseDown', AB.LAB_MouseDown)
+	button:HookScript('OnHide', AB.LAB_MouseUp)
 end
 
 function AB:LAB_ButtonUpdate(button)
