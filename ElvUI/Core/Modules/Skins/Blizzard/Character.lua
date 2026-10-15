@@ -2858,6 +2858,39 @@ local function LoadSkin()
 		local flyoutHighlight = _G.EquipmentFlyoutFrameHighlight
 		if flyoutHighlight then flyoutHighlight:StripTextures() end
 
+		local function RaiseFlyout()
+			local source = flyoutFrame.button
+			if not source then return end
+
+			-- The client resets the flyout below the item slot on every update.
+			-- Socket buttons live several levels above that slot, so lift the
+			-- entire grid (including its mouse-catching gaps), not just its art.
+			local level = source:GetFrameLevel() + 10
+			flyoutFrame:SetFrameStrata("HIGH")
+			flyoutFrame:SetFrameLevel(level)
+			local buttons = flyoutFrame.buttonFrame
+			if buttons then
+				buttons:SetFrameStrata("HIGH")
+				buttons:SetFrameLevel(level + 1)
+				buttons:EnableMouse(true)
+			end
+			local nav = flyoutFrame.NavigationFrame
+			if nav then
+				nav:SetFrameStrata("HIGH")
+				nav:SetFrameLevel(level + 1)
+				nav:EnableMouse(true)
+				for _, button in next, { nav.PrevButton, nav.NextButton } do
+					button:SetFrameStrata("HIGH")
+					button:SetFrameLevel(level + 2)
+				end
+			end
+			for _, button in next, flyoutFrame.buttons or {} do
+				button:SetFrameStrata("HIGH")
+				button:SetFrameLevel(level + 2)
+				if button.cooldown then button.cooldown:SetFrameLevel(level + 3) end
+			end
+		end
+
 		local function SkinFlyout()
 			local buttons = _G.EquipmentFlyoutFrameButtons
 			if buttons then
@@ -2901,6 +2934,7 @@ local function LoadSkin()
 					end
 				end
 			end
+			RaiseFlyout()
 		end
 
 		SkinFlyout()

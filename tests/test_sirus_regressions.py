@@ -88,6 +88,27 @@ def load_finalized_tags(l):
  l.execute('ns.oUF.Private=nil')
 
 
+def flyout_env():
+ l=env();l.execute("""
+ S={HandleNextPrevButton=function() end};EquipmentFlyoutFrame=newFrame();local f=EquipmentFlyoutFrame
+ f.button=newFrame();f.button.level=20;f.buttonFrame=newFrame(f);EquipmentFlyoutFrameButtons=f.buttonFrame
+ f.NavigationFrame=newFrame(f);f.NavigationFrame.PrevButton=newFrame(f.NavigationFrame);f.NavigationFrame.NextButton=newFrame(f.NavigationFrame)
+ f.buttons={newFrame(f.buttonFrame),newFrame(f.buttonFrame),newFrame(f.buttonFrame)};f.buttons[1].cooldown=newFrame(f.buttons[1])
+ local function methods(frame)
+  function frame:GetFrameLevel() return self.level or 1 end
+  function frame:SetFrameLevel(v) self.level=v end
+  function frame:SetFrameStrata(v) self.strata=v end
+  function frame:EnableMouse(v) self.mouseEnabled=v end
+  function frame:StripTextures() end
+  function frame:DisableDrawLayer() end
+  function frame:SetTemplate() end
+ end
+ methods(f);methods(f.button);methods(f.buttonFrame);methods(f.NavigationFrame);methods(f.NavigationFrame.PrevButton);methods(f.NavigationFrame.NextButton)
+ for _,b in ipairs(f.buttons) do methods(b);if b.cooldown then methods(b.cooldown) end end
+ """)
+ l.execute(chunk('ElvUI/Core/Modules/Skins/Blizzard/Character.lua','local flyoutFrame = _G.EquipmentFlyoutFrame','if CharacterAmmoSlot then'))
+ return l
+
 class Changes(unittest.TestCase):
  def test_lua51_syntax(self):
   l=env();compile=l.eval('function(s) local f,e=loadstring(s); return f~=nil,e end')
@@ -152,6 +173,17 @@ class Changes(unittest.TestCase):
   l.execute('WorldStateCaptureBar1.locked=true; updateCapture(1,25,30)')
   self.assertEqual(l.eval('WorldStateCaptureBar1.elvCaptureValue'),25)
   self.assertEqual(l.eval('WorldStateCaptureBar1MiddleBar.width'),20)
+ def test_equipment_flyout_above_socket_layers(self):
+  l=flyout_env()
+  self.assertTrue(l.eval('EquipmentFlyoutFrame.level>EquipmentFlyoutFrame.button.level+3'))
+  self.assertTrue(l.eval('EquipmentFlyoutFrame.buttonFrame.mouseEnabled'))
+  self.assertTrue(l.eval('EquipmentFlyoutFrame.buttons[1].level>EquipmentFlyoutFrame.buttonFrame.level'))
+  self.assertTrue(l.eval('EquipmentFlyoutFrame.NavigationFrame.PrevButton.level>EquipmentFlyoutFrame.NavigationFrame.level'))
+  self.assertEqual(l.eval('EquipmentFlyoutFrame.buttons[1].strata'),'HIGH')
+  l.execute('EquipmentFlyoutFrame.level=1;EquipmentFlyoutFrame.button.level=60;hooks.EquipmentFlyout_UpdateItems()')
+  self.assertEqual(l.eval('EquipmentFlyoutFrame.level'),70)
+  self.assertEqual(l.eval('EquipmentFlyoutFrame.buttons[1].cooldown.level'),73)
+  l.execute('EquipmentFlyoutFrame.button=nil;hooks.EquipmentFlyout_UpdateItems()')
  def test_popup(self):
   l=env();l.execute("staticPopup=newFrame(); staticPopup.which='NOTE'; wideBox=newFrame(); wideBox.backdrop=newFrame(); StaticPopupDialogs={NOTE={hasEditBox=true,hasWideEditBox=true}}")
   code=chunk('ElvUI/Core/Modules/Skins/Blizzard/Misc.lua','\t\tlocal function UpdatePopupEditBox','\t\thooksecurefunc(\'StaticPopup_Resize\'')
