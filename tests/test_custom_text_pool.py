@@ -5,7 +5,7 @@ ROOT=Path(__file__).resolve().parents[1]
 def setup():
  l=env();load_finalized_tags(l)
  l.execute('''NP.db.units.ENEMY_NPC={customTexts={}};frame=newFrame();frame.UnitType='ENEMY_NPC';frame.unit='nameplate1';unitGUIDs.nameplate1='NPC';frame.Health=newFrame(frame);created=0
- local base=frame.CreateFontString;function frame:CreateFontString(...) created=created+1;return base(self,...) end''')
+ local base=CreateFrame;function CreateFrame(...) local f=base(...);local create=f.CreateFontString;function f:CreateFontString(...) created=created+1;return create(self,...) end;return f end''')
  l.execute((ROOT/'ElvUI/Core/Modules/Nameplates/Elements/CustomText.lua').read_text());return l
 class CustomTextPool(unittest.TestCase):
  def test_hundred_distinct_names_reuse_one_fontstring(self):

@@ -1893,43 +1893,74 @@ end
 
 local function CustomTextOptions(unit)
 	local group = { order = 8.2, type = "group", name = L["Custom Texts"], args = {} }
+	local function Configs()
+		local db = E.db.nameplates.units[unit]
+		db.customTexts = db.customTexts or {}
+		return db.customTexts
+	end
 	local function Refresh()
-		local args = group.args
-		for key in pairs(args) do args[key] = nil end
-		args.create = {
-			order = 1, type = "input", name = L["Create Custom Text"], width = "full",
-			get = function() return "" end,
-			set = function(_, name)
-				name = name:match("^%s*(.-)%s*$")
-				local configs = E.db.nameplates.units[unit].customTexts
-				if name == "" or configs[name] then return end
-				configs[name] = {
-					enable = true, text_format = "[name]", size = 12, font = "PT Sans Narrow",
-					fontOutline = "OUTLINE", justifyH = "CENTER", position = "CENTER",
-					attachTextTo = "Health", xOffset = 0, yOffset = 0
+		local args, configs = group.args, Configs()
+		-- Keep option identities stable during AceConfig traversal. Reconcile
+		-- profile changes without rebuilding every group on each hidden query.
+		for key in pairs(args) do
+			if key:sub(1, 5) == "text:" and not configs[key:sub(6)] then args[key] = nil end
+		end
+		for name in pairs(configs) do
+			local textName, optionKey = name, "text:"..name
+			if not args[optionKey] then
+				args[optionKey] = {
+					order = -1, type = "group", name = textName,
+					get = function(info) local db = Configs()[textName] return db and db[info[#info]] end,
+					set = function(info, value)
+						local db = Configs()[textName]
+						if db then db[info[#info]] = value NP:ConfigureAll() end
+					end,
+					args = {
+						header = { order = 1, type = "header", name = textName },
+						delete = { order = 2, type = "execute", name = L["Delete"], confirm = true, func = function()
+							Configs()[textName] = nil
+							Refresh()
+							NP:ConfigureAll()
+						end },
+						enable = { order = 3, type = "toggle", name = L["Enable"], get = function() local db = Configs()[textName] return db and db.enable ~= false end },
+						font = { order = 4, type = "select", name = L["Font"], dialogControl = "LSM30_Font", values = AceGUIWidgetLSMlists.font },
+						size = { order = 5, type = "range", name = L["Font Size"], min = 6, max = 32, step = 1 },
+						fontOutline = { order = 6, type = "select", name = L["Font Outline"], desc = L["Set the font outline."], values = C.Values.FontFlags, sorting = C.Values.FontSorting },
+						justifyH = { order = 7, type = "select", name = L["JustifyH"], desc = L["Sets the font instance's horizontal text alignment style."], values = { LEFT = L["Left"], CENTER = L["Center"], RIGHT = L["Right"] } },
+						xOffset = { order = 8, type = "range", name = L["X-Offset"], min = -400, max = 400, step = 1 },
+						yOffset = { order = 9, type = "range", name = L["Y-Offset"], min = -400, max = 400, step = 1 },
+						attachTextTo = { order = 10, type = "select", name = L["Attach Text To"], values = { Frame = L["Frame"], Health = L["Health"], Name = L["Name"], CastBar = L["Castbar"] } },
+						-- Extra manual anchoring preserves existing nameplate layouts;
+						-- Automatic follows JustifyH exactly as unit-frame custom texts do.
+						position = { order = 11, type = "select", name = L["Position"], values = { AUTO = L["Automatic"], LEFT = L["LEFT"], RIGHT = L["RIGHT"], CENTER = L["CENTER"], TOP = L["TOP"], BOTTOM = L["BOTTOM"], TOPLEFT = L["TOPLEFT"], TOPRIGHT = L["TOPRIGHT"], BOTTOMLEFT = L["BOTTOMLEFT"], BOTTOMRIGHT = L["BOTTOMRIGHT"] },
+							get = function() local db = Configs()[textName] return db and db.position or "AUTO" end,
+							set = function(_, value) local db = Configs()[textName] if db then db.position = value ~= "AUTO" and value or nil NP:ConfigureAll() end end },
+						text_format = { order = 100, type = "input", name = L["Text Format"], desc = L["TEXT_FORMAT_DESC"], width = "full" }
+					}
 				}
-				Refresh()
-				NP:ConfigureAll()
 			end
-		}
-		for name in pairs(E.db.nameplates.units[unit].customTexts or {}) do
-			local textName = name
-			local settings = PlateLabelOptions(unit, "customTexts", textName, 2)
-			settings.get = function(info) return E.db.nameplates.units[unit].customTexts[textName][info[#info]] end
-			settings.set = function(info, value) E.db.nameplates.units[unit].customTexts[textName][info[#info]] = value NP:ConfigureAll() end
-			settings.args.fontSize = nil
-			settings.args.size = { order = 6, type = "range", name = L["Font Size"], min = 6, max = 32, step = 1 }
-			settings.args.attachTextTo = { order = 9, type = "select", name = L["Attach Text To"], values = { Health = L["Health"], Name = L["Name"], CastBar = L["Castbar"] } }
-			settings.args.text_format = { order = 10, type = "input", name = L["Text Format"], desc = L["TEXT_FORMAT_DESC"], width = "full" }
-			settings.args.delete = { order = 11, type = "execute", name = L["Delete"], confirm = true, func = function()
-				E.db.nameplates.units[unit].customTexts[textName] = nil
-				Refresh()
-				NP:ConfigureAll()
-			end }
-			-- Keep arbitrary user names out of AceConfig's reserved/control keys.
-			args["text:"..textName] = settings
 		end
 	end
+	group.args.header = { order = 1, type = "header", name = L["Custom Texts"] }
+	group.args.create = {
+		order = 2, type = "input", name = L["Create Custom Text"], width = "full",
+		get = function() return "" end,
+		set = function(_, name)
+			name = name:match("^%s*(.-)%s*$")
+			if name == "" then return end
+			local configs = Configs()
+			for key in pairs(E.db.nameplates.units[unit]) do
+				if key:lower() == name:lower() then E:Print(L["The name you have selected is already in use by another element."]) return end
+			end
+			for key in pairs(configs) do
+				if key:lower() == name:lower() then E:Print(L["The name you have selected is already in use by another element."]) return end
+			end
+			local db = E.db.nameplates
+			configs[name] = { enable = true, text_format = "", size = db.fontSize, font = db.font, fontOutline = db.fontOutline, justifyH = "CENTER", attachTextTo = "Health", xOffset = 0, yOffset = 0 }
+			Refresh()
+			NP:ConfigureAll()
+		end
+	}
 	group.hidden = function() Refresh() return false end
 	Refresh()
 	return group

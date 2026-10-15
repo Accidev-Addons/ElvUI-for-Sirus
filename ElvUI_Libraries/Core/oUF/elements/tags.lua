@@ -963,6 +963,18 @@ oUF.Tags = {
 		frame.colors = frame.colors or oUF.colors
 		frame.__elements = frame.__elements or {}
 	end,
+	-- Custom texts normally use events or a tag's declared timer. Tags supplied
+	-- without either still need the unit-frame-style fallback polling.
+	NeedsFrequentUpdates = function(_, format)
+		format = format:gsub('{.-}%]', ']')
+		for bracket in format:gmatch(_PATTERN) do
+			local tag = GetTagName(bracket)
+			if tagFuncs[tag] and not tagEvents[tag] and not onUpdateDelay[tag] then
+				return true
+			end
+		end
+		return false
+	end,
 	Env = _ENV,
 	Methods = tagFuncs,
 	Events = tagEvents,

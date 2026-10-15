@@ -1069,6 +1069,7 @@ function NP:SetMouseoverFrame(frame)
 
 		NP:Update_Highlight(frame)
 	end
+	NP:UpdateCustomTextMouseover(frame)
 end
 
 -- the engine places plates on fractional pixels, which smears the 1px border over two rows

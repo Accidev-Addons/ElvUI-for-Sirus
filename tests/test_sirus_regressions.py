@@ -6,7 +6,8 @@ COMMON=r'''
 format=string.format; tinsert=table.insert; max=math.max
 function wipe(t) for k in pairs(t) do t[k]=nil end return t end
 function newFrame(parent)
- local f={parent=parent,shown=true,width=100,height=16,points={},scripts={},events={}}
+ local f={parent=parent,_uiParent=parent,shown=true,width=100,height=16,points={},scripts={},events={}}
+ function f:SetAllPoints(owner) self.allPoints=owner end
  function f:ClearAllPoints() self.points={} end
  function f:SetPoint(...) table.insert(self.points,{...}) end
  f.Point=f.SetPoint
@@ -18,8 +19,8 @@ function newFrame(parent)
  function f:GetHeight() return self.height end
  function f:GetSize() return self.width,self.height end
  function f:GetFrameLevel() return self.level or 1 end
- function f:GetParent() return self.parent end
- function f:SetParent(p) self.parent=p end
+ function f:GetParent() return self._uiParent end
+ function f:SetParent(p) self.parent=p self._uiParent=p end
  function f:IsShown() return self.shown end; f.IsVisible=f.IsShown
  function f:Show() self.shown=true end
  function f:Hide() self.shown=false end
@@ -140,7 +141,7 @@ class Changes(unittest.TestCase):
   """)
   s=(ROOT/'ElvUI_Options/Core/Nameplates.lua').read_text();l.execute(s[s.index('local ORDER = 100'):s.index('E.Options.args.nameplates =')]+' getOptions=GetUnitSettings')
   l.execute('opts=getOptions("ENEMY_NPC","Enemy"); opts.args.customText.args.create.set(nil,"My text"); opts.args.buffsGroup.args.xOffset.set({"xOffset"},17)')
-  self.assertEqual(l.eval('E.db.nameplates.units.ENEMY_NPC.customTexts["My text"].text_format'),'[name]')
+  self.assertEqual(l.eval('E.db.nameplates.units.ENEMY_NPC.customTexts["My text"].text_format'),'')
   self.assertFalse(l.eval('E.db.nameplates.units.ENEMY_NPC.buffs.useSirusPosition'));self.assertTrue(l.eval('E.db.nameplates.units.ENEMY_NPC.crowdcontrol.useSirusPosition'))
   self.assertIsNone(l.eval('opts.args.buffsGroup.args.useSirusPosition'))
   self.assertIsNone(l.eval('opts.args.buffsGroup.args.xOffset.disabled'))
