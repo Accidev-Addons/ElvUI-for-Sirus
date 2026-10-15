@@ -236,7 +236,7 @@ class Changes(unittest.TestCase):
    MerchantFrame_ConfirmHighCostItem=MerchantFrame_ConfirmExtendedItemCost; MERCHANT_HIGH_PRICE_COST=1500000
    button={GetID=function() return 1 end}
   ''')
-  code=chunk('ElvUI/Core/Modules/Skins/Blizzard/Merchant.lua','local function MerchantItemButton_AltStackBuy','local function MerchantItemButton_AltStackHint')
+  code=chunk('ElvUI/Core/Modules/Misc/Merchant.lua','local function MerchantItemButton_AltStackBuy','local function MerchantItemButton_AltStackHint')
   l.execute(code+' buy=MerchantItemButton_AltStackBuy')
   self.assertTrue(l.eval('buy(button,"LeftButton")'));self.assertEqual(l.eval('bought'),20)
   l.execute('bundle=5; buy(button,"RightButton")');self.assertEqual(l.eval('bought'),4)
