@@ -468,6 +468,7 @@ function NP:OnShow(isConfig, dontHideHighlight, unitToken)
 
 	frame.CutawayHealth:Hide()
 
+	NP:Configure_PlateExtras(frame)
 	NP:Configure_CustomTexts(frame)
 	NP:RegisterEvents(frame)
 	NP:UpdateElement_All(frame, nil, true)
@@ -1112,16 +1113,17 @@ pixelSnapper:SetScript("OnUpdate", function(_, elapsed)
 		end
 
 		if pollHealth and frame.unit and frame.Health:IsShown() then
-			NP:Update_Absorb(frame)
-			NP:Update_ThreatText(frame)
-			NP:Update_TargetText(frame)
 			local health, maxHealth = NP:GetHealth(frame)
 			if frame.polledHealth ~= health or frame.polledMaxHealth ~= maxHealth then
 				frame.polledHealth, frame.polledMaxHealth = health, maxHealth
 
 				NP:Update_Health(frame)
 				NP:Update_HealthColor(frame)
+			else
+				NP:Update_Absorb(frame)
 			end
+			NP:Update_ThreatText(frame)
+			NP:Update_TargetText(frame)
 		end
 	end
 end)
