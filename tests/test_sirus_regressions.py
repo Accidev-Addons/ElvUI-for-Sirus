@@ -24,14 +24,19 @@ function newFrame(parent)
  function f:Show() self.shown=true end
  function f:Hide() self.shown=false end
  function f:SetShown(v) self.shown=not not v end
- function f:SetText(v) self.text=v end
- function f:SetFormattedText(fmt,...) self.text=string.format(fmt,...) end
+ function f:SetText(v)
+  assert(not self.isFontString or self.fontSet, "SetText(): Font not set")
+  self.text=v
+ end
+ function f:FontTemplate() self.fontSet=true end
+ function f:SetFont() self.fontSet=true end
+ function f:SetFormattedText(fmt,...) assert(not self.isFontString or self.fontSet,"SetFormattedText(): Font not set");self.text=string.format(fmt,...) end
  function f:GetStringHeight() return 12 end
  function f:SetTextColor(...) self.color={...} end
  function f:SetValue(v) self.value=v end
  function f:SetMinMaxValues(a,b) self.min=a self.max=b end
  function f:CreateTexture() return newFrame(self) end
- function f:CreateFontString() return newFrame(self) end
+ function f:CreateFontString() local text=newFrame(self);text.isFontString=true;return text end
  function f:SetScript(k,v) self.scripts[k]=v end
  function f:RegisterEvent(k) self.events[k]=true end
  function f:UnregisterEvent(k) self.events[k]=nil end
@@ -167,6 +172,20 @@ class Changes(unittest.TestCase):
   l.execute('absorb=200; NP:Update_Absorb(frame)');self.assertEqual(l.eval('frame.Health.Absorb.width'),100)
   l.execute('absorb=0; percent=nil; unitGUIDs.nameplate1target=nil; NP:Update_Absorb(frame); NP:Update_ThreatText(frame); NP:Update_TargetText(frame)')
   self.assertFalse(l.eval('frame.Health.Absorb.shown'));self.assertFalse(l.eval('frame.targetText.shown'));self.assertFalse(l.eval('frame.threatText.shown'))
+ def test_absorb_initial_font(self):
+  for state in ["zero", "no_unit", "disabled", "hidden", "zero_max", "text_off", "positive"]:
+   with self.subTest(state=state):
+    l=env();l.execute("""LSM=E.Libs.LSM; absorb=0; UnitGetTotalAbsorbs=function() return absorb end
+    NP.db.units.ENEMY_NPC={health={absorb={enable=true,showText=true},text={font='font',fontSize=12,fontOutline='OUTLINE'}}}
+    frame=newFrame();frame.UnitType='ENEMY_NPC';frame.Health=newFrame(frame);frame.unit='nameplate1'
+    """)
+    setup={"no_unit":"frame.unit=nil", "disabled":"NP.db.units.ENEMY_NPC.health.absorb.enable=false;absorb=20", "hidden":"frame.Health:Hide();absorb=20", "zero_max":"frame.maxHealth=0;absorb=20", "text_off":"NP.db.units.ENEMY_NPC.health.absorb.showText=false;absorb=20", "positive":"absorb=20"}
+    if state in setup:l.execute(setup[state])
+    s=(ROOT/'ElvUI/Core/Modules/Nameplates/Elements/HealthBar.lua').read_text();l.execute(s[s.index('function NP:Update_Absorb'):])
+    l.execute('NP:Update_Absorb(frame); NP:Update_Absorb(frame)')
+    self.assertTrue(l.eval('frame.Health.AbsorbText.fontSet'))
+    l.execute('frame.unit="nameplate2";absorb=0;NP:Update_Absorb(frame)')
+    self.assertEqual(l.eval('frame.Health.AbsorbText.text'),'')
  def test_aura_positions(self):
   l=env();l.execute('''frame=newFrame(); frame.UnitType='ENEMY_NPC'; frame.Health=newFrame(); frame.Name=newFrame(); frame.Level=newFrame(); frame.Elite=newFrame(); frame.Buffs=newFrame(); frame.Debuffs=newFrame(); frame.CrowdControl=newFrame(); frame.LossOfControl=newFrame()
   frame.Buffs.type='buffs'; frame.Debuffs.type='debuffs'; frame.CrowdControl.type='crowdcontrol'; frame.LossOfControl.type='lossofcontrol'

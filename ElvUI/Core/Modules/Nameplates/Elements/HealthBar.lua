@@ -242,6 +242,8 @@ function NP:Update_Absorb(frame)
 		overlay:SetVertexColor(0.3, 0.75, 1, 0.55)
 		healthBar.Absorb = overlay
 		text = healthBar:CreateFontString(nil, "OVERLAY")
+		-- Even clearing a hidden FontString requires a font in the Sirus client.
+		text:FontTemplate(LSM:Fetch("font", db.text.font), db.text.fontSize, db.text.fontOutline)
 		text:SetPoint("LEFT", healthBar, "LEFT", 4, 0)
 		text:SetWordWrap(false)
 		healthBar.AbsorbText = text
