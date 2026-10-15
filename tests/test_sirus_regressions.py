@@ -17,7 +17,7 @@ function newFrame(parent)
  function f:GetWidth() return self.width end
  function f:GetHeight() return self.height end
  function f:GetSize() return self.width,self.height end
- function f:GetFrameLevel() return 1 end
+ function f:GetFrameLevel() return self.level or 1 end
  function f:GetParent() return self.parent end
  function f:SetParent(p) self.parent=p end
  function f:IsShown() return self.shown end; f.IsVisible=f.IsShown
@@ -42,8 +42,23 @@ function newFrame(parent)
  function f:UnregisterEvent(k) self.events[k]=nil end
  function f:CanChangeProtectedState() return not self.locked end
  function f:IsObjectType() return true end
- function f:GetStatusBarTexture() return self.texture end
- setmetatable(f,{__index=function(_,k) if k:match('^Set') or k:match('^Get') or k=='FontTemplate' or k=='EnableMouse' then return function() end end end})
+ function f:GetStatusBarTexture() return self.statusBarTexture or self.texture end
+ -- Explicit API only: misspelled/unsupported methods must raise, not pass silently.
+ function f:GetScript(name) return self.scripts[name] end
+ function f:SetAlpha(v) self.alpha=v end
+ function f:SetFrameLevel(v) self.level=v end
+ function f:SetFrameStrata(v) self.strata=v end
+ function f:SetTexture(v) self.texture=v end
+ function f:SetDrawLayer(v) self.drawLayer=v end
+ function f:SetInside(...) self.inside={...} end
+ function f:SetJustifyH(v) self.justifyH=v end
+ function f:SetShadowOffset(x,y) self.shadowOffset={x,y} end
+ function f:SetStatusBarTexture(v) self.statusBarTexture=v end
+ function f:SetTexCoord(...) self.texCoords={...} end
+ f.SetTexCoords=f.SetTexCoord
+ function f:SetVertexColor(...) self.vertexColor={...} end
+ function f:SetWordWrap(v) self.wordWrap=v end
+ function f:EnableMouse(v) self.mouseEnabled=v end
  return f
 end
 frames={}

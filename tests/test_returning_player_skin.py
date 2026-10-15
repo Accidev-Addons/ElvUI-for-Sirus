@@ -105,8 +105,6 @@ class ReturningPlayerSkin(unittest.TestCase):
         self.assertEqual(files.count('ReturningPlayerInvite.lua'),1)
 
 
-if __name__=='__main__':
-    unittest.main()
 
 class ReturningPlayerIcon(unittest.TestCase):
     def test_icon_is_above_backdrop(self):
@@ -116,3 +114,6 @@ class ReturningPlayerIcon(unittest.TestCase):
     def test_native_texture_restored_if_prior_skin_cleared_it(self):
         l=setup();l.execute('ReturningPlayerInviteToggleButton.elvReturningPlayerSkinned=nil;ReturningPlayerInviteToggleButton.Icon.texture=nil;loadSkin()')
         self.assertEqual(l.eval('ReturningPlayerInviteToggleButton.Icon.texture'),r'Interface\Icons\SOR-mail')
+
+if __name__ == "__main__":
+    unittest.main()
