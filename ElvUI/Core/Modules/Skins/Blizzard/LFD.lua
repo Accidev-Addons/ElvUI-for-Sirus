@@ -762,9 +762,7 @@ local function LoadSkin()
 		b.Icon:Size(45)
 		b.Icon:ClearAllPoints()
 		b.Icon:Point("LEFT", 10, 0)
-		b.Icon:CreateBackdrop()
-		b.Icon:SetParent(b.Icon.backdrop)
-		b.Icon.backdrop:SetFrameLevel(b:GetFrameLevel() + 2)
+		-- Category emblems use their own transparency; do not add an icon tile.
 
 		local iconAtlas = b.Icon._atlasName or b:GetAttribute("iconAtlas")
 		if iconAtlas then
