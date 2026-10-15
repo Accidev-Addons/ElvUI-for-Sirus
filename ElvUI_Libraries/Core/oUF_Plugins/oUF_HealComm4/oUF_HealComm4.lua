@@ -1,1 +1,0 @@
--- Retired. The client-backed renderer is oUF_SirusHealPrediction.
