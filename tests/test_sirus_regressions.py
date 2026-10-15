@@ -184,6 +184,23 @@ class Changes(unittest.TestCase):
   self.assertEqual(l.eval('EquipmentFlyoutFrame.level'),70)
   self.assertEqual(l.eval('EquipmentFlyoutFrame.buttons[1].cooldown.level'),73)
   l.execute('EquipmentFlyoutFrame.button=nil;hooks.EquipmentFlyout_UpdateItems()')
+ def test_wrist_flyout_grows_up_without_mouse_gap(self):
+  l=flyout_env();l.execute('CharacterWristSlot=EquipmentFlyoutFrame.button;EquipmentFlyoutFrame.NavigationFrame:SetHeight(41)')
+  for height in (43,85,127,169):
+   with self.subTest(grid_height=height):
+    l.execute(f'EquipmentFlyoutFrame.buttonFrame:SetHeight({height});hooks.EquipmentFlyout_UpdateItems();grid=EquipmentFlyoutFrame.buttonFrame;nav=EquipmentFlyoutFrame.NavigationFrame')
+    self.assertTrue(l.eval("#grid.points==1 and grid.points[1][1]=='TOPLEFT' and grid.points[1][2]==CharacterWristSlot and grid.points[1][3]=='BOTTOMRIGHT'"))
+    self.assertEqual(l.eval('grid.points[1][4]'),0)
+    # Grid top = wrist bottom + grid height, hence its bottom touches the wrist.
+    self.assertEqual(l.eval('grid.points[1][5]-grid.height'),0)
+    self.assertTrue(l.eval('grid.mouseEnabled and nav.mouseEnabled'))
+    self.assertTrue(l.eval("#nav.points==1 and nav.points[1][2]==grid and nav.points[1][3]=='TOPLEFT'"))
+    self.assertEqual(l.eval('nav.points[1][5]-nav.height'),0)
+  # Sirus overwrites TOPLEFT when another item/weapon slot opens its flyout.
+  l.execute("other=newFrame();EquipmentFlyoutFrame.button=other;grid:ClearAllPoints();grid:SetPoint('TOPLEFT',other,'BOTTOMLEFT',0,0);hooks.EquipmentFlyout_UpdateItems()")
+  self.assertTrue(l.eval("#grid.points==1 and grid.points[1][2]==other and grid.points[1][3]=='BOTTOMLEFT'"))
+  self.assertTrue(l.eval("#nav.points==1 and nav.points[1][3]=='BOTTOMLEFT' and nav.points[1][5]==0"))
+  self.assertIsNone(l.eval('nav.elvAboveWrist'))
  def test_popup(self):
   l=env();l.execute("staticPopup=newFrame(); staticPopup.which='NOTE'; wideBox=newFrame(); wideBox.backdrop=newFrame(); StaticPopupDialogs={NOTE={hasEditBox=true,hasWideEditBox=true}}")
   code=chunk('ElvUI/Core/Modules/Skins/Blizzard/Misc.lua','\t\tlocal function UpdatePopupEditBox','\t\thooksecurefunc(\'StaticPopup_Resize\'')
