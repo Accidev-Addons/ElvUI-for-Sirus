@@ -13,11 +13,8 @@ function NP:Clear_CustomTexts(frame)
 end
 
 function NP:Configure_CustomTexts(frame)
-	local methods = E.oUF.Private.frame_metatable.__index
-	frame.Tag, frame.Untag = methods.Tag, methods.Untag
-	frame.ColorGradient = methods.ColorGradient
-	frame.__elements = frame.__elements or {}
-	frame.colors = E.oUF.colors
+	-- Libraries finish loading before ElvUI: their Private table is already gone.
+	E.oUF.Tags:Attach(frame)
 	frame.isNamePlate = true
 	frame.customTexts = frame.customTexts or {}
 	NP:Clear_CustomTexts(frame)

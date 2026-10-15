@@ -70,6 +70,19 @@ def env():
 def chunk(path,a,b):
  s=(ROOT/path).read_text();return s[s.index(a):s.index(b,s.index(a))]
 
+
+def load_finalized_tags(l):
+ # oUF deliberately removes Private in finalize.lua, before ElvUI initializes.
+ l.execute("""UnitHealth=function() return 80 end; UnitHealthMax=function() return 100 end; GetTime=function() return 0 end
+ E.oUF.ColorGradient=function() return 0.8 end
+ E.oUF.Private.unitExists=UnitExists; E.oUF.Private.validateEvent=function() return true end
+ local methods=E.oUF.Private.frame_metatable.__index
+ function E.oUF:RegisterMetaFunction(name,fn) methods[name]=fn end; ns={oUF=E.oUF}
+ """)
+ l.execute('local function loadTags(...)\n'+(ROOT/'ElvUI_Libraries/Core/oUF/elements/tags.lua').read_text()+'\nend; loadTags("ElvUI",ns)')
+ l.execute('ns.oUF.Private=nil')
+
+
 class Changes(unittest.TestCase):
  def test_lua51_syntax(self):
   l=env();compile=l.eval('function(s) local f,e=loadstring(s); return f~=nil,e end')
@@ -188,25 +201,28 @@ class Changes(unittest.TestCase):
   l.execute('health=120; elem.update(frame,"UNIT_HEAL_PREDICTION","party1")');self.assertEqual(l.eval('frame.HealCommBar.myBar.value'),0)
   l.execute('elem.disable(frame)');self.assertFalse(l.eval('frame.HealCommBar.myBar.shown'));self.assertIsNone(l.eval('frame.events.UNIT_HEAL_PREDICTION'))
  def test_custom_lifecycle(self):
-  l=env();l.execute('''local methods=E.oUF.Private.frame_metatable.__index
-   function methods:Tag(fs,fmt) fs.UpdateTag=function(t) t:SetText(fmt..self.unit) end; fs.tagged=true end
-   function methods:Untag(fs) fs.tagged=false end
-   NP.db.units.ENEMY_NPC={customTexts={test={enable=true,text_format='[name]',font='font',size=12,position='CENTER',attachTextTo='Health'}}}
-   frame=newFrame(); frame.UnitType='ENEMY_NPC'; frame.unit='nameplate1'; frame.Health=newFrame(frame)
-  ''')
-  l.execute((ROOT/'ElvUI/Core/Modules/Nameplates/Elements/CustomText.lua').read_text());l.execute('NP:Configure_CustomTexts(frame)')
-  self.assertEqual(l.eval('frame.customTexts.test.text'),'[name]nameplate1')
-  l.execute('NP:Clear_CustomTexts(frame)');self.assertFalse(l.eval('frame.customTexts.test.tagged'));self.assertFalse(l.eval('frame.customTexts.test.shown'))
-  l.execute('frame.unit="nameplate2"; NP:Configure_CustomTexts(frame)');self.assertEqual(l.eval('frame.customTexts.test.text'),'[name]nameplate2')
-  l.execute('NP.db.units.ENEMY_NPC.customTexts={}; NP:Configure_CustomTexts(frame)');self.assertFalse(l.eval('frame.customTexts.test.shown'))
- def test_actual_ouf_tags(self):
-  l=env();l.execute("""UnitHealth=function() return 80 end; UnitHealthMax=function() return 100 end; GetTime=function() return 0 end
-  E.oUF.Private.unitExists=UnitExists; E.oUF.Private.validateEvent=function() return true end
-  function E.oUF:RegisterMetaFunction(name,fn) self.Private.frame_metatable.__index[name]=fn end; ns={oUF=E.oUF}
+  l=env();load_finalized_tags(l)
+  self.assertIsNone(l.eval('E.oUF.Private'))
+  l.execute("""NP.db.units.ENEMY_NPC={customTexts={test={enable=true,text_format='[name]',font='font',size=12,position='CENTER',attachTextTo='Health'}}}
+  frame=newFrame(); frame.UnitType='ENEMY_NPC'; frame.unit='nameplate1'; frame.Health=newFrame(frame); unitGUIDs.nameplate1='NPC'
   """)
-  l.execute('local function loadTags(...)\n'+(ROOT/'ElvUI_Libraries/Core/oUF/elements/tags.lua').read_text()+'\nend; loadTags("ElvUI",ns)')
-  l.execute("""E.oUF.Private.frame_metatable.__index.ColorGradient=function() return 0.8 end
-  E.oUF.Tags.Methods.grad=function() return ColorGradient(80,100,0,0,0,1,1,1) end
+  l.execute((ROOT/'ElvUI/Core/Modules/Nameplates/Elements/CustomText.lua').read_text());l.execute('NP:Configure_CustomTexts(frame)')
+  self.assertEqual(l.eval('frame.customTexts.test.text'),'nameplate1')
+  l.execute('NP:Clear_CustomTexts(frame)');self.assertIsNone(l.eval('frame.customTexts.test.UpdateTag'));self.assertFalse(l.eval('frame.customTexts.test.shown'))
+  l.execute('frame.unit="nameplate2"; unitGUIDs.nameplate2="OTHER"; NP:Configure_CustomTexts(frame)');self.assertEqual(l.eval('frame.customTexts.test.text'),'nameplate2')
+  l.execute('NP.db.units.ENEMY_NPC.customTexts={}; NP:Configure_CustomTexts(frame)');self.assertFalse(l.eval('frame.customTexts.test.shown'))
+ def test_empty_custom_texts_after_finalization(self):
+  l=env();load_finalized_tags(l)
+  l.execute("""NP.db.units.ENEMY_NPC={customTexts={}}
+  frame=newFrame(); frame.UnitType='ENEMY_NPC'; frame.Health=newFrame(frame)
+  """)
+  l.execute((ROOT/'ElvUI/Core/Modules/Nameplates/Elements/CustomText.lua').read_text());l.execute('NP:Configure_CustomTexts(frame); NP:Clear_CustomTexts(frame)')
+  self.assertIsNone(l.eval('E.oUF.Private'))
+  self.assertEqual(l.eval('type(frame.Tag)'),'function')
+  self.assertEqual(l.eval('type(frame.UpdateTags)'),'function')
+ def test_actual_ouf_tags(self):
+  l=env();load_finalized_tags(l)
+  l.execute("""E.oUF.Tags.Methods.grad=function() return ColorGradient(80,100,0,0,0,1,1,1) end
   E.oUF.Tags.Methods.test=function(u) return UnitName(u) end
   NP.db.units.ENEMY_NPC={customTexts={test={text_format='[test]: [curhp]/[maxhp] [grad]',font='font',size=12}}}
   frame=newFrame(); frame.Health=newFrame(frame); frame.UnitType='ENEMY_NPC'; frame.unit='nameplate1';unitGUIDs.nameplate1='NPC'
