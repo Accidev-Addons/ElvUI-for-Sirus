@@ -35,7 +35,13 @@ local lower = string.lower
 
 local ENCHANT_TEXT_MAX_LENGTH = 20
 local MAX_DISPLAYED_SOCKETS = 3
-local SOCKET_SIZE, SOCKET_STEP = 14, 15
+local DEFAULT_SOCKET_SIZE = 14
+
+local function GetSocketSize()
+	local size = E.db.general.characterInfo.socketSize
+	size = tonumber(size) or DEFAULT_SOCKET_SIZE
+	return size, size + 1 -- size, step
+end
 
 local GEM_CLASS, META_GEM_SUBCLASS = 3, 6
 
@@ -328,7 +334,8 @@ end
 
 local function CreateSocket(info, index, anchor)
 	local socket = CreateFrame("Button", nil, info)
-	socket:SetSize(SOCKET_SIZE, SOCKET_SIZE)
+	local size = GetSocketSize()
+	socket:SetSize(size, size)
 	socket:SetTemplate("Default")
 	socket:RegisterForClicks("LeftButtonUp")
 	socket:SetScript("OnEnter", Socket_OnEnter)
@@ -339,7 +346,9 @@ local function CreateSocket(info, index, anchor)
 	socket.Icon = socket:CreateTexture(nil, "ARTWORK")
 	socket.Icon:SetInside()
 
-	local offset = (index - 1) * SOCKET_STEP
+	-- real position/size is applied by PlaceSocketRow
+	local _, step = GetSocketSize()
+	local offset = (index - 1) * step
 	if anchor == "RIGHT" or anchor == "TOP" then
 		socket:SetPoint("LEFT", info.socketRow, "LEFT", offset, 0)
 	elseif anchor == "LEFT" then
@@ -357,8 +366,21 @@ local function PlaceSocketRow(info, numSockets)
 	if position == "default" then position = "BOTTOMLEFT" end
 	local x, y = db.socketXOffset or 0, db.socketYOffset or 0
 
+	local size, step = GetSocketSize()
+
 	row:ClearAllPoints()
-	row:SetSize(math.max(numSockets, 1) * SOCKET_STEP - 1, SOCKET_SIZE)
+	row:SetSize(math.max(numSockets, 1) * step - 1, size)
+
+	for index, socket in ipairs(info.slots) do
+		local offset = (index - 1) * step
+		socket:SetSize(size, size)
+		socket:ClearAllPoints()
+		if anchor == "LEFT" then
+			socket:SetPoint("RIGHT", row, "RIGHT", -offset, 0)
+		else
+			socket:SetPoint("LEFT", row, "LEFT", offset, 0)
+		end
+	end
 
 	if anchor == "TOP" then
 		local h = string.find(position, "LEFT") and "LEFT" or string.find(position, "RIGHT") and "RIGHT" or ""
@@ -439,7 +461,7 @@ local function CreateSocketInfo(slotFrame, anchor, slotName)
 	info.slotName = slotName
 
 	info.socketRow = CreateFrame("Frame", nil, info)
-	info.socketRow:SetSize(SOCKET_STEP * MAX_DISPLAYED_SOCKETS, SOCKET_STEP)
+	info.socketRow:SetSize((DEFAULT_SOCKET_SIZE + 1) * MAX_DISPLAYED_SOCKETS, DEFAULT_SOCKET_SIZE + 1)
 	info.enchant = info:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
 	info.enchant:SetTextColor(0.1, 1, 0.1)
 	info.enchant:SetWordWrap(false)
