@@ -32,6 +32,7 @@ local IsInGroup = IsInGroup
 local IsInRaid = IsInRaid
 local IsLevelAtEffectiveMaxLevel = IsLevelAtEffectiveMaxLevel
 local IsAddOnLoaded = IsAddOnLoaded
+local IsShiftKeyDown = IsShiftKeyDown
 local IsXPUserDisabled = IsXPUserDisabled
 local RequestBattlefieldScoreData = RequestBattlefieldScoreData
 local UIParent = UIParent
@@ -967,6 +968,22 @@ function E:SetupGameMenu()
 	button:Size(GameMenuButtonLogout:GetSize())
 	button:Point('TOPLEFT', GameMenuButtonAddons, 'BOTTOMLEFT', 0, -1)
 	hooksecurefunc(GameMenuFrame, 'Show', function() E:PositionGameMenuButton() end)
+
+	-- DF UI: the Edit button opens ElvUI movers, Shift+click keeps the Sirus edit mode
+	local editMode = _G.GameMenuButtonEditMode
+	if editMode then
+		local editModeClick = editMode:GetScript('OnClick')
+		editMode:SetScript('OnClick', function(btn, ...)
+			if IsShiftKeyDown() then return editModeClick(btn, ...) end
+			if InCombatLockdown() then
+				UIErrorsFrame:AddMessage(ERR_NOT_IN_COMBAT, 1.0, 0.2, 0.2, 1.0)
+				return
+			end
+
+			HideUIPanel(GameMenuFrame)
+			E:ToggleMoveMode()
+		end)
+	end
 
 	if GameMenuFrame_UpdateVisibleButtons then
 		hooksecurefunc('GameMenuFrame_UpdateVisibleButtons', function()
