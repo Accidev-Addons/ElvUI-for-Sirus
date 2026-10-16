@@ -164,8 +164,8 @@ if RB then
 	Reminder.generalGroup.args.durations = ACH:Toggle(L["Remaining Time"], nil, 1)
 	Reminder.generalGroup.args.reverse = ACH:Toggle(L["Reverse Style"], L["When enabled active buff icons will light up instead of becoming darker, while inactive buff icons will become darker instead of being lit up."], 2)
 	Reminder.generalGroup.args.position = ACH:Select(L["Position"], nil, 3, { LEFT = L["Left"], RIGHT = L["Right"] }, nil, nil, nil, function(info, value) E.db.general.reminder[info[#info]] = value RB:UpdatePosition() end)
-	Reminder.generalGroup.args.keepButtonSizeRatio = ACH:Toggle(L["Keep Size Ratio"], nil, 4)
-	Reminder.generalGroup.args.height = ACH:Range(L["Height"], nil, 5, { min = 8, max = 64, step = 1 })
+	Reminder.generalGroup.args.keepButtonSizeRatio = ACH:Toggle(L["Keep Size Ratio"], "Квадратные кнопки. Высота всегда подгоняется под высоту миникарты.", 4)
+	Reminder.generalGroup.args.height = ACH:Range(L["Width"], "Ширина кнопок (высота подгоняется под миникарту автоматически).", 5, { min = 8, max = 64, step = 1 })
 	Reminder.generalGroup.args.height.disabled = function() return E.db.general.reminder.keepButtonSizeRatio ~= false end
 
 	Reminder.fontGroup = ACH:Group(L["Font"], nil, 3, nil, nil, nil, function() return not E.db.general.reminder.enable or not E.db.general.reminder.durations end)
