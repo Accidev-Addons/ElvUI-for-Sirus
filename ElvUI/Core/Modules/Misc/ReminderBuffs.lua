@@ -173,17 +173,21 @@ RB.MeleeSpell7Buffs = {
 -------------------------------------------------------------
 -- Sizes
 -------------------------------------------------------------
-function RB:GetButtonSize()
+function RB:GetButtonSize(count)
 	local db = RB.db
 	local minimapSize = E.MinimapSize or (Minimap and Minimap:GetHeight()) or 140
-	local gap = E.Border - E.Spacing * 3
+	-- кнопки идут вплотную друг к другу, без промежутков
+	local gap = 0
 
-	-- 7 кнопок на высоту миникарты (как в старой версии)
-	local width = (minimapSize - gap * 6) / 7
-	local height = width
+	-- колонка всегда занимает ровно высоту миникарты:
+	-- высота кнопки = (высота миникарты - промежутки) / количество включённых кнопок
+	count = (count and count > 0) and count or 1
+	local height = (minimapSize - gap * (count - 1)) / count
+	local width = height
 
+	-- без сохранения пропорций ширина берётся из настройки (db.height)
 	if db.keepButtonSizeRatio == false and db.height and db.height > 0 then
-		height = db.height
+		width = db.height
 	end
 
 	return width, height, gap, minimapSize
@@ -414,13 +418,21 @@ function RB:UpdateSettings()
 	if not frame then return end
 
 	local db = self.db
-	local width, height, gap, minimapSize = self:GetButtonSize()
+	local count = 0
+	for i = 1, 7 do
+		if db[RB.SlotKeys[i]] then
+			count = count + 1
+		end
+	end
+
+	local width, height, gap, minimapSize = self:GetButtonSize(count)
 	local font = LSM:Fetch('font', db.font)
 
 	self:UpdateDefaultIcons()
 	frame:Size(width, minimapSize)
 
 	local shown = 0
+	local previous
 	for i = 1, 7 do
 		local button = frame[i]
 		button:ClearAllPoints()
@@ -437,9 +449,21 @@ function RB:UpdateSettings()
 			button.cd:SetAlpha(db.durations and 1 or 0)
 			button.timer:FontTemplate(font, db.fontSize, db.fontOutline)
 
-			button:Point('TOP', frame, 'TOP', 0, -shown * (height + gap))
+			-- каждая кнопка крепится к низу предыдущей: дробные размеры и округление до пикселей
+			-- больше не создают щелей, а последняя кнопка дотягивается до низа миникарты
+			if previous then
+				button:Point('TOP', previous, 'BOTTOM', 0, -gap)
+			else
+				button:Point('TOP', frame, 'TOP', 0, 0)
+			end
+
+			if shown + 1 == count then
+				button:Point('BOTTOM', frame, 'BOTTOM', 0, 0)
+			end
+
 			button:Show()
 
+			previous = button
 			shown = shown + 1
 		else
 			button:SetScript('OnUpdate', nil)
