@@ -11,4 +11,5 @@
 	<Script file='RaidUtility.lua'/>
 	<Script file='AFK.lua'/>
 	<Script file='QueueStatus.lua'/>
+	<Script file="ReminderBuffs.lua"/>
 </Ui>
