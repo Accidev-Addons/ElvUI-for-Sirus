@@ -293,6 +293,8 @@ do
 
 		if not length or (index % length) > 0 then
 			UF:ForceShow(frame)
+		else
+			RegisterUnitWatch(frame)
 		end
 	end
 
