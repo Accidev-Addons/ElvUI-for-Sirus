@@ -121,9 +121,24 @@ S:AddCallback("Skin_ItemExpiration", function()
 
 	S:HandleCloseButton(_G.ContainerItemExpirationFrameCloseButton)
 
-	hooksecurefunc(frame, "UpdateItems", function(self)
+	local function UpdateExpirationLayer(button)
+		local overlay = button.ItemExpirationOverlay
+		if overlay then
+			overlay:SetFrameLevel(button:GetFrameLevel())
+		end
+	end
+
+	local function SkinExpirationItems(self)
+		if not self.buttons then return end
+
 		for _, button in ipairs(self.buttons) do
 			SkinItemButton(button)
+
+			if not button.elvExpirationLayerHooked then
+				button:HookScript("OnShow", UpdateExpirationLayer)
+				button.elvExpirationLayerHooked = true
+			end
+			UpdateExpirationLayer(button)
 
 			if button.IconBorder:IsShown() then
 				SetItemBorder(button, button.IconBorder:GetVertexColor())
@@ -131,7 +146,10 @@ S:AddCallback("Skin_ItemExpiration", function()
 				SetItemBorder(button)
 			end
 		end
-	end)
+	end
+
+	hooksecurefunc(frame, "UpdateItems", SkinExpirationItems)
+	SkinExpirationItems(frame)
 end)
 
 S:AddCallback("Skin_Bags", function()
