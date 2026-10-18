@@ -5,65 +5,47 @@ local ElvUF = E.oUF
 local select = select
 local strfind, strsub, gsub = strfind, strsub, gsub
 local floor, max, min = floor, max, min
-local format = string.format
+local next, pairs = next, pairs
 
 local CreateFrame = CreateFrame
 local GetTime = GetTime
 
--------------------------------------------------------------
--- DEATHKNIGHT RUNE TIMER
--------------------------------------------------------------
-local function RuneTimer_Create(bar)
-	if bar._runeTimerText then return end
-	local t = bar:CreateFontString(nil, 'OVERLAY')
-	t:SetFont(E.media.normFont, 18, 'OUTLINE')
-	t:SetPoint('CENTER', bar, 'CENTER', 0, 0)
-	t:SetTextColor(1, 1, 1, 1)
-	t:SetText('')
-	bar._runeTimerText = t
-end
+local LSM = E.Libs.LSM
 
-local function RuneTimer_RefreshFont(bar, height)
-	if not bar._runeTimerText then return end
-	local fontSize = max(12, min(24, floor(height * 0.85)))
-	bar._runeTimerText:SetFont(E.media.normFont, fontSize, 'OUTLINE')
-end
+local runeTimer = CreateFrame("Frame")
+runeTimer:Hide()
+runeTimer.runes = {}
+runeTimer.elapsed = 0
+runeTimer:SetScript("OnUpdate", function(self, elapsed)
+	self.elapsed = self.elapsed + elapsed
+	if self.elapsed < 0.1 then return end
+	self.elapsed = 0
 
-local runeTimerFrame = CreateFrame('Frame')
-runeTimerFrame._bars = {}
-runeTimerFrame:SetScript('OnUpdate', function(self)
 	local now = GetTime()
-	for bar in pairs(self._bars) do
-		if bar._runeTimerText then
-			local endTime = bar._runeEndTime
-			if endTime then
-				local remaining = endTime - now
-				if remaining > 0 then
-					bar._runeTimerText:SetText(format('%.1f', remaining))
-				else
-					bar._runeTimerText:SetText('')
-					bar._runeEndTime = nil
-				end
-			end
+	for rune, endTime in pairs(self.runes) do
+		local remaining = endTime - now
+		if remaining > 0 then
+			rune.timerText:SetFormattedText("%.1f", remaining)
+		else
+			rune.timerText:SetText("")
+			self.runes[rune] = nil
 		end
+	end
+
+	if not next(self.runes) then
+		self:Hide()
 	end
 end)
 
-local function Runes_PostUpdate(element, rune, runeID, start, duration, isReady)
-	if not rune._runeTimerText then
-		RuneTimer_Create(rune)
-	end
-
-	-- element.origParent указывает на юнит-фрейм (задаётся в Configure_ClassBar)
-	local frame = element.origParent
-	-- По умолчанию таймер скрыт: он показывается только если включена опция showRuneTimer
-	local showRuneTimer = frame and frame.db and frame.db.classbar and frame.db.classbar.showRuneTimer
-
-	if not showRuneTimer or isReady or not start or not duration or duration == 0 then
-		rune._runeTimerText:SetText('')
-		rune._runeEndTime = nil
+function UF:PostUpdateRunes(rune, _, start, duration, isReady)
+	local frame = self.origParent
+	if isReady or duration == 0 or not (frame and frame.db.classbar.showRuneTimer) then
+		rune.timerText:SetText("")
+		runeTimer.runes[rune] = nil
 	else
-		rune._runeEndTime = start + duration
+		runeTimer.runes[rune] = start + duration
+		rune.timerText:SetFormattedText("%.1f", max(0, start + duration - GetTime()))
+		runeTimer:Show()
 	end
 end
 
@@ -83,24 +65,21 @@ function UF:Configure_ClassBar(frame)
 		return
 	end
 
-	--Fix height in case it is lower than the theme allows, or in case it's higher than 30px when not detached
-	if (not self.thinBorders and not E.PixelMode) and frame.CLASSBAR_HEIGHT > 0 and frame.CLASSBAR_HEIGHT < 7 then --A height of 7 means 6px for borders and just 1px for the actual power statusbar
+	if (not self.thinBorders and not E.PixelMode) and frame.CLASSBAR_HEIGHT > 0 and frame.CLASSBAR_HEIGHT < 7 then
 		frame.CLASSBAR_HEIGHT = 7
 		if db.classbar then db.classbar.height = 7 end
-		UF.ToggleResourceBar(bars) --Trigger update to health if needed
-	elseif (self.thinBorders or E.PixelMode) and frame.CLASSBAR_HEIGHT > 0 and frame.CLASSBAR_HEIGHT < 3 then --A height of 3 means 2px for borders and just 1px for the actual power statusbar
+		UF.ToggleResourceBar(bars)
+	elseif (self.thinBorders or E.PixelMode) and frame.CLASSBAR_HEIGHT > 0 and frame.CLASSBAR_HEIGHT < 3 then
 		frame.CLASSBAR_HEIGHT = 3
 		if db.classbar then db.classbar.height = 3 end
-		UF.ToggleResourceBar(bars) --Trigger update to health if needed
+		UF.ToggleResourceBar(bars)
 	elseif (not frame.CLASSBAR_DETACHED and frame.CLASSBAR_HEIGHT > 30) then
 		frame.CLASSBAR_HEIGHT = 10
 		if db.classbar then db.classbar.height = 10 end
-		--Override visibility if Classbar is Additional Power in order to fix a bug when Auto Hide is enabled, height is higher than 30 and it goes from detached to not detached
 		local overrideVisibility = frame.ClassBar == "AdditionalPower"
-		UF.ToggleResourceBar(bars, overrideVisibility) --Trigger update to health if needed
+		UF.ToggleResourceBar(bars, overrideVisibility)
 	end
 
-	--We don't want to modify the original frame.CLASSBAR_WIDTH value, as it bugs out when the classbar gains more buttons
 	local CLASSBAR_WIDTH = frame.CLASSBAR_WIDTH
 
 	if frame.USE_MINI_CLASSBAR and not frame.CLASSBAR_DETACHED then
@@ -132,8 +111,9 @@ function UF:Configure_ClassBar(frame)
 			if i <= frame.MAX_CLASS_BAR then
 				bars[i].backdrop:SetBackdropBorderColor(color.r, color.g, color.b)
 				bars[i]:Height(bars:GetHeight())
-				-- Обновляем шрифт таймера под актуальную высоту
-				RuneTimer_RefreshFont(bars[i], bars:GetHeight())
+				if bars[i].timerText then
+					bars[i].timerText:FontTemplate(LSM:Fetch("font", E.db.unitframe.font), max(12, min(24, floor(bars:GetHeight() * 0.85))), E.db.unitframe.fontOutline)
+				end
 
 				if frame.MAX_CLASS_BAR == 1 then
 					bars[i]:Width(CLASSBAR_WIDTH)
@@ -141,10 +121,10 @@ function UF:Configure_ClassBar(frame)
 					if frame.CLASSBAR_DETACHED and db.classbar.orientation == "VERTICAL" then
 						bars[i]:Width(CLASSBAR_WIDTH)
 					else
-						bars[i]:Width((CLASSBAR_WIDTH - ((5 + (frame.BORDER * 2 + frame.SPACING * 2)) * (frame.MAX_CLASS_BAR - 1))) / frame.MAX_CLASS_BAR) --Width accounts for 5px spacing between each button, excluding borders
+						bars[i]:Width((CLASSBAR_WIDTH - ((5 + (frame.BORDER * 2 + frame.SPACING * 2)) * (frame.MAX_CLASS_BAR - 1))) / frame.MAX_CLASS_BAR)
 					end
 				elseif i ~= frame.MAX_CLASS_BAR then
-					bars[i]:Width((CLASSBAR_WIDTH - ((frame.MAX_CLASS_BAR - 1) * (frame.BORDER-frame.SPACING))) / frame.MAX_CLASS_BAR) --classbar width minus total width of dividers between each button, divided by number of buttons
+					bars[i]:Width((CLASSBAR_WIDTH - ((frame.MAX_CLASS_BAR - 1) * (frame.BORDER-frame.SPACING))) / frame.MAX_CLASS_BAR)
 				end
 
 				bars[i]:GetStatusBarTexture():SetHorizTile(false)
@@ -156,9 +136,9 @@ function UF:Configure_ClassBar(frame)
 						if frame.CLASSBAR_DETACHED and db.classbar.orientation == "VERTICAL" then
 							bars[i]:Point("BOTTOM", bars[i - 1], "TOP", 0, (db.classbar.spacing + frame.BORDER * 2 + frame.SPACING * 2))
 						elseif frame.CLASSBAR_DETACHED and db.classbar.orientation == "HORIZONTAL" then
-							bars[i]:Point("LEFT", bars[i - 1], "RIGHT", (db.classbar.spacing + frame.BORDER * 2 + frame.SPACING * 2), 0) --5px spacing between borders of each button(replaced with Detached Spacing option)
+							bars[i]:Point("LEFT", bars[i - 1], "RIGHT", (db.classbar.spacing + frame.BORDER * 2 + frame.SPACING * 2), 0)
 						else
-							bars[i]:Point("LEFT", bars[i - 1], "RIGHT", (5 + frame.BORDER * 2 + frame.SPACING * 2), 0) --5px spacing between borders of each button
+							bars[i]:Point("LEFT", bars[i - 1], "RIGHT", (5 + frame.BORDER * 2 + frame.SPACING * 2), 0)
 						end
 					elseif i == frame.MAX_CLASS_BAR then
 						bars[i]:Point("LEFT", bars[i - 1], "RIGHT", frame.BORDER-frame.SPACING, 0)
@@ -190,7 +170,7 @@ function UF:Configure_ClassBar(frame)
 		bars:SetPoint("CENTER", frame.Health.backdrop, "TOP", 0, 0)
 
 		bars:SetParent(frame)
-		bars:SetFrameLevel(50) --RaisedElementParent uses 100, we want it lower than this
+		bars:SetFrameLevel(50)
 
 		if bars.Holder and bars.Holder.mover then
 			bars.Holder.mover:SetScale(0.0001)
@@ -232,7 +212,7 @@ function UF:Configure_ClassBar(frame)
 		end
 
 		if not db.classbar.strataAndLevel.useCustomLevel then
-			bars:OffsetFrameLevel(10, frame.Health) --Health uses 10, Power uses (Health + 5) when attached
+			bars:OffsetFrameLevel(10, frame.Health)
 		else
 			bars:SetFrameLevel(db.classbar.strataAndLevel.frameLevel)
 		end
@@ -247,7 +227,7 @@ function UF:Configure_ClassBar(frame)
 
 		bars:SetParent(frame)
 		bars:SetFrameStrata("LOW")
-		bars:OffsetFrameLevel(10, frame.Health) --Health uses 10, Power uses (Health + 5) when attached
+		bars:OffsetFrameLevel(10, frame.Health)
 
 		if bars.Holder and bars.Holder.mover then
 			bars.Holder.mover:SetScale(0.0001)
@@ -309,17 +289,14 @@ local function ToggleResourceBar(bars, overrideVisibility)
 	frame.CLASSBAR_HEIGHT = (frame.USE_CLASSBAR and (frame.CLASSBAR_SHOWN and height) or 0)
 	frame.CLASSBAR_YOFFSET = UF:GetClassBarYOffset(frame)
 
-	if not frame.CLASSBAR_DETACHED then --Only update when necessary
+	if not frame.CLASSBAR_DETACHED then
 		UF:Configure_HealthBar(frame)
-		UF:Configure_Portrait(frame, true) --running :Hide on portrait makes the frame all funky
+		UF:Configure_Portrait(frame, true)
 		UF:Configure_Threat(frame)
 	end
 end
-UF.ToggleResourceBar = ToggleResourceBar --Make available to combobar
+UF.ToggleResourceBar = ToggleResourceBar
 
--------------------------------------------------------------
--- DEATHKNIGHT
--------------------------------------------------------------
 function UF:Construct_DeathKnightResourceBar(frame)
 	local runes = CreateFrame("Frame", nil, frame)
 	runes:CreateBackdrop(nil, nil, nil, self.thinBorders, true)
@@ -340,13 +317,14 @@ function UF:Construct_DeathKnightResourceBar(frame)
 		runes[i].bg:SetParent(runes[i].backdrop)
 		runes[i].bg.multiplier = 0.35
 
-		RuneTimer_Create(runes[i])
-		runeTimerFrame._bars[runes[i]] = true
+		runes[i].timerText = runes[i]:CreateFontString(nil, "OVERLAY")
+		runes[i].timerText:SetPoint("CENTER")
+		runes[i].timerText:FontTemplate()
 	end
 
 	runes.PostUpdateType = UF.PostUpdateRuneType
 	runes.PostUpdateVisibility = UF.PostVisibilityRunes
-	runes.PostUpdate = Runes_PostUpdate
+	runes.PostUpdate = UF.PostUpdateRunes
 
 	runes:SetScript("OnShow", ToggleResourceBar)
 	runes:SetScript("OnHide", ToggleResourceBar)
@@ -374,13 +352,10 @@ function UF:PostVisibilityRunes(enabled, stateChanged)
 		UF:Configure_ClassBar(frame)
 		UF:Configure_HealthBar(frame)
 		UF:Configure_Power(frame)
-		UF:Configure_InfoPanel(frame, true) --2nd argument is to prevent it from setting template, which removes threat border
+		UF:Configure_InfoPanel(frame, true)
 	end
 end
 
--------------------------------------------------------------
--- DRUID
--------------------------------------------------------------
 function UF:Construct_AdditionalPowerBar(frame)
 	local additionalPower = CreateFrame("StatusBar", "AdditionalPowerBar", frame)
 	additionalPower:SetStatusBarTexture(E.media.blankTex)
@@ -419,11 +394,10 @@ function UF:PostUpdateAdditionalPower(_, MIN, MAX, event)
 			local color = ElvUF.colors.power.MANA
 			color = E:RGBToHex(color[1], color[2], color[3])
 
-			--Attempt to remove |cFFXXXXXX color codes in order to determine if power text is really empty
 			if powerValueText then
 				local _, endIndex = strfind(powerValueText, "|cff")
 				if endIndex then
-					endIndex = endIndex + 7 --Add hex code
+					endIndex = endIndex + 7
 					powerValueText = strsub(powerValueText, endIndex)
 					powerValueText = gsub(powerValueText, "%s+", "")
 				end
@@ -453,11 +427,11 @@ function UF:PostUpdateAdditionalPower(_, MIN, MAX, event)
 					self.text:SetFormattedText(color.."%d%%|r", floor(MIN / MAX * 100))
 				end
 			else
-				self.text:SetParent(frame.RaisedElementParent) -- needs to be 'frame.RaisedElementParent' otherwise the new PowerPrediction Bar will overlap
+				self.text:SetParent(frame.RaisedElementParent)
 				self.text:Point("CENTER", self, 0, 1)
 				self.text:SetFormattedText(color.."%d%%|r", floor(MIN / MAX * 100))
 			end
-		else --Text disabled
+		else
 			self.text:SetText("")
 		end
 
@@ -470,7 +444,7 @@ function UF:PostUpdateAdditionalPower(_, MIN, MAX, event)
 		end
 
 		self:Show()
-	else --Bar disabled
+	else
 		self.text:SetText("")
 		self:Hide()
 	end
@@ -484,6 +458,6 @@ function UF:PostVisibilityAdditionalPower(enabled, stateChanged)
 		UF:Configure_ClassBar(frame)
 		UF:Configure_HealthBar(frame)
 		UF:Configure_Power(frame)
-		UF:Configure_InfoPanel(frame, true) --2nd argument is to prevent it from setting template, which removes threat border
+		UF:Configure_InfoPanel(frame, true)
 	end
 end

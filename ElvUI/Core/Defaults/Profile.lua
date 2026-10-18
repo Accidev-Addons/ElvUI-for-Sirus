@@ -1755,6 +1755,7 @@ P.unitframe = {
 				height = 10,
 				autoHide = false,
 				additionalPowerText = true,
+				showRuneTimer = false,
 				detachFromFrame = false,
 				detachedWidth = 250,
 				parent = "FRAME",

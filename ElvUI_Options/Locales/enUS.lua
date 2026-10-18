@@ -1551,6 +1551,7 @@ L["Show Only Names"] = true
 L["Show PvP Badge Indicator if available"] = true
 L["Show Quality Color"] = true
 L["Show QuestXP"] = true
+L["Show Rune Timer"] = true
 L["Show Special Bags Color"] = true
 L["Show Subzone"] = true
 L["Show Text"] = true
