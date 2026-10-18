@@ -56,7 +56,6 @@ S:AddCallback("Skin_WorldStateFrame", function()
 		_G["WorldStateCaptureBar"..id.."RightIconHighlight"]:SetTexture(nil)
 
 		local indicator = _G["WorldStateCaptureBar"..id.."Indicator"]
-		-- Keep the direction arrows; only replace the central tick texture.
 		for _, region in ipairs({ indicator:GetRegions() }) do
 			if region:GetObjectType() == "Texture" and not region:GetName() then
 				region:SetTexture(nil)
@@ -129,7 +128,6 @@ S:AddCallback("Skin_WorldStateFrame", function()
 
 	hooksecurefunc('CaptureBar_Update', UpdateCaptureProgress)
 
-
 	local function captureBarSkinsUpdate()
 		local numFrames = _G.NUM_EXTENDED_UI_FRAMES or 0
 
@@ -141,7 +139,6 @@ S:AddCallback("Skin_WorldStateFrame", function()
 		end
 	end
 
-	-- A private event frame must not replace Skins' combat-deferred callbacks.
 	local regen = CreateFrame("Frame")
 	regen:RegisterEvent("PLAYER_REGEN_ENABLED")
 	regen:SetScript("OnEvent", function()

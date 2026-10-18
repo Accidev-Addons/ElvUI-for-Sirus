@@ -190,8 +190,6 @@ local function AnchorSirusAuras(frame, auras)
 	local native = nativeAuras and nativeAuras[sirusListFrames[auras.type] or "LossOfControlFrame"]
 	auras:ClearAllPoints()
 	if db.useSirusPosition ~= false and native then
-		-- Copy every axis of the client layout, including debuff padding, the
-		-- name-above-health mode, level visibility and classic-bar insets.
 		local anchors = {
 			[unitFrame.healthBar] = frame.Health,
 			[unitFrame.name] = frame.Name,
@@ -211,7 +209,6 @@ local function AnchorSirusAuras(frame, auras)
 		or db.attachTo == "NAME" and frame.Name
 		or db.attachTo == "LEVEL" and frame.Level
 		or frame.Health
-	-- A list cannot be attached to itself; also avoid indirect buff/debuff cycles.
 	if anchor == auras or (anchor == frame.Debuffs and auras == frame.Buffs) then anchor = frame.Health end
 	auras:SetPoint(sirusAnchorPoints[point] or point, anchor, point, NP:SirusPixel(db.xOffset or 0), NP:SirusPixel(db.yOffset or 0))
 end

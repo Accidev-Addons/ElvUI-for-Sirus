@@ -184,24 +184,22 @@ S:AddCallback('Skin_Misc', function()
 
 		select(8, wideBox:GetRegions()):Hide()
 		S:HandleEditBox(wideBox)
-		-- Sirus resets the single-line height to 14 in StaticPopup_Show.
-		-- Keep multiline popups at their native height and do not alter text/focus.
-		local function UpdatePopupEditBox(dialog)
-			if dialog ~= staticPopup then return end
-			local info = _G.StaticPopupDialogs[dialog.which]
-			if info and info.hasEditBox and info.hasWideEditBox then
-				if not info.hasMultiLine then wideBox:SetHeight(24) end
-				wideBox.backdrop:ClearAllPoints()
-				wideBox.backdrop:SetPoint('TOPLEFT', wideBox, 'TOPLEFT', -4, 0)
-				wideBox.backdrop:SetPoint('BOTTOMRIGHT', wideBox, 'BOTTOMRIGHT', 4, 0)
-			end
-		end
-		hooksecurefunc('StaticPopup_Resize', UpdatePopupEditBox)
 
 		for j = 1, 3 do
 			S:HandleButton(_G['StaticPopup'..i..'Button'..j])
 		end
 	end
+
+	hooksecurefunc('StaticPopup_Resize', function(dialog)
+		local info = _G.StaticPopupDialogs[dialog.which]
+		if info and info.hasEditBox and info.hasWideEditBox then
+			local wideBox = _G[dialog:GetName()..'WideEditBox']
+			if not info.hasMultiLine then wideBox:SetHeight(24) end
+			wideBox.backdrop:ClearAllPoints()
+			wideBox.backdrop:SetPoint('TOPLEFT', wideBox, 'TOPLEFT', -4, 0)
+			wideBox.backdrop:SetPoint('BOTTOMRIGHT', wideBox, 'BOTTOMRIGHT', 4, 0)
+		end
+	end)
 
 	S:SkinDropDownMenu('DropDownList')
 

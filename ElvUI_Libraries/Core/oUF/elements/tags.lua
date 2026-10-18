@@ -955,16 +955,12 @@ local function StripTag(tag) -- remove prefix, custom args, and suffix
 end
 
 oUF.Tags = {
-	-- Public bridge for addon-owned frames that use tags without being spawned
-	-- as oUF unit frames. Private is discarded by finalize.lua before addon init.
 	Attach = function(_, frame)
 		frame.Tag, frame.Untag, frame.UpdateTags = Tag, Untag, Update
 		frame.ColorGradient = oUF.ColorGradient
 		frame.colors = frame.colors or oUF.colors
 		frame.__elements = frame.__elements or {}
 	end,
-	-- Custom texts normally use events or a tag's declared timer. Tags supplied
-	-- without either still need the unit-frame-style fallback polling.
 	NeedsFrequentUpdates = function(_, format)
 		format = format:gsub('{.-}%]', ']')
 		for bracket in format:gmatch(_PATTERN) do

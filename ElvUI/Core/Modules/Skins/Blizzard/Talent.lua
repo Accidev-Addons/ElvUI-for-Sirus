@@ -51,8 +51,6 @@ local function SkinIconHolder(holder, icon)
 end
 
 local function SkinTalentHeader(panel, header)
-	-- Artwork sits above tree art (BORDER), below the title (OVERLAY) and
-	-- the icon's child frame. A texture does not intercept mouse input.
 	local shade = panel.headerShade
 	if not shade then
 		shade = panel:CreateTexture(nil, "ARTWORK", nil, 1)

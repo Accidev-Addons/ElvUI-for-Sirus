@@ -2862,11 +2862,6 @@ local function LoadSkin()
 			local source = flyoutFrame.button
 			if not source then return end
 
-			-- The client resets the flyout below the item slot on every update.
-			-- Socket buttons live several levels above that slot, so lift the
-			-- entire grid (including its mouse-catching gaps), not just its art.
-			-- Geometry belongs to EquipmentFlyout_UpdateItems: keep its direction,
-			-- anchors, page dimensions and item layout unchanged for every slot.
 			local level = source:GetFrameLevel() + 10
 			flyoutFrame:SetFrameStrata("HIGH")
 			flyoutFrame:SetFrameLevel(level)

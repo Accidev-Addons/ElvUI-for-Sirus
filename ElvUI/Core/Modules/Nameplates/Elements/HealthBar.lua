@@ -226,7 +226,6 @@ function NP:Construct_HealthBar(parent)
 
 	return frame
 end
--- Configuration owns fonts and anchors; runtime updates only change values.
 local function HidePlateLabel(text)
 	if not text then return end
 	text:Hide()

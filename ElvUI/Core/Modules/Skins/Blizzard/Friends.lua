@@ -3,16 +3,11 @@ local S = E:GetModule("Skins")
 
 local _G = _G
 
--- The stock dropdown width includes 50 pixels of decorative padding. Who's
--- compact column cannot use the generic dropdown offsets: it overlaps iLvl
--- and Level, and WhoList_Update changes that padded width on every refresh.
 local function SkinWhoDropDown()
 	local dropdown, header = _G.WhoFrameDropDown, _G.WhoFrameColumnHeader2
 	if not dropdown or not header then return end
 
 	S:HandleDropDownBox(dropdown, header:GetWidth())
-	-- Opposing anchors keep the control inside the real column, including when
-	-- Sirus switches the column between 100/110 for the results scrollbar.
 	dropdown:ClearAllPoints()
 	dropdown:SetPoint("TOPLEFT", header, "TOPLEFT", 2, 0)
 	dropdown:SetPoint("BOTTOMRIGHT", header, "BOTTOMRIGHT", -2, 0)

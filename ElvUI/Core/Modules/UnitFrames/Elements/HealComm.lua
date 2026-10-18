@@ -360,8 +360,6 @@ function UF:UpdateHealComm(_, myIncomingHeal, otherIncomingHeal, absorb, healAbs
 		if style == "REVERSED" then
 			SetReversedAmount(absorbBar, absorb, maxHealth, healthBar, orientation)
 		else
-			-- Keep the shield inside the health bar, even at full health. Appending
-			-- outside its full texture leaves NORMAL/STACKED with zero visible room.
 			local amount = math.min(absorb, maxHealth)
 			local incoming = style == "STACKED" and (myIncomingHeal + otherIncomingHeal) or 0
 			local offset = max(0, math.min(health + incoming, maxHealth - amount))

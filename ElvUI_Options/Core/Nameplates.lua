@@ -1900,8 +1900,6 @@ local function CustomTextOptions(unit)
 	end
 	local function Refresh()
 		local args, configs = group.args, Configs()
-		-- Keep option identities stable during AceConfig traversal. Reconcile
-		-- profile changes without rebuilding every group on each hidden query.
 		for key in pairs(args) do
 			if key:sub(1, 5) == "text:" and not configs[key:sub(6)] then args[key] = nil end
 		end
@@ -1930,8 +1928,6 @@ local function CustomTextOptions(unit)
 						xOffset = { order = 8, type = "range", name = L["X-Offset"], min = -400, max = 400, step = 1 },
 						yOffset = { order = 9, type = "range", name = L["Y-Offset"], min = -400, max = 400, step = 1 },
 						attachTextTo = { order = 10, type = "select", name = L["Attach Text To"], values = { Frame = L["Frame"], Health = L["Health"], Name = L["Name"], CastBar = L["Castbar"] } },
-						-- Extra manual anchoring preserves existing nameplate layouts;
-						-- Automatic follows JustifyH exactly as unit-frame custom texts do.
 						position = { order = 11, type = "select", name = L["Position"], values = { AUTO = L["Automatic"], LEFT = L["LEFT"], RIGHT = L["RIGHT"], CENTER = L["CENTER"], TOP = L["TOP"], BOTTOM = L["BOTTOM"], TOPLEFT = L["TOPLEFT"], TOPRIGHT = L["TOPRIGHT"], BOTTOMLEFT = L["BOTTOMLEFT"], BOTTOMRIGHT = L["BOTTOMRIGHT"] },
 							get = function() local db = Configs()[textName] return db and db.position or "AUTO" end,
 							set = function(_, value) local db = Configs()[textName] if db then db.position = value ~= "AUTO" and value or nil NP:ConfigureAll() end end },
@@ -3747,8 +3743,6 @@ local function GetUnitSettings(unit, name)
 		end
 		args.attachTo.values.NAME = L["Name"]
 		args.attachTo.values.LEVEL = L["Level"]
-		-- Buffs only anchor to the health/name/level axes; debuffs and controls
-		-- may additionally follow buffs without forming circular anchors.
 		if aura == "buffs" then args.attachTo.values.BUFFS = nil end
 	end
 	if unit == "FRIENDLY_PLAYER" or unit == "ENEMY_PLAYER" then

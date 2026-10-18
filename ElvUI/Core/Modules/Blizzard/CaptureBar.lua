@@ -44,7 +44,6 @@ local function alwaysUpFrameUpdate(id)
 	local dynamicIconButton = _G['AlwaysUpFrame'..id..'DynamicIconButton']
 
 	if text then
-		-- Center the glyphs as well as the region; discard inherited fixed widths.
 		text:SetWidth(0)
 		text:SetJustifyH('CENTER')
 		text:SetWordWrap(false)
@@ -75,7 +74,6 @@ end
 local function alwaysUpFramesUpdate()
 	local numFrames = _G.NUM_ALWAYS_UP_UI_FRAMES or 0
 
-	-- Sirus resets these anchors on every world-state update, not only creation.
 	for id = 1, numFrames do
 		if not alwaysUpFrameUpdate(id) then return end
 	end
@@ -97,7 +95,6 @@ function BL:PositionAlwaysUpFrame()
 	pvpHolder:Point('TOP', E.UIParent, 'TOP', 0, -4)
 
 	hooksecurefunc('WorldStateAlwaysUpFrame_Update', function()
-		-- Reanchor in the same update, before the next rendered frame.
 		alwaysUpFramesUpdate()
 
 		if numExtendedUIFrames < (_G.NUM_EXTENDED_UI_FRAMES or 0) then

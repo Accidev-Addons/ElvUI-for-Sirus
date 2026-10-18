@@ -64,7 +64,6 @@ local function LoadSkin()
 		button:Size(40)
 		button:Point("TOPLEFT", item, "TOPLEFT", 4, -4)
 
-
 		icon:SetTexCoords()
 		icon:SetInside()
 

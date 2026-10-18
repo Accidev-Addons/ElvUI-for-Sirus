@@ -16,12 +16,10 @@ local function MerchantItemButton_AltStackBuy(button, mouseButton)
 	local index = button:GetID()
 	local link = GetMerchantItemLink(index)
 	local stackSize = link and select(8, GetItemInfo(link))
-	-- Do not guess a stack size when the item cache has not loaded yet.
 	if not stackSize or stackSize <= 1 then return false end
 
 	local _, _, price, bundleSize, stock, _, extendedCost = GetMerchantItemInfo(index)
 	bundleSize = math.max(1, bundleSize or 1)
-	-- The Sirus confirmation API expects number of purchases, not number of items.
 	local purchases = floor(stackSize / bundleSize)
 	local vendorLimit = GetMerchantItemMaxStack(index)
 	if vendorLimit and vendorLimit > 1 then purchases = math.min(purchases, vendorLimit) end
@@ -39,8 +37,6 @@ local function MerchantItemButton_AltStackBuy(button, mouseButton)
 		end
 	end
 
-	-- Consume the Alt click even when nothing can be bought; never fall through
-	-- to the native one-item purchase after a full-stack request.
 	if purchases < 1 then return true end
 	if extendedCost then
 		MerchantFrame_ConfirmExtendedItemCost(button, purchases)
@@ -60,7 +56,6 @@ end
 
 hooksecurefunc(_G.GameTooltip, "SetMerchantItem", MerchantItemButton_AltStackHint)
 
--- Functional input handling is independent of both skin switches.
 local buttons = {}
 local function UpdateAltMouse()
 	local enabled = IsAltKeyDown() and not IsControlKeyDown() and not IsShiftKeyDown()

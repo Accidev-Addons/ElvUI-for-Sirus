@@ -2244,7 +2244,6 @@ L["Lockbox Blacklist"] = true
 L["Lockbox Blacklist (Global)"] = true
 L["Lockbox Blacklist (Profile)"] = true
 
--- Nameplate extensions
 L["Absorption"] = true
 L["Absorb Amount"] = true
 L["Threat Level"] = true

@@ -12,7 +12,6 @@ local function LoadSkin()
 		toggle:SetTemplate("Default")
 		toggle:StyleButton()
 		if icon then
-			-- The Friends skin may already have cleared this BACKGROUND texture.
 			icon:SetTexture(texture and texture ~= E.ClearTexture and texture ~= "" and texture or [[Interface\Icons\SOR-mail]])
 			icon:SetDrawLayer("ARTWORK")
 			toggle:EnableDrawLayer("ARTWORK")
@@ -50,15 +49,12 @@ local function LoadSkin()
 	end
 
 	local function SkinCandidates()
-		-- Rows are created only on first show and reused while scrolling.
 		for _, button in ipairs(scroll and scroll.buttons or {}) do
 			if not button.elvReturningPlayerSkinned then
 				local highlight = button:GetHighlightTexture()
 				if highlight then highlight:SetTexture(E.Media.Textures.Highlight) end
 				button.elvReturningPlayerSkinned = true
 			end
-			-- The client changes FontObject for selection; keep its colours
-			-- and LockHighlight state, but reapply the configured ElvUI font.
 			S:ApplyElvUIFont(button)
 		end
 	end
@@ -66,7 +62,6 @@ local function LoadSkin()
 	if frame.UpdateCandidateList then hooksecurefunc(frame, "UpdateCandidateList", SkinCandidates) end
 	if frame.Update then
 		hooksecurefunc(frame, "Update", function()
-			-- Error/loading states also replace their FontObject on each update.
 			if frame.ErrorText then frame.ErrorText:FontTemplate() end
 		end)
 	end
