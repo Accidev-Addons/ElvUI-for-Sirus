@@ -741,7 +741,7 @@ if( playerClass == "DRUID" ) then
 				local playerGroup = guidToGroup[playerGUID]
 
 				for groupGUID, groupID in pairs(guidToGroup) do
-					if( groupID == playerGroup and playerGUID ~= groupGUID and not UnitHasVehicleUI(guidToUnit[groupID]) and IsSpellInRange(Innervate, guidToUnit[groupGUID]) == 1 ) then
+					if( groupID == playerGroup and playerGUID ~= groupGUID and not UnitHasVehicleUI(guidToUnit[groupGUID]) and IsSpellInRange(Innervate, guidToUnit[groupGUID]) == 1 ) then
 						targets = targets .. "," .. compressGUID[groupGUID]
 					end
 				end
