@@ -405,7 +405,7 @@ local function LoadSkin()
 	local offset
 	local function UpdatePanelWidth(numTalentGroups)
 		if not numTalentGroups then
-			numTalentGroups = (C_Talent and C_Talent.GetNumTalentGroups and C_Talent.GetNumTalentGroups()) or 1
+			numTalentGroups = (C_Talent and C_Talent.GetNumTalentGroups and E.IsSpecInfoReady() and C_Talent.GetNumTalentGroups()) or 1
 		end
 
 		if offset and numTalentGroups <= 1 then
