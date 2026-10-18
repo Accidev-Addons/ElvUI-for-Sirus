@@ -247,8 +247,8 @@ function UF:Configure_HealComm(frame)
 			UF:SetVisibility_HealComm(healPrediction)
 		end
 
-		if not frame:IsElementEnabled("SirusHealPrediction") then
-			frame:EnableElement("SirusHealPrediction")
+		if not frame:IsElementEnabled("HealComm4") then
+			frame:EnableElement("HealComm4")
 		end
 
 		if frame.db.health then
@@ -306,8 +306,8 @@ function UF:Configure_HealComm(frame)
 		end
 		UF:SetAlpha_HealComm(healPrediction, true)
 		healPrediction:ForceUpdate()
-	elseif frame:IsElementEnabled("SirusHealPrediction") then
-		frame:DisableElement("SirusHealPrediction")
+	elseif frame:IsElementEnabled("HealComm4") then
+		frame:DisableElement("HealComm4")
 	end
 end
 
