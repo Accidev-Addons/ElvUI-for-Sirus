@@ -35,12 +35,10 @@ local lower = string.lower
 
 local ENCHANT_TEXT_MAX_LENGTH = 20
 local MAX_DISPLAYED_SOCKETS = 3
-local DEFAULT_SOCKET_SIZE = 14
 
 local function GetSocketSize()
 	local size = E.db.general.characterInfo.socketSize
-	size = tonumber(size) or DEFAULT_SOCKET_SIZE
-	return size, size + 1 -- size, step
+	return size, size + 1
 end
 
 local GEM_CLASS, META_GEM_SUBCLASS = 3, 6
@@ -332,10 +330,8 @@ local function Socket_OnClick(self)
 	end
 end
 
-local function CreateSocket(info, index, anchor)
+local function CreateSocket(info, index)
 	local socket = CreateFrame("Button", nil, info)
-	local size = GetSocketSize()
-	socket:SetSize(size, size)
 	socket:SetTemplate("Default")
 	socket:RegisterForClicks("LeftButtonUp")
 	socket:SetScript("OnEnter", Socket_OnEnter)
@@ -346,19 +342,9 @@ local function CreateSocket(info, index, anchor)
 	socket.Icon = socket:CreateTexture(nil, "ARTWORK")
 	socket.Icon:SetInside()
 
-	-- real position/size is applied by PlaceSocketRow
-	local _, step = GetSocketSize()
-	local offset = (index - 1) * step
-	if anchor == "RIGHT" or anchor == "TOP" then
-		socket:SetPoint("LEFT", info.socketRow, "LEFT", offset, 0)
-	elseif anchor == "LEFT" then
-		socket:SetPoint("RIGHT", info.socketRow, "RIGHT", -offset, 0)
-	end
-
 	return socket
 end
 
--- Sockets hang on the free side of the item (beside the columns, under the weapons); the position only aligns them along it
 local function PlaceSocketRow(info, numSockets)
 	local slotFrame, anchor, row = info:GetParent(), info.anchor, info.socketRow
 	local db = E.db.general.characterInfo
@@ -461,14 +447,13 @@ local function CreateSocketInfo(slotFrame, anchor, slotName)
 	info.slotName = slotName
 
 	info.socketRow = CreateFrame("Frame", nil, info)
-	info.socketRow:SetSize((DEFAULT_SOCKET_SIZE + 1) * MAX_DISPLAYED_SOCKETS, DEFAULT_SOCKET_SIZE + 1)
 	info.enchant = info:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
 	info.enchant:SetTextColor(0.1, 1, 0.1)
 	info.enchant:SetWordWrap(false)
 	info.enchant:SetWidth(220)
 
 	for index = 1, MAX_DISPLAYED_SOCKETS do
-		info.slots[index] = CreateSocket(info, index, anchor)
+		info.slots[index] = CreateSocket(info, index)
 	end
 
 	ApplySocketInfoLayout(info)

@@ -341,7 +341,7 @@ blizz.characterInfo.args.gemsAndEnchants.args.showEnchants = ACH:Toggle(L["Displ
 blizz.characterInfo.args.gemsAndEnchants.inline = true
 
 blizz.characterInfo.args.socketGroup = ACH:Group(L["Sockets"], nil, 2, nil, CharInfoGet, CharInfoSet, CharInfoDisabled("showGems"))
-blizz.characterInfo.args.socketGroup.args.socketSize = ACH:Range(L["Size"], nil, 1, { min = 8, max = 40, step = 1 }, nil, function() return E.db.general.characterInfo.socketSize or 14 end)
+blizz.characterInfo.args.socketGroup.args.socketSize = ACH:Range(L["Size"], nil, 1, { min = 8, max = 40, step = 1 })
 blizz.characterInfo.args.socketGroup.args.socketPosition = ACH:Select(L["Position"], nil, 2, characterInfoPositions)
 blizz.characterInfo.args.socketGroup.args.socketXOffset = ACH:Range(L["X-Offset"], nil, 3, { min = -120, max = 120, step = 1 })
 blizz.characterInfo.args.socketGroup.args.socketYOffset = ACH:Range(L["Y-Offset"], nil, 4, { min = -120, max = 120, step = 1 })
@@ -374,4 +374,3 @@ blizz.characterInfo.args.fontGroup.args.font = ACH:SharedMediaFont(L["Font"], ni
 blizz.characterInfo.args.fontGroup.args.fontSize = ACH:Range(L["Font Size"], nil, 2, C.Values.FontSize)
 blizz.characterInfo.args.fontGroup.args.fontOutline = ACH:FontFlags(L["Font Outline"], nil, 3)
 blizz.characterInfo.args.fontGroup.inline = true
-

@@ -187,6 +187,7 @@ P.general = {
 	characterInfo = {
 		showGems = true,
 		showEnchants = false,
+		socketSize = 14,
 		socketPosition = "default",
 		socketXOffset = 0,
 		socketYOffset = 0,
