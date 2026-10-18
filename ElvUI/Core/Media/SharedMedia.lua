@@ -80,7 +80,6 @@ AddMedia('font','DieDieDie.ttf',			'Die Die Die!')
 AddMedia('font','PTSansNarrow.ttf',			'PT Sans Narrow', nil, ruRU + western)
 AddMedia('font','Expressway.ttf',			true, nil, ruRU + western)
 AddMedia('font','Homespun.ttf',				true, nil, ruRU + western)
-AddMedia('font','Invisible.ttf')
 
 AddMedia('sound','AwwCrap.ogg',					'Awww Crap')
 AddMedia('sound','BbqAss.ogg',					'BBQ Ass')
@@ -258,9 +257,6 @@ do -- LSM Font Preloader ~Simpy
 			pcall(loadFont.SetText, loadFont,'cache')
 		end
 	end
-
-	-- Preload ElvUI Invisible
-	cacheFont('Invisible', E.Media.Fonts.Invisible)
 
 	-- Lets load all the fonts in LSM to prevent fonts not being ready
 	local sharedFonts = LSM:HashTable('font')
