@@ -468,6 +468,8 @@ function NP:OnShow(isConfig, dontHideHighlight, unitToken)
 
 	frame.CutawayHealth:Hide()
 
+	NP:Configure_PlateExtras(frame)
+	NP:Configure_CustomTexts(frame)
 	NP:RegisterEvents(frame)
 	NP:UpdateElement_All(frame, nil, true)
 
@@ -492,6 +494,7 @@ function NP:OnHide(isConfig)
 	local frame = self.ElvUIFrame
 	if not frame then return end
 
+	NP:Clear_CustomTexts(frame)
 	NP.VisiblePlates[frame] = nil
 
 	if frame.unit and NP.PlatesByUnit[frame.unit] == self then
@@ -620,6 +623,8 @@ function NP:UpdateElement_All(frame, noTargetFrame, filterIgnore)
 	end
 
 	NP:UpdateElement_Auras(frame)
+	NP:Update_ThreatText(frame)
+	NP:Update_TargetText(frame)
 
 	NP:Update_RaidIcon(frame)
 	NP:Update_HealerIcon(frame)
@@ -859,7 +864,18 @@ function NP:OnEvent(event, unit, ...)
 		return
 	end
 
+	if event == "UNIT_TARGET" then
+		NP:Update_TargetText(self)
+		return
+	end
+
+	if event == "UNIT_ABSORB_AMOUNT_CHANGED" then
+		NP:Update_Absorb(self)
+		return
+	end
+
 	if event == "UNIT_AURA" then
+		NP:Update_Absorb(self)
 		NP:UpdateElement_Auras(self)
 		return
 	end
@@ -886,7 +902,7 @@ function NP:OnEvent(event, unit, ...)
 end
 
 local unitEvents = {
-	"UNIT_HEALTH", "UNIT_MAXHEALTH", "UNIT_NAME_UPDATE", "UNIT_LEVEL", "UNIT_FACTION", "UNIT_AURA"
+	"UNIT_HEALTH", "UNIT_MAXHEALTH", "UNIT_NAME_UPDATE", "UNIT_LEVEL", "UNIT_FACTION", "UNIT_AURA", "UNIT_ABSORB_AMOUNT_CHANGED", "UNIT_TARGET"
 }
 local castEvents = {
 	"UNIT_SPELLCAST_INTERRUPTED", "UNIT_SPELLCAST_DELAYED", "UNIT_SPELLCAST_CHANNEL_START",
@@ -1053,6 +1069,7 @@ function NP:SetMouseoverFrame(frame)
 
 		NP:Update_Highlight(frame)
 	end
+	NP:UpdateCustomTextMouseover(frame)
 end
 
 -- the engine places plates on fractional pixels, which smears the 1px border over two rows
@@ -1103,7 +1120,11 @@ pixelSnapper:SetScript("OnUpdate", function(_, elapsed)
 
 				NP:Update_Health(frame)
 				NP:Update_HealthColor(frame)
+			else
+				NP:Update_Absorb(frame)
 			end
+			NP:Update_ThreatText(frame)
+			NP:Update_TargetText(frame)
 		end
 	end
 end)
@@ -1241,6 +1262,7 @@ function NP:UNIT_THREAT_LIST_UPDATE(_, unit)
 
 	for frame in pairs(NP.VisiblePlates) do
 		if frame.unit and UnitIsUnit(frame.unit, unit) then
+			NP:Update_ThreatText(frame)
 			local status = NP:UnitDetailedThreatSituation(frame)
 			if frame.ThreatStatus ~= status then
 				frame.ThreatStatus = status
@@ -1461,6 +1483,7 @@ function NP:Initialize()
 	NP:RegisterEvent("NAME_PLATE_UNIT_ADDED")
 	NP:RegisterEvent("NAME_PLATE_UNIT_REMOVED")
 	NP:RegisterEvent("UNIT_THREAT_LIST_UPDATE")
+	NP:RegisterEvent("UNIT_THREAT_SITUATION_UPDATE", "UNIT_THREAT_LIST_UPDATE")
 
 	NP:RegisterEvent("PLAYER_ENTERING_WORLD")
 	NP:RegisterEvent("PLAYER_REGEN_ENABLED")

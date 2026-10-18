@@ -1138,6 +1138,22 @@ P.nameplates = {
 }
 
 for _, unitContent in pairs(P.nameplates.units) do
+	for _, aura in ipairs({ "buffs", "debuffs" }) do
+		if unitContent[aura] then
+			unitContent[aura].useSirusPosition = true
+			unitContent[aura].useSirusSize = true
+		end
+	end
+	unitContent.customTexts = {}
+	unitContent.targetText = {
+		enable = false, position = "BOTTOMLEFT", justifyH = "LEFT", xOffset = 0, yOffset = -16,
+		font = "PT Sans Narrow", fontSize = 12, fontOutline = "OUTLINE"
+	}
+	unitContent.threatText = {
+		enable = false, position = "BOTTOMRIGHT", justifyH = "RIGHT", xOffset = 0, yOffset = -16,
+		font = "PT Sans Narrow", fontSize = 12, fontOutline = "OUTLINE"
+	}
+	if unitContent.health then unitContent.health.absorb = { enable = true, showText = true } end
 	if unitContent.buffs then
 		unitContent.buffs.attachTo = "FRAME"
 		unitContent.buffs.anchorPoint = "LEFT"

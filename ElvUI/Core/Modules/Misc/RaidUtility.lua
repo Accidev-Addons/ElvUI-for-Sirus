@@ -508,7 +508,7 @@ function RU:OnEvent_RaidCountdownButton()
 end
 
 function RU:OnClick_RaidControlButton()
-	ToggleFriendsFrame(5)
+	ToggleFriendsFrame(_G.FRIEND_TAB_RAID)
 end
 
 function RU:OnEvent_MainTankButton()

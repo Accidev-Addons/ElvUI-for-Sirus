@@ -18,6 +18,7 @@ local DebuffColors = E.DebuffColors
 local VISIBLE, HIDDEN = 1, 0
 
 local positionValues = {
+	TOP = "BOTTOM", BOTTOM = "TOP", CENTER = "CENTER",
 	BOTTOMLEFT = "TOP",
 	BOTTOMRIGHT = "TOP",
 	LEFT = "RIGHT",
@@ -27,6 +28,7 @@ local positionValues = {
 }
 
 local positionValues2 = {
+	TOP = "TOP", BOTTOM = "BOTTOM", CENTER = "CENTER",
 	BOTTOMLEFT = "BOTTOM",
 	BOTTOMRIGHT = "BOTTOM",
 	LEFT = "LEFT",
@@ -141,6 +143,7 @@ function NP:SetAura(frame, unit, index, filter, isDebuff, visible, spells)
 end
 
 local function GetAuraDB(frame, auraType)
+	if auraType == "lossofcontrol" then auraType = "crowdcontrol" end
 	local units = NP.db.units[frame.UnitType]
 	if not units then return end
 
@@ -180,25 +183,37 @@ local sirusAnchorPoints = {
 	TOPRIGHT = "BOTTOMRIGHT"
 }
 
-local function GetSirusAuraAnchor(frame, auraType)
-	local units = NP.db.units[frame.UnitType]
-
-	if auraType == "loss of control" then
-		local level = units and units.level
-
-		return "LEFT", (level and level.enable and level.position == "RIGHT") and frame.Level or frame.Health, "RIGHT", NP:SirusPixel(5), 0
+local function AnchorSirusAuras(frame, auras)
+	local db = GetAuraDB(frame, auras.type)
+	local unitFrame = NP:GetSirusUnitFrame(frame:GetParent())
+	local nativeAuras = unitFrame and unitFrame.AurasFrame
+	local native = nativeAuras and nativeAuras[sirusListFrames[auras.type] or "LossOfControlFrame"]
+	auras:ClearAllPoints()
+	if db.useSirusPosition ~= false and native then
+		-- Copy every axis of the client layout, including debuff padding, the
+		-- name-above-health mode, level visibility and classic-bar insets.
+		local anchors = {
+			[unitFrame.healthBar] = frame.Health,
+			[unitFrame.name] = frame.Name,
+			[unitFrame.LevelFrame] = frame.Level,
+			[unitFrame.ClassificationFrame] = frame.Elite
+		}
+		for i = 1, native:GetNumPoints() do
+			local point, relative, relativePoint, x, y = native:GetPoint(i)
+			auras:SetPoint(point, anchors[relative] or relative, relativePoint, NP:SirusPixel(x or 0), NP:SirusPixel(y or 0))
+		end
+		return
 	end
 
-	local db = GetAuraDB(frame, auraType)
-
-	if not (db and db.anchorPoint) then
-		return "BOTTOM", frame.Health, "TOP", 0, 0
-	end
-
-	local anchorPoint = db.anchorPoint
-	local attachTo = (db.attachTo == "BUFFS") and frame.Buffs or frame.Health
-
-	return sirusAnchorPoints[anchorPoint] or anchorPoint, attachTo, anchorPoint, NP:SirusPixel(db.xOffset or 0), NP:SirusPixel(db.yOffset or 0)
+	local point = db.anchorPoint or "TOPLEFT"
+	local anchor = db.attachTo == "BUFFS" and frame.Buffs
+		or db.attachTo == "DEBUFFS" and frame.Debuffs
+		or db.attachTo == "NAME" and frame.Name
+		or db.attachTo == "LEVEL" and frame.Level
+		or frame.Health
+	-- A list cannot be attached to itself; also avoid indirect buff/debuff cycles.
+	if anchor == auras or (anchor == frame.Debuffs and auras == frame.Buffs) then anchor = frame.Health end
+	auras:SetPoint(sirusAnchorPoints[point] or point, anchor, point, NP:SirusPixel(db.xOffset or 0), NP:SirusPixel(db.yOffset or 0))
 end
 
 local function ConfigureSirusAuras(frame, auras, aurasFrame)
@@ -209,8 +224,9 @@ local function ConfigureSirusAuras(frame, auras, aurasFrame)
 	local itemScale = aurasFrame.auraItemScale
 	local stride = list.stride
 	local perrow, numrows = db.perrow, db.numrows
-	local size = NP:SirusPixel(_G.NamePlateConstants.AURA_ITEM_HEIGHT * (itemScale or 1))
-	local spacing, rowSpacing = NP:SirusPixel(list.childXPadding), NP:SirusPixel(list.childYPadding)
+	local size = db.useSirusSize ~= false and NP:SirusPixel(_G.NamePlateConstants.AURA_ITEM_HEIGHT * (itemScale or 1)) or NP:Pixel(db.size)
+	local spacing = db.useSirusSize ~= false and NP:SirusPixel(list.childXPadding) or NP:Pixel(db.spacing)
+	local rowSpacing = db.useSirusSize ~= false and NP:SirusPixel(list.childYPadding) or NP:Pixel(db.spacing)
 
 	local layout = auras.sirusLayout or {}
 	layout.point = (db.growthY == "UP" and "BOTTOM" or "TOP") .. (db.growthX == "RIGHT" and "LEFT" or "RIGHT")
@@ -222,7 +238,7 @@ local function ConfigureSirusAuras(frame, auras, aurasFrame)
 	auras.anchoredIcons = 0
 
 	auras:SetSize(perrow * size + (perrow - 1) * spacing, numrows * size + (numrows - 1) * rowSpacing)
-	auras:ClearAndSetPoint(GetSirusAuraAnchor(frame, auras.type))
+	AnchorSirusAuras(frame, auras)
 end
 
 local function HideSirusAuraItems(...)
@@ -320,10 +336,10 @@ local function UpdateSirusLossOfControl(frame, aurasFrame)
 
 	if aura and aura.icon and NP:SirusAuraAllowed(db, aura) then
 		local button = auras[1] or NP:Construct_AuraIcon(auras, 1)
-		local size = NP:SirusPixel(locFrame:GetWidth() * (aurasFrame.auraItemScale or 1))
+		local size = db.useSirusSize ~= false and NP:SirusPixel(locFrame:GetWidth() * (aurasFrame.auraItemScale or 1)) or NP:Pixel(db.size)
 
 		auras:SetSize(size, size)
-		auras:ClearAndSetPoint(GetSirusAuraAnchor(frame, auras.type))
+		AnchorSirusAuras(frame, auras)
 
 		button:SetSize(size, size)
 		button:ClearAndSetPoint("CENTER", auras, "CENTER")
@@ -384,7 +400,7 @@ local function SirusAnchorsUpdated(unitFrame)
 
 	for _, key in next, sirusContainers do
 		local auras = frame[key]
-		auras:ClearAndSetPoint(GetSirusAuraAnchor(frame, auras.type))
+		AnchorSirusAuras(frame, auras)
 	end
 end
 
@@ -399,7 +415,7 @@ function NP:RefreshSirusAuraAnchors()
 				for _, key in next, sirusContainers do
 					local auras = frame[key]
 					if auras then
-						auras:ClearAndSetPoint(GetSirusAuraAnchor(frame, auras.type))
+						AnchorSirusAuras(frame, auras)
 					end
 				end
 			end

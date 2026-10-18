@@ -1,0 +1,98 @@
+local E = unpack(ElvUI)
+local NP = E:GetModule("NamePlates")
+local LSM = E.Libs.LSM
+
+-- Reuse the unit-frame tag engine, including ElvUI and third-party tags.
+-- Only copy tag methods: a nameplate is not a spawned oUF unit frame.
+function NP:Clear_CustomTexts(frame)
+	for _, text in pairs(frame.customTexts or {}) do
+		frame:Untag(text)
+		text:SetText("")
+		text:Hide()
+	end
+end
+
+-- Match unit-frame attachment semantics: absent elements use the frame,
+-- while an existing hidden element falls back to the health bar.
+function NP:GetCustomTextAnchor(frame, point)
+	local anchor = frame[point or "Health"]
+	if point == "Frame" or not anchor then return frame end
+	return anchor:IsShown() and anchor or frame.Health
+end
+
+local function RaisedTextParent(frame)
+	local parent = frame.CustomTextParent
+	if not parent then
+		parent = CreateFrame("Frame", nil, frame)
+		parent:SetAllPoints(frame)
+		frame.CustomTextParent = parent
+	end
+	local castLevel = frame.CastBar and frame.CastBar:GetFrameLevel() or 0
+	parent:SetFrameLevel(math.max(frame:GetFrameLevel(), frame.Health:GetFrameLevel(), castLevel) + 1)
+	return parent
+end
+
+-- [mouseover] is a unit-frame visibility marker, not an ordinary tag method.
+function NP:UpdateCustomTextMouseover(frame)
+	local mouseover = frame.unit and UnitIsUnit and UnitIsUnit(frame.unit, "mouseover")
+	for _, text in pairs(frame.customTexts or {}) do
+		if text.customMouseover then text:SetAlpha(mouseover and 1 or 0) end
+	end
+end
+
+function NP:Configure_CustomTexts(frame)
+	-- Libraries finish loading before ElvUI: their Private table is already gone.
+	E.oUF.Tags:Attach(frame)
+	frame.isNamePlate = true
+	frame.customTexts = frame.customTexts or {}
+	NP:Clear_CustomTexts(frame)
+
+	local configs = self.db.units[frame.UnitType].customTexts or {}
+	frame.customTextPool = frame.customTextPool or {}
+	-- FontStrings cannot be destroyed. Reuse removed/disabled entries instead
+	-- of retaining one object for every user name ever entered.
+	for name, text in pairs(frame.customTexts) do
+		if not configs[name] or configs[name].enable == false then
+			frame.customTexts[name] = nil
+			text:ClearAllPoints()
+			text:SetAlpha(1)
+			text.frequentUpdates = nil
+			text.customMouseover = nil
+			table.insert(frame.customTextPool, text)
+		end
+	end
+	local textParent
+	for name, db in pairs(configs) do
+		if db.enable ~= false then
+			textParent = textParent or RaisedTextParent(frame)
+			local text = frame.customTexts[name] or table.remove(frame.customTextPool)
+			if not text then
+				text = textParent:CreateFontString(nil, "OVERLAY")
+				text:SetWordWrap(false)
+			end
+			frame.customTexts[name] = text
+			local anchor = NP:GetCustomTextAnchor(frame, db.attachTextTo or "Health")
+			local font = db.font or self.db.font
+			local size = db.size or self.db.fontSize or 12
+			local outline = db.fontOutline or self.db.fontOutline or "OUTLINE"
+			-- Reused strings must also sit above the current health/cast frame levels.
+			text:SetParent(textParent)
+			text:FontTemplate(LSM:Fetch("font", font), size, outline)
+			text:SetJustifyH(db.justifyH or "CENTER")
+			text:ClearAllPoints()
+			local point = db.position or db.justifyH or "CENTER"
+			text:SetPoint(point, anchor, point, NP:Pixel(db.xOffset or 0), NP:Pixel(db.yOffset or 0))
+			local tagFormat = db.text_format or ""
+			text.customMouseover = tagFormat:find("%[mouseover%]") and true or nil
+			if text.customMouseover then tagFormat = tagFormat:gsub("%[mouseover%]", "") end
+			-- Preserve third-party tags without update declarations, without polling
+			-- ordinary event-driven tags or overriding explicitly timed tags.
+			text.frequentUpdates = E.oUF.Tags:NeedsFrequentUpdates(tagFormat) and 0.2 or nil
+			frame:Tag(text, tagFormat)
+			text:SetAlpha(text.customMouseover and 0 or 1)
+			text:Show()
+			if frame.unit then text:UpdateTag() end
+		end
+	end
+	NP:UpdateCustomTextMouseover(frame)
+end

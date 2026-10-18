@@ -181,6 +181,8 @@ end
 if( not HealComm.rankNumbers ) then
 	HealComm.rankNumbers = setmetatable({}, {
 		__index = function(tbl, index)
+			-- Sirus: GetSpellInfo may return nil or "" for rank, guard against that
+			if( not index or index == "" ) then return 1 end
 			local number = tonumber(match(index, "(%d+)")) or 1
 
 			rawset(tbl, index, number)
@@ -1667,6 +1669,7 @@ HealComm.healingModifiers = HealComm.healingModifiers or {
 	[getName(32378)] = 0.50, -- Filet
 	[getName(35189)] = 0.50, -- Solar Strike
 	[getName(32315)] = 0.50, -- Soul Strike
+	[15708] = 0.50, -- Mortal Strike (Hellfire Citadel)
 	[getName(60084)] = 0.50, -- The Veil of Shadow
 	[getName(45885)] = 0.50, -- Shadow Spike
 	[getName(69674)] = 0.50, -- Mutated Infection (Rotface)
@@ -1687,6 +1690,7 @@ HealComm.healingModifiers = HealComm.healingModifiers or {
 	[getName(47788)] = 1.40, -- Guardian Spirit
 	[getName(38387)] = 1.50, -- Bane of Infinity
 	[getName(31977)] = 1.50, -- Curse of Infinity
+	[372096] = 0.50, -- Shadow of the Black Temple
 	[getName(41350)] = 2.00, -- Aura of Desire
 	[73762] = 1.05, -- Strength of Wrynn (5%)
 	[73816] = 1.05, -- Hellscream's Warsong (5%)
@@ -2041,7 +2045,11 @@ local function findAura(casterGUID, spellName, spellRank, inc, ...)
 				local name, rank, _, stack, _, duration, endTime, caster = UnitBuff(unit, id)
 				if( not name ) then break end
 
-				if( name == spellName and spellRank == rank and caster and UnitGUID(caster) == casterGUID ) then
+				-- Sirus: GetSpellInfo may return nil/"" for rank while UnitBuff returns
+				-- a localized rank string. Relax the check: match by name + caster only
+				-- when spellRank is nil/empty (name + caster is already unique enough).
+				local rankMatch = (not spellRank or spellRank == "") or (spellRank == rank)
+				if( name == spellName and rankMatch and caster and UnitGUID(caster) == casterGUID ) then
 					return (stack and stack > 0 and stack or 1), duration, endTime
 				end
 
@@ -2846,7 +2854,7 @@ function HealComm:OnInitialize()
 	end
 
 	-- Cache glyphs initially
-    for id=1, GetNumGlyphSockets() do
+	for id=1, GetNumGlyphSockets() do
 		local enabled, _, glyphID = GetGlyphSocketInfo(id)
 		if( enabled and glyphID ) then
 			glyphCache[glyphID] = true

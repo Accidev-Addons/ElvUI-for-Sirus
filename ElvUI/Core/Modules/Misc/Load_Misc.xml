@@ -1,5 +1,6 @@
 <Ui xmlns='http://www.blizzard.com/wow/ui/'>
 	<Script file='Misc.lua'/>
+	<Script file='Merchant.lua'/>
 	<Script file='DebugTools.lua'/>
 	<Script file='ChatBubbles.lua'/>
 	<Script file='RaidMarker.lua'/>
