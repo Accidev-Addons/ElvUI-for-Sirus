@@ -968,7 +968,6 @@ function E:SetupGameMenu()
 	button:Point('TOPLEFT', GameMenuButtonAddons, 'BOTTOMLEFT', 0, -1)
 	hooksecurefunc(GameMenuFrame, 'Show', function() E:PositionGameMenuButton() end)
 
-	-- DF UI: right-click on the Edit button opens ElvUI movers, left-click keeps the Sirus edit mode
 	local editMode = _G.GameMenuButtonEditMode
 	if editMode then
 		local editModeClick = editMode:GetScript('OnClick')

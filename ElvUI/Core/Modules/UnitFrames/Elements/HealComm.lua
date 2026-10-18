@@ -305,7 +305,9 @@ function UF:Configure_HealComm(frame)
 			healPrediction.healAbsorbBar:SetStatusBarColor(c.healAbsorbs.r, c.healAbsorbs.g, c.healAbsorbs.b, c.healAbsorbs.a)
 		end
 		UF:SetAlpha_HealComm(healPrediction, true)
-		healPrediction:ForceUpdate()
+		if frame.unit then
+			healPrediction:ForceUpdate()
+		end
 	elseif frame:IsElementEnabled("HealComm4") then
 		frame:DisableElement("HealComm4")
 	end

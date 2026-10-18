@@ -39,7 +39,7 @@ end)
 
 function UF:PostUpdateRunes(rune, _, start, duration, isReady)
 	local frame = self.origParent
-	if isReady or duration == 0 or not (frame and frame.db.classbar.showRuneTimer) then
+	if isReady or not start or duration == 0 or not (frame and frame.db.classbar.showRuneTimer) then
 		rune.timerText:SetText("")
 		runeTimer.runes[rune] = nil
 	else

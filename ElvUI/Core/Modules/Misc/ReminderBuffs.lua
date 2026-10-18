@@ -303,6 +303,8 @@ function RB:UpdatePosition()
 end
 
 function RB:Initialize()
+	if not E.private.general.minimap.enable then return end
+
 	self.db = E.db.general.reminder
 
 	local frame = CreateFrame('Frame', 'ElvUI_ReminderBuffs', E.UIParent)

@@ -185,7 +185,7 @@ P.general = {
 		frameLevel = 20,
 	},
 	reminder = {
-		enable = true,
+		enable = false,
 		durations = true,
 		reverse = true,
 		position = "LEFT",
