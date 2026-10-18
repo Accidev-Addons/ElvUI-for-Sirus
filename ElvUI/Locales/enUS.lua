@@ -355,6 +355,7 @@ L["Rare"] = true
 L["Reagent Bank"] = true
 L["Recommended Scale"] = true
 L["Remaining:"] = true
+L["Reminder Buffs"] = true
 L["Remove Bar %d Action Page"] = true
 L["Renegade: "] = true
 L["Reputation Bar"] = true
