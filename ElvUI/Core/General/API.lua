@@ -927,25 +927,65 @@ function E:PLAYER_LEVEL_UP(_, level)
 	E.mylevel = level
 end
 
+local menuAnchorFactors = {
+	TOP = 0, TOPLEFT = 0, TOPRIGHT = 0,
+	LEFT = 0.5, CENTER = 0.5, RIGHT = 0.5,
+	BOTTOM = 1, BOTTOMLEFT = 1, BOTTOMRIGHT = 1
+}
+
+local function GameMenuTopOffset(region, offsets, visiting, scale)
+	if offsets[region] ~= nil then return offsets[region] end
+	if visiting[region] or not region.GetPoint then return end
+	visiting[region] = true
+
+	local point, relative, relativePoint, _, y = region:GetPoint()
+	relative = type(relative) == 'string' and _G[relative] or relative
+	local ownFactor, relativeFactor = menuAnchorFactors[point], menuAnchorFactors[relativePoint]
+	local offset
+	if relative and ownFactor and relativeFactor and (relative ~= GameMenuFrame or relativeFactor == 0) then
+		local relativeTop = GameMenuTopOffset(relative, offsets, visiting, scale)
+		if relativeTop then
+			local ownScale = region:GetEffectiveScale() / scale
+			local relativeHeight = relative == GameMenuFrame and 0 or relative:GetHeight() * relative:GetEffectiveScale() / scale
+			offset = relativeTop + relativeHeight * relativeFactor - ((y or 0) + region:GetHeight() * ownFactor) * ownScale
+		end
+	end
+
+	visiting[region] = nil
+	offsets[region] = offset
+	return offset
+end
+
+local function GameMenuHasButton(anchor, button)
+	local seen = {}
+	while anchor and anchor ~= GameMenuFrame do
+		if anchor == button then return true, true end
+		if not anchor.GetPoint or seen[anchor] then return false, false end
+		seen[anchor] = true
+		local _, relative = anchor:GetPoint()
+		anchor = type(relative) == 'string' and _G[relative] or relative
+	end
+	return false, true
+end
+
 function E:UpdateGameMenuHeight()
 	if GameMenuFrame.elvuiSizing then return end
 
-	local top, bottom = GameMenuFrame:GetTop()
-	if not top then return end
-	local scale = GameMenuFrame:GetEffectiveScale()
+	local scale, bottom = GameMenuFrame:GetEffectiveScale()
+	local offsets, visiting = { [GameMenuFrame] = 0 }, {}
 	for i = 1, GameMenuFrame:GetNumChildren() do
 		local child = select(i, GameMenuFrame:GetChildren())
 		if child:IsObjectType('Button') and child:IsShown() then
-			local childBottom = child:GetBottom()
-			if childBottom then
-				childBottom = childBottom * child:GetEffectiveScale() / scale
-				bottom = bottom and math.min(bottom, childBottom) or childBottom
+			local top = GameMenuTopOffset(child, offsets, visiting, scale)
+			if top then
+				local childBottom = top + child:GetHeight() * child:GetEffectiveScale() / scale
+				bottom = bottom and math.max(bottom, childBottom) or childBottom
 			end
 		end
 	end
 
 	if bottom then
-		local height = E:Scale(top - bottom + 16, GameMenuFrame)
+		local height = E:Scale(bottom + 16, GameMenuFrame)
 		if abs(height - GameMenuFrame:GetHeight()) > 0.01 then
 			GameMenuFrame.elvuiSizing = true
 			GameMenuFrame:SetHeight(height)
@@ -959,23 +999,35 @@ function E:PositionGameMenuButton()
 	if not button then return end
 	button:SetFormattedText('%sElvUI|r', E.media.hexvaluecolor)
 
-	local anchor, seen = GameMenuButtonLogout, {}
-	while anchor and anchor.GetPoint and not seen[anchor] do
-		if anchor == button then break end
-		seen[anchor] = true
-		local _, relative = anchor:GetPoint()
-		anchor = type(relative) == 'string' and _G[relative] or relative
+	if GameMenuButtonLogout:GetNumPoints() > 1 then
+		local point, relative, relativePoint, x, y = GameMenuButtonLogout:GetPoint(GameMenuButtonLogout:GetNumPoints())
+		GameMenuButtonLogout:ClearAllPoints()
+		GameMenuButtonLogout:SetPoint(point, relative, relativePoint, x, y)
 	end
 
-	if not anchor then
-		local _, relative, _, _, offY = GameMenuButtonLogout:GetPoint()
+	local linked, valid = GameMenuHasButton(GameMenuButtonLogout, button)
+	if not linked and valid then
+		local point, relative, relativePoint, x, offY = GameMenuButtonLogout:GetPoint()
 		relative = type(relative) == 'string' and _G[relative] or relative
 		if relative then
 			button:ClearAllPoints()
-			button:Point('TOPLEFT', relative, 'BOTTOMLEFT', 0, -1)
+			button:Point('TOP', relative, 'BOTTOM', 0, -1)
 			GameMenuButtonLogout:ClearAllPoints()
-			GameMenuButtonLogout:Point('TOPLEFT', button, 'BOTTOMLEFT', 0, offY or -1)
+			GameMenuButtonLogout:Point(point or 'TOP', button, relativePoint or 'BOTTOM', x or 0, offY or -1)
 		end
+	end
+
+	local addons = GameMenuFrame.AddonManagerButton
+	if addons then
+		local included, chainValid = GameMenuHasButton(GameMenuButtonLogout, addons)
+		if not included and chainValid then
+			local point, relative, relativePoint, x, y = button:GetPoint()
+			addons:ClearAllPoints()
+			addons:SetPoint(point, relative, relativePoint, x, y)
+			button:ClearAllPoints()
+			button:Point('TOP', addons, 'BOTTOM', 0, -1)
+		end
+		if not addons:IsShown() then addons:Show() end
 	end
 
 	E:UpdateGameMenuHeight()
@@ -1003,7 +1055,7 @@ function E:SetupGameMenu()
 	E:ScaleGameMenu()
 
 	button:Size(GameMenuButtonLogout:GetSize())
-	button:Point('TOPLEFT', GameMenuButtonAddons, 'BOTTOMLEFT', 0, -1)
+	button:Point('TOP', GameMenuButtonAddons, 'BOTTOM', 0, -1)
 	hooksecurefunc(GameMenuFrame, 'Show', function() E:PositionGameMenuButton() end)
 	for _, menuButton in next, { GameMenuButtonLogout, _G.GameMenuButtonQuit, _G.GameMenuButtonContinue } do
 		hooksecurefunc(menuButton, 'SetPoint', function() E:UpdateGameMenuHeight() end)
