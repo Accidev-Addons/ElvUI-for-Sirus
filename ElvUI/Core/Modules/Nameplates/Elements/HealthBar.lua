@@ -318,12 +318,16 @@ end
 
 function NP:Update_ThreatText(frame)
 	local db = self.db.units[frame.UnitType].threatText
-	if not db.enable or frame.UnitType ~= "ENEMY_NPC" or not frame.unit or not frame.Health:IsShown() then
+	if not db.enable or frame.UnitType ~= "ENEMY_NPC" or (not frame.unit and not frame.testUnitType) or not frame.Health:IsShown() then
 		HidePlateLabel(frame.threatText)
 		return
 	end
 	local _, status, percent
-	if UnitCanAttack("player", frame.unit) then _, status, percent = UnitDetailedThreatSituation("player", frame.unit) end
+	if frame.testUnitType then
+		status, percent = 2, 75
+	elseif UnitCanAttack("player", frame.unit) then
+		_, status, percent = UnitDetailedThreatSituation("player", frame.unit)
+	end
 	if percent == nil then HidePlateLabel(frame.threatText) return end
 	local text = frame.threatText or NP:Configure_PlateLabel(frame, "threatText")
 	if text.lastValue ~= percent then text:SetText(string.format("%.0f%%", percent)) text.lastValue = percent end
@@ -333,8 +337,8 @@ end
 
 function NP:Update_TargetText(frame)
 	local db = self.db.units[frame.UnitType].targetText
-	if not db.enable or not frame.unit or not frame.Health:IsShown() then HidePlateLabel(frame.targetText) return end
-	local target = frame.unit.."target"
+	if not db.enable or (not frame.unit and not frame.testUnitType) or not frame.Health:IsShown() then HidePlateLabel(frame.targetText) return end
+	local target = frame.testUnitType and "player" or (frame.unit.."target")
 	local name = UnitExists(target) and UnitName(target) or nil
 	if not name then HidePlateLabel(frame.targetText) return end
 	local text = frame.targetText or NP:Configure_PlateLabel(frame, "targetText")
