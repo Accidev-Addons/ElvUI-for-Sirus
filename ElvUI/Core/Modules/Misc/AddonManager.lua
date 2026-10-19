@@ -801,14 +801,17 @@ function AM:PositionGameMenuButton()
 	local button = frame and frame.AddonManagerButton
 	if not (frame and button and button.replacingAddons) then return end
 
-	local elvui = frame.ElvUI
-	if elvui then
-		elvui:ClearAllPoints()
-		elvui:Point('TOPLEFT', button, 'BOTTOMLEFT', 0, -1)
-
-		local _, _, _, _, offY = _G.GameMenuButtonLogout:GetPoint()
-		_G.GameMenuButtonLogout:ClearAllPoints()
-		_G.GameMenuButtonLogout:Point('TOPLEFT', elvui, 'BOTTOMLEFT', 0, offY)
+	for i = 1, frame:GetNumChildren() do
+		local child = select(i, frame:GetChildren())
+		if child ~= button and child:IsObjectType('Button') then
+			for pointIndex = 1, child:GetNumPoints() do
+				local point, relative, relativePoint, x, y = child:GetPoint(pointIndex)
+				relative = type(relative) == 'string' and _G[relative] or relative
+				if relative and (relative == _G.GameMenuButtonAddons or relative == _G.GameMenuButtonAddOns) then
+					child:SetPoint(point, button, relativePoint, x, y)
+				end
+			end
+		end
 	end
 end
 
@@ -851,12 +854,7 @@ function AM:SetupGameMenu()
 	end
 
 	if GameMenuFrame_UpdateVisibleButtons then
-		hooksecurefunc('GameMenuFrame_UpdateVisibleButtons', function()
-			local b = frame.AddonManagerButton
-			if b and _G.GameMenuButtonLogout then
-				frame:Height(frame:GetHeight() + _G.GameMenuButtonLogout:GetHeight() - 4)
-			end
-		end)
+		hooksecurefunc('GameMenuFrame_UpdateVisibleButtons', AM.PositionGameMenuButton)
 	end
 end
 
