@@ -324,6 +324,11 @@ blizz.queueStatus.args.fontGroup.inline = true
 local function CharInfoGet(info) return E.db.general.characterInfo[info[#info]] end
 local function CharInfoSet(info, value)
 	E.db.general.characterInfo[info[#info]] = value
+	if info[#info] == "highlightBlackDiamonds" then
+		if SK.ColorItemCharacterBorder then SK:ColorItemCharacterBorder() end
+		if SK.ColorItemInspectBorder then SK:ColorItemInspectBorder() end
+		return
+	end
 	if SK.UpdateCharacterEquipmentSockets then
 		SK:UpdateCharacterEquipmentSockets()
 	end
@@ -338,6 +343,7 @@ blizz.characterInfo = ACH:Group(L["Character Information"], nil, 100, nil, CharI
 blizz.characterInfo.args.gemsAndEnchants = ACH:Group(L["Gems and Enchants"], nil, 1, nil, CharInfoGet, CharInfoSet)
 blizz.characterInfo.args.gemsAndEnchants.args.showGems = ACH:Toggle(L["Display Gems"], nil, 1)
 blizz.characterInfo.args.gemsAndEnchants.args.showEnchants = ACH:Toggle(L["Display Enchants"], nil, 2)
+blizz.characterInfo.args.gemsAndEnchants.args.highlightBlackDiamonds = ACH:Toggle(L["Highlight Black Diamonds"], L["Highlight items socketed with a black diamond without changing their quality borders."], 3)
 blizz.characterInfo.args.gemsAndEnchants.inline = true
 
 blizz.characterInfo.args.socketGroup = ACH:Group(L["Sockets"], nil, 2, nil, CharInfoGet, CharInfoSet, CharInfoDisabled("showGems"))
@@ -351,6 +357,9 @@ blizz.characterInfo.args.enchantGroup = ACH:Group(L["Enchant Text"], nil, 3, nil
 blizz.characterInfo.args.enchantGroup.args.enchantPosition = ACH:Select(L["Position"], nil, 1, characterInfoPositions)
 blizz.characterInfo.args.enchantGroup.args.enchantXOffset = ACH:Range(L["X-Offset"], nil, 2, { min = -120, max = 120, step = 1 })
 blizz.characterInfo.args.enchantGroup.args.enchantYOffset = ACH:Range(L["Y-Offset"], nil, 3, { min = -120, max = 120, step = 1 })
+blizz.characterInfo.args.enchantGroup.args.enchantFont = ACH:SharedMediaFont(L["Font"], nil, 4)
+blizz.characterInfo.args.enchantGroup.args.enchantFontSize = ACH:Range(L["Font Size"], nil, 5, C.Values.FontSize)
+blizz.characterInfo.args.enchantGroup.args.enchantFontOutline = ACH:FontFlags(L["Font Outline"], nil, 6)
 blizz.characterInfo.args.enchantGroup.inline = true
 
 blizz.characterInfo.args.itemLevelGroup = ACH:Group(L["Item Level"], nil, 4, nil, CharInfoGet, CharInfoSet)

@@ -76,6 +76,8 @@ local function LoadSkin()
 				end
 			end
 
+			S:UpdateBlackDiamondHighlight(button, InspectFrame.unit and button.lastLink)
+
 			if button.hasItem then
 				if button.lastLink then
 					local _, _, quality = GetItemInfo(button.lastLink)

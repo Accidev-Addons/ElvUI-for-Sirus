@@ -1,4 +1,4 @@
-local E, L, V, P, G = unpack(ElvUI)
+local E, L, V = unpack(ElvUI)
 local S = E:GetModule("Skins")
 local LSM = E.Libs.LSM
 
@@ -401,7 +401,7 @@ local PAPERDOLL_STATCATEGORY_DEFAULTORDER = {
 	"DEFENSES",
 	"RESISTANCE"
 }
-local classTextFormat = "%2$s%4$s (%3$s)|r %1$s-го уровня"
+local classTextFormat = L["%2$s%4$s (%3$s)|r Level %1$s"]
 
 local function CenterCharacterHeader()
 	local width = CharacterFrame:GetWidth()
@@ -435,12 +435,19 @@ function S:PaperDollFrame_SetLevel()
 	CenterCharacterHeader()
 end
 
+local function HideStatTooltip(self)
+	if GameTooltip:GetOwner() == self then
+		GameTooltip_Hide()
+	end
+end
+
 local function PlusButton_OnShow(self)
-	self:GetParent().Value:SetPoint("RIGHT", -22, 0)
+	self:GetParent().Value:SetPoint("RIGHT", -16, 1)
 end
 
 local function PlusButton_OnHide(self)
-	self:GetParent().Value:SetPoint("RIGHT", -3, 0)
+	self:GetParent().Value:SetPoint("RIGHT", -3, 1)
+	HideStatTooltip(self)
 end
 
 local function PlusButton_OnEnable(self)
@@ -477,7 +484,7 @@ local function OnPlusButtonEnter(frame)
 	GameTooltip:AddLine(PAPERDOLLFRAME_UPS_TOOLTIP_HELP_2, NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b, 1)
 	GameTooltip:AddLine(PAPERDOLLFRAME_UPS_TOOLTIP_HELP_3, NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b, 1)
 	GameTooltip:AddLine(PAPERDOLLFRAME_UPS_TOOLTIP_HELP_4, NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b, 1)
-	GameTooltip:AddLine("При зажатой Alt вложить все.", NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b, 1)
+	GameTooltip:AddLine(L["Hold Alt to allocate all available points."], NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b, 1)
 	GameTooltip:Show()
 end
 
@@ -488,20 +495,23 @@ function S:CharacterStatFrame(button,id)
 
 	button.Label = button:CreateFontString("$parentLabel", "OVERLAY", "GameFontNormalSmall")
 	button.Label:SetJustifyH("LEFT")
-	button.Label:SetSize(122, 0)
-	button.Label:SetPoint("LEFT", 7, 0)
+	button.Label:SetSize(122, button:GetHeight())
+	button.Label:SetJustifyV("MIDDLE")
+	button.Label:SetPoint("LEFT", 7, 1)
 
 	button.Value = button:CreateFontString("$parentStatText", "OVERLAY", "GameFontHighlightSmall")
 	button.Value:SetJustifyH("RIGHT")
-	button.Value:SetPoint("RIGHT", -3, 0)
+	button.Value:SetHeight(button:GetHeight())
+	button.Value:SetJustifyV("MIDDLE")
+	button.Value:SetPoint("RIGHT", -3, 1)
 
 	button.Plus = CreateFrame("Button", nil, button)
 	button.Plus.id = id
 	local _, _, _, multiplier = C_PlayerInfo.GetBonusStatInfo(id)
 	button.Plus.multiplier = multiplier
 	button.Plus:Hide()
-	button.Plus:Size(19)
-	button.Plus:SetPoint("RIGHT", -3, 0)
+	button.Plus:Size(16)
+	button.Plus:SetPoint("CENTER", button, "RIGHT", -5, 0)
 
 	button.Plus.Texture = button.Plus:CreateTexture()
 	button.Plus.Texture:SetAllPoints()
@@ -511,12 +521,20 @@ function S:CharacterStatFrame(button,id)
 	button.Plus:SetScript("OnShow", PlusButton_OnShow)
 	button.Plus:SetScript("OnHide", PlusButton_OnHide)
 	button.Plus:SetScript("OnEnter", OnPlusButtonEnter)
-	button.Plus:SetScript("OnLeave", GameTooltip_Hide)
+	button.Plus:SetScript("OnLeave", HideStatTooltip)
 	button.Plus:SetScript("OnEnable", PlusButton_OnEnable)
 	button.Plus:SetScript("OnDisable", PlusButton_OnDisable)
 
 	button:SetScript("OnEnter", StatFrame_OnEnter)
-	button:SetScript("OnLeave", GameTooltip_Hide)
+	button:SetScript("OnLeave", HideStatTooltip)
+	button:SetScript("OnHide", HideStatTooltip)
+end
+
+function S:PaperDollSidebarTab_SetSelected(button, selected)
+	button.isSelected = selected
+	button.Hider:SetShown(not selected)
+	button.Highlight:SetShown(not selected)
+	button:SetBackdropBorderColor(unpack((selected or button:IsMouseOver()) and E.media.rgbvaluecolor or E.media.bordercolor))
 end
 
 function S:PaperDollSidebarTab(button)
@@ -554,16 +572,22 @@ function S:PaperDollSidebarTab(button)
 	end)
 
 	button:SetScript("OnEnter", function(self)
+		self:SetBackdropBorderColor(unpack(E.media.rgbvaluecolor))
 		local sidebar = PAPERDOLL_SIDEBARS[self.sidebarID]
 		if sidebar then
 			GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
 			GameTooltip:SetText(sidebar.name, 1, 1, 1)
+			GameTooltip:Show()
 		end
 	end)
 
 	button:SetScript("OnLeave", function(self)
-		GameTooltip:Hide()
+		S:PaperDollSidebarTab_SetSelected(self, self.isSelected)
+		HideStatTooltip(self)
 	end)
+	button:SetScript("OnHide", HideStatTooltip)
+	button:HookScript("OnShow", function() S:PaperDollFrame_UpdateSidebarTabs() end)
+	S:PaperDollSidebarTab_SetSelected(button, false)
 end
 
 function S:CharacterFrame_Collapse(sizeOnly)
@@ -800,7 +824,7 @@ function S:SetResistance(statFrame, unit, resistanceIndex)
 	local petBonus = ComputePetBonus("PET_BONUS_RES", resistance)
 
 	local resistanceName = _G["RESISTANCE"..resistanceIndex.."_NAME"]
-	local resistanceIconCode = "|TInterface\\PaperDollInfoFrame\\SpellSchoolIcon"..(resistanceIndex + 1)..":16:16:2:2:16:16:2:14:2:14|t"
+	local resistanceIconCode = "|TInterface\\PaperDollInfoFrame\\SpellSchoolIcon"..(resistanceIndex + 1)..":16:16:2:0:16:16:2:14:2:14|t"
 	statFrame.Label:SetText(resistanceIconCode.." "..format(STAT_FORMAT, ResistanceNames[resistanceIndex]))
 	local text = _G[statFrame:GetName().."StatText"]
 	PaperDollFormatStat(resistanceName, base, positive, negative, statFrame, text)
@@ -1002,10 +1026,19 @@ function S:SetMeleeCritChance(statFrame, unit)
 	statFrame.tooltip2 = format(CR_CRIT_MELEE_TOOLTIP, GetCombatRating(CR_CRIT_MELEE), GetCombatRatingBonus(CR_CRIT_MELEE))
 end
 
+local function UpdateStatCategoryHeader(categoryFrame)
+	local isStrengthen = categoryFrame.Category == "STRENGTHEN"
+	categoryFrame.NameText:Point("RIGHT", categoryFrame.Toolbar, "RIGHT", isStrengthen and -42 or -20, 0)
+	categoryFrame.Toolbar.GripAnchor:Point("LEFT", categoryFrame.NameText, "RIGHT", isStrengthen and 30 or 8, 0)
+	categoryFrame.Toolbar.ToggleIcon.Vertical:SetShown(categoryFrame.collapsed)
+	categoryFrame.Toolbar.Background:Show()
+	categoryFrame.Toolbar.Background:SetAlpha(categoryFrame.collapsed and 0.15 or 0.3)
+end
+
 local function PaperDollFrame_CollapseStatCategory(categoryFrame)
 	if not categoryFrame.collapsed then
 		categoryFrame.collapsed = true
-		categoryFrame.Toolbar.Background:Hide()
+		UpdateStatCategoryHeader(categoryFrame)
 		if categoryFrame.ResetStatButton then
 			categoryFrame.ResetStatButton:Hide()
 		end
@@ -1014,7 +1047,7 @@ local function PaperDollFrame_CollapseStatCategory(categoryFrame)
 			categoryFrame.Stats[index]:Hide()
 			index = index + 1
 		end
-		categoryFrame:Height(18)
+		categoryFrame:Height(categoryFrame.Toolbar:GetHeight())
 		S:PaperDollFrame_UpdateStatScrollChildHeight()
 	end
 end
@@ -1022,7 +1055,6 @@ end
 local function PaperDollFrame_ExpandStatCategory(categoryFrame)
 	if categoryFrame.collapsed then
 		categoryFrame.collapsed = false
-		categoryFrame.Toolbar.Background:Show()
 		S:PaperDollFrame_UpdateStatCategory(categoryFrame)
 		S:PaperDollFrame_UpdateStatScrollChildHeight()
 	end
@@ -1037,6 +1069,34 @@ local function StrengthenCategory_OnEnter(self)
 	GameTooltip:Show()
 end
 
+local function StatCategory_OnEnter(self)
+	if MOVING_STAT_CATEGORY or not self:IsVisible() or not self:IsMouseOver() then return end
+
+	if self.isStatDragHandle then
+		local toolbar = self:GetParent()
+		for _, dot in ipairs(toolbar.Grip) do
+			dot:SetVertexColor(1, 1, 1)
+		end
+		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+		GameTooltip:SetText(toolbar:GetParent().NameText:GetText(), 1, 1, 1)
+		GameTooltip:AddLine(L["Drag this handle to reorder sections."], .8, .8, .8, true)
+	elseif self:GetParent().Category == "STRENGTHEN" then
+		StrengthenCategory_OnEnter(self)
+	else
+		return
+	end
+	GameTooltip:Show()
+end
+
+local function StatCategory_OnLeave(self)
+	if self.isStatDragHandle then
+		for _, dot in ipairs(self:GetParent().Grip) do
+			dot:SetVertexColor(.6, .6, .6)
+		end
+	end
+	HideStatTooltip(self)
+end
+
 local function StrengthenCategoryReset_OnClick(self)
 	C_PlayerInfo.ResetBonusStats()
 end
@@ -1048,11 +1108,13 @@ local function StrengthenCategoryReset_OnEnter(self)
 	if cost and cost > 0 then
 		GameTooltip:AddLine(GetMoneyString(cost), 1, 1, 1)
 	end
-	GameTooltip:AddLine("Сбросить все очки усилений", 1, 0.82, 0)
+	GameTooltip:AddLine(L["Reset all bonus stat points."], 1, 0.82, 0)
 	GameTooltip:Show()
 end
 function S:PaperDollFrame_UpdateStatCategory(categoryFrame)
 	if not categoryFrame.Category then categoryFrame:Hide() return end
+
+	UpdateStatCategoryHeader(categoryFrame)
 
 	local categoryInfo = PAPERDOLL_STATCATEGORIES[categoryFrame.Category]
 	if categoryInfo == PAPERDOLL_STATCATEGORIES["RESISTANCE"] then
@@ -1060,29 +1122,30 @@ function S:PaperDollFrame_UpdateStatCategory(categoryFrame)
 	elseif categoryInfo == PAPERDOLL_STATCATEGORIES["STRENGTHEN"] then
 		local _, _, available = C_PlayerInfo.GetBonusStatPointInfo()
 		categoryFrame.NameText:SetFormattedText(PAPERDOLLFRAME_UPS_AVAILABLE, available or 0)
-		categoryFrame.Toolbar:SetScript("OnEnter", StrengthenCategory_OnEnter)
-		categoryFrame.Toolbar:SetScript("OnLeave", GameTooltip_Hide)
 
 		if not categoryFrame.ResetStatButton then
 			categoryFrame.ResetStatButton = CreateFrame("Button", nil, categoryFrame)
 			categoryFrame.ResetStatButton:Size(14)
-			categoryFrame.ResetStatButton:Point("TOPRIGHT", categoryFrame, "TOPRIGHT", -10, -5)
+			categoryFrame.ResetStatButton:Point("RIGHT", categoryFrame.Toolbar.GripAnchor, "LEFT", -10, 0)
 			categoryFrame.ResetStatButton:SetFrameLevel(categoryFrame.Toolbar:GetFrameLevel() + 1)
 
 			categoryFrame.ResetStatButton.Icon = categoryFrame.ResetStatButton:CreateTexture(nil, "ARTWORK")
-			categoryFrame.ResetStatButton.Icon:SetAllPoints()
+			categoryFrame.ResetStatButton.Icon:Size(12)
+			categoryFrame.ResetStatButton.Icon:Point("CENTER", categoryFrame.ResetStatButton, "CENTER", 0, -2)
 			categoryFrame.ResetStatButton.Icon:SetTexture([[Interface\Buttons\UI-RefreshButton]])
 			categoryFrame.ResetStatButton.Icon:SetDesaturated(true)
+			categoryFrame.ResetStatButton.Icon:SetVertexColor(.6, .6, .6)
 
 			categoryFrame.ResetStatButton:SetScript("OnClick", StrengthenCategoryReset_OnClick)
 			categoryFrame.ResetStatButton:SetScript("OnEnter", function(self)
-				self.Icon:SetDesaturated(false)
+				self.Icon:SetVertexColor(1, 1, 1)
 				StrengthenCategoryReset_OnEnter(self)
 			end)
 			categoryFrame.ResetStatButton:SetScript("OnLeave", function(self)
-				self.Icon:SetDesaturated(true)
-				GameTooltip_Hide()
+				self.Icon:SetVertexColor(.6, .6, .6)
+				HideStatTooltip(self)
 			end)
+			categoryFrame.ResetStatButton:SetScript("OnHide", categoryFrame.ResetStatButton:GetScript("OnLeave"))
 		end
 		if categoryFrame.collapsed then
 			categoryFrame.ResetStatButton:Hide()
@@ -1094,8 +1157,6 @@ function S:PaperDollFrame_UpdateStatCategory(categoryFrame)
 	end
 
 	if categoryInfo ~= PAPERDOLL_STATCATEGORIES["STRENGTHEN"] then
-		categoryFrame.Toolbar:SetScript("OnEnter", nil)
-		categoryFrame.Toolbar:SetScript("OnLeave", nil)
 		if categoryFrame.ResetStatButton then
 			categoryFrame.ResetStatButton:Hide()
 		end
@@ -1107,7 +1168,7 @@ function S:PaperDollFrame_UpdateStatCategory(categoryFrame)
 	local numVisible = 0
 	if categoryInfo then
 		local prevStatFrame = nil
-		for _, stat in next, categoryInfo.stats do
+		for _, stat in ipairs(categoryInfo.stats) do
 			local statInfo = PAPERDOLL_STATINFO[stat]
 			if statInfo then
 				local statFrame = categoryFrame.Stats[numVisible + 1]
@@ -1146,7 +1207,7 @@ function S:PaperDollFrame_UpdateStatCategory(categoryFrame)
 					totalHeight = totalHeight + statFrame:GetHeight()
 					prevStatFrame = statFrame
 
-					if GameTooltip:GetOwner() == statFrame then
+					if GameTooltip:IsShown() and GameTooltip:GetOwner() == statFrame and statFrame:IsMouseOver() then
 						statFrame:GetScript("OnEnter")(statFrame)
 					end
 				end
@@ -1155,14 +1216,16 @@ function S:PaperDollFrame_UpdateStatCategory(categoryFrame)
 	end
 
 	for index = 1, numVisible do
-		if index % 2 == 0 then
-			local statFrame = categoryFrame.Stats[index]
-			if not statFrame.Background then
-				statFrame.Background = statFrame:CreateTexture(nil, "BACKGROUND")
-				statFrame.Background:SetAllPoints()
-				statFrame.Background:SetTexture(E.Media.Textures.Highlight)
-				statFrame.Background:SetAlpha(0.3)
-			end
+		local statFrame = categoryFrame.Stats[index]
+		local shaded = index % 2 == 0
+		if shaded and not statFrame.Background then
+			statFrame.Background = statFrame:CreateTexture(nil, "BACKGROUND")
+			statFrame.Background:SetAllPoints()
+			statFrame.Background:SetTexture(E.media.blankTex)
+			statFrame.Background:SetVertexColor(1, 1, 1, .07)
+		end
+		if statFrame.Background then
+			statFrame.Background:SetShown(shaded)
 		end
 	end
 
@@ -1411,17 +1474,13 @@ local function PaperDollStatCategory_OnDragStop(self)
 end
 
 function S:PaperDollFrame_UpdateSidebarTabs()
+	local current = PaperDollFrame.currentSideBar
 	for i = 1, #PAPERDOLL_SIDEBARS do
 		local tab = _G["ElvUI_PaperDollSidebarTab"..i]
 		local frame = _G[PAPERDOLL_SIDEBARS[i].frame]
 		if tab and frame then
-			if frame:IsShown() then
-				tab.Hider:Hide()
-				tab.Highlight:Hide()
-			else
-				tab.Hider:Show()
-				tab.Highlight:Show()
-			end
+			local selected = frame:IsShown() and (not current or not current:IsShown() or frame == current)
+			self:PaperDollSidebarTab_SetSelected(tab, selected)
 		end
 	end
 end
@@ -1443,7 +1502,7 @@ function S:PaperDollFrame_SetSidebar(button, index)
 	if not sidebar then return end
 	local selectedFrame = _G[sidebar.frame]
 	if not selectedFrame then return end
-	if not selectedFrame:IsShown() then
+	if not selectedFrame:IsShown() or PaperDollFrame.currentSideBar ~= selectedFrame then
 		for i = 1, #PAPERDOLL_SIDEBARS do
 			local frame = _G[PAPERDOLL_SIDEBARS[i].frame]
 			local tab = _G["ElvUI_PaperDollSidebarTab"..i]
@@ -1455,8 +1514,7 @@ function S:PaperDollFrame_SetSidebar(button, index)
 				end
 
 				if tab then
-					tab.Hider:Show()
-					tab.Highlight:Show()
+					self:PaperDollSidebarTab_SetSelected(tab, false)
 				end
 			end
 		end
@@ -1473,89 +1531,104 @@ function S:PaperDollFrame_SetSidebar(button, index)
 
 		local selectedTab = _G["ElvUI_PaperDollSidebarTab"..index]
 		if selectedTab then
-			selectedTab.Hider:Hide()
-			selectedTab.Highlight:Hide()
+			self:PaperDollSidebarTab_SetSelected(selectedTab, true)
 		end
 	end
 end
 
 function S:PaperDollTitlesPane_UpdateScrollFrame()
-	local buttons = PaperDollTitlesPane.buttons
-	local playerTitles = PaperDollTitlesPane.titles
-	local numButtons = #buttons
-	local scrollOffset = HybridScrollFrame_GetOffset(PaperDollTitlesPane)
-	local button, playerTitle
+	local pane = PaperDollTitlesPane
+	local scrollOffset = HybridScrollFrame_GetOffset(pane)
 
-	for i = 1, numButtons do
-		button = buttons[i]
-		playerTitle = playerTitles[i + scrollOffset]
-
+	for i, button in ipairs(pane.buttons) do
+		local playerTitle = pane.titles and pane.titles[i + scrollOffset]
 		if playerTitle then
-			button:Show()
+			if button.titleId ~= playerTitle.id or button.text:GetText() ~= playerTitle.name then
+				HideStatTooltip(button)
+			end
 			button.text:SetText(playerTitle.name)
 			button.titleId = playerTitle.id
-
-			if PaperDollTitlesPane.selected == playerTitle.id then
-				button.Check:SetAlpha(1)
-				button.SelectedBar:Show()
-			else
-				button.Check:SetAlpha(0)
-				button.SelectedBar:Hide()
-			end
-
-			if (i + scrollOffset) % 2 == 0 then
-				button.Stripe:SetTexture(0.9, 0.9, 1)
-				button.Stripe:SetAlpha(0.1)
-				button.Stripe:Show()
-			else
-				button.Stripe:Hide()
-			end
+			button.Check:SetAlpha(pane.selected == playerTitle.id and 1 or 0)
+			button.SelectedBar:SetShown(pane.selected == playerTitle.id)
+			button.Stripe:SetTexture(0.9, 0.9, 1)
+			button.Stripe:SetAlpha(0.1)
+			button.Stripe:SetShown((i + scrollOffset) % 2 == 0)
+			button:Show()
 		else
+			button.titleId = nil
 			button:Hide()
 		end
 	end
 end
 
-local function PlayerTitleSort(a, b) return a.name < b.name end
+local function PlayerTitleSort(a, b)
+	if a.id == -1 or b.id == -1 then return a.id == -1 and b.id ~= -1 end
+	if a.searchName == b.searchName then return a.id < b.id end
+	return a.searchName < b.searchName
+end
 
-function S:PaperDollTitlesPane_Update()
-	local playerTitles = {}
-	local currentTitle = GetCurrentTitle()
-	local titleCount = 1
-	local buttons = PaperDollTitlesPane.buttons
-	local fontstringText = buttons[1].text
+function S:PaperDollTitlesPane_Filter(resetScroll, revealSelected)
+	local pane = PaperDollTitlesPane
+	local query = utf8.lower(trim(pane.Search:GetText() or ""))
+	pane.searchQuery = query
+	local titles = pane.titles or {}
+	wipe(titles)
+	pane.titles = titles
+	local selectedIndex
 
-	PaperDollTitlesPane.selected = -1
-	playerTitles[1] = {}
-	playerTitles[1].name = "       "
-	playerTitles[1].id = -1
-
-	for i = 1, GetNumTitles() do
-		if IsTitleKnown(i) ~= 0 then
-			titleCount = titleCount + 1
-			playerTitles[titleCount] = playerTitles[titleCount] or {}
-			playerTitles[titleCount].name = trim(GetTitleName(i))
-			playerTitles[titleCount].id = i
-
-			if i == currentTitle then
-				PaperDollTitlesPane.selected = i
-			end
-
-			fontstringText:SetText(playerTitles[titleCount].name)
+	for _, title in ipairs(pane.allTitles or {}) do
+		if query == "" or find(title.searchName, query, 1, true) then
+			tinsert(titles, title)
+			if title.id == pane.selected then selectedIndex = #titles end
 		end
 	end
 
-	sort(playerTitles, PlayerTitleSort)
-	playerTitles[1].name = NONE
-	PaperDollTitlesPane.titles = playerTitles
+	pane.EmptyText:SetShown(#titles == 0)
+	pane.scrollBar.anim:Stop()
+	HybridScrollFrame_Update(pane, #titles * 22 + 8, pane:GetHeight())
 
-	HybridScrollFrame_Update(PaperDollTitlesPane, (titleCount * 22) + 20 , PaperDollTitlesPane:GetHeight())
-	if not PaperDollTitlesPane.scrollBar.thumbTexture:IsShown() then
-		PaperDollTitlesPane.scrollBar.thumbTexture:Show()
+	if resetScroll or (revealSelected and query == "") then
+		local offset = 0
+		if revealSelected and query == "" and selectedIndex then
+			offset = max(0, (selectedIndex - 1) * 22 + 4 - (pane:GetHeight() - 22) / 2)
+		end
+		pane.scrollBar:SetValue(min(offset, max(0, pane.range or 0)))
 	end
-
+	_G.HybridScrollFrame_SetOffset(pane, pane.scrollBar:GetValue())
 	self:PaperDollTitlesPane_UpdateScrollFrame()
 end
+
+function S:PaperDollTitlesPane_Update(revealSelected)
+	local pane = PaperDollTitlesPane
+	local titles = pane.allTitles or {}
+	wipe(titles)
+	pane.allTitles = titles
+	pane.selected = -1
+	local noTitle = _G.PAPERDOLLFRAME_NO_TITLE or NONE
+	tinsert(titles, {id = -1, name = noTitle, searchName = utf8.lower(noTitle)})
+	local currentTitle = GetCurrentTitle()
+
+	for i = 1, GetNumTitles() do
+		local known = IsTitleKnown(i)
+		if known and known ~= 0 then
+			local name = trim(GetTitleName(i) or "")
+			tinsert(titles, {id = i, name = name, searchName = utf8.lower(name)})
+			if i == currentTitle then pane.selected = i end
+		end
+	end
+
+	sort(titles, PlayerTitleSort)
+	self:PaperDollTitlesPane_Filter(false, revealSelected)
+end
+local function UpdateEquipmentSetHover(row, forceHide)
+	local hovered = not forceHide and row:IsVisible() and
+		(row:IsMouseOver() or row.EditButton:IsMouseOver() or row.DeleteButton:IsMouseOver())
+	local showActions = hovered and row.name ~= nil and row.name ~= ""
+	row.EditButton:SetShown(showActions)
+	row.DeleteButton:SetShown(showActions)
+	row.HighlightBar:SetShown(hovered)
+end
+
 function S:PaperDollEquipmentManagerPane_Update()
 
 	local _, setID = GetEquipmentSetInfoByName(PaperDollEquipmentManagerPane.selectedSetName or "")
@@ -1619,6 +1692,8 @@ function S:PaperDollEquipmentManagerPane_Update()
 				button.icon:SetTexture("Interface\\Icons\\Spell_ChargePositive")
 				button.SelectedBar:Hide()
 			end
+
+			UpdateEquipmentSetHover(button)
 
 			if (i + scrollOffset) % 2 == 0 then
 				button.Stripe:SetTexture(0.9, 0.9, 1)
@@ -1712,6 +1787,39 @@ function S:CharacterInit()
 	if not characterSettings or not characterSettings.enable then return end
 	characterSettings.player = characterSettings.player or {}
 	characterSettings.pet = characterSettings.pet or {}
+	local realmName = GetRealmName()
+	local showWeaponItemLevel = realmName == "Sirus x5 - 3.3.5a+" or realmName:match("x4") or realmName:match("x5") or realmName:match("x2")
+
+	local function UpdateCharacterEquipmentContents(inset)
+		CharacterModelFrame:ClearAllPoints()
+		CharacterModelFrame:SetPoint("CENTER", inset, "CENTER", 0, 0)
+		CharacterModelFrameBackgroundTopLeft:ClearAllPoints()
+		CharacterModelFrameBackgroundTopLeft:SetPoint("TOPLEFT", inset, "CENTER", -118, 168)
+		local columnHeight = CharacterHeadSlot:GetHeight() * 8 + 4 * 7
+		local columnOffset = math.max(0, (inset:GetHeight() - columnHeight) / 2)
+		CharacterHeadSlot:ClearAllPoints()
+		CharacterHeadSlot:SetPoint("TOPLEFT", inset, "TOPLEFT", 10, -columnOffset)
+		CharacterHandsSlot:ClearAllPoints()
+		CharacterHandsSlot:SetPoint("TOPRIGHT", inset, "TOPRIGHT", -8, -columnOffset)
+		if showWeaponItemLevel and CharacterItemLevelFrame then
+			CharacterItemLevelFrame:ClearAllPoints()
+			CharacterItemLevelFrame:SetParent(inset)
+			CharacterItemLevelFrame:SetPoint("BOTTOM", CharacterSecondaryHandSlot, "TOP", 0, 6)
+		end
+	end
+
+	local function UpdateCharacterEquipmentPosition()
+		local inset = PaperDollFrame.EquipInset
+		local statsInset = PaperDollFrame.showStrengthenStats and PaperDollFrame.StatsInset or PaperDollFrame.NewPanel
+		inset:SetPoint("TOPLEFT", PaperDollFrame, "TOPLEFT", 4, -44)
+		inset:SetPoint("BOTTOMRIGHT", statsInset, "BOTTOMLEFT", 0, 0)
+		UpdateCharacterEquipmentContents(inset)
+	end
+
+	PaperDollFrame.EquipInset:HookScript("OnSizeChanged", UpdateCharacterEquipmentContents)
+
+	UpdateCharacterEquipmentPosition()
+	hooksecurefunc("PaperDollFrame_SetStrengthenEnabled", UpdateCharacterEquipmentPosition)
 
 	PlayerTitleFrame:Kill()
 	PlayerTitlePickerFrame:Kill()
@@ -1730,16 +1838,10 @@ function S:CharacterInit()
 			frame:Kill()
 		end
 	end
-	local realmName = GetRealmName()
-	if realmName == "Sirus x5 - 3.3.5a+" or realmName:match("x4") or realmName:match("x5") or realmName:match("x2") then
+	if showWeaponItemLevel then
 		PaperDollFrameStatsFrameLeftCategory:Kill()
 		PaperDollFrameStatsFrameRightCategory:Kill()
 
-		if CharacterItemLevelFrame then
-			CharacterItemLevelFrame:ClearAllPoints()
-			CharacterItemLevelFrame:SetParent(CharacterModelFrame)
-			CharacterItemLevelFrame:SetPoint("CENTER",CharacterModelFrame,"CENTER",0,-100)
-		end
 		PaperDollFrameStatsFrameItemLevelCategory:Kill()
 	end
 
@@ -1797,8 +1899,49 @@ function S:CharacterInit()
 
 	local titlePane = CreateFrame("ScrollFrame", "PaperDollTitlesPane", PaperDollFrame, "HybridScrollFrameTemplate")
 	titlePane:Hide()
-	titlePane:SetSize(SCROLL_WIDTH_SIRUS_STATS_CHILD, 363)
+	titlePane:SetSize(SCROLL_WIDTH_SIRUS_STATS_CHILD, 333)
+	titlePane:Point("TOPRIGHT", CharacterFrame, -24, -85)
 	PaneFadeInfo(titlePane)
+	titlePane:SetFrameLevel(CharacterFrame:GetFrameLevel() + 1)
+
+	titlePane.Search = CreateFrame("EditBox", "$parentSearch", titlePane)
+	titlePane.Search:SetAutoFocus(false)
+	titlePane.Search:Height(20)
+	titlePane.Search:Point("BOTTOMLEFT", titlePane, "TOPLEFT", 4, 8)
+	titlePane.Search:Point("BOTTOMRIGHT", titlePane, "TOPRIGHT", 14, 8)
+	titlePane.Search:SetFontObject("GameFontHighlightSmall")
+	titlePane.Search:SetMaxLetters(100)
+	titlePane.Search:SetFrameLevel(titlePane:GetFrameLevel() + 2)
+	S:HandleEditBox(titlePane.Search, nil, true)
+	titlePane.Search.backdrop:ClearAllPoints()
+	titlePane.Search.backdrop:SetAllPoints()
+
+	titlePane.Search.searchIcon:ClearAllPoints()
+	titlePane.Search.searchIcon:SetPoint("LEFT", 4, 0)
+	titlePane.Search:SetTextInsets(22, 22, 0, 0)
+	titlePane.Search.Instructions:SetPoint("TOPLEFT", titlePane.Search, "TOPLEFT", 22, 0)
+	titlePane.Search.Instructions:SetPoint("BOTTOMRIGHT", titlePane.Search, "BOTTOMRIGHT", -22, 0)
+	titlePane.Search.Instructions:SetText(L["Search"])
+	titlePane.Search.clearButton:Hide()
+	titlePane.Search:HookScript("OnTextChanged", function(self)
+		local query = utf8.lower(trim(self:GetText() or ""))
+		if query ~= titlePane.searchQuery then
+			titlePane.revealGeneration = (titlePane.revealGeneration or 0) + 1
+			S:PaperDollTitlesPane_Filter(true)
+		end
+	end)
+	titlePane.Search:SetScript("OnEscapePressed", function(self)
+		self:SetText("")
+		self:ClearFocus()
+	end)
+	titlePane.Search:SetScript("OnEnterPressed", function(self) self:ClearFocus() end)
+	titlePane.Search:SetScript("OnHide", function(self) self:ClearFocus() end)
+
+	titlePane.EmptyText = titlePane:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+	titlePane.EmptyText:SetPoint("TOPLEFT", 6, -8)
+	titlePane.EmptyText:SetPoint("TOPRIGHT", -6, -8)
+	titlePane.EmptyText:SetText(L["No matching titles."])
+	titlePane.EmptyText:Hide()
 
 	titlePane.scrollBar = CreateFrame("Slider", "$parentScrollBar", titlePane, "HybridScrollBarTemplate")
 	titlePane.scrollBar:Width(20)
@@ -1806,30 +1949,62 @@ function S:CharacterInit()
 	titlePane.scrollBar:Point("TOPLEFT", titlePane, "TOPRIGHT", 3, -16)
 	titlePane.scrollBar:Point("BOTTOMLEFT", titlePane, "BOTTOMRIGHT", 3, 16)
 	S:HandleSirusScrollBar(titlePane.scrollBar)
-
 	CreateSmoothScrollAnimation(titlePane.scrollBar, true)
 
-	hooksecurefunc(titlePane.scrollBar, "Show", function()
-		titlePane:Width(SCROLL_WIDTH_SIRUS_STATS_CHILD)
-		titlePane:Point("TOPRIGHT", CharacterFrame, -24, -55)
-		for _, button in next, titlePane.buttons do
-			button:Width(SCROLL_WIDTH_SIRUS_STATS_CHILD)
-		end
-	end)
+	local function UpdateTitlesLayout()
+		local showScrollBar = titlePane.scrollBar:IsShown()
+		local width = SCROLL_WIDTH_SIRUS_STATS_CHILD + (showScrollBar and 0 or 18)
+		titlePane:Width(width)
+		titlePane:Point("TOPRIGHT", CharacterFrame, showScrollBar and -24 or -6, -85)
+		titlePane.Search:Point("BOTTOMRIGHT", titlePane, "TOPRIGHT", showScrollBar and 14 or -4, 8)
+		if titlePane.scrollChild then titlePane.scrollChild:Width(width) end
+		for _, button in ipairs(titlePane.buttons or {}) do button:Width(width) end
+		titlePane:UpdateScrollChildRect()
+	end
 
-	hooksecurefunc(titlePane.scrollBar, "Hide", function()
-		titlePane:Width(SCROLL_WIDTH_SIRUS_STATS_CHILD)
-		titlePane:Point("TOPRIGHT", CharacterFrame, -6, -55)
-		for _, button in next, titlePane.buttons do
-			button:Width(SCROLL_WIDTH_SIRUS_STATS_CHILD)
-		end
-	end)
-
-	titlePane:SetFrameLevel(CharacterFrame:GetFrameLevel() + 1)
-
+	hooksecurefunc(titlePane.scrollBar, "Show", UpdateTitlesLayout)
+	hooksecurefunc(titlePane.scrollBar, "Hide", UpdateTitlesLayout)
 	HybridScrollFrame_OnLoad(titlePane)
 	titlePane.update = S.PaperDollTitlesPane_UpdateScrollFrame
-	HybridScrollFrame_CreateButtons(PaperDollTitlesPane, "PlayerTitleButtonTemplate2", 2, -4)
+	HybridScrollFrame_CreateButtons(titlePane, "PlayerTitleButtonTemplate2", 0, -4)
+	for _, button in ipairs(titlePane.buttons) do
+		button.text:SetWordWrap(false)
+		button.SelectedBar:SetAllPoints()
+		button:SetScript("OnClick", function(self)
+			if not self.titleId then return end
+			PlaySound("igMainMenuOptionCheckBoxOff")
+			SetCurrentTitle(self.titleId)
+			titlePane.selected = self.titleId
+			S:PaperDollTitlesPane_UpdateScrollFrame()
+		end)
+		button:SetScript("OnEnter", function(self)
+			if self.titleId and self.text:GetStringWidth() > self.text:GetWidth() then
+				GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+				GameTooltip:AddLine(self.text:GetText(), 1, 1, 1, true)
+				GameTooltip:Show()
+			end
+		end)
+		button:SetScript("OnLeave", HideStatTooltip)
+		button:SetScript("OnHide", HideStatTooltip)
+	end
+	UpdateTitlesLayout()
+	titlePane:HookScript("OnMouseWheel", function(self)
+		self.revealGeneration = (self.revealGeneration or 0) + 1
+	end)
+	titlePane.scrollBar:HookScript("OnMouseDown", function()
+		titlePane.revealGeneration = (titlePane.revealGeneration or 0) + 1
+	end)
+	titlePane:SetScript("OnShow", function(self)
+		S:PaperDollTitlesPane_Update(true)
+		self.revealGeneration = (self.revealGeneration or 0) + 1
+		if self.searchQuery ~= "" then return end
+		local generation, selected = self.revealGeneration, self.selected
+		C_Timer:After(0, function()
+			if self:IsVisible() and self.revealGeneration == generation and self.selected == selected and self.searchQuery == "" then
+				S:PaperDollTitlesPane_Filter(false, true)
+			end
+		end)
+	end)
 
 	local statsPane = CreateFrame("ScrollFrame", "CharacterStatsPane", PaperDollFrame, "UIPanelScrollFrameTemplate")
 	statsPane:SetSize(SCROLL_WIDTH_SIRUS_STATS_CHILD, 363)
@@ -1864,14 +2039,87 @@ function S:CharacterInit()
 		button:Width(SCROLL_WIDTH_SIRUS_STATS_CHILD)
 
 		button.Toolbar = CreateFrame("Button", nil, button)
-		button.Toolbar:RegisterForDrag("LeftButton")
-		button.Toolbar:Size(251, 24)
-		button.Toolbar:Point("TOP")
+		button.Toolbar:Height(24)
+		button.Toolbar:Point("TOPLEFT", button, "TOPLEFT", 0, 0)
+		button.Toolbar:Point("TOPRIGHT", button, "TOPRIGHT", 0, 0)
 
 		button.Toolbar.Background = button.Toolbar:CreateTexture(nil, "BACKGROUND")
 		button.Toolbar.Background:SetAllPoints()
 		button.Toolbar.Background:SetTexture(E.Media.Textures.Highlight)
 		button.Toolbar.Background:SetAlpha(0.3)
+
+		button.NameText = button.Toolbar:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+		button.NameText:FontTemplate(nil, 11)
+		button.NameText:Height(button.Toolbar:GetHeight())
+		button.NameText:SetJustifyV("MIDDLE")
+		button.NameText:Point("LEFT", button.Toolbar, "LEFT", 24, 0)
+		button.NameText:Point("RIGHT", button.Toolbar, "RIGHT", -20, 0)
+		button.NameText:SetJustifyH("CENTER")
+		button.NameText:SetWordWrap(false)
+
+		button.Toolbar.ToggleIcon = CreateFrame("Frame", nil, button.Toolbar)
+		button.Toolbar.ToggleIcon:Size(14, 16)
+		button.Toolbar.ToggleIcon:Point("RIGHT", button.NameText, "LEFT", -5, 0)
+		button.Toolbar.ToggleIcon:EnableMouse(false)
+
+		button.Toolbar.ToggleIcon.Horizontal = button.Toolbar.ToggleIcon:CreateTexture(nil, "ARTWORK")
+		button.Toolbar.ToggleIcon.Horizontal:Size(8, 1)
+		button.Toolbar.ToggleIcon.Horizontal:Point("CENTER", 0, -1)
+		button.Toolbar.ToggleIcon.Horizontal:SetTexture(E.media.blankTex)
+		button.Toolbar.ToggleIcon.Horizontal:SetVertexColor(.85, .85, .85)
+
+		button.Toolbar.ToggleIcon.Vertical = button.Toolbar.ToggleIcon:CreateTexture(nil, "ARTWORK")
+		button.Toolbar.ToggleIcon.Vertical:Size(1, 8)
+		button.Toolbar.ToggleIcon.Vertical:Point("CENTER", 0, -1)
+		button.Toolbar.ToggleIcon.Vertical:SetTexture(E.media.blankTex)
+		button.Toolbar.ToggleIcon.Vertical:SetVertexColor(.85, .85, .85)
+
+		button.Toolbar.GripAnchor = CreateFrame("Frame", nil, button.Toolbar)
+		button.Toolbar.GripAnchor:Size(6, 10)
+		button.Toolbar.GripAnchor:Point("LEFT", button.NameText, "RIGHT", 8, 0)
+
+		button.Toolbar.DragHandle = CreateFrame("Button", nil, button.Toolbar)
+		button.Toolbar.DragHandle:Size(16, 20)
+		button.Toolbar.DragHandle:Point("CENTER", button.Toolbar.GripAnchor, "CENTER", 0, 0)
+		button.Toolbar.DragHandle:EnableMouse(true)
+		button.Toolbar.DragHandle:RegisterForDrag("LeftButton")
+		button.Toolbar.DragHandle.isStatDragHandle = true
+		button.Toolbar.DragHandle:SetScript("OnEnter", StatCategory_OnEnter)
+		button.Toolbar.DragHandle:SetScript("OnLeave", StatCategory_OnLeave)
+		button.Toolbar.DragHandle:SetScript("OnDragStart", function(self)
+			self.isDragging = true
+			StatCategory_OnLeave(self)
+			PaperDollStatCategory_OnDragStart(self:GetParent():GetParent())
+		end)
+		button.Toolbar.DragHandle:SetScript("OnDragStop", function(self)
+			if self.isDragging then
+				self.isDragging = nil
+				PaperDollStatCategory_OnDragStop(self:GetParent():GetParent())
+			end
+		end)
+		button.Toolbar.DragHandle:SetScript("OnHide", function(self)
+			StatCategory_OnLeave(self)
+			self:GetScript("OnDragStop")(self)
+		end)
+
+		button.Toolbar.Grip = {}
+		for row = 1, 3 do
+			for column = 1, 2 do
+				local dot = button.Toolbar.DragHandle:CreateTexture(nil, "ARTWORK")
+				dot:Size(2)
+				dot:Point("CENTER", button.Toolbar.GripAnchor, "CENTER", (column - 1) * 4 - 2, 4 - (row - 1) * 4)
+				dot:SetTexture(E.media.blankTex)
+				dot:SetVertexColor(.6, .6, .6)
+				tinsert(button.Toolbar.Grip, dot)
+			end
+		end
+
+		button.Toolbar:SetHighlightTexture(E.media.blankTex)
+		button.Toolbar:GetHighlightTexture():SetAllPoints()
+		button.Toolbar:GetHighlightTexture():SetVertexColor(1, 1, 1, .08)
+		button.Toolbar:SetScript("OnEnter", StatCategory_OnEnter)
+		button.Toolbar:SetScript("OnLeave", StatCategory_OnLeave)
+		button.Toolbar:SetScript("OnHide", StatCategory_OnLeave)
 
 		button.Toolbar:SetScript("OnClick", function(self)
 			if self:GetParent().collapsed then
@@ -1881,16 +2129,10 @@ function S:CharacterInit()
 				PaperDollFrame_CollapseStatCategory(self:GetParent())
 				CharacterStatsPane.collapsedData[self:GetParent().Category] = true
 			end
+			if GameTooltip:IsShown() and GameTooltip:GetOwner() == self and self:IsMouseOver() then
+				StatCategory_OnEnter(self)
+			end
 		end)
-		button.Toolbar:SetScript("OnDragStart", function(self)
-			PaperDollStatCategory_OnDragStart(self:GetParent())
-		end)
-		button.Toolbar:SetScript("OnDragStop", function(self)
-			PaperDollStatCategory_OnDragStop(self:GetParent())
-		end)
-
-		button.NameText = button.Toolbar:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-		button.NameText:Point("CENTER")
 
 		button.Stats = {}
 		button.Stats[1] = CreateFrame("Button", "$parentStat1", button)
@@ -1909,7 +2151,6 @@ function S:CharacterInit()
 		statsPaneScrollChild:Width(SCROLL_WIDTH_SIRUS_STATS_CHILD)
 		for _, button in next, statsPane.Categories do
 			button:Width(SCROLL_WIDTH_SIRUS_STATS_CHILD)
-			button.Toolbar:Width(241 - 18)
 		end
 	end)
 
@@ -1919,7 +2160,6 @@ function S:CharacterInit()
 		statsPaneScrollChild:Width(SCROLL_WIDTH_SIRUS_STATS_CHILD + 18)
 		for _, button in next, statsPane.Categories do
 			button:Width(SCROLL_WIDTH_SIRUS_STATS_CHILD + 18)
-			button.Toolbar:Width(246)
 		end
 	end)
 
@@ -1929,9 +2169,6 @@ function S:CharacterInit()
 		button:Width(SCROLL_WIDTH_SIRUS_STATS_CHILD + 18)
 	end
 
-	statsPane:SetScript("OnShow", function(self)
-		S:PaperDollTitlesPane_Update()
-	end)
 
 	local equipmentManagerPane = CreateFrame("ScrollFrame", "PaperDollEquipmentManagerPane", PaperDollFrame, "HybridScrollFrameTemplate")
 	equipmentManagerPane:Hide()
@@ -1940,12 +2177,11 @@ function S:CharacterInit()
 	PaneFadeInfo(equipmentManagerPane)
 
 	local btnsInsets = 4
-	local frameInsets = 10
-	local btnSize = (SCROLL_WIDTH_SIRUS_STATS_CHILD - btnsInsets * 2 - frameInsets) / 3
+	local btnSize = (SCROLL_WIDTH_SIRUS_STATS_CHILD - btnsInsets * 2) / 3
 	equipmentManagerPane.EquipSet = CreateFrame("Button", "$parentEquipSet", equipmentManagerPane, "UIPanelButtonTemplate")
 	equipmentManagerPane.EquipSet:SetText(EQUIPSET_EQUIP)
 	equipmentManagerPane.EquipSet:SetSize(btnSize, 22)
-	equipmentManagerPane.EquipSet:Point("TOP", -75, 0)
+	equipmentManagerPane.EquipSet:Point("TOPLEFT", equipmentManagerPane, "TOPLEFT", 0, 0)
 	S:HandleButton(equipmentManagerPane.EquipSet)
 
 	equipmentManagerPane.EquipSet:SetScript("OnClick", function()
@@ -1965,7 +2201,7 @@ function S:CharacterInit()
 	equipmentManagerPane.SaveSet:SetScript("OnClick", GearManagerDialogSaveSet_OnClick)
 
 	equipmentManagerPane.Undress = CreateFrame("Button", "$parentUndressSet", equipmentManagerPane, "UIPanelButtonTemplate")
-	equipmentManagerPane.Undress:SetText("Раздеть")
+	equipmentManagerPane.Undress:SetText(L["Undress"])
 	equipmentManagerPane.Undress:SetSize(btnSize, 22)
 	equipmentManagerPane.Undress:Point("LEFT", "$parentSaveSet", "RIGHT", 4, 0)
 
@@ -1986,89 +2222,140 @@ function S:CharacterInit()
 
 	CreateSmoothScrollAnimation(equipmentManagerPane.scrollBar, true)
 
-	hooksecurefunc(equipmentManagerPane.scrollBar, "Show", function()
-		equipmentManagerPane:Width(SCROLL_WIDTH_SIRUS_STATS_CHILD)
-		equipmentManagerPane:Point("TOPRIGHT", CharacterFrame, -24, -55)
-		for _, button in next, equipmentManagerPane.buttons do
-			button:Width(SCROLL_WIDTH_SIRUS_STATS_CHILD)
-		end
-	end)
+	local function UpdateEquipmentManagerLayout()
+		local showScrollBar = equipmentManagerPane.scrollBar:IsShown()
+		local width = SCROLL_WIDTH_SIRUS_STATS_CHILD + (showScrollBar and 0 or 18)
+		equipmentManagerPane:Width(width)
+		equipmentManagerPane:Point("TOPRIGHT", CharacterFrame, showScrollBar and -24 or -6, -55)
 
-	hooksecurefunc(equipmentManagerPane.scrollBar, "Hide", function()
-		equipmentManagerPane:Width(SCROLL_WIDTH_SIRUS_STATS_CHILD)
-		equipmentManagerPane:Point("TOPRIGHT", CharacterFrame, -6, -55)
-		for _, button in next, equipmentManagerPane.buttons do
-			button:Width(SCROLL_WIDTH_SIRUS_STATS_CHILD)
+		local buttonWidth = (width - btnsInsets * 2) / 3
+		equipmentManagerPane.EquipSet:Width(buttonWidth)
+		equipmentManagerPane.SaveSet:Width(buttonWidth)
+		equipmentManagerPane.Undress:Width(buttonWidth)
+
+		if equipmentManagerPane.scrollChild then
+			equipmentManagerPane.scrollChild:Width(width)
 		end
-	end)
+		for _, button in ipairs(equipmentManagerPane.buttons or {}) do
+			button:Width(width)
+		end
+		equipmentManagerPane:UpdateScrollChildRect()
+	end
+
+	hooksecurefunc(equipmentManagerPane.scrollBar, "Show", UpdateEquipmentManagerLayout)
+	hooksecurefunc(equipmentManagerPane.scrollBar, "Hide", UpdateEquipmentManagerLayout)
 
 	equipmentManagerPane:SetFrameLevel(CharacterFrame:GetFrameLevel() + 1)
 	equipmentManagerPane.EquipSet:SetFrameLevel(equipmentManagerPane:GetFrameLevel() + 3)
 	equipmentManagerPane.SaveSet:SetFrameLevel(equipmentManagerPane:GetFrameLevel() + 3)
+	equipmentManagerPane.Undress:SetFrameLevel(equipmentManagerPane:GetFrameLevel() + 3)
 
 	HybridScrollFrame_OnLoad(equipmentManagerPane)
 	equipmentManagerPane.update = S.PaperDollEquipmentManagerPane_Update
-	HybridScrollFrame_CreateButtons(equipmentManagerPane, "GearSetButtonTemplate2", 2, -(equipmentManagerPane.EquipSet:GetHeight() + 4))
+	HybridScrollFrame_CreateButtons(equipmentManagerPane, "GearSetButtonTemplate2", 0, -(equipmentManagerPane.EquipSet:GetHeight() + 4))
+	UpdateEquipmentManagerLayout()
+
+	local function EquipmentAction_OnEnter(self)
+		UpdateEquipmentSetHover(self:GetParent())
+		if self.isDeleteAction then
+			self.texture:SetVertexColor(1, .25, .25)
+		else
+			self.texture:SetVertexColor(unpack(E.media.rgbvaluecolor))
+		end
+		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+		GameTooltip:SetText(self.isDeleteAction and DELETE or L["Edit Name/Icon"])
+		GameTooltip:Show()
+	end
+
+	local function EquipmentAction_OnHide(self)
+		self.texture:SetVertexColor(.7, .7, .7)
+		HideStatTooltip(self)
+	end
+
+	local function EquipmentAction_OnLeave(self)
+		EquipmentAction_OnHide(self)
+		UpdateEquipmentSetHover(self:GetParent())
+	end
+
+	for _, button in ipairs(equipmentManagerPane.buttons) do
+		button.text:ClearAllPoints()
+		button.text:Point("LEFT", button, "LEFT", 44, 0)
+		button.text:Point("RIGHT", button, "RIGHT", -56, 0)
+		button.text:SetWordWrap(false)
+		button.DeleteButton.isDeleteAction = true
+		button.DeleteButton:ClearAllPoints()
+		button.DeleteButton:Point("RIGHT", button, "RIGHT", -4, 0)
+		button.EditButton:ClearAllPoints()
+		button.EditButton:Point("RIGHT", button.DeleteButton, "LEFT", -4, 0)
+
+		for _, action in ipairs({button.EditButton, button.DeleteButton}) do
+			action:Size(22)
+			action.texture:ClearAllPoints()
+			action.texture:Point("CENTER", action, "CENTER", 0, 0)
+			action.texture:Size(action.isDeleteAction and 12 or 20)
+			if action.isDeleteAction then
+				action.texture:SetTexture(E.Media.Textures.Close)
+			end
+			action.texture:SetDesaturated(true)
+			action.texture:SetAlpha(1)
+			action.texture:SetVertexColor(.7, .7, .7)
+			action:SetScript("OnMouseDown", nil)
+			action:SetScript("OnMouseUp", nil)
+			action:SetScript("OnEnter", EquipmentAction_OnEnter)
+			action:SetScript("OnLeave", EquipmentAction_OnLeave)
+			action:SetScript("OnHide", EquipmentAction_OnHide)
+		end
+
+		button:HookScript("OnEnter", function(self) UpdateEquipmentSetHover(self) end)
+		button:HookScript("OnLeave", function(self) UpdateEquipmentSetHover(self) end)
+		button:HookScript("OnHide", function(self)
+			UpdateEquipmentSetHover(self, true)
+			HideStatTooltip(self)
+		end)
+	end
+
+	local equipmentUpdateTimer
+	local function UpdateEquipmentManager()
+		if equipmentUpdateTimer then
+			E:CancelTimer(equipmentUpdateTimer)
+			equipmentUpdateTimer = nil
+		end
+		if equipmentManagerPane:IsShown() then
+			S:PaperDollEquipmentManagerPane_Update()
+		end
+	end
 
 	equipmentManagerPane:RegisterEvent("EQUIPMENT_SWAP_FINISHED")
 	equipmentManagerPane:RegisterEvent("EQUIPMENT_SETS_CHANGED")
 	equipmentManagerPane:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
 	equipmentManagerPane:RegisterEvent("BAG_UPDATE")
 
-	equipmentManagerPane:SetScript("OnShow", function(self)
-		S:PaperDollEquipmentManagerPane_Update()
-
-	end)
+	equipmentManagerPane:SetScript("OnShow", UpdateEquipmentManager)
 
 	equipmentManagerPane:SetScript("OnHide", function()
+		if equipmentUpdateTimer then
+			E:CancelTimer(equipmentUpdateTimer)
+			equipmentUpdateTimer = nil
+		end
 		PaperDollFrame_ClearIgnoredSlots()
-
 		GearManagerDialogPopup:Hide()
 		StaticPopup_Hide("CONFIRM_SAVE_EQUIPMENT_SET")
 		StaticPopup_Hide("CONFIRM_OVERWRITE_EQUIPMENT_SET")
 	end)
 
 	equipmentManagerPane:SetScript("OnEvent", function(self, event, ...)
+		if not self:IsShown() then return end
+
 		if event == "EQUIPMENT_SWAP_FINISHED" then
 			local completed, setName = ...
 			if completed then
-				if self:IsShown() then
-					self.selectedSetName = setName
-					S:PaperDollEquipmentManagerPane_Update()
-				end
+				self.selectedSetName = setName
+				UpdateEquipmentManager()
 			end
-		end
-
-		if self:IsShown() then
-			if event == "EQUIPMENT_SETS_CHANGED" then
-				S:PaperDollEquipmentManagerPane_Update()
-			elseif event == "PLAYER_EQUIPMENT_CHANGED" or event == "BAG_UPDATE" then
-				self.queuedUpdate = true
-			end
-		end
-	end)
-
-	equipmentManagerPane:SetScript("OnUpdate", function(self)
-		for i = 1, #self.buttons do
-			local button = self.buttons[i]
-			if button:IsMouseOver() then
-				if button.name then
-					button.DeleteButton:Show()
-					button.EditButton:Show()
-				else
-					button.DeleteButton:Hide()
-					button.EditButton:Hide()
-				end
-				button.HighlightBar:Show()
-			else
-				button.DeleteButton:Hide()
-				button.EditButton:Hide()
-				button.HighlightBar:Hide()
-			end
-		end
-		if self.queuedUpdate then
-			S:PaperDollEquipmentManagerPane_Update()
-			self.queuedUpdate = false
+		elseif event == "EQUIPMENT_SETS_CHANGED" then
+			UpdateEquipmentManager()
+		elseif (event == "PLAYER_EQUIPMENT_CHANGED" or event == "BAG_UPDATE") and not equipmentUpdateTimer then
+			equipmentUpdateTimer = E:ScheduleTimer(UpdateEquipmentManager, .05)
 		end
 	end)
 
@@ -2151,66 +2438,19 @@ local Slots = {"HeadSlot", "NeckSlot", "ShoulderSlot", "BackSlot", "ChestSlot", 
 	}
 
 function S:ColorItemCharacterBorder()
-	for _, slot in pairs(Slots) do
-		local clink = GetInventoryItemLink("player", GetInventorySlotInfo(slot))
-		slot = _G["Character"..slot]
-		if not slot.textureSoc then
-			slot.textureSoc = slot:CreateTexture("nil", "TOOLTIP")
-			slot.textureSoc:SetInside()
-			slot.textureSoc:SetTexture([[Interface\AddOns\ElvUI\Media\Textures\BagNewItemGlow]])
-			slot.textureSoc:SetVertexColor(E:GetItemQualityColor(5))
-			slot.textureSoc:Hide()
-		end
-		local found
-		if clink then
-			for i = 1, 3 do
-				local _, glink = GetItemGem(clink, i)
-				if glink then
-					local _, _, itemRarity = GetItemInfo(glink)
-					if itemRarity == 5 then
-						slot.textureSoc:Show()
-						found = true
-						break
-					end
-				end
-			end
-		end
-		if not found and slot.textureSoc then
-			slot.textureSoc:Hide()
-		end
+	local enabled = E.db.general.characterInfo.highlightBlackDiamonds
+	for _, slotName in ipairs(Slots) do
+		local link = enabled and GetInventoryItemLink("player", GetInventorySlotInfo(slotName))
+		self:UpdateBlackDiamondHighlight(_G["Character"..slotName], link)
 	end
 end
 
 function S:ColorItemInspectBorder()
-	for _, slot in pairs(Slots) do
-		local clink = GetInventoryItemLink("target", GetInventorySlotInfo(slot))
-		slot = _G["Inspect"..slot]
-		if slot then
-			if not slot.textureSoc then
-				slot.textureSoc = slot:CreateTexture("nil", "TOOLTIP")
-				slot.textureSoc:SetInside()
-				slot.textureSoc:SetTexture([[Interface\AddOns\ElvUI\Media\Textures\BagNewItemGlow]])
-				slot.textureSoc:SetVertexColor(E:GetItemQualityColor(5))
-				slot.textureSoc:Hide()
-			end
-			local found
-			if clink then
-				for i = 1, 3 do
-					local _, glink = GetItemGem(clink, i)
-					if glink then
-						local _, _, itemRarity = GetItemInfo(glink)
-						if itemRarity == 5 then
-							slot.textureSoc:Show()
-							found = true
-							break
-						end
-					end
-				end
-			end
-			if not found and slot.textureSoc then
-				slot.textureSoc:Hide()
-			end
-		end
+	local unit = InspectFrame and InspectFrame:IsShown() and InspectFrame.unit
+	local enabled = E.db.general.characterInfo.highlightBlackDiamonds
+	for _, slotName in ipairs(Slots) do
+		local link = enabled and unit and GetInventoryItemLink(unit, GetInventorySlotInfo(slotName))
+		self:UpdateBlackDiamondHighlight(_G["Inspect"..slotName], link)
 	end
 end
 
@@ -2355,6 +2595,10 @@ local function LoadSkin()
 	PaperDollFrame.EquipInset:StripTextures()
 	CharacterModelFrame:CreateBackdrop()
 	CharacterModelFrame.backdrop:SetOutside(CharacterModelFrameBackgroundOverlay)
+	local characterSettings = E.private.character.character or E.private.character
+	if characterSettings.enable then
+		CharacterModelFrame.backdrop:Hide()
+	end
 	CharacterModelFrame:DisableDrawLayer("OVERLAY")
 
 	S:HandleControlFrame(CharacterModelFrame.controlFrame)
@@ -2432,6 +2676,10 @@ local function LoadSkin()
 		[15] = "BackSlot", [16] = "MainHandSlot", [17] = "SecondaryHandSlot", [18] = "RangedSlot", [19] = "TabardSlot"
 	}
 
+	for _, slotName in ipairs(slots) do
+		slots[slotName] = GetInventorySlotInfo(slotName)
+	end
+
 	local durabilitySlots = {
 		HeadSlot = true, ShoulderSlot = true, ChestSlot = true, WristSlot = true, HandsSlot = true,
 		WaistSlot = true, LegsSlot = true, FeetSlot = true, MainHandSlot = true, SecondaryHandSlot = true, RangedSlot = true
@@ -2485,9 +2733,9 @@ local function LoadSkin()
 	end
 
 	local function ColorItemBorder()
-		for _, slotName in pairs(slots) do
+		for _, slotName in ipairs(slots) do
 			local target = _G["Character"..slotName]
-			local slotId = GetInventorySlotInfo(slotName)
+			local slotId = slots[slotName]
 			local itemId = GetInventoryItemID("player", slotId)
 
 			if itemId then
@@ -2505,12 +2753,34 @@ local function LoadSkin()
 		S:ColorItemCharacterBorder()
 	end
 
+	local equipmentInfoStyle = {}
 	local function UpdateEquipmentInfo()
 		local db = E.db.general.characterInfo
+		local font = LSM:Fetch("font", db.font)
+		local updateStyle = equipmentInfoStyle.font ~= font or
+			equipmentInfoStyle.fontSize ~= db.fontSize or
+			equipmentInfoStyle.fontOutline ~= db.fontOutline or
+			equipmentInfoStyle.itemLevelPosition ~= db.itemLevelPosition or
+			equipmentInfoStyle.itemLevelXOffset ~= db.itemLevelXOffset or
+			equipmentInfoStyle.itemLevelYOffset ~= db.itemLevelYOffset or
+			equipmentInfoStyle.durabilityPosition ~= db.durabilityPosition or
+			equipmentInfoStyle.durabilityXOffset ~= db.durabilityXOffset or
+			equipmentInfoStyle.durabilityYOffset ~= db.durabilityYOffset
+		if updateStyle then
+			equipmentInfoStyle.font = font
+			equipmentInfoStyle.fontSize = db.fontSize
+			equipmentInfoStyle.fontOutline = db.fontOutline
+			equipmentInfoStyle.itemLevelPosition = db.itemLevelPosition
+			equipmentInfoStyle.itemLevelXOffset = db.itemLevelXOffset
+			equipmentInfoStyle.itemLevelYOffset = db.itemLevelYOffset
+			equipmentInfoStyle.durabilityPosition = db.durabilityPosition
+			equipmentInfoStyle.durabilityXOffset = db.durabilityXOffset
+			equipmentInfoStyle.durabilityYOffset = db.durabilityYOffset
+		end
 
 		for _, slotName in ipairs(slots) do
 			local slotFrame = _G["Character"..slotName]
-			local slotId = GetInventorySlotInfo(slotName)
+			local slotId = slots[slotName]
 
 			if slotFrame then
 				if slotFrame.ItemLevel then
@@ -2538,9 +2808,11 @@ local function LoadSkin()
 						slotFrame.ItemLevel:SetTextColor(1, 1, 1)
 					end
 
-					slotFrame.ItemLevel:ClearAllPoints()
-					slotFrame.ItemLevel:SetPoint(db.itemLevelPosition, slotFrame, db.itemLevelXOffset, db.itemLevelYOffset)
-					slotFrame.ItemLevel:FontTemplate(LSM:Fetch("font", db.font), db.fontSize, db.fontOutline)
+					if updateStyle then
+						slotFrame.ItemLevel:ClearAllPoints()
+						slotFrame.ItemLevel:SetPoint(db.itemLevelPosition, slotFrame, db.itemLevelXOffset, db.itemLevelYOffset)
+						slotFrame.ItemLevel:FontTemplate(font, db.fontSize, db.fontOutline)
+					end
 					slotFrame.ItemLevel:SetText(text)
 				end
 
@@ -2556,42 +2828,47 @@ local function LoadSkin()
 						end
 					end
 
-					slotFrame.DurabilityInfo:ClearAllPoints()
-					slotFrame.DurabilityInfo:SetPoint(db.durabilityPosition, slotFrame, db.durabilityXOffset, db.durabilityYOffset)
-					slotFrame.DurabilityInfo:FontTemplate(LSM:Fetch("font", db.font), db.fontSize, db.fontOutline)
+					if updateStyle then
+						slotFrame.DurabilityInfo:ClearAllPoints()
+						slotFrame.DurabilityInfo:SetPoint(db.durabilityPosition, slotFrame, db.durabilityXOffset, db.durabilityYOffset)
+						slotFrame.DurabilityInfo:FontTemplate(font, db.fontSize, db.fontOutline)
+					end
 					slotFrame.DurabilityInfo:SetText(text)
 				end
 			end
 		end
 	end
 
-	local socketDataRetry
+	local socketDataRetry, socketUpdateTimer
 	local function UpdateCharacterEquipmentSockets()
+		if socketUpdateTimer then
+			E:CancelTimer(socketUpdateTimer)
+			socketUpdateTimer = nil
+		end
+		if not CharacterFrame:IsShown() then
+			socketDataRetry = nil
+			return
+		end
+
 		ColorItemBorder()
 		UpdateEquipmentInfo()
 
 		local dataPending
 		for _, slotName in ipairs(slots) do
-			if S:HandleSirusEquipmentSocketInfo(_G["Character"..slotName], GetInventorySlotInfo(slotName), S.EquipmentSlotAnchors[slotName], slotName) then
+			if S:HandleSirusEquipmentSocketInfo(_G["Character"..slotName], slots[slotName], S.EquipmentSlotAnchors[slotName], slotName) then
 				dataPending = true
 			end
 		end
 
 		socketDataRetry = (socketDataRetry or 0) + 1
-		if dataPending and socketDataRetry < 10 and CharacterFrame:IsShown() then
-			E:Delay(0.2, UpdateCharacterEquipmentSockets)
+		if dataPending and socketDataRetry < 10 then
+			socketUpdateTimer = E:ScheduleTimer(UpdateCharacterEquipmentSockets, 0.2)
 		else
 			socketDataRetry = nil
 		end
 	end
 
 	S.UpdateCharacterEquipmentSockets = UpdateCharacterEquipmentSockets
-
-	local socketUpdateTimer
-	local function SocketUpdateDelayed()
-		socketUpdateTimer = nil
-		UpdateCharacterEquipmentSockets()
-	end
 
 	local equipmentWatcher = CreateFrame("Frame")
 	equipmentWatcher:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
@@ -2600,11 +2877,24 @@ local function LoadSkin()
 	equipmentWatcher:RegisterEvent("GET_ITEM_INFO_RECEIVED")
 	equipmentWatcher:RegisterEvent("UPDATE_INVENTORY_DURABILITY")
 	equipmentWatcher:SetScript("OnEvent", function(_, event, unit)
-		if (event == "UNIT_INVENTORY_CHANGED" and unit ~= "player") or not CharacterFrame:IsShown() or socketUpdateTimer then return end
-		socketUpdateTimer = E:Delay(0.1, SocketUpdateDelayed)
+		if (event == "UNIT_INVENTORY_CHANGED" and unit ~= "player") or not CharacterFrame:IsShown() then return end
+		if event == "UPDATE_INVENTORY_DURABILITY" then
+			if not socketUpdateTimer then UpdateEquipmentInfo() end
+			return
+		end
+		if socketUpdateTimer then return end
+		socketDataRetry = nil
+		socketUpdateTimer = E:ScheduleTimer(UpdateCharacterEquipmentSockets, 0.1)
 	end)
 
 	CharacterFrame:HookScript("OnShow", UpdateCharacterEquipmentSockets)
+	CharacterFrame:HookScript("OnHide", function()
+		if socketUpdateTimer then
+			E:CancelTimer(socketUpdateTimer)
+			socketUpdateTimer = nil
+		end
+		socketDataRetry = nil
+	end)
 
 	local function HandleResistanceFrame(frameName)
 		for i = 1, 5 do
