@@ -5,6 +5,7 @@ local LSM = E.Libs.LSM
 function NP:Clear_CustomTexts(frame)
 	for _, text in pairs(frame.customTexts or {}) do
 		frame:Untag(text)
+		text.__previewUnit = nil
 		text:SetText("")
 		text:Hide()
 	end
@@ -29,7 +30,7 @@ local function RaisedTextParent(frame)
 end
 
 function NP:UpdateCustomTextMouseover(frame)
-	local mouseover = frame.unit and UnitIsUnit and UnitIsUnit(frame.unit, "mouseover")
+	local mouseover = frame.testUnitType or (frame.unit and UnitIsUnit and UnitIsUnit(frame.unit, "mouseover"))
 	for _, text in pairs(frame.customTexts or {}) do
 		if text.customMouseover then text:SetAlpha(mouseover and 1 or 0) end
 	end
@@ -77,10 +78,18 @@ function NP:Configure_CustomTexts(frame)
 			text.customMouseover = tagFormat:find("%[mouseover%]") and true or nil
 			if text.customMouseover then tagFormat = tagFormat:gsub("%[mouseover%]", "") end
 			text.frequentUpdates = E.oUF.Tags:NeedsFrequentUpdates(tagFormat) and 0.2 or nil
+			text.__previewUnit = frame.testUnitType and "player" or nil
 			frame:Tag(text, tagFormat)
 			text:SetAlpha(text.customMouseover and 0 or 1)
 			text:Show()
-			if frame.unit then text:UpdateTag() end
+			if frame.unit or text.__previewUnit then
+				text:UpdateTag()
+				if frame.testUnitType then
+					if not text:GetText() or text:GetText() == "" then text:SetText(name) end
+					frame:Untag(text)
+					text.__previewUnit = nil
+				end
+			end
 		end
 	end
 	NP:UpdateCustomTextMouseover(frame)
