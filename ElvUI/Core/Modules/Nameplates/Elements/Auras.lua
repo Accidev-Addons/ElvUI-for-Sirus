@@ -267,10 +267,9 @@ local function IsSirusCrowdControl(aura)
 	return NP:CheckFilter(aura.name, aura.spellId, aura.isFromPlayerOrPlayerPet, true, (aura.duration or 0) == 0, aura.canDispell, "CCDebuffs") == true
 end
 
-local function GetPreviewAura(frame, auraType)
-	local player = frame.UnitType == "ENEMY_PLAYER" or frame.UnitType == "FRIENDLY_PLAYER"
-	if (auraType == "crowdcontrol" and player) or (auraType == "lossofcontrol" and not player) then return end
-	local control = auraType == "crowdcontrol" or auraType == "lossofcontrol"
+local function GetPreviewAura(auraType)
+	if auraType == "lossofcontrol" then return end
+	local control = auraType == "crowdcontrol"
 	local spellID = control and 118 or (auraType == "buffs" and 21562 or 589)
 	local name, _, icon = GetSpellInfo(spellID)
 	return {
@@ -296,7 +295,7 @@ local function PrepareAuraList(frame, auras, aurasFrame, draw)
 	if not db then return end
 	local single = auras.type == "lossofcontrol"
 	local native = aurasFrame and aurasFrame[single and "LossOfControlFrame" or sirusListFrames[auras.type]]
-	local preview = frame.testUnitType and GetPreviewAura(frame, auras.type)
+	local preview = frame.testUnitType and GetPreviewAura(auras.type)
 	local show = draw and db.enable
 	if frame.testUnitType then
 		show = show and preview
