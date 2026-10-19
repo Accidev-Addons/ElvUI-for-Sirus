@@ -23,7 +23,6 @@ local function SkinApplicants()
 			button.classFrame:ClearAllPoints()
 			button.classFrame:SetPoint("TOPLEFT", 10, -10)
 			button.classFrame:SetSize(44, 44)
-			button.classFrame:SetTemplate("Default")
 			local icon = button.classFrame.class
 			icon:SetTexture([[Interface\TargetingFrame\UI-Classes-Circles]])
 			icon:SetDrawLayer("ARTWORK")
