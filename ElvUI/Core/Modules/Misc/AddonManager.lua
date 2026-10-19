@@ -796,66 +796,38 @@ function AM:Toggle()
 	end
 end
 
-function AM:PositionGameMenuButton()
-	local frame = _G.GameMenuFrame
-	local button = frame and frame.AddonManagerButton
-	if not (frame and button and button.replacingAddons) then return end
-
-	for i = 1, frame:GetNumChildren() do
-		local child = select(i, frame:GetChildren())
-		if child ~= button and child:IsObjectType('Button') then
-			for pointIndex = 1, child:GetNumPoints() do
-				local point, relative, relativePoint, x, y = child:GetPoint(pointIndex)
-				relative = type(relative) == 'string' and _G[relative] or relative
-				if relative and (relative == _G.GameMenuButtonAddons or relative == _G.GameMenuButtonAddOns) then
-					child:SetPoint(point, button, relativePoint, x, y)
-				end
-			end
-		end
-	end
-end
-
 function AM:SetupGameMenu()
 	if not E.private.general.addonManager then return end
 
 	local frame = _G.GameMenuFrame
 	if not frame or frame.AddonManagerButton then return end
 
-	local button = CreateFrame('Button', 'ElvUI_GameMenuAddonsButton', frame, 'GameMenuButtonTemplate')
-	button:SetScript('OnClick', function() AM:Toggle() end)
-	button:SetText(L['Addons'])
+	local button = _G.GameMenuButtonAddons
+	local sirusButton = _G.GameMenuButtonAddOns
+	if sirusButton and (not button or sirusButton:IsShown()) then button = sirusButton end
+
+	if not button then
+		local elvui = frame.ElvUI
+		if not elvui then return end
+		button = CreateFrame('Button', 'ElvUI_GameMenuAddonsButton', frame, 'GameMenuButtonTemplate')
+		button:SetText(L['Addons'])
+		button:Size(elvui:GetSize())
+		for i = 1, elvui:GetNumPoints() do
+			button:SetPoint(elvui:GetPoint(i))
+		end
+		elvui:ClearAllPoints()
+		elvui:Point('TOPLEFT', button, 'BOTTOMLEFT', 0, -1)
+	end
+
 	frame.AddonManagerButton = button
-
-	local addons = _G.GameMenuButtonAddons
-	if addons then
-		local point, relTo, relPoint, xOfs, yOfs = addons:GetPoint()
-		button:Size(addons:GetSize())
-		button:Point(point or 'TOPLEFT', relTo or frame, relPoint or 'TOPLEFT', xOfs or 0, yOfs or 0)
-
-		addons:SetParent(E.HiddenFrame)
-		addons:Hide()
-		button.replacingAddons = true
-
-		-- DF UI has its own AddOns button in the same slot
-		local sirusAddons = _G.GameMenuButtonAddOns
-		if sirusAddons then
-			sirusAddons:SetParent(E.HiddenFrame)
-			sirusAddons:Hide()
+	local function OnClick() AM:Toggle() end
+	button:SetScript('OnClick', OnClick)
+	hooksecurefunc(button, 'SetScript', function(btn, script)
+		if script == 'OnClick' and btn:GetScript(script) ~= OnClick then
+			btn:SetScript(script, OnClick)
 		end
-
-		AM:PositionGameMenuButton()
-		hooksecurefunc(E, 'PositionGameMenuButton', AM.PositionGameMenuButton)
-	else
-		if frame.ElvUI then
-			button:Point('TOPLEFT', frame.ElvUI, 'BOTTOMLEFT', 0, -1)
-		else
-			button:Point('TOPLEFT', frame, 'TOPLEFT', 0, 0)
-		end
-	end
-
-	if GameMenuFrame_UpdateVisibleButtons then
-		hooksecurefunc('GameMenuFrame_UpdateVisibleButtons', AM.PositionGameMenuButton)
-	end
+	end)
+	E:PositionGameMenuButton()
 end
 
 function AM:Initialize()

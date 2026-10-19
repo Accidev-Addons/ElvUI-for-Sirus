@@ -928,8 +928,7 @@ function E:PLAYER_LEVEL_UP(_, level)
 end
 
 function E:UpdateGameMenuHeight()
-	GameMenuFrame.elvuiLayoutTimer = nil
-	if not GameMenuFrame:IsShown() then return end
+	if GameMenuFrame.elvuiSizing then return end
 
 	local top, bottom = GameMenuFrame:GetTop()
 	if not top then return end
@@ -946,7 +945,12 @@ function E:UpdateGameMenuHeight()
 	end
 
 	if bottom then
-		GameMenuFrame:SetHeight(E:Scale(top - bottom + 16, GameMenuFrame))
+		local height = E:Scale(top - bottom + 16, GameMenuFrame)
+		if abs(height - GameMenuFrame:GetHeight()) > 0.01 then
+			GameMenuFrame.elvuiSizing = true
+			GameMenuFrame:SetHeight(height)
+			GameMenuFrame.elvuiSizing = nil
+		end
 	end
 end
 
@@ -974,9 +978,7 @@ function E:PositionGameMenuButton()
 		end
 	end
 
-	if GameMenuFrame:IsShown() and not GameMenuFrame.elvuiLayoutTimer then
-		GameMenuFrame.elvuiLayoutTimer = E:ScheduleTimer(E.UpdateGameMenuHeight, 0, E)
-	end
+	E:UpdateGameMenuHeight()
 end
 
 function E:ClickGameMenu()
@@ -1003,12 +1005,9 @@ function E:SetupGameMenu()
 	button:Size(GameMenuButtonLogout:GetSize())
 	button:Point('TOPLEFT', GameMenuButtonAddons, 'BOTTOMLEFT', 0, -1)
 	hooksecurefunc(GameMenuFrame, 'Show', function() E:PositionGameMenuButton() end)
-	GameMenuFrame:HookScript('OnHide', function()
-		if GameMenuFrame.elvuiLayoutTimer then
-			E:CancelTimer(GameMenuFrame.elvuiLayoutTimer)
-			GameMenuFrame.elvuiLayoutTimer = nil
-		end
-	end)
+	for _, menuButton in next, { GameMenuButtonLogout, _G.GameMenuButtonQuit, _G.GameMenuButtonContinue } do
+		hooksecurefunc(menuButton, 'SetPoint', function() E:UpdateGameMenuHeight() end)
+	end
 
 	local editMode = _G.GameMenuButtonEditMode
 	if editMode then
@@ -1029,6 +1028,8 @@ function E:SetupGameMenu()
 	if GameMenuFrame_UpdateVisibleButtons then
 		hooksecurefunc('GameMenuFrame_UpdateVisibleButtons', function() E:PositionGameMenuButton() end)
 	end
+
+	E:PositionGameMenuButton()
 end
 
 function E:CompatibleTooltip(tt) -- knock off compatibility
