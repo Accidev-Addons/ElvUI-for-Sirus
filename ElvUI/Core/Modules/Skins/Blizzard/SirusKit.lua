@@ -352,7 +352,7 @@ local function FormatEnchantText(text)
 	text = ReplacePlain(text, "бомбы, которая нано", "бомбы")
 	text = ReplacePlain(text, "использование:", "")
 
-	text = strtrim(gsub(text, "%s+", " "))
+	text = strtrim((gsub(text, "%s+", " ")))
 	text = gsub(text, "%S+", ENCHANT_ROMAN_RANKS)
 	if find(text, "%d") then return text end
 	return utf8sub(text, 1, ENCHANT_TEXT_MAX_LENGTH)
@@ -377,7 +377,7 @@ local function ShortenEnchantText(text)
 end
 
 local function StripColor(text)
-	return strtrim(gsub(gsub(text, "|c%x%x%x%x%x%x%x%x", ""), "|r", ""))
+	return strtrim((gsub(gsub(text, "|c%x%x%x%x%x%x%x%x", ""), "|r", "")))
 end
 
 local function MatchEnchant(line, text, plain, slotName)
