@@ -538,6 +538,14 @@ do
 			},
 			'Cell'
 		},
+		AddonManager = {
+			info = {
+				enabled = function() return E.private.general.addonManager end,
+				accept = function() E.private.general.addonManager = false; ReloadUI() end,
+				name = 'ElvUI AddOn Manager'
+			},
+			'ACP'
+		},
 		ToolTip = {
 			info = {
 				enabled = function() return E.private.tooltip.enable end,

@@ -803,8 +803,7 @@ function AM:SetupGameMenu()
 	if not frame or frame.AddonManagerButton then return end
 
 	local button = _G.GameMenuButtonAddons
-	local sirusButton = _G.GameMenuButtonAddOns
-	if sirusButton and (not button or sirusButton:IsShown()) then button = sirusButton end
+	if _G.GameMenuButtonAddOns then _G.GameMenuButtonAddOns:SetParent(E.HiddenFrame) end
 
 	if not button then
 		local elvui = frame.ElvUI
@@ -820,13 +819,7 @@ function AM:SetupGameMenu()
 	end
 
 	frame.AddonManagerButton = button
-	local function OnClick() AM:Toggle() end
-	button:SetScript('OnClick', OnClick)
-	hooksecurefunc(button, 'SetScript', function(btn, script)
-		if script == 'OnClick' and btn:GetScript(script) ~= OnClick then
-			btn:SetScript(script, OnClick)
-		end
-	end)
+	button:SetScript('OnClick', function() AM:Toggle() end)
 	E:PositionGameMenuButton()
 end
 
