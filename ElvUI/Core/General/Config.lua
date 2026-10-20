@@ -867,6 +867,11 @@ function E:Config_UpdateLeftButtons()
 			end
 		end
 	end
+
+	local whatsNew = frame.bottomHolder and frame.bottomHolder.WhatsNew
+	if whatsNew then
+		E:Config_SetButtonColor(whatsNew, whatsNew.info.key == selected)
+	end
 end
 
 function E:Config_UpdateLeftScroller(frame)
@@ -1009,7 +1014,7 @@ function E:Config_CreateLeftButtons(frame, unskinned, options)
 			if ACD then ACD:SelectGroup('ElvUI', key) end
 		end
 
-		if key ~= 'search' then
+		if key ~= 'search' and key ~= 'changelog' then
 			last = E:Config_HandleLeftButton(info, frame, unskinned, buttons, last, index)
 		end
 	end
@@ -1174,6 +1179,8 @@ function E:Config_WindowOpened(frame)
 			statusParent:Point('BOTTOMRIGHT', frame, -2, 2)
 		end
 	end
+
+	E:Config_UpdateLeftButtons()
 end
 
 function E:Config_CreateBottomButtons(frame, unskinned)
@@ -1222,6 +1229,7 @@ function E:Config_CreateBottomButtons(frame, unskinned)
 		},
 		{
 			var = 'WhatsNew',
+			key = 'changelog',
 			name = L["Whats New"],
 			hidden = function()
 				return C.SearchText ~= "" or next(C.SearchCache)

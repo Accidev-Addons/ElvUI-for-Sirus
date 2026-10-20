@@ -116,12 +116,20 @@ Auras.args.debuffs.args.statusBar.args.barColor.disabled = function() return not
 local carryFilterFrom, carryFilterTo
 
 local function filterPriority(auraType, value, remove, movehere)
-	C.SetFilterPriority(E.db, 'auras', auraType, value, remove, movehere, nil, false)
+	local db = E.db.auras[auraType]
+	local filter = E.global.unitframe.aurafilters[value]
+	if not remove and not movehere and filter and filter.type == 'Blacklist'
+		and not C.FilterMatch(db.priority, E:EscapeString(value)) then
+		db.priority = db.priority == '' and value or (value..','..db.priority)
+	else
+		C.SetFilterPriority(E.db, 'auras', auraType, value, remove, movehere, nil, false)
+	end
 end
 
 local function UpdateAuraFrames()
 	if A.BuffFrame then A:UpdateAllAuras(A.BuffFrame) end
 	if A.DebuffFrame then A:UpdateAllAuras(A.DebuffFrame) end
+	E.Libs.AceConfigRegistry:NotifyChange('ElvUI')
 end
 
 local function GetFilterGroup(auraType)
@@ -143,6 +151,7 @@ local function GetFilterGroup(auraType)
 				type = 'select',
 				sortByValue = true,
 				name = L["Add Special Filter"],
+				get = E.noop,
 				desc = L["These filters don't use a list of spells like the regular filters. Instead they use the WoW API and some code logic to determine if an aura should be allowed or blocked."],
 				values = function()
 					local filters = {}
@@ -162,6 +171,7 @@ local function GetFilterGroup(auraType)
 				order = 3,
 				type = 'select',
 				name = L["Add Regular Filter"],
+				get = E.noop,
 				desc = L["These filters use a list of spells to determine if an aura should be allowed or blocked. The content of these filters can be modified in the 'Filters' section of the config."],
 				values = function()
 					local filters = {}

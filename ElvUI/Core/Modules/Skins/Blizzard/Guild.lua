@@ -3,6 +3,62 @@ local S = E:GetModule("Skins")
 
 local _G = _G
 
+local function SkinApplicants()
+	local scroll = _G.GuildInfoFrameApplicantsContainer
+	for _, button in ipairs(scroll.buttons) do
+		if not button.elvGuildApplicantSkinned then
+			button.elvGuildApplicantSkinned = true
+			button:SetTemplate("Default")
+			local highlight = button:GetHighlightTexture()
+			highlight:SetTexture(E.media.normTex)
+			highlight:SetTexCoord(0, 1, 0, 1)
+			highlight:SetVertexColor(1, 1, 1, .08)
+			highlight:SetInside()
+			button.selectedTex:SetTexture(E.media.normTex)
+			button.selectedTex:SetTexCoord(0, 1, 0, 1)
+			button.selectedTex:SetVertexColor(unpack(E.media.rgbvaluecolor))
+			button.selectedTex:SetAlpha(.15)
+			button.selectedTex:SetInside()
+			button.classFrame.ring:Hide()
+			button.classFrame:ClearAllPoints()
+			button.classFrame:SetPoint("TOPLEFT", 10, -10)
+			button.classFrame:SetSize(44, 44)
+			local icon = button.classFrame.class
+			icon:SetTexture([[Interface\TargetingFrame\UI-Classes-Circles]])
+			icon:SetDrawLayer("ARTWORK")
+			icon:SetAlpha(1)
+			icon:SetInside()
+			icon:Show()
+			button.classFrame:EnableDrawLayer("ARTWORK")
+			button.levelFrame.PointsSpentBgGold:Hide()
+			button.levelFrame:SetTemplate("Default")
+			button.levelFrame:ClearAllPoints()
+			button.levelFrame:SetPoint("BOTTOMRIGHT", button.classFrame, "BOTTOMRIGHT", 4, -4)
+			button.levelFrame:SetSize(24, 16)
+			button.levelFrame.level:FontTemplate(nil, 11)
+			button.name:FontTemplate(nil, 12)
+			button.name:SetHeight(16)
+			button.name:SetWordWrap(false)
+			button.comment:FontTemplate(nil, 11)
+			button.fullComment:FontTemplate(nil, 11)
+			button.comment:ClearAllPoints()
+			button.comment:SetPoint("TOPLEFT", button, "TOPLEFT", 74, -29)
+			button.comment:SetPoint("BOTTOMRIGHT", button.timeLeft, "TOPRIGHT", 0, 4)
+			button.timeLeft:FontTemplate(nil, 10)
+			button.timeLeft:SetWidth(112)
+			button.timeLeft:SetWordWrap(false)
+			button.InviteSent:FontTemplate(nil, 10)
+			button.InviteSent:ClearAllPoints()
+			button.InviteSent:SetPoint("BOTTOMLEFT", 74, 8)
+			button.InviteSent:SetWidth(100)
+			button.InviteSent:SetWordWrap(false)
+			button.tankTex:ClearAllPoints()
+			button.tankTex:SetPoint("BOTTOMLEFT", 10, 7)
+		end
+		button.name:SetPoint("RIGHT", button, "RIGHT", -8, 0)
+	end
+end
+
 local function LoadSkin()
 	if not E.private.skins.blizzard.enable or not E.private.skins.blizzard.guild then return end
 
@@ -38,6 +94,9 @@ local function LoadSkin()
 	S:HandleButton(GuildRecruitmentInviteButton, true)
 	S:HandleButton(GuildRecruitmentMessageButton, true)
 	S:HandleButton(GuildRecruitmentDeclineButton, true)
+	S:HandleSirusScrollBar(_G.GuildInfoFrameApplicantsContainerScrollBar)
+	hooksecurefunc("GuildInfoFrameApplicants_Update", SkinApplicants)
+	SkinApplicants()
 
 	GuildAllPerksFrame:StripTextures()
 	S:HandleSirusScrollBar(GuildPerksContainerScrollBar)
@@ -240,51 +299,71 @@ local function LoadSkin()
 	GuildRecruitmentCommentInputFrameScrollFrame:StripTextures()
 	GuildRecruitmentCommentInputFrame:StripTextures()
 
+	local recruitment = GuildInfoFrameRecruitment
+	local function SkinRecruitmentDropdown(dropdown, parent, x)
+		if not dropdown then return end
+		S:HandleDropDownBox(dropdown, 144)
+		dropdown:ClearAllPoints()
+		dropdown:SetPoint("TOPLEFT", parent, "TOPLEFT", x, -25)
+		dropdown:SetHeight(20)
+		dropdown.backdrop:ClearAllPoints()
+		dropdown.backdrop:SetPoint("TOPLEFT", 0, 0)
+		dropdown.backdrop:SetPoint("TOPRIGHT", -4, 0)
+		dropdown.backdrop:SetHeight(20)
+		local button = dropdown.Button
+		E:UnlockPoints(button)
+		button:ClearAllPoints()
+		button:SetPoint("RIGHT", dropdown.backdrop, "RIGHT", -2, 0)
+		button:SetSize(16, 16)
+		E:LockPoints(button)
+		dropdown.Text:ClearAllPoints()
+		dropdown.Text:SetPoint("LEFT", dropdown.backdrop, "LEFT", 8, 0)
+		dropdown.Text:SetPoint("RIGHT", button, "LEFT", -2, 0)
+		if dropdown.Label then
+			dropdown.Label:ClearAllPoints()
+			dropdown.Label:SetPoint("BOTTOMLEFT", dropdown, "TOPLEFT", 0, 5)
+			dropdown.Label:SetWidth(144)
+			dropdown.Label:FontTemplate(nil, 11)
+		end
+	end
+
+	SkinRecruitmentDropdown(GuildRecruitmentInterestFrame.InterestDropdown, GuildRecruitmentInterestFrame, 8)
+	SkinRecruitmentDropdown(GuildRecruitmentInterestFrame.ClassesDropdown, GuildRecruitmentInterestFrame, 164)
+	SkinRecruitmentDropdown(GuildRecruitmentAvailabilityFrame.AvailabilityDropdown, GuildRecruitmentAvailabilityFrame, 8)
+	SkinRecruitmentDropdown(GuildRecruitmentAvailabilityFrame.ActivityDropdown, GuildRecruitmentAvailabilityFrame, 164)
+
+	for _, role in ipairs({"Tank", "Healer", "Damager"}) do
+		local button = _G["GuildRecruitment"..role.."Button"]
+		if button and button.checkButton then S:HandleCheckBox(button.checkButton) end
+	end
+
+	if GuildRecruitmentItemLevelFrame then
+		GuildRecruitmentItemLevelFrame:StripTextures()
+		GuildRecruitmentItemLevelFrame:SetTemplate("Transparent")
+		GuildRecruitmentItemLevelFrame:SetHeight(32)
+		local label = _G.GuildRecruitmentItemLevelFrameText
+		label:ClearAllPoints()
+		label:SetPoint("LEFT", 8, 0)
+		label:SetWidth(224)
+		label:SetWordWrap(false)
+		label:FontTemplate(nil, 11)
+		S:HandleEditBox(GuildRecruitmentItemLevelEditBox)
+		GuildRecruitmentItemLevelEditBox:ClearAllPoints()
+		GuildRecruitmentItemLevelEditBox:SetPoint("RIGHT", GuildRecruitmentItemLevelFrame, "RIGHT", -12, 0)
+		GuildRecruitmentItemLevelEditBox:SetSize(60, 20)
+	end
+
+	GuildRecruitmentCommentInputFrame:ClearAllPoints()
+	GuildRecruitmentCommentInputFrame:SetPoint("TOPLEFT", GuildRecruitmentCommentFrame, "TOPLEFT", 8, -6)
+	GuildRecruitmentCommentInputFrame:SetPoint("BOTTOMRIGHT", GuildRecruitmentCommentFrame, "BOTTOMRIGHT", -8, 6)
+	GuildRecruitmentCommentEditBox:FontTemplate(nil, 11)
+	S:ApplyElvUIFont(recruitment)
+
 	GuildFactionFrame:ClearAllPoints()
 	GuildFactionFrame:SetPoint("LEFT", GuildFrame.TabardOverlay, "RIGHT", -8, -2)
 	GuildFactionFrame:Size(48, 48)
 	GuildFactionFrame.Icon:SetAllPoints()
 
-	LookingForGuildFrame:StripTextures()
-	LookingForGuildFrame:CreateBackdrop("Transparent")
-	if LookingForGuildFrameCloseButton then
-		S:HandleCloseButton(LookingForGuildFrameCloseButton)
-	end
-	if LookingForGuildFrameOptionsListSearch then
-		S:HandleButton(LookingForGuildFrameOptionsListSearch)
-
-		local filterDropdown = LookingForGuildFrameOptionsListFilterDropdown
-		local sizeDropdown = LookingForGuildFrameOptionsListSizeDropdown
-		S:HandleDropDownBox(filterDropdown, 105)
-		S:HandleDropDownBox(sizeDropdown, 105)
-		for _, dropdown in next, { filterDropdown, sizeDropdown } do
-			if dropdown.backdrop then
-				dropdown.backdrop:ClearAllPoints()
-				dropdown.backdrop:SetPoint('TOPLEFT', dropdown, 'TOPLEFT', 2, -2)
-				dropdown.backdrop:SetPoint('BOTTOMRIGHT', dropdown, 'BOTTOMRIGHT', 2, -2)
-			end
-		end
-		S:HandleEditBox(LookingForGuildFrameOptionsListSearchBox)
-		LookingForGuildFrameOptionsListSearch:ClearAllPoints()
-		LookingForGuildFrameOptionsListSearch:SetPoint("BOTTOM", LookingForGuildFrameOptionsListSearchBox, "BOTTOM", -5, -25)
-		LookingForGuildFrameOptionsListSearchBox:SetSize(145, 20)
-	end
-
-	if LookingForGuildFrameInsetFrame then
-		LookingForGuildFrameInsetFrame:StripTextures()
-	end
-
-	local chchbx = {
-		"Tank",
-		"Healer",
-		"Dps"
-	}
-	for _,checkbox in ipairs(chchbx) do
-		local frame = _G["LookingForGuildFrameOptionsList"..checkbox.."RoleFrameCheckBox"]
-		if frame then
-			S:HandleCheckBox(frame)
-		end
-	end
 	for i = 1,15 do
 		local btn = _G["GuildRosterContainerButton"..i]
 		if btn then
@@ -292,41 +371,6 @@ local function LoadSkin()
 
 		end
 
-	end
-	local tabs = {
-		"LookingForGuildFrameSearchTab",
-		"LookingForGuildFramePendingTab"
-	}
-	for k,tabToSkin in ipairs(tabs) do
-		local tab = _G[tabToSkin]
-		if k == 1 then
-			tab:Point("TOPLEFT", LookingForGuildFrame, "TOPRIGHT", -E.Border, -36)
-		end
-		tab:GetRegions():Hide()
-		tab:StyleButton()
-		tab:SetTemplate("Default", true)
-		tab.Icon:SetInside()
-		tab.Icon:SetTexCoords()
-	end
-
-	if LookingForGuildFrameGuildCardsFirstCardRequestJoin then
-		S:HandleButton(LookingForGuildFrameGuildCardsFirstCardRequestJoin)
-		S:HandleButton(LookingForGuildFrameGuildCardsSecondCardRequestJoin)
-		S:HandleButton(LookingForGuildFrameGuildCardsThirdCardRequestJoin)
-	end
-
-	if LookingForGuildFrameRequestToJoinFrame then
-		LookingForGuildFrameRequestToJoinFrame:HookScript("OnShow", function()
-			LookingForGuildFrameRequestToJoinFrame:StripTextures()
-			LookingForGuildFrameRequestToJoinFrame:CreateBackdrop("Transparent")
-			S:HandleButton(LookingForGuildFrameRequestToJoinFrameApply)
-			S:HandleButton(LookingForGuildFrameRequestToJoinFrameCancel)
-			LookingForGuildFrameRequestToJoinFrame.BG:Hide()
-			LookingForGuildFrameRequestToJoinFrameMessageFrame:StripTextures()
-			LookingForGuildFrameRequestToJoinFrameMessageFrameMessageScroll:StripTextures()
-			LookingForGuildFrameRequestToJoinFrameMessageFrameMessageScroll:CreateBackdrop("Transparent")
-			S:HandleSirusScrollBar(LookingForGuildFrameRequestToJoinFrameMessageFrameMessageScrollScrollBar)
-		end)
 	end
 
 	GuildFrame:EnableMouse(true)

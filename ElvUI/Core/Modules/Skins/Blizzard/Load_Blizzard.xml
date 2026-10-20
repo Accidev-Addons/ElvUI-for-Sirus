@@ -29,6 +29,7 @@
 	<Script file="GMChat.lua"/>
 	<Script file="Gossip.lua"/>
 	<Script file="Guild.lua"/>
+	<Script file="GuildFinder.lua"/>
 	<Script file="GuildBank.lua"/>
 	<Script file="GuildRegistrar.lua"/>
 	<Script file="Hardcore.lua"/>

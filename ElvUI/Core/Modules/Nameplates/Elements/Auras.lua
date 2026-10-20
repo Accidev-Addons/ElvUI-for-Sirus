@@ -5,7 +5,7 @@ local LSM = E.Libs.LSM
 --Lua functions
 local select, wipe = select, wipe
 local tinsert = table.insert
-local floor, min = math.floor, math.min
+local floor = math.floor
 local split = string.split
 --WoW API / Variables
 local CreateFrame = CreateFrame
@@ -16,27 +16,6 @@ local UnitAura = UnitAura
 local DebuffColors = E.DebuffColors
 
 local VISIBLE, HIDDEN = 1, 0
-
-local positionValues = {
-	TOP = "BOTTOM", BOTTOM = "TOP", CENTER = "CENTER",
-	BOTTOMLEFT = "TOP",
-	BOTTOMRIGHT = "TOP",
-	LEFT = "RIGHT",
-	RIGHT = "LEFT",
-	TOPLEFT = "BOTTOM",
-	TOPRIGHT = "BOTTOM"
-}
-
-local positionValues2 = {
-	TOP = "TOP", BOTTOM = "BOTTOM", CENTER = "CENTER",
-	BOTTOMLEFT = "BOTTOM",
-	BOTTOMRIGHT = "BOTTOM",
-	LEFT = "LEFT",
-	RIGHT = "RIGHT",
-	TOPLEFT = "TOP",
-	TOPRIGHT = "TOP"
-}
-
 
 local playerSpells = {}
 
@@ -109,37 +88,46 @@ function NP:StyleAura(button, index, texture, count, debuffType, duration, expir
 	end
 end
 
-function NP:SetAura(frame, unit, index, filter, isDebuff, visible, spells)
-	local isAura, name, texture, count, debuffType, duration, expiration, caster, spellID, _
+local function RenderAuraIcon(auras, position, index, texture, count, debuffType, duration, expiration, isDebuff, spellID, name, preview)
+	local button = auras[position] or NP:Construct_AuraIcon(auras, position)
+	NP:StyleAura(button, index, texture, count, debuffType, duration, expiration, isDebuff, spellID, name)
+	if preview then
+		NP.UpdateTime(button, 0)
+		button:SetScript("OnUpdate", nil)
+	end
+end
 
+local function HideAuraIcons(auras, visible)
+	for i = visible + 1, #auras do
+		local button = auras[i]
+		button.timeLeft, button.endTime = nil, nil
+		button:SetScript("OnUpdate", nil)
+		button:Hide()
+	end
+end
+
+local function FinishAuraUpdate(auras, visible, db)
+	HideAuraIcons(auras, visible)
+	if #auras > auras.anchoredIcons then
+		NP:Update_AurasPosition(auras, db, auras.auraLayout)
+		auras.anchoredIcons = #auras
+	end
+end
+
+function NP:SetAura(frame, unit, index, filter, isDebuff, visible, spells)
+	local name, _, texture, count, debuffType, duration, expiration, caster, spellID
 	if unit then
 		name, _, texture, count, debuffType, duration, expiration, caster, _, _, spellID = UnitAura(unit, index, filter)
-		isAura = name ~= nil
 	end
+	if not name then return end
 
-	if frame.forceShow then
-		spellID = 47540
-		name, _, texture = GetSpellInfo(spellID)
-		isAura, count, debuffType, duration, expiration = true, 5, "Magic", 0, 0
+	local position = visible + 1
+	local button = frame[position] or NP:Construct_AuraIcon(frame, position)
+	if NP:AuraFilter(unit, button, name, texture, count, debuffType, duration, expiration, caster, spellID, spells) then
+		RenderAuraIcon(frame, position, index, texture, count, debuffType, duration, expiration, isDebuff, spellID, name)
+		return VISIBLE
 	end
-
-	if isAura then
-		local position = visible + 1
-		local button = frame[position] or NP:Construct_AuraIcon(frame, position)
-
-		local filterCheck = true
-		if not frame.forceShow then
-			filterCheck = NP:AuraFilter(unit, button, name, texture, count, debuffType, duration, expiration, caster, spellID, spells)
-		end
-
-		if filterCheck then
-			NP:StyleAura(button, index, texture, count, debuffType, duration, expiration, isDebuff, spellID, name)
-
-			return VISIBLE
-		else
-			return HIDDEN
-		end
-	end
+	return HIDDEN
 end
 
 local function GetAuraDB(frame, auraType)
@@ -169,7 +157,7 @@ local sirusListFrames = {
 	crowdcontrol = "CrowdControlListFrame"
 }
 
-local sirusContainers = { "Buffs", "Debuffs", "CrowdControl", "LossOfControl" }
+local auraContainers = { "Buffs", "Debuffs", "CrowdControl", "LossOfControl" }
 
 local sirusAnchorPoints = {
 	BOTTOM = "TOP",
@@ -213,29 +201,54 @@ local function AnchorSirusAuras(frame, auras)
 	auras:SetPoint(sirusAnchorPoints[point] or point, anchor, point, NP:SirusPixel(db.xOffset or 0), NP:SirusPixel(db.yOffset or 0))
 end
 
-local function ConfigureSirusAuras(frame, auras, aurasFrame)
+local function ConfigureAuraLayout(frame, auras, aurasFrame, force)
 	local db = GetAuraDB(frame, auras.type)
 	if not db then return end
 
-	local list = aurasFrame[sirusListFrames[auras.type]]
-	local itemScale = aurasFrame.auraItemScale
-	local stride = list.stride
-	local perrow, numrows = db.perrow, db.numrows
-	local size = db.useSirusSize ~= false and NP:SirusPixel(_G.NamePlateConstants.AURA_ITEM_HEIGHT * (itemScale or 1)) or NP:Pixel(db.size)
-	local spacing = db.useSirusSize ~= false and NP:SirusPixel(list.childXPadding) or NP:Pixel(db.spacing)
-	local rowSpacing = db.useSirusSize ~= false and NP:SirusPixel(list.childYPadding) or NP:Pixel(db.spacing)
+	local single = auras.type == "lossofcontrol"
+	local native = aurasFrame and aurasFrame[single and "LossOfControlFrame" or sirusListFrames[auras.type]]
+	local nativeSize = db.useSirusSize ~= false and native ~= nil
+	local size, spacing, rowSpacing = db.size, db.spacing, db.spacing
+	if nativeSize then
+		local height = single and native:GetWidth() or _G.NamePlateConstants.AURA_ITEM_HEIGHT
+		size = height * (aurasFrame.auraItemScale or 1)
+		if not single then spacing, rowSpacing = native.childXPadding, native.childYPadding end
+	end
+	local perrow, numrows = single and 1 or db.perrow, single and 1 or db.numrows
+	local layout = auras.auraLayout
+	if not force and layout and layout.db == db and layout.native == native
+		and layout.rawSize == size and layout.rawSpacing == spacing and layout.rawRowSpacing == rowSpacing
+		and layout.nativeSize == nativeSize and layout.perfect == E.perfect
+		and layout.uiScale == E.uiscale and layout.plateScale == NP.db.plateScale
+		and layout.growthX == db.growthX and layout.growthY == db.growthY
+		and layout.perrow == perrow and layout.numrows == numrows
+		and layout.anchorPoint == db.anchorPoint and layout.attachTo == db.attachTo
+		and layout.xOffset == db.xOffset and layout.yOffset == db.yOffset
+		and layout.useSirusPosition == db.useSirusPosition then
+		return layout
+	end
 
-	local layout = auras.sirusLayout or {}
-	layout.point = (db.growthY == "UP" and "BOTTOM" or "TOP") .. (db.growthX == "RIGHT" and "LEFT" or "RIGHT")
+	layout = layout or {}
+	layout.rawSize, layout.rawSpacing, layout.rawRowSpacing = size, spacing, rowSpacing
+	layout.nativeSize, layout.perfect, layout.uiScale, layout.plateScale = nativeSize, E.perfect, E.uiscale, NP.db.plateScale
+	if nativeSize then
+		size, spacing, rowSpacing = NP:SirusPixel(size), NP:SirusPixel(spacing), NP:SirusPixel(rowSpacing)
+	else
+		size, spacing, rowSpacing = NP:Pixel(size), NP:Pixel(spacing), NP:Pixel(rowSpacing)
+	end
+	layout.point = single and "CENTER" or ((db.growthY == "UP" and "BOTTOM" or "TOP") .. (db.growthX == "RIGHT" and "LEFT" or "RIGHT"))
 	layout.growthX, layout.growthY = db.growthX, db.growthY
-	layout.size, layout.spacing, layout.rowSpacing, layout.perrow = size, spacing, rowSpacing, perrow
-	layout.numrows = numrows
-
-	auras.sirusLayout, auras.sirusList, auras.sirusScale, auras.sirusStride = layout, list, itemScale, stride
+	layout.size, layout.spacing, layout.rowSpacing = size, spacing, rowSpacing
+	layout.perrow, layout.numrows = perrow, numrows
+	layout.db, layout.native = db, native
+	layout.anchorPoint, layout.attachTo = db.anchorPoint, db.attachTo
+	layout.xOffset, layout.yOffset = db.xOffset, db.yOffset
+	layout.useSirusPosition = db.useSirusPosition
+	auras.auraLayout = layout
 	auras.anchoredIcons = 0
-
-	auras:SetSize(perrow * size + (perrow - 1) * spacing, numrows * size + (numrows - 1) * rowSpacing)
+	auras:SetSize(layout.perrow * size + (layout.perrow - 1) * spacing, layout.numrows * size + (layout.numrows - 1) * rowSpacing)
 	AnchorSirusAuras(frame, auras)
+	return layout
 end
 
 local function HideSirusAuraItems(...)
@@ -244,7 +257,7 @@ local function HideSirusAuraItems(...)
 	end
 end
 
-local sirusAuraFilters = {
+local auraFilters = {
 	buffs = "HELPFUL",
 	debuffs = "HARMFUL",
 	crowdcontrol = "HARMFUL"
@@ -254,110 +267,102 @@ local function IsSirusCrowdControl(aura)
 	return NP:CheckFilter(aura.name, aura.spellId, aura.isFromPlayerOrPlayerPet, true, (aura.duration or 0) == 0, aura.canDispell, "CCDebuffs") == true
 end
 
-local function IsSirusAuraInGroup(auraType, aura)
-	if auraType == "buffs" then
-		return true
-	end
-
-	local isCrowdControl = IsSirusCrowdControl(aura)
-
-	if auraType == "crowdcontrol" then
-		return isCrowdControl
-	end
-
-	return not isCrowdControl
+local function GetPreviewAura(auraType)
+	if auraType == "lossofcontrol" then return end
+	local control = auraType == "crowdcontrol"
+	local spellID = control and 118 or (auraType == "buffs" and 21562 or 589)
+	local name, _, icon = GetSpellInfo(spellID)
+	return {
+		name = name, icon = icon or [[Interface\Icons\INV_Misc_QuestionMark]],
+		applications = 1, dispelName = "Magic", duration = 30,
+		expirationTime = GetTime() + 20, spellId = spellID
+	}
 end
 
-local function UpdateSirusAuraList(frame, auras, aurasFrame, draw)
-	local list = aurasFrame[sirusListFrames[auras.type]]
+local function GetUnitAura(unit, index, filter, aura)
+	local name, _, icon, count, debuffType, duration, expiration, caster, isStealable, _, spellID = UnitAura(unit, index, filter)
+	if not name then return end
+	aura.name, aura.icon, aura.applications, aura.dispelName = name, icon, count, debuffType
+	aura.duration, aura.expirationTime, aura.spellId = duration, expiration, spellID
+	aura.isFromPlayerOrPlayerPet = (caster == "player" or caster == "pet")
+	aura.isStealable = isStealable
+	aura.canDispell = (isStealable and true) or (debuffType and E:IsDispellableByMe(debuffType)) or false
+	return aura
+end
+
+local function PrepareAuraList(frame, auras, aurasFrame, draw)
 	local db = GetAuraDB(frame, auras.type)
-	local unit = frame.unit
-	local show = draw and db and db.enable and unit and list:IsVisible()
-
-	HideSirusAuraItems(list:GetChildren())
-
-	if show and (auras.sirusList ~= list or auras.sirusScale ~= aurasFrame.auraItemScale or auras.sirusStride ~= list.stride) then
-		ConfigureSirusAuras(frame, auras, aurasFrame)
+	if not db then return end
+	local single = auras.type == "lossofcontrol"
+	local native = aurasFrame and aurasFrame[single and "LossOfControlFrame" or sirusListFrames[auras.type]]
+	local preview = frame.testUnitType and GetPreviewAura(auras.type)
+	local show = draw and db.enable
+	if frame.testUnitType then
+		show = show and preview
+	else
+		show = show and frame.unit and native and native:IsVisible() and (not single or aurasFrame.unitToken)
 	end
 
-	local maxIcons = (show and db.perrow * db.numrows) or 0
-	local filter = sirusAuraFilters[auras.type]
+	if native then
+		if single then native.AuraItemFrame:Hide() else HideSirusAuraItems(native:GetChildren()) end
+	end
+	if show then ConfigureAuraLayout(frame, auras, aurasFrame) end
+	return db, show and (single and 1 or db.perrow * db.numrows) or 0, preview
+end
+
+local function UpdateAuraList(frame, auras, aurasFrame, draw)
+	local db, limit, preview = PrepareAuraList(frame, auras, aurasFrame, draw)
+	if not db then return end
+	local single = auras.type == "lossofcontrol"
+	local data = limit > 0 and not preview and not single and {}
 	local visible, index = 0, 1
-
-	while visible < maxIcons do
-		local name, _, texture, count, debuffType, duration, expiration, caster, isStealable, _, spellID = UnitAura(unit, index, filter)
-		if not name then break end
-
-		local aura = {
-			name = name,
-			icon = texture,
-			applications = count,
-			dispelName = debuffType,
-			duration = duration,
-			expirationTime = expiration,
-			spellId = spellID,
-			isFromPlayerOrPlayerPet = (caster == "player" or caster == "pet"),
-			isStealable = isStealable,
-			canDispell = (isStealable and true) or (debuffType and E:IsDispellableByMe(debuffType)) or false
-		}
-
-		if IsSirusAuraInGroup(auras.type, aura) and NP:SirusAuraAllowed(db, aura) then
-			visible = visible + 1
-
-			local button = auras[visible] or NP:Construct_AuraIcon(auras, visible)
-			NP:StyleAura(button, visible, aura.icon, aura.applications or 0, aura.dispelName, aura.duration, aura.expirationTime, auras.type ~= "buffs", aura.spellId, aura.name)
+	while visible < limit do
+		local aura
+		if preview then
+			aura = preview
+		elseif single then
+			aura = aurasFrame:GetLossOfControlAura()
+		else
+			aura = GetUnitAura(frame.unit, index, auraFilters[auras.type], data)
 		end
-
+		if not aura then break end
+		if aura.icon and (preview or NP:SirusAuraAllowed(db, aura)) then
+			visible = visible + 1
+			RenderAuraIcon(auras, visible, visible, aura.icon, aura.applications or 0, aura.dispelName, aura.duration, aura.expirationTime, auras.type ~= "buffs", aura.spellId, aura.name, preview)
+		end
+		if single then break end
 		index = index + 1
 	end
-
-	for i = visible + 1, #auras do
-		auras[i].timeLeft = nil
-		auras[i]:SetScript("OnUpdate", nil)
-		auras[i]:Hide()
-	end
-
-	if show and #auras > auras.anchoredIcons then
-		NP:Update_AurasPosition(auras, db, auras.sirusLayout)
-		auras.anchoredIcons = #auras
-	end
+	FinishAuraUpdate(auras, visible, db)
 end
 
-local function UpdateSirusLossOfControl(frame, aurasFrame)
-	local auras = frame.LossOfControl
-	local locFrame = aurasFrame.LossOfControlFrame
-	local db = GetAuraDB(frame, auras.type)
-	local aura = db and db.enable and frame.Health:IsShown() and aurasFrame.unitToken and locFrame:IsVisible() and aurasFrame:GetLossOfControlAura()
-
-	locFrame.AuraItemFrame:Hide()
-
-	if aura and aura.icon and NP:SirusAuraAllowed(db, aura) then
-		local button = auras[1] or NP:Construct_AuraIcon(auras, 1)
-		local size = db.useSirusSize ~= false and NP:SirusPixel(locFrame:GetWidth() * (aurasFrame.auraItemScale or 1)) or NP:Pixel(db.size)
-
-		auras:SetSize(size, size)
-		AnchorSirusAuras(frame, auras)
-
-		button:SetSize(size, size)
-		button:ClearAndSetPoint("CENTER", auras, "CENTER")
-
-		if auras.anchoredIcons == 0 then
-			NP:StyleAuraButton(button, db)
-			auras.anchoredIcons = 1
+local function UpdateHarmfulAuras(frame, aurasFrame, draw)
+	local debuffs, control = frame.Debuffs, frame.CrowdControl
+	local debuffDB, debuffLimit = PrepareAuraList(frame, debuffs, aurasFrame, draw)
+	local controlDB, controlLimit = PrepareAuraList(frame, control, aurasFrame, draw)
+	debuffLimit, controlLimit = debuffLimit or 0, controlLimit or 0
+	local debuffCount, controlCount, index = 0, 0, 1
+	local data = (debuffLimit > 0 or controlLimit > 0) and {}
+	while debuffCount < debuffLimit or controlCount < controlLimit do
+		local aura = GetUnitAura(frame.unit, index, "HARMFUL", data)
+		if not aura then break end
+		local isControl = IsSirusCrowdControl(aura)
+		local auras, db = isControl and control or debuffs, isControl and controlDB or debuffDB
+		local visible, limit = isControl and controlCount or debuffCount, isControl and controlLimit or debuffLimit
+		if visible < limit and aura.icon and NP:SirusAuraAllowed(db, aura) then
+			visible = visible + 1
+			RenderAuraIcon(auras, visible, visible, aura.icon, aura.applications or 0, aura.dispelName, aura.duration, aura.expirationTime, true, aura.spellId, aura.name)
+			if isControl then controlCount = visible else debuffCount = visible end
 		end
-
-		NP:StyleAura(button, 1, aura.icon, aura.applications or 0, aura.dispelName, aura.duration, aura.expirationTime, true, aura.spellId, aura.name)
-	elseif auras[1] then
-		auras[1].timeLeft = nil
-		auras[1]:SetScript("OnUpdate", nil)
-		auras[1]:Hide()
+		index = index + 1
 	end
+	if debuffDB then FinishAuraUpdate(debuffs, debuffCount, debuffDB) end
+	if controlDB then FinishAuraUpdate(control, controlCount, controlDB) end
 end
 
 local function MirrorSirusAuras(frame, aurasFrame, draw)
-	UpdateSirusAuraList(frame, frame.Buffs, aurasFrame, draw)
-	UpdateSirusAuraList(frame, frame.Debuffs, aurasFrame, draw)
-	UpdateSirusAuraList(frame, frame.CrowdControl, aurasFrame, draw)
+	UpdateAuraList(frame, frame.Buffs, aurasFrame, draw)
+	UpdateHarmfulAuras(frame, aurasFrame, draw)
 end
 
 local function SirusAurasRefreshed(aurasFrame)
@@ -384,7 +389,7 @@ local function SirusLossOfControlRefreshed(aurasFrame)
 	local frame = plate and plate.ElvUIFrame
 
 	if frame and frame.unit and frame.unit == aurasFrame.unitToken then
-		UpdateSirusLossOfControl(frame, aurasFrame)
+		UpdateAuraList(frame, frame.LossOfControl, aurasFrame, frame.Health:IsShown())
 	else
 		aurasFrame.LossOfControlFrame.AuraItemFrame:Hide()
 	end
@@ -395,7 +400,7 @@ local function SirusAnchorsUpdated(unitFrame)
 	local frame = plate and plate.ElvUIFrame
 	if not (frame and frame.UnitType and frame.unit and frame.unit == unitFrame.unit and frame.Health:IsShown()) then return end
 
-	for _, key in next, sirusContainers do
+	for _, key in next, auraContainers do
 		local auras = frame[key]
 		AnchorSirusAuras(frame, auras)
 	end
@@ -409,7 +414,7 @@ function NP:RefreshSirusAuraAnchors()
 		if frame and frame.UnitType and frame.Health:IsShown() then
 			local unitFrame = NP:GetSirusUnitFrame(plate)
 			if unitFrame and unitFrame.AurasFrame then
-				for _, key in next, sirusContainers do
+				for _, key in next, auraContainers do
 					local auras = frame[key]
 					if auras then
 						AnchorSirusAuras(frame, auras)
@@ -434,7 +439,7 @@ function NP:UpdateSirusAuras(frame)
 	if not aurasFrame then return false end
 
 	MirrorSirusAuras(frame, aurasFrame, frame.Health:IsShown())
-	UpdateSirusLossOfControl(frame, aurasFrame)
+	UpdateAuraList(frame, frame.LossOfControl, aurasFrame, frame.Health:IsShown())
 
 	return true
 end
@@ -481,15 +486,16 @@ function NP:StyleAuraButton(button, db)
 	end
 end
 
-function NP:Update_AurasPosition(frame, db, sirus)
-	local size = sirus and sirus.size or NP:Pixel(db.size)
-	local spacing = sirus and sirus.spacing or NP:Pixel(db.spacing)
-	local rowSpacing = sirus and sirus.rowSpacing or spacing
+function NP:Update_AurasPosition(frame, db, layout)
+	layout = layout or frame.auraLayout
+	local size = layout and layout.size or NP:Pixel(db.size)
+	local spacing = layout and layout.spacing or NP:Pixel(db.spacing)
+	local rowSpacing = layout and layout.rowSpacing or spacing
 	local step, rowStep = size + spacing, size + rowSpacing
-	local anchor = sirus and sirus.point or E.InversePoints[db.anchorPoint]
-	local growthx = sirus and sirus.growthX or db.growthX
-	local growthy = sirus and sirus.growthY or db.growthY
-	local cols = sirus and sirus.perrow or db.perrow
+	local anchor = layout and layout.point or E.InversePoints[db.anchorPoint]
+	local growthx = layout and layout.growthX or db.growthX
+	local growthy = layout and layout.growthY or db.growthY
+	local cols = layout and layout.perrow or db.perrow
 
 	growthx = (growthx == "LEFT" and -1) or 1
 	growthy = (growthy == "DOWN" and -1) or 1
@@ -538,15 +544,18 @@ function NP:UpdateElement_AuraIcons(frame, unit, filter, limit, isDebuff)
 		index = index + 1
 	end
 
-	for i = visible + 1, #frame do
-		frame[i].timeLeft = nil
-		frame[i]:SetScript("OnUpdate", nil)
-		frame[i]:Hide()
-	end
 	return visible
 end
 
 function NP:UpdateElement_Auras(frame)
+	if frame.testUnitType then
+		for _, key in ipairs(auraContainers) do
+			UpdateAuraList(frame, frame[key], nil, frame.Health:IsShown())
+		end
+		self:StyleFilterUpdate(frame, "UNIT_AURA")
+		return
+	end
+
 	if NP:UpdateSirusAuras(frame) then
 		if frame.Health:IsShown() then
 			self:StyleFilterUpdate(frame, "UNIT_AURA")
@@ -557,32 +566,15 @@ function NP:UpdateElement_Auras(frame)
 	if not frame.Health:IsShown() then return end
 
 	local unit = frame.unit
-	if not unit and not frame.Buffs.forceShow and not frame.Debuffs.forceShow then
+	if not unit then
 		return
 	end
 
-	local db = NP.db.units[frame.UnitType].buffs
-	if db.enable then
-		local buffs = frame.Buffs
-		NP:UpdateElement_AuraIcons(buffs, unit, "HELPFUL", db.perrow * db.numrows)
-
-		if #buffs > buffs.anchoredIcons then
-			self:Update_AurasPosition(buffs, db)
-
-			buffs.anchoredIcons = #buffs
-		end
-	end
-
-	db = NP.db.units[frame.UnitType].debuffs
-	if db.enable then
-		local debuffs = frame.Debuffs
-		NP:UpdateElement_AuraIcons(debuffs, unit, "HARMFUL", db.perrow * db.numrows, true)
-
-		if #debuffs > debuffs.anchoredIcons then
-			self:Update_AurasPosition(debuffs, db)
-
-			debuffs.anchoredIcons = #debuffs
-		end
+	for _, key in ipairs({ "Buffs", "Debuffs" }) do
+		local auras = frame[key]
+		local db = GetAuraDB(frame, auras.type)
+		local visible = db.enable and NP:UpdateElement_AuraIcons(auras, unit, auraFilters[auras.type], db.perrow * db.numrows, key == "Debuffs") or 0
+		FinishAuraUpdate(auras, visible, db)
 	end
 
 	self:StyleFilterUpdate(frame, "UNIT_AURA")
@@ -633,35 +625,13 @@ end
 function NP:Configure_Auras(frame, auraType)
 	local auras = frame[auraType]
 	local db = GetAuraDB(frame, auras.type)
-
-	auras.anchoredIcons = 0
-
 	if not db then return end
-
-	local aurasFrame = GetSirusAurasFrame(frame)
-	if aurasFrame then
-		ConfigureSirusAuras(frame, auras, aurasFrame)
-
-		local maxIcons = db.perrow * db.numrows
-		for i = 1, #auras do
-			if i > maxIcons then
-				auras[i]:Hide()
-			end
-		end
-
-		if #auras > 0 then
-			NP:Update_AurasPosition(auras, db, auras.sirusLayout)
-			auras.anchoredIcons = min(#auras, maxIcons)
-		end
-
-		return
+	local layout = ConfigureAuraLayout(frame, auras, GetSirusAurasFrame(frame), true)
+	HideAuraIcons(auras, layout.perrow * layout.numrows)
+	if #auras > 0 then
+		NP:Update_AurasPosition(auras, db, layout)
+		auras.anchoredIcons = #auras
 	end
-
-	local size, spacing = NP:Pixel(db.size), NP:Pixel(db.spacing)
-	auras:SetWidth(NP:Pixel(db.perrow * size + ((db.perrow - 1) * spacing), true))
-	auras:SetHeight(db.numrows * size + ((db.numrows - 1) * spacing))
-	auras:ClearAllPoints()
-	auras:SetPoint(positionValues[db.anchorPoint], db.attachTo == "BUFFS" and frame.Buffs or frame.Health, positionValues2[db.anchorPoint], NP:Pixel(db.xOffset), NP:Pixel(db.yOffset))
 end
 
 function NP:ConstructElement_Auras(frame, auraType)

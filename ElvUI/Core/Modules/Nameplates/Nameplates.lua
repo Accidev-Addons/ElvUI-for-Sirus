@@ -179,6 +179,7 @@ function NP:SetFrameScale(frame, scale, noPlayAnimation)
 
 			if frame.CrowdControl then
 				NP:Configure_Auras(frame, "CrowdControl")
+				NP:Configure_Auras(frame, "LossOfControl")
 			end
 		end
 	end
@@ -452,7 +453,7 @@ function NP:OnShow(isConfig, dontHideHighlight, unitToken)
 
 		if frame.CrowdControl then
 			NP:Configure_Auras(frame, "CrowdControl")
-			frame.LossOfControl.anchoredIcons = 0
+			NP:Configure_Auras(frame, "LossOfControl")
 		end
 
 		if NP.db.units[unitType].health.enable or (frame.isTarget and NP.db.alwaysShowTargetHealth) then
@@ -1404,9 +1405,6 @@ function NP:TogleTestFrame(unitType)
 		unitFrame.testHealth = random(1, maxHealth)
 		unitFrame.testClass = (unitType == "ENEMY_PLAYER" or unitType == "FRIENDLY_PLAYER") and E.myclass or nil
 		unitFrame.testRaidIcon = random(1, 8)
-
-		unitFrame.Buffs.forceShow = true
-		unitFrame.Debuffs.forceShow = true
 
 		if not ElvNP_Test:IsShown() then
 			ElvNP_Test:Show()

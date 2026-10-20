@@ -623,7 +623,7 @@ local function GetTagFunc(tagstr)
 
 		func = function(self)
 			local parent = self.parent
-			local unit = parent.unit
+			local unit = self.__previewUnit or parent.unit
 			local realUnit = self.overrideUnit and parent.realUnit
 			local customArgs = parent.__customargs[self]
 

@@ -38,8 +38,10 @@ local function SkinTransmogSlotButton(button)
 	button:SetTemplate("Default")
 	button:StyleButton()
 
+	button.Icon:SetDrawLayer("BORDER")
 	button.Icon:SetTexCoords()
 	button.Icon:SetInside()
+	button.NoItemTexture:SetDrawLayer("ARTWORK")
 	button.NoItemTexture:SetAllPoints(button.Icon)
 
 	button.PendingFrame.Glow:Kill()
@@ -52,23 +54,38 @@ local function SkinTransmogSlotButton(button)
 	UpdateSlotBorder(button)
 end
 
-local function RefreshEmptySlots(_, _, itemID)
-	for _, button in ipairs(_G.WardrobeTransmogFrame.SlotButtons) do
-		if button:IsShown() and not button.Icon:GetTexture() and GetInventoryItemID("player", button.slotID) == itemID then
-			button:Update()
+local function RefreshSlotIcons(transmogFrame, itemID)
+	for _, button in ipairs(transmogFrame.SlotButtons) do
+		if button:IsShown() and button.transmogLocation:IsAppearance() then
+			if itemID then
+				if GetInventoryItemID("player", button.slotID) == itemID or button:GetEffectiveTransmogID() == itemID then
+					button:Update()
+				end
+			elseif not button.Icon:GetTexture() then
+				button:Update()
+			end
 		end
 	end
 end
 
 local function WatchItemData(transmogFrame)
 	local watcher = CreateFrame("Frame")
-	watcher:SetScript("OnEvent", RefreshEmptySlots)
+	watcher:SetScript("OnEvent", function(_, _, itemID, success)
+		if success ~= false and itemID and transmogFrame:IsShown() then
+			RefreshSlotIcons(transmogFrame, itemID)
+		end
+	end)
 
-	transmogFrame:HookScript("OnShow", function() watcher:RegisterEvent("ITEM_DATA_LOAD_RESULT") end)
+	local function OnShow()
+		watcher:RegisterEvent("ITEM_DATA_LOAD_RESULT")
+		RefreshSlotIcons(transmogFrame)
+	end
+
+	transmogFrame:HookScript("OnShow", OnShow)
 	transmogFrame:HookScript("OnHide", function() watcher:UnregisterEvent("ITEM_DATA_LOAD_RESULT") end)
 
 	if transmogFrame:IsShown() then
-		watcher:RegisterEvent("ITEM_DATA_LOAD_RESULT")
+		OnShow()
 	end
 end
 
