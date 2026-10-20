@@ -216,7 +216,7 @@ function NP:SetPlateFrameLevel(frame, level, isTarget)
 			frame.LossOfControl:SetFrameLevel(level+1)
 		end
 		if frame.RaidIcon then
-			frame.RaidIcon:GetParent():SetFrameLevel(level+2)
+			frame.RaidIcon:GetParent():SetFrameLevel(frame.CastBar.Icon:GetFrameLevel() + 1)
 		end
 	end
 end
