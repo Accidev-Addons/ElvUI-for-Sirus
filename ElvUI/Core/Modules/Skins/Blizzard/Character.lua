@@ -43,7 +43,6 @@ local GetUnitPowerModifier = GetUnitPowerModifier
 local IsTitleKnown = IsTitleKnown
 local PlaySound = PlaySound
 local SetCVar = SetCVar
-local SetPortraitTexture = SetPortraitTexture
 local UnitAttackSpeed = UnitAttackSpeed
 local UnitClass = UnitClass
 local UnitDamage = UnitDamage
@@ -1876,20 +1875,27 @@ function S:CharacterInit()
 	sidebarTabs1:Point("RIGHT", ElvUI_PaperDollSidebarTab2, "LEFT", -4, 0)		S:PaperDollSidebarTab(sidebarTabs1)
 
 	sidebarTabs1:RegisterEvent("UNIT_PORTRAIT_UPDATE")
+	sidebarTabs1:RegisterEvent("UNIT_MODEL_CHANGED")
 	sidebarTabs1:RegisterEvent("PLAYER_ENTERING_WORLD")
-	sidebarTabs1:RegisterEvent("PLAYER_LOGIN")
 
-	local tcoords = PAPERDOLL_SIDEBARS[1].texCoords
+	sidebarTabs1.Icon:Hide()
+	local portrait = CreateFrame("PlayerModel", nil, sidebarTabs1)
+	portrait:SetInside(sidebarTabs1)
+	portrait:SetFrameLevel(sidebarTabs1:GetFrameLevel() + 1)
+	local hiderHolder = CreateFrame("Frame", nil, sidebarTabs1)
+	hiderHolder:SetAllPoints()
+	hiderHolder:SetFrameLevel(portrait:GetFrameLevel() + 1)
+	sidebarTabs1.Hider:SetParent(hiderHolder)
+	sidebarTabs1.Portrait = portrait
+
 	local function UpdateCharacterPortrait(button)
-		if not button or not button.Icon then return end
-		SetPortraitTexture(button.Icon, "player")
-		button.Icon:SetTexCoord(tcoords[1], tcoords[2], tcoords[3], tcoords[4])
-		button.Icon:Show()
+		button.Portrait:SetUnit("player")
+		button.Portrait:SetCamera(0)
 	end
 
 	UpdateCharacterPortrait(sidebarTabs1)
-	sidebarTabs1:SetScript("OnEvent", function(self, event, unit)
-		if event == "UNIT_PORTRAIT_UPDATE" and unit and unit ~= "player" then return end
+	sidebarTabs1:SetScript("OnEvent", function(self, _, unit)
+		if unit and unit ~= "player" then return end
 		UpdateCharacterPortrait(self)
 	end)
 	local previousOnShow = sidebarTabs1:GetScript("OnShow")
