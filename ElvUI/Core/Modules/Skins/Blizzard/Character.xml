@@ -1,11 +1,6 @@
 <Ui xmlns="http://www.blizzard.com/wow/ui/">
 	<Button name="PlayerTitleButtonTemplate2" virtual="true">
 		<Size x="169" y="22"/>
-		<Anchors>
-			<Anchor point="LEFT">
-				<Offset x="2" y="0"/>
-			</Anchor>
-		</Anchors>
 		<Layers>
 			<Layer level="BACKGROUND">
 				<Texture name="$parentStripe" parentKey="Stripe">
@@ -45,9 +40,6 @@
 
 	<Button name="GearSetButtonTemplate2" virtual="true">
 		<Size x="169" y="44"/>
-		<Anchors>
-			<Anchor point="LEFT" x="2" y="0"/>
-		</Anchors>
 		<Layers>
 			<Layer level="BACKGROUND">
 				<Texture name="$parentStripe" parentKey="Stripe">
@@ -59,9 +51,10 @@
 			</Layer>
 			<Layer level="ARTWORK">
 				<FontString name="$parentText" inherits="GameFontNormalLeft" parentKey="text">
-					<Size x="98" y="38"/>
+					<Size y="38"/>
 					<Anchors>
 						<Anchor point="LEFT" x="44"/>
+						<Anchor point="RIGHT" x="-38"/>
 					</Anchors>
 				</FontString>
 			</Layer>
