@@ -8,7 +8,7 @@ local tconcat = table.concat
 E.Changelog = {
 	{
 		version = '9.09.09',
-		date = '18.10.2026',
+		date = '20.10.2026',
 		entries = {
 			{
 				title = 'Изменено',
