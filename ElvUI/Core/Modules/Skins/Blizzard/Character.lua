@@ -407,15 +407,16 @@ local function CenterCharacterHeader()
 	local width = CharacterFrame:GetWidth()
 	if not width or width <= 0 then return end
 
-	CharacterNamesText:ClearAllPoints()
-	CharacterNamesText:SetSize(width, 16)
-	CharacterNamesText:SetPoint("TOP", CharacterFrame, "TOP", 0, -5)
-	CharacterNamesText:SetJustifyH("CENTER")
-	CharacterNamesText:SetWordWrap(false)
+	local title = _G.CharacterFrameTitleText or CharacterNamesText
+	title:ClearAllPoints()
+	title:SetPoint("TOPLEFT", CharacterFrame, "TOPLEFT", 26, -5)
+	title:SetPoint("TOPRIGHT", CharacterFrame, "TOPRIGHT", -26, -5)
+	title:SetJustifyH("CENTER")
+	title:SetWordWrap(false)
 
 	CharacterLevelText:ClearAllPoints()
 	CharacterLevelText:SetSize(width, 16)
-	CharacterLevelText:SetPoint("TOP", CharacterNamesText, "BOTTOM", 0, -2)
+	CharacterLevelText:SetPoint("TOP", title, "BOTTOM", 0, -3)
 	CharacterLevelText:SetJustifyH("CENTER")
 	CharacterLevelText:SetWordWrap(false)
 end
