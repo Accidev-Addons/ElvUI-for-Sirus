@@ -1402,6 +1402,7 @@ function NP:TogleTestFrame(unitType)
 		local maxHealth = UnitHealthMax("player")
 		unitFrame.testUnitType = unitType
 		unitFrame.testMaxHealth = maxHealth
+		unitFrame.testAbsorb = maxHealth * 0.25
 		unitFrame.testHealth = random(1, maxHealth)
 		unitFrame.testClass = (unitType == "ENEMY_PLAYER" or unitType == "FRIENDLY_PLAYER") and E.myclass or nil
 		unitFrame.testRaidIcon = random(1, 8)
@@ -1460,6 +1461,7 @@ function NP:Initialize()
 	ElvNP_Test.isTestFrame = true
 	ElvNP_Test.ElvUIFrame.testUnitType = "ENEMY_NPC"
 	ElvNP_Test.ElvUIFrame.testMaxHealth = 100
+	ElvNP_Test.ElvUIFrame.testAbsorb = 25
 	ElvNP_Test.ElvUIFrame.testHealth = 70
 	NP.OnShow(ElvNP_Test, true, true)
 
