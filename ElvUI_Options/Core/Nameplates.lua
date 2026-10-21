@@ -3768,6 +3768,11 @@ local function GetUnitSettings(unit, name)
 				NP:ConfigureAll()
 			end
 		}
+		args.useSirusPosition = {
+			order = 1.15, type = "toggle", name = L["Sirus Position"],
+			get = function() return E.db.nameplates.units[unit][aura].useSirusPosition ~= false end,
+			set = function(_, value) E.db.nameplates.units[unit][aura].useSirusPosition = value NP:ConfigureAll() end
+		}
 		args.useSirusSize = {
 			order = 1.2, type = "toggle", name = L["Sirus Size and Spacing"],
 			get = function() return E.db.nameplates.units[unit][aura].useSirusSize ~= false end,

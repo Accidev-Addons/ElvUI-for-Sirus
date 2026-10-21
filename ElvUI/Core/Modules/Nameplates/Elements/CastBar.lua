@@ -288,6 +288,11 @@ function NP:Configure_CastBar(frame, configuring)
 		castBar.Name:SetPoint("LEFT", castBar, "LEFT", 4, 0)
 	end
 
+	if not db.hideTime then
+		local side = db.textPosition == "BELOW" and "TOP" or db.textPosition == "ABOVE" and "BOTTOM" or ""
+		castBar.Name:SetPoint(side.."RIGHT", castBar.Time, side.."LEFT", -4, 0)
+	end
+
 	if configuring then
 		self:Configure_CastBarScale(frame, frame.currentScale or 1, configuring)
 	end
