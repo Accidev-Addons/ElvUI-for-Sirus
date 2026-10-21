@@ -235,8 +235,7 @@ end
 
 function NP:Configure_Absorb(frame)
 	local healthBar = frame.Health
-	local db = self.db.units[frame.UnitType].health
-	local absorbDB = db.absorb
+	local absorbDB = self.db.units[frame.UnitType].health.absorb
 	if not absorbDB or not absorbDB.enable then
 		if healthBar.Absorb then healthBar.Absorb:Hide() end
 		HidePlateLabel(healthBar.AbsorbText)
@@ -254,10 +253,9 @@ function NP:Configure_Absorb(frame)
 		overlay:Hide()
 		text:Hide()
 	end
-	text:FontTemplate(LSM:Fetch("font", absorbDB.font or db.text.font), absorbDB.fontSize or db.text.fontSize, absorbDB.fontOutline or db.text.fontOutline)
+	text:FontTemplate(LSM:Fetch("font", absorbDB.font), absorbDB.fontSize, absorbDB.fontOutline)
 	text:ClearAllPoints()
-	local position = absorbDB.position or "RIGHT"
-	text:SetPoint(position, healthBar, position, absorbDB.xOffset or -4, absorbDB.yOffset or 0)
+	text:SetPoint(absorbDB.position, healthBar, absorbDB.position, NP:Pixel(absorbDB.xOffset), NP:Pixel(absorbDB.yOffset))
 	overlay:ClearAllPoints()
 	overlay.lastWidth, overlay.lastOffset = nil, nil
 end
@@ -286,8 +284,7 @@ function NP:Update_Absorb(frame)
 	local overlay, text = healthBar.Absorb, healthBar.AbsorbText
 	local barWidth = healthBar:GetWidth()
 	local width = barWidth * math.min(absorb / maxHealth, 1)
-	local healthWidth = barWidth * math.min(math.max(health / maxHealth, 0), 1)
-	local offset = math.max(0, math.min(healthWidth, barWidth - width))
+	local offset = math.min(barWidth * health / maxHealth, barWidth - width)
 	if overlay.lastOffset ~= offset then
 		overlay:SetPoint("TOPLEFT", healthBar, "TOPLEFT", offset, 0)
 		overlay:SetPoint("BOTTOMLEFT", healthBar, "BOTTOMLEFT", offset, 0)
