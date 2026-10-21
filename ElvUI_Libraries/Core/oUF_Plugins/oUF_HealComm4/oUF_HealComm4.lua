@@ -64,8 +64,18 @@ local hasAbsorbs = UnitGetTotalAbsorbs and true or false
 local HealComm = LibStub("LibHealComm-4.0")
 
 local enabledUF, enabled = {}
+local pendingGUIDs, spareGUIDs = {}, {}
+local updateFrame = CreateFrame("Frame")
+updateFrame:Hide()
 
-local function Update(self)
+local geometryEvents = {
+	UNIT_HEALTH = true,
+	UNIT_MAXHEALTH = true,
+	UNIT_ABSORB_AMOUNT_CHANGED = true,
+	UNIT_HEAL_ABSORB_AMOUNT_CHANGED = true
+}
+
+local function Update(self, event)
 	local unit = self.unit
 	local element = self.HealCommBar
 
@@ -81,10 +91,20 @@ local function Update(self)
 
 	local guid = UnitGUID(unit)
 	local playerGUID = UnitGUID("player")
-	local timeFrame = self.HealCommTimeframe and GetTime() + self.HealCommTimeframe or nil
+	local now = GetTime()
+	local timeFrame = self.HealCommTimeframe and now + self.HealCommTimeframe or nil
+	if not geometryEvents[event] or not element.healCacheValid or element.healGUID ~= guid
+		or element.healPlayerGUID ~= playerGUID or (guid and pendingGUIDs[guid]) or timeFrame
+		or now >= (element.healCacheUntil or 0) then
+		element.healGUID, element.healPlayerGUID = guid, playerGUID
+		element.myIncomingHeal = guid and playerGUID and (HealComm:GetHealAmount(guid, HealComm.ALL_HEALS, timeFrame, playerGUID) or 0) or 0
+		element.allIncomingHeal = guid and (HealComm:GetHealAmount(guid, HealComm.ALL_HEALS, timeFrame) or 0) or 0
+		element.healCacheValid = true
+		element.healCacheUntil = now + 0.1
+	end
 	local modifier = guid and (HealComm:GetHealModifier(guid) or 1) or 1
-	local myIncomingHeal = guid and playerGUID and (HealComm:GetHealAmount(guid, HealComm.ALL_HEALS, timeFrame, playerGUID) or 0) * modifier or 0
-	local allIncomingHeal = guid and (HealComm:GetHealAmount(guid, HealComm.ALL_HEALS, timeFrame) or 0) * modifier or 0
+	local myIncomingHeal = element.myIncomingHeal * modifier
+	local allIncomingHeal = element.allIncomingHeal * modifier
 	local health = UnitHealth(unit)
 	local maxHealth = UnitHealthMax(unit)
 	local maxOverflowHP = maxHealth * element.maxOverflow
@@ -168,16 +188,29 @@ local function ForceUpdate(element)
 	return Path(element.__owner, "ForceUpdate", element.__owner.unit)
 end
 
-local function MultiUpdate(...)
-	for i = 1, select("#", ...) do
-		for j = 1, #enabledUF do
-			local frame = enabledUF[j]
+updateFrame:SetScript("OnUpdate", function(self)
+	self:Hide()
+	local changedGUIDs = pendingGUIDs
+	pendingGUIDs, spareGUIDs = spareGUIDs, pendingGUIDs
 
-			if frame.unit and frame:IsVisible() and UnitGUID(frame.unit) == select(i, ...) then
+	for j = 1, #enabledUF do
+		local frame = enabledUF[j]
+		if frame.unit and frame:IsVisible() then
+			local guid = UnitGUID(frame.unit)
+			if guid and changedGUIDs[guid] then
 				Path(frame)
 			end
 		end
 	end
+	wipe(changedGUIDs)
+end)
+
+local function MultiUpdate(...)
+	for i = 1, select("#", ...) do
+		local guid = select(i, ...)
+		if guid then pendingGUIDs[guid] = true end
+	end
+	if next(pendingGUIDs) then updateFrame:Show() end
 end
 
 local function HealComm_Heal_Update(event, casterGUID, spellID, healType, _, ...)
@@ -216,6 +249,7 @@ local function Enable(self)
 	if element then
 		element.__owner = self
 		element.ForceUpdate = ForceUpdate
+		element.healCacheValid = nil
 
 		self:RegisterEvent("UNIT_HEALTH", Path)
 		self:RegisterEvent("UNIT_MAXHEALTH", Path)
@@ -290,7 +324,13 @@ local function Disable(self)
 			end
 		end
 
+		element.healCacheValid = nil
 		ToggleCallbacks(false)
+		if #enabledUF == 0 then
+			updateFrame:Hide()
+			wipe(pendingGUIDs)
+			wipe(spareGUIDs)
+		end
 	end
 end
 

@@ -1,5 +1,5 @@
 local major = "LibHealComm-4.0"
-local minor = 68
+local minor = 69
 assert(LibStub, string.format("%s requires LibStub.", major))
 
 local HealComm = LibStub:NewLibrary(major, minor)
@@ -484,7 +484,12 @@ local function filterData(spells, filterGUID, bitFlag, time, ignoreGUID)
 
 	for _, pending in pairs(spells) do
 		if( pending.bitType and band(pending.bitType, bitFlag) > 0 ) then
-			for i=1, #(pending), 5 do
+			local first, last = 1, #(pending)
+			if not ignoreGUID then
+				first = pending[filterGUID]
+				last = first
+			end
+			for i=first or 1, last or 0, 5 do
 				local guid = pending[i]
 				if( guid == filterGUID or ignoreGUID ) then
 					local amount = pending[i + 1]
