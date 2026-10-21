@@ -620,14 +620,6 @@ local function HookStore()
 			end
 		end)
 	end
-
-	if _G.StoreRecommendationMixin and not S._Elv_StoreRecommendationHooked then
-		S._Elv_StoreRecommendationHooked = true
-		hooksecurefunc(_G.StoreRecommendationMixin, "OnShow", function(self)
-			if self.PurchaseButton then ReskinPKBTButton(self.PurchaseButton) end
-			if self.DetailsButton then ReskinPKBTButton(self.DetailsButton) end
-		end)
-	end
 end
 
 local function SafeSkinCall(fn, ...)

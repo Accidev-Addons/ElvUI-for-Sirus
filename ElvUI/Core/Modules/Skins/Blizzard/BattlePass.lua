@@ -337,58 +337,9 @@ local function HandleBattlePassFrame()
 			end
 		end)
 	end
-	if _G.BattlePassQuestMixin and not S._Elv_QuestActionButtonsHooked then
-		S._Elv_QuestActionButtonsHooked = true
-		hooksecurefunc(_G.BattlePassQuestMixin, "UpdateActionButton", function(self)
-			if self.ActionButton then
-				ReskinPKBTButton(self.ActionButton)
-			end
-		end)
-	end
 
 	if f.Content and f.Content.MainPage then
 		local main = f.Content.MainPage
-
-		if _G.BattlePassLevelCardMixin and not S._Elv_LevelCardButtonsHooked then
-			S._Elv_LevelCardButtonsHooked = true
-			hooksecurefunc(_G.BattlePassLevelCardMixin, "SetTypeState", function(self)
-					local freeButton = self.FreeFrame and self.FreeFrame.ActionButton
-					local premButton = self.PremiumFrame and self.PremiumFrame.ActionButton
-					if freeButton then
-						ReskinPKBTButton(freeButton)
-					end
-					if premButton then
-						ReskinPKBTButton(premButton)
-					end
-				end)
-				hooksecurefunc(_G.BattlePassLevelCardMixin, "SetState", function(self)
-					if self.SetScript then
-						self:SetScript("OnUpdate", nil)
-					end
-					local fb = self.FreeFrame and self.FreeFrame.ActionButton
-					local pb = self.PremiumFrame and self.PremiumFrame.ActionButton
-					if fb then
-						ReskinPKBTButton(fb)
-						fb:Show()
-					end
-					if pb then
-						ReskinPKBTButton(pb)
-						pb:Show()
-					end
-				end)
-				hooksecurefunc(_G.BattlePassLevelCardMixin, "OnLeave", function(self)
-					local fb = self.FreeFrame and self.FreeFrame.ActionButton
-					local pb = self.PremiumFrame and self.PremiumFrame.ActionButton
-					if fb then
-						ReskinPKBTButton(fb)
-						fb:Show()
-					end
-					if pb then
-						ReskinPKBTButton(pb)
-						pb:Show()
-					end
-				end)
-		end
 
 		if main.ScrollFrame and main.ScrollFrame.buttons then
 			for _, card in ipairs(main.ScrollFrame.buttons) do
