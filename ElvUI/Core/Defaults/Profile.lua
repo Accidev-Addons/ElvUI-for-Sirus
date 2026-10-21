@@ -1157,7 +1157,15 @@ for _, unitContent in pairs(P.nameplates.units) do
 		enable = false, position = "BOTTOMRIGHT", justifyH = "RIGHT", xOffset = 0, yOffset = -16,
 		font = "PT Sans Narrow", fontSize = 12, fontOutline = "OUTLINE"
 	}
-	if unitContent.health then unitContent.health.absorb = { enable = true, showText = true } end
+	if unitContent.health then
+		unitContent.health.absorb = {
+			enable = true, showText = false,
+			position = "RIGHT", xOffset = -4, yOffset = 0,
+			font = unitContent.health.text.font,
+			fontSize = unitContent.health.text.fontSize,
+			fontOutline = unitContent.health.text.fontOutline
+		}
+	end
 	if unitContent.buffs then
 		unitContent.buffs.attachTo = "FRAME"
 		unitContent.buffs.anchorPoint = "LEFT"

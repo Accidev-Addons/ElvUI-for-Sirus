@@ -3704,7 +3704,50 @@ local function GetUnitSettings(unit, name)
 		set = function(info, value) E.db.nameplates.units[unit].health.absorb[info[#info]] = value NP:ConfigureAll() end,
 		args = {
 			enable = { order = 1, type = "toggle", name = L["Enable"] },
-			showText = { order = 2, type = "toggle", name = L["Absorb Amount"] }
+			showText = {
+				order = 2, type = "toggle", name = L["Absorb Amount"],
+				disabled = function() return not E.db.nameplates.units[unit].health.absorb.enable end
+			},
+			positionGroup = {
+				order = 3, type = "group", name = L["Position"], guiInline = true,
+				disabled = function()
+					local db = E.db.nameplates.units[unit].health.absorb
+					return not db.enable or not db.showText
+				end,
+				args = {
+					position = {
+						order = 1, type = "select", name = L["Position"],
+						values = {
+							TOPLEFT = L["TOPLEFT"], TOP = L["TOP"], TOPRIGHT = L["TOPRIGHT"],
+							LEFT = L["LEFT"], CENTER = L["CENTER"], RIGHT = L["RIGHT"],
+							BOTTOMLEFT = L["BOTTOMLEFT"], BOTTOM = L["BOTTOM"], BOTTOMRIGHT = L["BOTTOMRIGHT"]
+						}
+					},
+					xOffset = { order = 2, type = "range", name = L["X-Offset"], min = -200, max = 200, step = 1 },
+					yOffset = { order = 3, type = "range", name = L["Y-Offset"], min = -200, max = 200, step = 1 }
+				}
+			},
+			fontGroup = {
+				order = 4, type = "group", name = L["Fonts"], guiInline = true,
+				disabled = function()
+					local db = E.db.nameplates.units[unit].health.absorb
+					return not db.enable or not db.showText
+				end,
+				args = {
+					font = {
+						order = 1, type = "select", name = L["Font"],
+						dialogControl = "LSM30_Font", values = AceGUIWidgetLSMlists.font
+					},
+					fontSize = {
+						order = 2, type = "range", name = L["Font Size"],
+						min = 4, max = 32, step = 1
+					},
+					fontOutline = {
+						order = 3, type = "select", name = L["Font Outline"], desc = L["Set the font outline."],
+						values = C.Values.FontFlags, sorting = C.Values.FontSorting
+					}
+				}
+			}
 		}
 	}
 	if unit == "ENEMY_NPC" then
