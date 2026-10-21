@@ -2250,4 +2250,5 @@ L["Threat Level"] = true
 L["Nameplate Target"] = true
 L["Reset Position"] = true
 L["Restore the default Sirus client anchors."] = true
+L["Sirus Position"] = true
 L["Sirus Size and Spacing"] = true

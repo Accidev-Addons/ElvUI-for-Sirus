@@ -28,6 +28,7 @@ function NP:Update_RaidIcon(frame)
 	SetRaidTargetIconTexture(icon, frame.RaidIconIndex or 1)
 	icon:Show()
 	icon:GetParent():Show()
+	icon:GetParent():SetFrameLevel(frame.CastBar.Icon:GetFrameLevel() + 1)
 
 	local db = self.db.units[frame.UnitType].raidTargetIndicator
 
