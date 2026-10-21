@@ -775,6 +775,13 @@ function CH:FCFDock_SelectWindow(_, chatFrame)
 	end
 end
 
+function CH:PrimaryChat_OnShow()
+	local selected = _G.FCFDock_GetSelectedWindow(_G.GeneralDockManager)
+	if self.isDocked and selected and selected ~= self and not self.forceHideMinigame then
+		self:Hide()
+	end
+end
+
 function CH:ChatEdit_ActivateChat(editbox)
 	if editbox.chatFrame then
 		CH:UpdateEditboxFont(editbox.chatFrame)
@@ -2840,6 +2847,8 @@ function CH:Initialize()
 	CH:SecureHook('FCFDockOverflowButton_UpdatePulseState')
 	CH:SecureHook('UIDropDownMenu_AddButton')
 	CH:SecureHook('GetPlayerInfoByGUID')
+
+	_G.ChatFrame1:HookScript('OnShow', CH.PrimaryChat_OnShow)
 
 	CH:RegisterEvent('UPDATE_CHAT_WINDOWS', 'SetupChat')
 	CH:RegisterEvent('UPDATE_FLOATING_CHAT_WINDOWS', 'SetupChat')
