@@ -1966,7 +1966,7 @@ function E:Initialize()
 			local msg = format(L["LOGIN_MSG"], E.versionString)
 
 			if Chat.Initialized then -- setup the link
-				_, msg = Chat:FindURL('CHAT_MSG_DUMMY', msg)
+				msg = select(2, Chat:FindURL('CHAT_MSG_DUMMY', msg))
 			end
 
 			print(msg)

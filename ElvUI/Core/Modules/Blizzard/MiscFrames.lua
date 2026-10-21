@@ -104,16 +104,4 @@ function BL:HandleMiscFrames()
 	_G.LFRParentFrame:HookScript('OnHide', function()
 		_G.LFRBrowseFrame.timeToClear = nil
 	end)
-
-    -- fix lfd cooldown frame taint
-	do
-		local handler = _G.LFDQueueFrameCooldownFrame:GetScript('OnEvent') or LFDQueueFrameRandomCooldownFrame_OnEvent
-
-		if handler then
-			_G.LFDQueueFrameCooldownFrame:SetScript('OnEvent', function(self, event, unit, ...)
-				if event == 'UNIT_AURA' and not unit then return end
-				handler(self, event, unit, ...)
-			end)
-		end
-	end
 end

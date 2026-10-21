@@ -42,7 +42,6 @@ local GetUnitPowerModifier = GetUnitPowerModifier
 
 local IsTitleKnown = IsTitleKnown
 local PlaySound = PlaySound
-local SetCVar = SetCVar
 local UnitAttackSpeed = UnitAttackSpeed
 local UnitClass = UnitClass
 local UnitDamage = UnitDamage
@@ -1455,7 +1454,7 @@ local function PaperDollStatCategory_OnDragStart(self)
 
 	for i, frame in next, StatCategoryFrames do
 		if frame ~= self then
-			UIFrameFadeIn(frame, 0.2, 1, 0.6)
+			E:UIFrameFadeIn(frame, 0.2, 1, 0.6)
 		end
 	end
 end
@@ -1467,7 +1466,7 @@ local function PaperDollStatCategory_OnDragStop(self)
 
 	for i, frame in next, StatCategoryFrames do
 		if frame ~= self then
-			UIFrameFadeOut(frame, 0.2, 0.6, 1)
+			E:UIFrameFadeOut(frame, 0.2, 0.6, 1)
 		end
 	end
 	PaperDoll_SaveStatCategoryOrder()
@@ -1851,9 +1850,6 @@ function S:CharacterInit()
 
 
 	SendServerMessage("GET_ALL_STRENGTHENING_STATS")
-
-
-	SetCVar("equipmentManager", 1)
 
 	local sidebarTabs = CreateFrame("Frame", "ElvUI_PaperDollSidebarTabs", PaperDollFrame)
 	sidebarTabs:SetSize(SCROLL_WIDTH_SIRUS_STATS, 35)
@@ -3238,12 +3234,6 @@ local function LoadSkin()
 
 	if CharacterAmmoSlot then
 		S:DisableFrameInteraction(CharacterAmmoSlot)
-		hooksecurefunc("PaperDollFrame_OnShow", function()
-			local slot = _G.CharacterAmmoSlot
-			if slot then
-			S:DisableFrameInteraction(slot)
-			end
-		end)
 	end
 end
 

@@ -335,6 +335,10 @@ function B:DisableBlizzard()
 	for i = 1, NUM_CONTAINER_FRAMES do
 		B:DisableFrame(_G['ContainerFrame'..i])
 	end
+
+	if _G.ContainerFrameCombinedBags then
+		B:DisableFrame(_G.ContainerFrameCombinedBags)
+	end
 end
 
 do
@@ -2325,8 +2329,13 @@ function B:ConstructContainerButton(f, bagID, slotID)
 	return slot
 end
 
+function B:IsMerchantOpening()
+	local merchant = _G.MerchantFrame
+	return merchant and merchant:IsShown() and not B.MerchantShown
+end
+
 function B:ToggleBag(bagID)
-	if not bagID or B:GetContainerNumSlots(bagID) == 0 then return end
+	if not bagID or B:GetContainerNumSlots(bagID) == 0 or B:IsMerchantOpening() then return end
 	local shown = B.BagFrame:IsShown()
 	local closed = not shown
 
@@ -2359,6 +2368,8 @@ function B:ToggleBag(bagID)
 end
 
 function B:ToggleBackpack()
+	if B:IsMerchantOpening() then return end
+
 	B:ToggleAllBags(IsBagOpen(BACKPACK_CONTAINER))
 end
 
@@ -2424,12 +2435,20 @@ function B:OpenAllBags(frame)
 	end
 end
 
-function B:OpenBackpack()
-	if B.BagFrame and B.BagFrame:IsShown() then return end
+function B:Merchant_OnShow()
+	B.MerchantShown = true
 
 	if B.db.autoToggle.vendor then
 		B:OpenBags()
 	end
+
+	if not B.BagFrame:IsShown() then
+		CloseBackpack()
+	end
+end
+
+function B:Merchant_OnHide()
+	B.MerchantShown = nil
 end
 
 function B:ToggleSortButtonState(isBank)
@@ -3105,7 +3124,8 @@ function B:Initialize()
 	B:SecureHook('ToggleBackpack')
 	B:SecureHook('CloseAllBags')
 	B:SecureHook('OpenAllBags')
-	B:RawHook('OpenBackpack')
+	_G.MerchantFrame:HookScript('OnShow', B.Merchant_OnShow)
+	_G.MerchantFrame:HookScript('OnHide', B.Merchant_OnHide)
 
 	B:SetupAutoToggle()
 	B:DisableBlizzard()

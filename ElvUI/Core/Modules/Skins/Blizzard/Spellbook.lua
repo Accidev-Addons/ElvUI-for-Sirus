@@ -227,7 +227,6 @@ local function LoadSkin()
 		SkinFlyoutButtons()
 
 		hooksecurefunc(flyout, "Toggle", SkinFlyoutButtons)
-		hooksecurefunc("SpellFlyout_Toggle", SkinFlyoutButtons)
 	end
 
 end

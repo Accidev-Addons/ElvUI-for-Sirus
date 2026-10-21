@@ -2290,10 +2290,6 @@ function CH:FCFDock_ScrollToSelectedTab(dock)
 	E:Delay(0.01, SettleDockTabs)
 end
 
-function CH:FCF_SetWindowAlpha(frame, alpha)
-	frame.oldAlpha = alpha or 1
-end
-
 function CH:CheckLFGRoles()
 	if not E.IsInGroup or not CH.db.lfgIcons then return end
 
@@ -2836,7 +2832,6 @@ function CH:Initialize()
 	CH:SecureHook('FCFTab_UpdateColors')
 	CH:SecureHook('FCFDock_SelectWindow')
 	CH:SecureHook('FCFDock_ScrollToSelectedTab')
-	CH:SecureHook('FCF_SetWindowAlpha')
 	CH:SecureHook('FCF_SetButtonSide', 'PositionButtonFrame')
 	CH:SecureHook('FCF_Close', 'PostChatClose')
 	CH:SecureHook('FCF_DockFrame', 'SnappingChanged')

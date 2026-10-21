@@ -16,26 +16,11 @@ function D:ModifyErrorFrame()
 	ScriptErrorsFrameScrollFrameText.cursorHeight = 0
 	ScriptErrorsFrameScrollFrameText:SetScript("OnEditFocusGained", nil)
 
-	local Orig_ScriptErrorsFrame_Update = ScriptErrorsFrame_Update
-	ScriptErrorsFrame_Update = function(...)
-		-- Sometimes the locals table does not have an entry for an index, which can cause an argument #6 error
-		-- in Blizzard_DebugTools.lua:430 and then cause a C stack overflow, this will prevent that
-		local index = ScriptErrorsFrame.index
-		if not index or not ScriptErrorsFrame.order[index] then
-			index = #(ScriptErrorsFrame.order)
-		end
-
-		if index > 0 then
-			ScriptErrorsFrame.locals[index] = ScriptErrorsFrame.locals[index] or "No locals to dump"
-		end
-
-		Orig_ScriptErrorsFrame_Update(...)
-
+	hooksecurefunc("ScriptErrorsFrame_Update", function()
 		if GetCVarBool("scriptErrors") then
-			-- Stop text highlighting again
 			ScriptErrorsFrameScrollFrameText:HighlightText(0, 0)
 		end
-	end
+	end)
 
 	-- Unhighlight text when focus is hit
 	ScriptErrorsFrameScrollFrameText:HookScript("OnEscapePressed", function(self)

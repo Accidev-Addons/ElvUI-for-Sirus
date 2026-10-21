@@ -877,7 +877,9 @@ function NP:OnEvent(event, unit, ...)
 
 	if event == "UNIT_AURA" then
 		NP:Update_Absorb(self)
-		NP:UpdateElement_Auras(self)
+		if not NP:IsSirusNameplates() then
+			NP:UpdateElement_Auras(self)
+		end
 		return
 	end
 

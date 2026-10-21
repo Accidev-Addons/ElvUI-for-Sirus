@@ -136,7 +136,7 @@ end
 
 local function OnClick(self, button)
 	if button == 'LeftButton' then
-		if selectedIndex == C_Talent.GetSelectedTalentGroup() then return end
+		if not E.IsSpecInfoReady() or selectedIndex == C_Talent.GetSelectedTalentGroup() then return end
 
 		C_Talent.SelectTalentGroup(selectedIndex)
 

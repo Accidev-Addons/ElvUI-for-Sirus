@@ -1063,10 +1063,8 @@ function E:SetupGameMenu()
 
 	local editMode = _G.GameMenuButtonEditMode
 	if editMode then
-		local editModeClick = editMode:GetScript('OnClick')
-		editMode:RegisterForClicks('LeftButtonUp', 'RightButtonUp')
-		editMode:SetScript('OnClick', function(btn, mouseButton, ...)
-			if mouseButton ~= 'RightButton' then return editModeClick(btn, mouseButton, ...) end
+		editMode:HookScript('OnMouseUp', function(btn, mouseButton)
+			if mouseButton ~= 'RightButton' or not btn:IsMouseOver() then return end
 			if InCombatLockdown() then
 				UIErrorsFrame:AddMessage(ERR_NOT_IN_COMBAT, 1.0, 0.2, 0.2, 1.0)
 				return

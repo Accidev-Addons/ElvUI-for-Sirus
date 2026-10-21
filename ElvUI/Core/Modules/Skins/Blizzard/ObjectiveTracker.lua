@@ -399,10 +399,6 @@ local function FitTrackerProgressBar(progressBar)
 	if progressBar:GetHeight() > barHeight then
 		progressBar:SetHeight(barHeight)
 	end
-
-	if progressBar.height and progressBar.height > barHeight then
-		progressBar.height = barHeight
-	end
 end
 
 local function TrackerAcquireFrame(manager, _, template)
