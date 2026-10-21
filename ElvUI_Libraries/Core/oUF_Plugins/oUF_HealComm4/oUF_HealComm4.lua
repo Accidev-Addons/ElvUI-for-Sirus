@@ -64,6 +64,9 @@ local hasAbsorbs = UnitGetTotalAbsorbs and true or false
 local HealComm = LibStub("LibHealComm-4.0")
 
 local enabledUF, enabled = {}
+local pendingGUIDs, spareGUIDs = {}, {}
+local updateFrame = CreateFrame("Frame")
+updateFrame:Hide()
 
 local function Update(self)
 	local unit = self.unit
@@ -168,16 +171,29 @@ local function ForceUpdate(element)
 	return Path(element.__owner, "ForceUpdate", element.__owner.unit)
 end
 
-local function MultiUpdate(...)
-	for i = 1, select("#", ...) do
-		for j = 1, #enabledUF do
-			local frame = enabledUF[j]
+updateFrame:SetScript("OnUpdate", function(self)
+	self:Hide()
+	local changedGUIDs = pendingGUIDs
+	pendingGUIDs, spareGUIDs = spareGUIDs, pendingGUIDs
 
-			if frame.unit and frame:IsVisible() and UnitGUID(frame.unit) == select(i, ...) then
+	for j = 1, #enabledUF do
+		local frame = enabledUF[j]
+		if frame.unit and frame:IsVisible() then
+			local guid = UnitGUID(frame.unit)
+			if guid and changedGUIDs[guid] then
 				Path(frame)
 			end
 		end
 	end
+	wipe(changedGUIDs)
+end)
+
+local function MultiUpdate(...)
+	for i = 1, select("#", ...) do
+		local guid = select(i, ...)
+		if guid then pendingGUIDs[guid] = true end
+	end
+	if next(pendingGUIDs) then updateFrame:Show() end
 end
 
 local function HealComm_Heal_Update(event, casterGUID, spellID, healType, _, ...)

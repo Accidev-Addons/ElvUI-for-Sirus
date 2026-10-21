@@ -24,13 +24,28 @@ local playerFilters = {
 	HARMFUL = "HARMFUL|PLAYER"
 }
 
+local activeAuraTimers = {}
+local auraTimerFrame = CreateFrame("Frame")
+auraTimerFrame:Hide()
+
+local function StopAuraTimer(button)
+	if not activeAuraTimers[button] then return end
+	activeAuraTimers[button] = nil
+	if not next(activeAuraTimers) then auraTimerFrame:Hide() end
+end
+
+local function StartAuraTimer(button)
+	activeAuraTimers[button] = true
+	auraTimerFrame:Show()
+end
+
 function NP:UpdateTime(elapsed)
 	local timeLeft = self.endTime - GetTime()
 	self.timeLeft = timeLeft
 	self:SetValue(timeLeft)
 
 	if timeLeft < 0 then
-		self:SetScript("OnUpdate", nil)
+		StopAuraTimer(self)
 		self:Hide()
 		return
 	end
@@ -42,6 +57,12 @@ function NP:UpdateTime(elapsed)
 		self.text:SetText("")
 	end
 end
+
+auraTimerFrame:SetScript("OnUpdate", function(_, elapsed)
+	for button in next, activeAuraTimers do
+		if button:IsVisible() then NP.UpdateTime(button, elapsed) end
+	end
+end)
 
 local unstableAffliction = GetSpellInfo(30108)
 local vampiricTouch = GetSpellInfo(34914)
@@ -60,13 +81,13 @@ function NP:StyleAura(button, index, texture, count, debuffType, duration, expir
 			button:SetMinMaxValues(0, duration)
 			button:SetValue(timeLeft)
 
-			button:SetScript("OnUpdate", NP.UpdateTime)
+			if not button.auraTimerPreview then StartAuraTimer(button) end
 		end
 	else
 		button.timeLeft = nil
 		button.endTime = nil
 		button.text:SetText("")
-		button:SetScript("OnUpdate", nil)
+		StopAuraTimer(button)
 		button:SetMinMaxValues(0, 1)
 		button:SetValue(0)
 	end
@@ -90,10 +111,11 @@ end
 
 local function RenderAuraIcon(auras, position, index, texture, count, debuffType, duration, expiration, isDebuff, spellID, name, preview)
 	local button = auras[position] or NP:Construct_AuraIcon(auras, position)
+	button.auraTimerPreview = preview and true or nil
 	NP:StyleAura(button, index, texture, count, debuffType, duration, expiration, isDebuff, spellID, name)
 	if preview then
 		NP.UpdateTime(button, 0)
-		button:SetScript("OnUpdate", nil)
+		StopAuraTimer(button)
 	end
 end
 
@@ -101,7 +123,7 @@ local function HideAuraIcons(auras, visible)
 	for i = visible + 1, #auras do
 		local button = auras[i]
 		button.timeLeft, button.endTime = nil, nil
-		button:SetScript("OnUpdate", nil)
+		StopAuraTimer(button)
 		button:Hide()
 	end
 end
@@ -589,6 +611,10 @@ function NP:Construct_AuraIcon(parent, index)
 	button:SetStatusBarTexture(E.media.blankTex)
 	button:SetStatusBarColor(0, 0, 0, 0)
 	button:SetOrientation("VERTICAL")
+	button:HookScript("OnHide", StopAuraTimer)
+	button:HookScript("OnShow", function(self)
+		if self.endTime and not self.auraTimerPreview then StartAuraTimer(self) end
+	end)
 
 	button.bg = button:CreateTexture()
 	button.bg:SetTexture(0, 0, 0, 0.5)
