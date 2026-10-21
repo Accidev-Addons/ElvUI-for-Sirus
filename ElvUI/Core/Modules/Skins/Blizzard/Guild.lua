@@ -96,6 +96,7 @@ local function LoadSkin()
 	S:HandleButton(GuildRecruitmentDeclineButton, true)
 	S:HandleSirusScrollBar(_G.GuildInfoFrameApplicantsContainerScrollBar)
 	hooksecurefunc("GuildInfoFrameApplicants_Update", SkinApplicants)
+	hooksecurefunc(_G.GuildInfoFrameApplicantsContainer, "update", SkinApplicants)
 	SkinApplicants()
 
 	GuildAllPerksFrame:StripTextures()

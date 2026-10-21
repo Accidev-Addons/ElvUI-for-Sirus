@@ -663,7 +663,7 @@ local function StyleButton(button, noHover, noPushed, noChecked)
 
 		local pushed = button:GetPushedTexture()
 		pushed:SetInside()
-		pushed:SetDrawLayer('OVERLAY') -- the client ignores draw sublevels, so on ARTWORK the icon covers it
+		pushed:SetDrawLayer('OVERLAY')
 		pushed:SetBlendMode('ADD')
 		pushed:SetTexture(0.9, 0.8, 0.1, 0.3)
 		button.pushed = pushed

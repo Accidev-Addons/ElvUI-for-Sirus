@@ -29,7 +29,7 @@ local function SkinMiniGameReward(frame)
 		frame.backdrop:SetOutside(icon)
 		icon:SetParent(frame.backdrop)
 
-		frame.Icon = icon
+		if not frame.Icon then frame.Icon = icon end
 
 		if frame.Name then
 			frame.Name:ClearAllPoints()
@@ -42,7 +42,7 @@ local function SkinMiniGameReward(frame)
 			count:SetDrawLayer("OVERLAY")
 			count:ClearAllPoints()
 			count:Point("BOTTOMRIGHT", icon, "BOTTOMRIGHT", 2, 2)
-			frame.Count = count
+			if not frame.Count then frame.Count = count end
 		end
 
 		frame.isSkinned = true

@@ -785,7 +785,7 @@ function oUF:AddElement(name, update, enable, disable)
 end
 
 function oUF:GetSpellInfo(spellID)
-	local info = {}
+	local info, _ = {}
 	info.name, _, info.iconID, info.castTime, info.minRange, info.maxRange, info.spellID, info.originalIconID = spellID and GetSpellInfo(spellID)
 
 	return info

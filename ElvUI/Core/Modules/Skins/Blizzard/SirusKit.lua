@@ -25,7 +25,7 @@ local PickupContainerItem = PickupContainerItem
 local GetSocketTypes = GetSocketTypes
 local ClickSocketButton = ClickSocketButton
 local AcceptSockets = AcceptSockets
-local HideUIPanel = HideUIPanel
+local CloseSocketInfo = CloseSocketInfo
 local GameTooltip = GameTooltip
 local GameTooltip_Hide = GameTooltip_Hide
 local CreateFrame = CreateFrame
@@ -468,7 +468,7 @@ local function Socket_OnClick(self)
 		local link = GetNewSocketLink(self.index)
 		if link and tonumber(strmatch(link, "item:(%d+)")) == itemID then
 			AcceptSockets()
-			HideUIPanel(_G.ItemSocketingFrame)
+			CloseSocketInfo()
 		else
 			cursorType, cursorID = GetCursorInfo()
 			if cursorType == "item" and cursorID == itemID then

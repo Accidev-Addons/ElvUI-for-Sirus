@@ -1257,12 +1257,12 @@ local function HandleCompactPartyFrames()
 	frame:UnregisterAllEvents()
 	for _, member in pairs(frame.memberUnitFrames or {}) do
 		unregister(member)
-		member:SetParent(nil)
+		member:SetParent(hiddenParent)
 	end
 
 	for _, pet in pairs(frame.petUnitFrames or {}) do
 		unregister(pet)
-		pet:SetParent(nil)
+		pet:SetParent(hiddenParent)
 	end
 end
 

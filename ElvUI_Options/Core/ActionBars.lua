@@ -7,6 +7,7 @@ local _G = _G
 local pairs = pairs
 local ipairs = ipairs
 local format = format
+local gsub = gsub
 
 local CopyTable = CopyTable
 local GameTooltip = GameTooltip
@@ -210,6 +211,18 @@ ActionBar.args.microbar.args = CopyTable(SharedBarOptions)
 ActionBar.args.microbar.args.restorePosition.func = function() E:CopyTable(E.db.actionbar.microbar, P.actionbar.microbar) E:ResetMovers('Micro Bar') AB:UpdateMicroButtons() end
 ActionBar.args.microbar.args.generalOptions = ACH:MultiSelect('', nil, 3, { backdrop = L["Backdrop"], mouseover = L["Mouseover"], keepSizeRatio = L["Keep Size Ratio"] }, nil, nil, function(_, key) return E.db.actionbar.microbar[key] end, function(_, key, value) E.db.actionbar.microbar[key] = value AB:UpdateMicroButtons() end)
 ActionBar.args.microbar.args.buttonGroup.args.buttons = nil
+local microButtons = ACH:Group(L["Visible Buttons"], nil, 6)
+microButtons.inline = true
+ActionBar.args.microbar.args.buttonGroup.args.visibleButtons = microButtons
+for i, name in ipairs(AB.MICRO_BUTTONS) do
+	local text = _G[name] and _G[name].tooltipText
+	local function state() return E.db.actionbar.microbar.hiddenButtons[name] and 'Disabled' end
+	local function toggle() local hidden = E.db.actionbar.microbar.hiddenButtons hidden[name] = (not hidden[name]) or nil AB:UpdateMicroButtons() end
+	local function image() local _, _, _, _, file = AB:GetMicroCoords(name, state()) return file or (state() and E.Media.Textures.MicroBarDisabled) or E.Media.Textures.MicroBar, 24, 30 end
+	local icon = ACH:Execute('', text and gsub(text, ' |c.*', '') or name, i, toggle, image, nil, 32)
+	icon.imageCoords = function() local left, right, top, bottom = AB:GetMicroCoords(name, state()) return { left, right, top, bottom } end
+	microButtons.args[name] = icon
+end
 ActionBar.args.microbar.args.buttonGroup.args.buttonsPerRow.max = MICRO_SLOTS
 ActionBar.args.microbar.args.buttonGroup.args.buttonSize.name = function() return E.db.actionbar.microbar.keepSizeRatio and L["Button Size"] or L["Button Width"] end
 ActionBar.args.microbar.args.buttonGroup.args.buttonSize.desc = function() return E.db.actionbar.microbar.keepSizeRatio and L["The size of the action buttons."] or L["The width of the action buttons."] end

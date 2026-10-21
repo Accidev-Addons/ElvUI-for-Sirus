@@ -39,7 +39,7 @@ function AB:UpdatePet(event, unit)
 		local shine = _G[buttonName..'Shine']
 		local hotKey = _G[buttonName..'HotKey']
 
-		button.icon = icon
+		if button.icon ~= icon then button.icon = icon end
 		button.HotKey = hotKey
 		button.AutoCastable = autoCast
 		button.AutoCastShine = shine

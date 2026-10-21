@@ -23,7 +23,7 @@ local InCombatLockdown = InCombatLockdown
 local SendChatMessage = SendChatMessage
 local SecureHandlerSetFrameRef = SecureHandlerSetFrameRef
 local SecureHandler_OnClick = SecureHandler_OnClick
-local ToggleFriendsFrame = ToggleFriendsFrame
+local ShowUIPanel = ShowUIPanel
 local SetDungeonDifficulty = SetDungeonDifficulty
 local SetRaidDifficulty = SetRaidDifficulty
 local SetRaidTarget = SetRaidTarget
@@ -508,7 +508,9 @@ function RU:OnEvent_RaidCountdownButton()
 end
 
 function RU:OnClick_RaidControlButton()
-	ToggleFriendsFrame(_G.FRIEND_TAB_RAID)
+	if not _G.FriendsFrame:IsShown() then
+		ShowUIPanel(_G.FriendsFrame)
+	end
 end
 
 function RU:OnEvent_MainTankButton()
@@ -809,7 +811,11 @@ function RU:Initialize()
 	SecureHandlerSetFrameRef(RaidUtilityPanel, 'RaidUtility_CloseButton', CloseButton)
 
 	local BUTTON_WIDTH = PANEL_WIDTH - 20
-	local RaidControlButton = RU:CreateUtilButton('RaidUtility_RaidControlButton', RaidUtilityPanel, nil, BUTTON_WIDTH * 0.5, BUTTON_HEIGHT, 'TOPLEFT', RaidUtilityPanel, 'TOPLEFT', 5, -4, L["Raid Menu"], nil, nil, nil, RU.OnClick_RaidControlButton)
+	local RaidControlButton = RU:CreateUtilButton('RaidUtility_RaidControlButton', RaidUtilityPanel, 'SecureActionButtonTemplate', BUTTON_WIDTH * 0.5, BUTTON_HEIGHT, 'TOPLEFT', RaidUtilityPanel, 'TOPLEFT', 5, -4, L["Raid Menu"])
+	RaidControlButton:SetAttribute('type', 'click')
+	RaidControlButton:SetAttribute('clickbutton', _G['FriendsFrameTab'.._G.FRIEND_TAB_RAID])
+	RaidControlButton:SetScript('PreClick', RU.OnClick_RaidControlButton)
+	RaidControlButton:RegisterForClicks('AnyUp')
 	local ReadyCheckButton = RU:CreateUtilButton('RaidUtility_ReadyCheckButton', RaidUtilityPanel, nil, BUTTON_WIDTH * 0.5, BUTTON_HEIGHT, 'TOPLEFT', RaidControlButton, 'BOTTOMLEFT', 0, -5, _G.READY_CHECK, nil, buttonEvents, RU.OnEvent_ReadyCheckButton, RU.OnClick_ReadyCheckButton)
 	RU:CreateUtilButton('RaidUtility_DisbandRaidButton', RaidUtilityPanel, nil, BUTTON_WIDTH * 0.5, BUTTON_HEIGHT, 'TOPLEFT', RaidControlButton, 'TOPRIGHT', 5, 0, L["Disband Group"], nil, nil, nil, RU.OnClick_DisbandRaidButton)
 

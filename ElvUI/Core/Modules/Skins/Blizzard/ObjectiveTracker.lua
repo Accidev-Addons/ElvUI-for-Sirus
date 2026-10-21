@@ -9,7 +9,6 @@ local setmetatable = setmetatable
 local floor = math.floor
 local find, format = string.find, string.format
 local GetQuestLogTitle = GetQuestLogTitle
-local GetSpellCooldown = GetSpellCooldown
 local GetTime = GetTime
 local hooksecurefunc = hooksecurefunc
 local CreateFrame = CreateFrame
@@ -399,10 +398,6 @@ local function FitTrackerProgressBar(progressBar)
 	if progressBar:GetHeight() > barHeight then
 		progressBar:SetHeight(barHeight)
 	end
-
-	if progressBar.height and progressBar.height > barHeight then
-		progressBar.height = barHeight
-	end
 end
 
 local function TrackerAcquireFrame(manager, _, template)
@@ -500,91 +495,6 @@ local function TrackerBlockColor(module, block)
 	ApplyBlockColor(block, color)
 end
 
-local function FormatTrackerCooldown(seconds)
-	if not seconds or seconds <= 0 then return end
-
-	local days = floor(seconds / 86400)
-	local hours = floor((seconds % 86400) / 3600)
-	local minutes = floor((seconds % 3600) / 60)
-
-	if days > 0 then
-		return format(L["%d d. %d h."], days, hours)
-	elseif hours > 0 then
-		return format(L["%d h. %d min."], hours, minutes)
-	end
-
-	return format(L["%d min."], minutes)
-end
-
-local function TrackerCooldownTick(line, timeLeft, isFinished)
-	if isFinished then
-		if line.UpdateModule then
-			line:UpdateModule()
-		end
-
-		return
-	end
-
-	local text = FormatTrackerCooldown(timeLeft)
-	if text and line.Text then
-		line.Text:SetFormattedText("|cffffffff%s|r %s", L["CD:"], text)
-	end
-end
-
-local function TrackerRecipeCooldown(module, recipeID, isRecraft)
-	if type(recipeID) ~= "number" or not module.GetExistingBlock then return end
-
-	local tradeSkill = _G.C_TradeSkillUI
-	if not tradeSkill or not tradeSkill.GetRecipeCooldown then return end
-
-	local seconds = tradeSkill.GetRecipeCooldown(recipeID)
-
-	local start, duration = GetSpellCooldown(recipeID)
-	if start and duration and start > 0 and duration > 60 then
-		local remaining = start + duration - GetTime()
-		if remaining > 0 then
-			seconds = remaining
-		end
-	end
-
-	local text = FormatTrackerCooldown(seconds)
-	if not text then return end
-
-	local block = module:GetExistingBlock(isRecraft and -recipeID or recipeID)
-	if not block or not block.AddObjective or not block.HeaderText then return end
-
-	local lines = block.usedLines
-	if lines then
-		for key, line in next, lines do
-			if block.FreeLine then
-				block:FreeLine(line)
-			else
-				lines[key] = nil
-				line:Hide()
-			end
-		end
-	end
-
-	block.lastRegion = block.HeaderText
-	block.height = block.HeaderText:GetHeight() or 0
-
-	local colors = _G.OBJECTIVE_TRACKER_COLOR
-	local label = format("|cffffffff%s|r %s", L["CD:"], text)
-	local line = block:AddObjective("cooldown", label, nil, nil, _G.OBJECTIVE_DASH_STYLE_HIDE, colors and colors.TimeLeft)
-
-	if line then
-		if line.Icon then
-			line.Icon:Hide()
-		end
-
-		if line.SetCountdown then
-			line:SetCountdown(seconds, 1, TrackerCooldownTick)
-		end
-	end
-
-	block:SetHeight(block.height)
-end
-
 local function SkinTrackerModule(module)
 	if not module or module.isSkinned then return end
 
@@ -644,11 +554,6 @@ local function LoadTrackerSkin()
 	local questModule = _G.QuestObjectiveTracker
 	if questModule and questModule.UpdateSingle then
 		hooksecurefunc(questModule, "UpdateSingle", TrackerQuestDifficulty)
-	end
-
-	local recipeModule = _G.ProfessionsRecipeTracker
-	if recipeModule and recipeModule.AddRecipe and recipeModule.GetExistingBlock then
-		hooksecurefunc(recipeModule, "AddRecipe", TrackerRecipeCooldown)
 	end
 
 	local returningModule = _G.ReturningCharacterQuestTracker

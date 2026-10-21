@@ -14,10 +14,6 @@ local IsAddOnLoaded = IsAddOnLoaded
 local RegisterStateDriver = RegisterStateDriver
 local UnregisterStateDriver = UnregisterStateDriver
 
-local GetTradeSkillListLink = GetTradeSkillListLink
-local ChatEdit_ChooseBoxForSend = ChatEdit_ChooseBoxForSend
-local ChatEdit_ActivateChat = ChatEdit_ActivateChat
-
 function BL:QuestXPPercent()
 	if not E.db.general.questXPPercent then return end
 
@@ -36,15 +32,6 @@ function BL:ADDON_LOADED(_, addon)
 		BL:ImproveGuildBank()
 	elseif addon == 'Blizzard_TradeSkillUI' then
 		BL.TradeSkillHooked = true
-
-		_G.TradeSkillLinkButton:SetScript('OnClick', function()
-			local ChatFrameEditBox = ChatEdit_ChooseBoxForSend()
-			if not ChatFrameEditBox:IsShown() then
-				ChatEdit_ActivateChat(ChatFrameEditBox)
-			end
-
-			ChatFrameEditBox:Insert(GetTradeSkillListLink())
-		end)
 	end
 
 	if BL.GuildBankHooked and BL.TradeSkillHooked then

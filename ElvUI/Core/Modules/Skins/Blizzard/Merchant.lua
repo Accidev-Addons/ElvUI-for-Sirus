@@ -33,17 +33,6 @@ local function LoadSkin()
 	MerchantExtraCurrencyInset:StripTextures()
 
 	MerchantFrame:EnableMouseWheel(true)
-	MerchantFrame:SetScript("OnMouseWheel", function(_, value)
-		if value > 0 then
-			if MerchantPrevPageButton:IsShown() and MerchantPrevPageButton:IsEnabled() == 1 then
-				MerchantPrevPageButton_OnClick()
-			end
-		else
-			if MerchantNextPageButton:IsShown() and MerchantNextPageButton:IsEnabled() == 1 then
-				MerchantNextPageButton_OnClick()
-			end
-		end
-	end)
 
 	for i = 1, 12 do
 		local item = _G["MerchantItem"..i]

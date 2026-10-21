@@ -207,21 +207,12 @@ local function LoadSkin()
 	S:HandleSirusScrollBar(_G.LookingForGuildFrameRequestToJoinFrameMessageFrameMessageScrollScrollBar)
 	S:ApplyElvUIFont(frame)
 
-	local onEvent = frame.OnEvent
-	local wasInGuild = not not IsInGuild()
-	frame.OnEvent = function(self, event, ...)
-		if event == "PLAYER_GUILD_UPDATE" then
-			local unit = ...
-			if unit and not UnitIsUnit(unit, "player") then return end
-			local inGuild = not not IsInGuild()
-			local joined = inGuild and not wasInGuild
-			wasInGuild = inGuild
-			if not joined then return end
+	frame:HookScript("OnShow", function(self)
+		if IsInGuild() then
+			self:UnregisterEvent("PLAYER_GUILD_UPDATE")
+		else
+			self:RegisterEvent("PLAYER_GUILD_UPDATE")
 		end
-		return onEvent(self, event, ...)
-	end
-	frame:HookScript("OnShow", function()
-		wasInGuild = not not IsInGuild()
 	end)
 end
 

@@ -848,7 +848,7 @@ function DT:CurrencyInfo(id)
 end
 
 function DT:BackpackCurrencyInfo(index)
-	local info = {}
+	local info, _ = {}
 
 	info.name, info.quantity, _, info.iconFileID, info.currencyTypesID = GetBackpackCurrencyInfo(index)
 	info.iconFileID = (info.currencyTypesID == honorID and honorTex..E.myfaction) or (info.currencyTypesID == arenaID and arenaTex) or info.iconFileID

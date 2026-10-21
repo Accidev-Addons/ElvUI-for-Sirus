@@ -126,7 +126,7 @@ S:AddCallback("Skin_WorldStateFrame", function()
 		topCenter.BottomLabel:FontTemplate()
 	end
 
-	hooksecurefunc('CaptureBar_Update', UpdateCaptureProgress)
+	hooksecurefunc(ExtendedUI.CAPTUREPOINT, 'update', UpdateCaptureProgress)
 
 	local function captureBarSkinsUpdate()
 		local numFrames = _G.NUM_EXTENDED_UI_FRAMES or 0

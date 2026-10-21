@@ -48,10 +48,15 @@ local function MerchantItemButton_AltStackBuy(button, mouseButton)
 	return true
 end
 
-local function MerchantItemButton_AltStackHint(tooltip)
+local function MerchantItemButton_AltStackHint(tooltip, index)
 	if _G.MerchantFrame.selectedTab ~= 1 or not tooltip.merchantSlotIndex then return end
 
+	local link = GetMerchantItemLink(index)
+	local stackSize = link and select(8, GetItemInfo(link))
+	if not stackSize or stackSize <= 1 then return end
+
 	tooltip:AddLine(L["Alt-click to buy the full stack"], 1, 1, 1)
+	tooltip:Show()
 end
 
 hooksecurefunc(_G.GameTooltip, "SetMerchantItem", MerchantItemButton_AltStackHint)
@@ -77,7 +82,10 @@ local function InstallAltStackButtons()
 				end
 			end)
 			altButton:SetScript("OnEnter", function() MerchantItemButton_OnEnter(button) end)
-			altButton:SetScript("OnLeave", function() _G.GameTooltip:Hide() end)
+			altButton:SetScript("OnLeave", function()
+				local onLeave = button:GetScript("OnLeave")
+				if onLeave then onLeave(button) end
+			end)
 			altButton:SetScript("OnShow", UpdateAltMouse)
 			button.elvAltStackButton = altButton
 			buttons[#buttons + 1] = altButton

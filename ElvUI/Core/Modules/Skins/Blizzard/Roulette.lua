@@ -172,8 +172,8 @@ local function LoadSkin()
 		SkinRouletteRewardButton(frame.rewardButtons[i])
 	end
 
-	if RouletteFrameMixin and RouletteFrameMixin.Initialize then
-		hooksecurefunc(RouletteFrameMixin, "Initialize", function(self)
+	if frame.Initialize then
+		hooksecurefunc(frame, "Initialize", function(self)
 			for i = 1, #self.rewardButtons do
 				SkinRouletteRewardButton(self.rewardButtons[i])
 			end

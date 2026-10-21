@@ -203,12 +203,14 @@ end
 
 function RB:EnableRB()
 	self.frame:Show()
+	if self.frame.mover then E:EnableMover('ReminderBuffsMover') end
 	self:RegisterEvent('UNIT_AURA', 'UpdateReminder')
 	self:RegisterEvent('PLAYER_ENTERING_WORLD', 'UpdateReminder')
 end
 
 function RB:DisableRB()
 	self.frame:Hide()
+	if self.frame.mover then E:DisableMover('ReminderBuffsMover') end
 	self:UnregisterEvent('UNIT_AURA')
 	self:UnregisterEvent('PLAYER_ENTERING_WORLD')
 end
@@ -318,7 +320,8 @@ function RB:Initialize()
 
 	self:UpdateSettings()
 
-	E:CreateMover(frame, 'ReminderBuffsMover', L['Reminder Buffs'], nil, nil, nil, nil, nil, 'maps,minimap,reminder')
+	E:CreateMover(frame, 'ReminderBuffsMover', L['Reminder Buffs'], nil, nil, nil, nil, function() return not E.db.general.reminder.enable end, 'maps,minimap,reminder')
+	if not self.db.enable then E:DisableMover('ReminderBuffsMover') end
 
 	hooksecurefunc(M, 'UpdateSettings', function()
 		RB:UpdateSettings()

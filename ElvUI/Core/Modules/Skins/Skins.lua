@@ -1137,6 +1137,7 @@ function S:HandleEditBox(frame, template, search)
 end
 
 function S:HandleSearchBox(frame, unskinned)
+	local native = frame.searchIcon and frame.clearButton
 	frame:SetTextInsets(16, 20, 0, 0)
 
 	if not frame.Instructions then
@@ -1175,31 +1176,34 @@ function S:HandleSearchBox(frame, unskinned)
 
 	frame.clearButton.texture:SetTexture([[Interface\FriendsFrame\ClearBroadcastIcon]])
 	frame.clearButton.texture:SetAlpha(0.5)
-	frame.clearButton.texture:Size(16)
+	frame.clearButton.texture:Size(native and 14 or 16)
 	frame.clearButton.texture:ClearAllPoints()
-	frame.clearButton.texture:Point('CENTER', 0, 0)
+	frame.clearButton.texture:Point(native and 'TOPLEFT' or 'CENTER', 0, 0)
 
-	frame.clearButton:SetScript('OnEnter', function(self) self.texture:SetAlpha(1.0) end)
-	frame.clearButton:SetScript('OnLeave', function(self) self.texture:SetAlpha(0.5) end)
-	frame.clearButton:SetScript('OnMouseDown', function(self) if self:IsEnabled() then self.texture:Point('CENTER', 1, -1) end end)
-	frame.clearButton:SetScript('OnMouseUp', function(self) self.texture:Point('CENTER') end)
-	frame.clearButton:SetScript('OnClick', function(self)
-		local editBox = self:GetParent()
-		editBox:SetText('')
-		editBox:ClearFocus()
-	end)
+	if not native then
+		frame.clearButton:SetScript('OnEnter', function(self) self.texture:SetAlpha(1.0) end)
+		frame.clearButton:SetScript('OnLeave', function(self) self.texture:SetAlpha(0.5) end)
+		frame.clearButton:SetScript('OnMouseDown', function(self) if self:IsEnabled() then self.texture:Point('CENTER', 1, -1) end end)
+		frame.clearButton:SetScript('OnMouseUp', function(self) self.texture:Point('CENTER') end)
+		frame.clearButton:SetScript('OnClick', function(self)
+			local editBox = self:GetParent()
+			editBox:SetText('')
+			editBox:ClearFocus()
+		end)
 
-	frame:SetScript('OnShow', nil)
-	frame:SetScript('OnEditFocusLost', function(self)
-		if self:GetText() == '' then
-			self.searchIcon:SetVertexColor(0.6, 0.6, 0.6)
-			self.clearButton:Hide()
-		end
-	end)
-	frame:SetScript('OnEditFocusGained', function(self)
-		self.searchIcon:SetVertexColor(1.0, 1.0, 1.0)
-		self.clearButton:Show()
-	end)
+		frame:SetScript('OnShow', nil)
+		frame:SetScript('OnEditFocusLost', function(self)
+			if self:GetText() == '' then
+				self.searchIcon:SetVertexColor(0.6, 0.6, 0.6)
+				self.clearButton:Hide()
+			end
+		end)
+		frame:SetScript('OnEditFocusGained', function(self)
+			self.searchIcon:SetVertexColor(1.0, 1.0, 1.0)
+			self.clearButton:Show()
+		end)
+	end
+
 	frame:HookScript('OnTextChanged', function(self)
 		if not self:HasFocus() and self:GetText() == '' then
 			self.searchIcon:SetVertexColor(0.6, 0.6, 0.6)
