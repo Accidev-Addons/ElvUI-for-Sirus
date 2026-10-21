@@ -9,7 +9,6 @@ local strsub = strsub
 local hooksecurefunc = hooksecurefunc
 local GetInventoryItemLink = GetInventoryItemLink
 local GetItemInfo = GetItemInfo
-local UnitGUID = UnitGUID
 local C_Timer = C_Timer
 local GetTalentTabInfo = GetTalentTabInfo
 local GLYPHTYPE_MAJOR = GLYPHTYPE_MAJOR
@@ -57,71 +56,47 @@ local function LoadSkin()
 	end
 
 	local styleButton
-	local MAX_CACHE_RETRIES = 10
-	local inspectGeneration = 0
+	do
+		local function awaitCache(button)
+			button.awaitingCache = nil
 
-	local function CancelCacheRetry(button, reset)
-		if button.cacheRetryTimer then
-			E:CancelTimer(button.cacheRetryTimer)
-			button.cacheRetryTimer = nil
-		end
-		if reset then
-			button.cacheRetryCount = 0
-			button.cacheRetryGUID, button.cacheRetryLink = nil, nil
-		end
-	end
-
-	local function ScheduleCacheRetry(button, delay)
-		if button.cacheRetryTimer or (button.cacheRetryCount or 0) >= MAX_CACHE_RETRIES then return end
-		button.cacheRetryCount = (button.cacheRetryCount or 0) + 1
-		local generation, guid, link = inspectGeneration, button.cacheRetryGUID, button.lastLink
-		local timer
-		timer = E:ScheduleTimer(function()
-			if button.cacheRetryTimer ~= timer then return end
-			button.cacheRetryTimer = nil
-			local unit = InspectFrame.unit
-			if generation ~= inspectGeneration or not InspectFrame:IsShown() or not unit
-				or UnitGUID(unit) ~= guid or GetInventoryItemLink(unit, button:GetID()) ~= link then return end
-			styleButton(button)
-		end, delay)
-		button.cacheRetryTimer = timer
-	end
-
-	styleButton = function(button)
-		local unit = InspectFrame.unit
-		local guid = unit and UnitGUID(unit)
-		if not InspectFrame:IsShown() or not guid then
-			CancelCacheRetry(button, true)
-			return
+			if InspectFrame.unit then
+				styleButton(button)
+			end
 		end
 
-		local link = GetInventoryItemLink(unit, button:GetID())
-		if button.cacheRetryGUID ~= guid or button.cacheRetryLink ~= link then
-			CancelCacheRetry(button, true)
-			button.cacheRetryGUID, button.cacheRetryLink = guid, link
-		end
-		button.lastLink = link
+		styleButton = function(button)
+			if InspectFrame.unit then
+				button.lastLink = GetInventoryItemLink(InspectFrame.unit, button:GetID())
 
-		local slotName = strsub(button:GetName(), 8)
-		local dataPending = S:HandleSirusEquipmentSocketInfo(button, button:GetID(), S.EquipmentSlotAnchors[slotName], slotName, unit)
-		S:UpdateBlackDiamondHighlight(button, link)
+				local slotName = strsub(button:GetName(), 8)
+				if S:HandleSirusEquipmentSocketInfo(button, button:GetID(), S.EquipmentSlotAnchors[slotName], slotName, InspectFrame.unit) and not button.awaitingCache then
+					button.awaitingCache = true
+					E:Delay(0.5, awaitCache, button)
+				end
+			end
 
-		local quality
-		if button.hasItem and link then
-			quality = select(3, GetItemInfo(link))
-		end
-		if button.hasItem and link and not quality then
-			ScheduleCacheRetry(button, 0.1)
-		elseif dataPending then
-			ScheduleCacheRetry(button, 0.5)
-		else
-			CancelCacheRetry(button, false)
-			button.cacheRetryCount = 0
-		end
+			S:UpdateBlackDiamondHighlight(button, InspectFrame.unit and button.lastLink)
 
-		if quality and quality > 1 then
-			button.backdrop:SetBackdropBorderColor(E:GetItemQualityColor(quality))
-		else
+			if button.hasItem then
+				if button.lastLink then
+					local _, _, quality = GetItemInfo(button.lastLink)
+					if not quality then
+						button.backdrop:SetBackdropBorderColor(unpack(E.media.bordercolor))
+
+						if not button.awaitingCache then
+							button.awaitingCache = true
+							E:Delay(0.1, awaitCache, button)
+						end
+
+						return
+					elseif quality and quality > 1 then
+						button.backdrop:SetBackdropBorderColor(E:GetItemQualityColor(quality))
+						return
+					end
+				end
+			end
+
 			button.backdrop:SetBackdropBorderColor(unpack(E.media.bordercolor))
 		end
 	end
@@ -141,31 +116,13 @@ local function LoadSkin()
 	end
 
 	local refreshTicker
-	local function StopInspectData()
-		inspectGeneration = inspectGeneration + 1
-		if refreshTicker then
-			refreshTicker:Cancel()
-			refreshTicker = nil
-		end
-		for _, slot in ipairs(Slots) do
-			local button = _G["Inspect"..slot]
-			if button then CancelCacheRetry(button, true) end
-		end
-	end
-
 	local function WatchInspectData()
-		StopInspectData()
-		if not InspectFrame:IsShown() or not InspectFrame.unit then return end
-		for _, slot in ipairs(Slots) do
-			local button = _G["Inspect"..slot]
-			if button then styleButton(button) end
-		end
+		if refreshTicker then refreshTicker:Cancel() end
 		refreshTicker = C_Timer:NewTicker(0.2, RefreshChangedSlots, 25)
 	end
 
 	hooksecurefunc("InspectFrame_UnitChanged", WatchInspectData)
 	InspectFrame:HookScript("OnShow", WatchInspectData)
-	InspectFrame:HookScript("OnHide", StopInspectData)
 
 	if InspectModelFrameControlFrameRotateLeftButton then
 		S:HandleRotateButton(InspectModelFrameControlFrameRotateLeftButton)

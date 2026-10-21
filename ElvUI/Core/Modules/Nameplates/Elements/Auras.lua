@@ -29,6 +29,7 @@ local auraTimerFrame = CreateFrame("Frame")
 auraTimerFrame:Hide()
 
 local function StopAuraTimer(button)
+	if not activeAuraTimers[button] then return end
 	activeAuraTimers[button] = nil
 	if not next(activeAuraTimers) then auraTimerFrame:Hide() end
 end
@@ -38,8 +39,8 @@ local function StartAuraTimer(button)
 	auraTimerFrame:Show()
 end
 
-function NP:UpdateTime(elapsed, now)
-	local timeLeft = self.endTime - (now or GetTime())
+function NP:UpdateTime(elapsed)
+	local timeLeft = self.endTime - GetTime()
 	self.timeLeft = timeLeft
 	self:SetValue(timeLeft)
 
@@ -49,21 +50,17 @@ function NP:UpdateTime(elapsed, now)
 		return
 	end
 
-	local enabled = E:Cooldown_TimerEnabled(self) and true or false
-	if enabled then
-		if self.auraTimerTextEnabled ~= true then self.nextUpdate = 0 end
+	if E:Cooldown_TimerEnabled(self) then
 		E.Cooldown_OnUpdate(self, elapsed)
-	elseif self.auraTimerTextEnabled ~= false then
+	else
 		self.nextUpdate = 0
 		self.text:SetText("")
 	end
-	self.auraTimerTextEnabled = enabled
 end
 
 auraTimerFrame:SetScript("OnUpdate", function(_, elapsed)
-	local now = GetTime()
 	for button in next, activeAuraTimers do
-		if button:IsVisible() then NP.UpdateTime(button, elapsed, now) end
+		if button:IsVisible() then NP.UpdateTime(button, elapsed) end
 	end
 end)
 

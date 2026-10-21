@@ -18,8 +18,6 @@ local GetTime = GetTime
 local messageCache, messageOrder = {}, {}
 local messageIndex, MESSAGE_LIMIT, MESSAGE_TTL = 1, 128, 30
 local BUBBLE_PADDING = 5
-local ACTIVE_SCAN_INTERVAL, IDLE_SCAN_INTERVAL = 0.1, 0.5
-local lastBubbleScan, nextBubbleScan, activeBubbleScanUntil = 0, 0, 0
 
 local function ReplaceIconTags(value)
     local index = _G.ICON_TAG_LIST[strlower(value)]
@@ -204,9 +202,8 @@ end
 local function ChatBubble_OnEvent(self, event, msg, sender, _, _, _, _, _, _, _, _, _, guid)
     if E.private.general.chatBubbles == 'disabled' then return end
 
-    local now = GetTime()
-    activeBubbleScanUntil = now + 1
-    nextBubbleScan = min(nextBubbleScan, max(now, lastBubbleScan + ACTIVE_SCAN_INTERVAL))
+    self.scanFrames = 10
+    self:Show()
 
     if not E.private.general.chatBubbleName or not msg then return end
 
@@ -232,6 +229,12 @@ local function ChatBubble_OnUpdate()
     if E.private.general.chatBubbles == 'disabled' then return end
     -- [SIRUS] WorldFrame children can be replaced or reordered without growing.
     GetAllChatBubbles(WorldGetChildren(WorldFrame))
+end
+
+local function ChatBubble_OnFrame(self)
+    ChatBubble_OnUpdate()
+    self.scanFrames = self.scanFrames - 1
+    if self.scanFrames <= 0 then self:Hide() end
 end
 
 function M:LoadChatBubbles()
@@ -262,17 +265,11 @@ function M:LoadChatBubbles()
     M.BubbleFrame:RegisterEvent('CHAT_MSG_MONSTER_YELL')
 
     M.BubbleFrame:SetScript('OnEvent', ChatBubble_OnEvent)
-    M.BubbleFrame:SetScript('OnUpdate', nil)
+    M.BubbleFrame:SetScript('OnUpdate', ChatBubble_OnFrame)
     M.BubbleFrame:Hide()
-    lastBubbleScan, nextBubbleScan, activeBubbleScanUntil = 0, 0, 0
     local timer
     timer = M:ScheduleRepeatingTimer(function()
-        if M.BubbleTimer ~= timer then return end
-        local now = GetTime()
-        if now < nextBubbleScan then return end
-        lastBubbleScan = now
-        nextBubbleScan = now + (now < activeBubbleScanUntil and ACTIVE_SCAN_INTERVAL or IDLE_SCAN_INTERVAL)
-        ChatBubble_OnUpdate()
-    end, ACTIVE_SCAN_INTERVAL)
+        if M.BubbleTimer == timer then ChatBubble_OnUpdate() end
+    end, 0.1)
     M.BubbleTimer = timer
 end
