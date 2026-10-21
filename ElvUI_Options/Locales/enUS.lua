@@ -1883,6 +1883,7 @@ L["Vertical Spacing"] = true
 L["Vertical"] = true
 L["Visibility State"] = true
 L["Visibility"] = true
+L["Visible Buttons"] = true
 L["VOID_STORAGE"] = "Void Storage"
 L["WeakAuras"] = true
 L["Weekly Rewards"] = true

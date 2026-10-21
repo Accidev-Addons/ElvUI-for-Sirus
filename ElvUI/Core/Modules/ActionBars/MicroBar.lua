@@ -88,9 +88,9 @@ local function onLeave(button)
 end
 
 
-function AB:GetMicroCoords(name)
+function AB:GetMicroCoords(name, state)
 	local button = _G[name]
-	local atlas = button and button.textureName and 'UI-HUD-MicroMenu-'..button.textureName..'-Up'
+	local atlas = button and button.textureName and 'UI-HUD-MicroMenu-'..button.textureName..'-'..(state or 'Up')
 	if atlas and C_Texture.HasAtlasInfo(atlas) then
 		local info = C_Texture.GetAtlasInfo(atlas)
 		if info and info.filename then
@@ -238,9 +238,10 @@ do
 	function AB:ShownMicroButtons()
 		wipe(buttons)
 
+		local hidden = AB.db.microbar.hiddenButtons
 		for _, name in next, AB.MICRO_BUTTONS do
 			local button = _G[name]
-			if button and button:IsShown() then
+			if button and button:IsShown() and not hidden[name] then
 				tinsert(buttons, name)
 			end
 		end
@@ -257,6 +258,13 @@ function AB:UpdateMicroButtons()
 	microBar.backdrop:ClearAllPoints()
 
 	AB:MoverMagic(microBar)
+
+	for name, hide in next, db.hiddenButtons do
+		local button = hide and _G[name]
+		if button then
+			button:SetParent(E.HiddenFrame)
+		end
+	end
 
 	local btns = AB:ShownMicroButtons()
 	db.buttons = #btns

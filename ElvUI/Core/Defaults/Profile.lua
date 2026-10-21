@@ -4531,6 +4531,7 @@ P.actionbar = {
 		widthMult = 1,
 		frameStrata = 'LOW',
 		frameLevel = 1,
+		hiddenButtons = {},
 	},
 	vehicleExitButton = {
 		enable = true,
