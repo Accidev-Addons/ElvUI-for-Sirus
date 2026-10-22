@@ -171,7 +171,7 @@ local function Update(self, event, unit)
 	end
 
 	local cur, max = UnitHealth(unit), UnitHealthMax(unit)
-	local disconnected = not UnitIsConnected(unit)
+	local disconnected = UnitIsPlayer(unit) and not UnitIsConnected(unit)
 
 	element:SetMinMaxValues(0, max)
 
