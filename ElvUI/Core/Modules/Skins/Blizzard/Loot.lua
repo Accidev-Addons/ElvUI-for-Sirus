@@ -32,7 +32,9 @@ function S:LootFrame()
 
 		S:HandleItemButton(button, true)
 
-		button:NudgePoint(nil, 30, nil, nil, true)
+		if i == 1 then
+			button:NudgePoint(nil, 30, nil, nil, true)
+		end
 	end
 
 	hooksecurefunc('LootFrame_UpdateButton', function(index)
