@@ -251,6 +251,9 @@ do
 end
 
 function AB:UpdateMicroButtons()
+	if microBar.updating then return end
+	microBar.updating = true
+
 	local db = AB.db.microbar
 	microBar.db = db
 
@@ -308,6 +311,7 @@ function AB:UpdateMicroButtons()
 	end
 
 	AB:UpdateMicroBarVisibility()
+	microBar.updating = nil
 end
 
 function AB:MicroButtons_Update()
