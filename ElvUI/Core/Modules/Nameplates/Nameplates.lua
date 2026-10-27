@@ -117,9 +117,40 @@ end
 function NP:GetSirusStackLayout()
 	if not NP:IsSirusNameplates() then return end
 
-	local control = _G.InterfaceOptionsNamesPanelUnitNameplatesStackLayout
+	if GetCVar("nameplateAllowOverlap") == "1" then
+		return "OVERLAP"
+	elseif GetCVar("nameplateStackMode") == "0" then
+		return "PILE"
+	end
 
-	return control and control:GetValue()
+	return "COLUMN"
+end
+
+function NP:SetSirusStackLayout(layout)
+	if not NP:IsSirusNameplates() then return end
+
+	if layout == "STACKED" then
+		layout = "PILE"
+	end
+
+	E:SetCVar("nameplateAllowOverlap", layout == "OVERLAP" and 1 or 0, "UNIT_NAMEPLATES_STACK_LAYOUT")
+
+	if layout ~= "OVERLAP" and GetCVar("nameplateStackMode") then
+		E:SetCVar("nameplateStackMode", layout == "PILE" and 0 or 1, "UNIT_NAMEPLATES_STACK_LAYOUT")
+	end
+
+	NP:RefreshSirusPlateSizes()
+end
+
+function NP:RefreshSirusPlateSizes()
+	NP.sirusStackHeight = nil
+	NP:UpdateClickableSizes()
+
+	for plate in pairs(NP.CreatedPlates) do
+		if plate.ElvUIFrame then
+			NP:SetSize(plate)
+		end
+	end
 end
 
 function NP:HookSirusStackLayout()
@@ -129,8 +160,7 @@ function NP:HookSirusStackLayout()
 	NP.sirusStackLayoutHooked = true
 
 	hooksecurefunc(control, "SetValue", function()
-		NP.sirusStackHeight = nil
-		NP:UpdateClickableSizes()
+		NP:RefreshSirusPlateSizes()
 	end)
 end
 
@@ -143,14 +173,7 @@ function NP:HookSirusPlateSize()
 	NP.sirusPlateSizeHooked = true
 
 	hooksecurefunc(driver, "UpdateNamePlateClickInsets", function()
-		NP.sirusStackHeight = nil
-		NP:UpdateClickableSizes()
-
-		for plate in pairs(NP.CreatedPlates) do
-			if plate.ElvUIFrame then
-				NP:SetSize(plate)
-			end
-		end
+		NP:RefreshSirusPlateSizes()
 	end)
 
 	hooksecurefunc(driver, "UpdateNamePlateHitTestArea", function(_, unit)

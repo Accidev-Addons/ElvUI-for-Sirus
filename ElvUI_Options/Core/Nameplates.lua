@@ -3,6 +3,12 @@ local C, L = unpack(E.Config)
 local NP = E:GetModule("NamePlates")
 local ACD = E.Libs.AceConfigDialog
 
+local sirusStackLayouts = NP:IsSirusNameplates() and {
+	["OVERLAP"] = L["UNIT_NAMEPLATES_STACK_OVERLAP"],
+	["PILE"] = L["UNIT_NAMEPLATES_STACK_PILE"],
+	["COLUMN"] = L["UNIT_NAMEPLATES_STACK_COLUMN"]
+}
+
 local next, pairs, type, tonumber = next, pairs, type, tonumber
 local format, match, strsplit = string.format, string.match, strsplit
 
@@ -4011,11 +4017,20 @@ E.Options.args.nameplates = {
 							order = 3,
 							type = "select",
 							name = L["UNIT_NAMEPLATES_TYPES"],
-							desc = L["Set to either stack nameplates vertically or allow them to overlap."],
-							values = {
+							desc = sirusStackLayouts and L["UNIT_NAMEPLATES_STACK_LAYOUT_DESC"] or L["Set to either stack nameplates vertically or allow them to overlap."],
+							values = sirusStackLayouts or {
 								["STACKED"] = L["UNIT_NAMEPLATES_TYPE_2"],
 								["OVERLAP"] = L["UNIT_NAMEPLATES_TYPE_1"]
-							}
+							},
+							sorting = sirusStackLayouts and { "OVERLAP", "PILE", "COLUMN" } or nil,
+							get = function(info)
+								return NP:GetSirusStackLayout() or E.db.nameplates[info[#info]]
+							end,
+							set = function(info, value)
+								E.db.nameplates[info[#info]] = value
+								NP:SetSirusStackLayout(value)
+								NP:ConfigureAll()
+							end
 						},
 						lowHealthThreshold = {
 							order = 4,
@@ -4801,21 +4816,5 @@ for i = 1, 5 do
 			t.r, t.g, t.b = r, g, b
 			NP:ConfigureAll()
 		end
-	}
-end
-
-do
-	local general = E.Options.args.nameplates.args.generalGroup.args.general.args
-
-	general.clientStacking = {
-		order = 3,
-		type = "description",
-		name = function()
-			local layout = NP:GetSirusStackLayout()
-			local text = layout and (_G["UNIT_NAMEPLATES_STACK_LAYOUT_" .. layout] or layout)
-
-			return text and format(L["Nameplate stacking is set in the game client's nameplate options: %s"], format("|cffFFD100%s|r", text)) or ""
-		end,
-		hidden = function() return not NP:IsSirusNameplates() end
 	}
 end
