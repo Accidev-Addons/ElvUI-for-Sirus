@@ -495,6 +495,9 @@ function NP:OnHide(isConfig)
 	local frame = self.ElvUIFrame
 	if not frame then return end
 
+	local unit = frame.unit
+	local hadHitTestOverride = frame.IconOnlyChanged
+
 	NP:Clear_CustomTexts(frame)
 	NP.VisiblePlates[frame] = nil
 
@@ -519,6 +522,10 @@ function NP:OnHide(isConfig)
 	end
 
 	NP:StyleFilterClear(frame)
+
+	if unit and hadHitTestOverride then
+		NP:UpdateHitTestArea(unit)
+	end
 
 	if frame.currentScale and frame.currentScale ~= 1 then
 		NP:SetFrameScale(frame, 1, true)
@@ -726,6 +733,18 @@ function NP:UpdateClickableSizes()
 	end
 end
 
+local function ClientHitTestArea(unit)
+	local driver = _G.NamePlateDriverFrame
+	if not (driver and type(driver.UpdateNamePlateHitTestArea) == "function") then return false end
+	if NP.hitTestBusy then return true end
+
+	NP.hitTestBusy = true
+	driver:UpdateNamePlateHitTestArea(unit)
+	NP.hitTestBusy = nil
+
+	return true
+end
+
 function NP:UpdateHitTestArea(unit)
 	if InCombatLockdown() then
 		NP.HitTestQueue[unit] = true
@@ -739,7 +758,7 @@ function NP:UpdateHitTestArea(unit)
 			local side = max((width - size) * mult / 2, 0)
 
 			C_NamePlateManager.SetNamePlateHitTestInsetsOverride(unit, side, side, plateHeight - height * mult, max((height - size) * mult, 0))
-		else
+		elseif not (plate and ClientHitTestArea(unit)) then
 			C_NamePlateManager.ClearNamePlateHitTestInsetsOverride(unit)
 		end
 
