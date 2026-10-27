@@ -660,22 +660,22 @@ local function GetPlateSize(unitType)
 end
 
 function NP:SetSize(frame)
+	local unitFrame = frame.ElvUIFrame
+	local width, height, mult, plateHeight = GetPlateSize(unitFrame and unitFrame.UnitType)
+
+	if unitFrame and NP:IsSirusNameplates() then
+		unitFrame:ClearAllPoints()
+		unitFrame:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 0, 0)
+		unitFrame:SetSize(width, height)
+	end
+
 	if InCombatLockdown() then
 		NP.ResizeQueue[frame] = true
-	else
-		local unitFrame = frame.ElvUIFrame
-		local width, height, mult, plateHeight = GetPlateSize(unitFrame and unitFrame.UnitType)
-
-		frame:SetSize(width * mult, plateHeight)
-
-		if unitFrame and NP:IsSirusNameplates() then
-			unitFrame:ClearAllPoints()
-			unitFrame:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 0, 0)
-			unitFrame:SetSize(width, height)
-		end
-
-		NP.ResizeQueue[frame] = nil
+		return
 	end
+
+	frame:SetSize(width * mult, plateHeight)
+	NP.ResizeQueue[frame] = nil
 end
 
 function NP:GetSirusStackHeight()
