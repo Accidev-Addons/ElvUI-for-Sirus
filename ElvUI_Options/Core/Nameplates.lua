@@ -4023,6 +4023,7 @@ E.Options.args.nameplates = {
 								["OVERLAP"] = L["UNIT_NAMEPLATES_TYPE_1"]
 							},
 							sorting = sirusStackLayouts and { "OVERLAP", "PILE", "COLUMN" } or nil,
+							customWidth = 250,
 							get = function(info)
 								return NP:GetSirusStackLayout() or E.db.nameplates[info[#info]]
 							end,
