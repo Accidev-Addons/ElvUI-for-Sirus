@@ -261,12 +261,11 @@ local function LoadSkin()
 			end
 
 			if talent.RankBorder then talent.RankBorder:SetAlpha(0) end
-			if talent.RankBorderGreen then talent.RankBorderGreen:SetAlpha(0) end
 
 			if rank then
 				rank:ClearAllPoints()
-				rank:Point("BOTTOMRIGHT", talent, "BOTTOMRIGHT", -1, 1)
-				rank:SetFont(E.LSM:Fetch("font", E.db.general.font), 12, "OUTLINE")
+				rank:Point("CENTER", talent, "BOTTOMRIGHT", -3, 3)
+				rank:FontTemplate()
 			end
 		end
 	end
