@@ -225,6 +225,7 @@ blizz.quest.inline = true
 blizz.raidControl = ACH:Group(L["RAID_CONTROL"], nil, 30, nil, function(info) return E.db.general.raidUtility[info[#info]] end, function(info, value) E.db.general.raidUtility[info[#info]] = value end)
 blizz.raidControl.args.raidUtility = ACH:Toggle(L["Enable"], L["Enables the ElvUI Raid Control panel."], 1, nil, nil, nil, function(info) return E.private.general[info[#info]] end, function(info, value) E.private.general[info[#info]] = value E.ShowPopup = true end)
 blizz.raidControl.args.showTooltip = ACH:Toggle(L["Tooltip"], L["Display Tooltip on Raid Markers."], 2, nil, nil, nil, function(info) return E.db.general.raidUtility[info[#info]] end, function(info, value) E.db.general.raidUtility[info[#info]] = value end)
+blizz.raidControl.args.raidIconStyle = ACH:Select(L["Raid Icon Style"], L["Choose the style of the raid target icons. Every style previews all eight markers."], 3, function() return E:GetRaidIconStyleValues() end, nil, nil, function(info) return E.db.general.raidUtility[info[#info]] end, function(info, value) E.db.general.raidUtility[info[#info]] = value E:UpdateRaidIcons() end)
 blizz.raidControl.inline = true
 
 blizz.lootRollGroup = ACH:Group(L["Loot Roll"], nil, 40, nil, function(info) return E.db.general.lootRoll[info[#info]] end, function(info, value) E.db.general.lootRoll[info[#info]] = value M:UpdateLootRollFrames() end)

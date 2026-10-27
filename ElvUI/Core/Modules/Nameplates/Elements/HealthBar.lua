@@ -307,11 +307,13 @@ function NP:Configure_PlateLabel(frame, key)
 		HidePlateLabel(text)
 		return nil, db
 	end
+	local parent = NP:GetTextLayerParent(frame, db.layer or "OVERLAY")
 	if not text then
-		text = frame.Health:CreateFontString(nil, "OVERLAY")
+		text = parent:CreateFontString(nil, "OVERLAY")
 		text:SetWordWrap(false)
 		frame[key] = text
 	end
+	if text:GetParent() ~= parent then text:SetParent(parent) end
 	text:FontTemplate(LSM:Fetch("font", db.font), db.fontSize, db.fontOutline)
 	text:ClearAllPoints()
 	text:SetPoint(db.position, frame.Health, db.position, NP:Pixel(db.xOffset), NP:Pixel(db.yOffset))
@@ -322,7 +324,6 @@ end
 function NP:Configure_PlateExtras(frame)
 	NP:Configure_Absorb(frame)
 	NP:Configure_PlateLabel(frame, "threatText")
-	NP:Configure_PlateLabel(frame, "targetText")
 end
 
 function NP:Update_ThreatText(frame)
@@ -341,23 +342,5 @@ function NP:Update_ThreatText(frame)
 	local text = frame.threatText or NP:Configure_PlateLabel(frame, "threatText")
 	if text.lastValue ~= percent then text:SetText(string.format("%.0f%%", percent)) text.lastValue = percent end
 	if text.lastStatus ~= status then text:SetTextColor(GetThreatStatusColor(status or 0)) text.lastStatus = status end
-	text:Show()
-end
-
-function NP:Update_TargetText(frame)
-	local db = self.db.units[frame.UnitType].targetText
-	if not db.enable or (not frame.unit and not frame.testUnitType) or not frame.Health:IsShown() then HidePlateLabel(frame.targetText) return end
-	local target = frame.testUnitType and "player" or (frame.unit.."target")
-	local name = UnitExists(target) and UnitName(target) or nil
-	if not name then HidePlateLabel(frame.targetText) return end
-	local text = frame.targetText or NP:Configure_PlateLabel(frame, "targetText")
-	if text.lastValue ~= name then text:SetText(name) text.lastValue = name end
-	local _, class = UnitClass(target)
-	local playerClass = UnitIsPlayer(target) and class or false
-	if text.lastClass ~= playerClass then
-		local color = playerClass and E:ClassColor(playerClass)
-		if color then text:SetTextColor(color.r, color.g, color.b) else text:SetTextColor(1, 1, 1) end
-		text.lastClass = playerClass
-	end
 	text:Show()
 end

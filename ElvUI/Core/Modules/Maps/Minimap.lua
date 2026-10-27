@@ -19,6 +19,7 @@ local GetInstanceInfo = _G.GetInstanceInfo
 local GetMinimapZoneText = GetMinimapZoneText
 local GetZonePVPInfo = GetZonePVPInfo
 local HideUIPanel = HideUIPanel
+local InCombatLockdown = InCombatLockdown
 local IsShiftKeyDown = IsShiftKeyDown
 local PlaySound = PlaySound
 local ShowUIPanel = ShowUIPanel
@@ -581,11 +582,22 @@ function M:Minimap_PostDrag()
 	_G.MinimapBackdrop:SetAllPoints(Minimap)
 end
 
+local clusterResizePending
+
 function M:ClusterSize(width, height)
 	local holder = M.ClusterHolder
-	if holder and (width ~= holder.savedWidth or height ~= holder.savedHeight) then
-		self:SetSize(holder.savedWidth, holder.savedHeight)
-	end
+	if not holder or clusterResizePending then return end
+	if width == holder.savedWidth and height == holder.savedHeight then return end
+
+	clusterResizePending = true
+
+	E:Delay(0, function()
+		clusterResizePending = nil
+
+		if not InCombatLockdown() then
+			self:SetSize(holder.savedWidth, holder.savedHeight)
+		end
+	end)
 end
 
 function M:ClusterPoint(_, anchor)

@@ -55,7 +55,8 @@ P.general = {
 		width = 0
 	},
 	raidUtility = {
-		showTooltip = true
+		showTooltip = true,
+		raidIconStyle = 'blizzard'
 	},
 	fonts = {
 		cooldown = { enable = true, font = 'Expressway', size = 20, outline = 'SHADOWOUTLINE' },
@@ -1149,13 +1150,9 @@ for _, unitContent in pairs(P.nameplates.units) do
 		end
 	end
 	unitContent.customTexts = {}
-	unitContent.targetText = {
-		enable = false, position = "BOTTOMLEFT", justifyH = "LEFT", xOffset = 0, yOffset = -16,
-		font = "PT Sans Narrow", fontSize = 12, fontOutline = "OUTLINE"
-	}
 	unitContent.threatText = {
 		enable = false, position = "BOTTOMRIGHT", justifyH = "RIGHT", xOffset = 0, yOffset = -16,
-		font = "PT Sans Narrow", fontSize = 12, fontOutline = "OUTLINE"
+		font = "PT Sans Narrow", fontSize = 12, fontOutline = "OUTLINE", layer = "OVERLAY"
 	}
 	if unitContent.health then
 		unitContent.health.absorb = {

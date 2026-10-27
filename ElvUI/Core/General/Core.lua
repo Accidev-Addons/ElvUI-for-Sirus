@@ -72,6 +72,83 @@ E.TexturePath = [[Interface\AddOns\ElvUI\Core\Media\Textures\]] -- for plugins?
 E.ClearTexture = '' -- used to clear: Set (Normal, Disabled, Checked, Pushed, Highlight) Texture
 E.UserList = {}
 
+E.DrawLayers = { 'BACKGROUND', 'BORDER', 'ARTWORK', 'OVERLAY', 'HIGHLIGHT' }
+E.DrawLayerLevel = { BACKGROUND = -2, BORDER = -1, ARTWORK = 0, OVERLAY = 1, HIGHLIGHT = 2 }
+
+function E:GetDrawLayerLevel(layer)
+	return E.DrawLayerLevel[layer] or E.DrawLayerLevel.OVERLAY
+end
+
+E.RaidIconColumns = 4
+E.RaidIconStyles = {
+	elvui = { title = 'ElvUI', texture = E.TexturePath..'RaidIcons', width = 256, height = 256 },
+	blizzard = { title = 'Blizzard', texture = [[Interface\TargetingFrame\UI-RaidTargetingIcons]], width = 256, height = 256 },
+}
+
+function E:GetRaidIconStyle()
+	local raidUtility = E.db and E.db.general.raidUtility
+	local style = raidUtility and raidUtility.raidIconStyle
+
+	return (style and E.RaidIconStyles[style]) and style or 'blizzard'
+end
+
+function E:GetRaidIconCoords(style, index)
+	local info = E.RaidIconStyles[style]
+	if not info then return end
+
+	local cell = info.width / E.RaidIconColumns
+	local index0 = (index or 1) - 1
+	local column = index0 % E.RaidIconColumns
+	local row = (index0 - column) / E.RaidIconColumns
+	local left, top = column * cell, row * cell
+
+	return left, left + cell, top, top + cell
+end
+
+function E:SetRaidIconTexture(texture, index)
+	local style = self:GetRaidIconStyle()
+	local info = self.RaidIconStyles[style]
+	local left, right, top, bottom = self:GetRaidIconCoords(style, index)
+
+	texture:SetTexture(info.texture)
+	texture:SetTexCoord(left / info.width, right / info.width, top / info.height, bottom / info.height)
+end
+
+function E:GetRaidIconPreview(style)
+	local info = E.RaidIconStyles[style]
+	if not info then return end
+
+	local preview = ''
+	for index = 1, 8 do
+		local left, right, top, bottom = E:GetRaidIconCoords(style, index)
+		preview = preview..format('|T%s:14:14:0:0:%d:%d:%d:%d:%d:%d|t', info.texture, info.width, info.height, left, right, top, bottom)
+	end
+
+	return preview
+end
+
+function E:GetRaidIconStyleValues()
+	local values, order = {}, {}
+
+	for style in pairs(E.RaidIconStyles) do
+		order[#order + 1] = style
+	end
+	sort(order)
+
+	for _, style in ipairs(order) do
+		values[style] = format('%s %s', E:GetRaidIconPreview(style), E.RaidIconStyles[style].title)
+	end
+
+	return values
+end
+
+function E:UpdateRaidIcons()
+	local nameplates, unitframes = E:GetModule('NamePlates'), E:GetModule('UnitFrames')
+
+	if nameplates and nameplates.ConfigureAll then nameplates:ConfigureAll() end
+	if unitframes and unitframes.UpdateRaidIcons then unitframes:UpdateRaidIcons() end
+end
+
 -- oUF Defines
 E.oUF.Tags.Vars.E = E
 E.oUF.Tags.Vars.L = L
