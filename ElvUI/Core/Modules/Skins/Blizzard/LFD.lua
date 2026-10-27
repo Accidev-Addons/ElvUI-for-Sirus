@@ -1151,9 +1151,14 @@ local function LoadSkin()
 	MiniGamesParentFrame.BottomInset.Background:Kill()
 	S:HandleButton(MiniGamesParentFrameFindGroupButton, true)
 
-	if _G.MiniGamesParentFrameBottomInsetScrollFrame then
-		_G.MiniGamesParentFrameBottomInsetScrollFrame:StripTextures()
+	local miniScroll = _G.MiniGamesParentFrameBottomInsetScrollFrame
+	if miniScroll then
+		miniScroll:StripTextures()
 		S:HandleSirusScrollBar(_G.MiniGamesParentFrameBottomInsetScrollFrameScrollBar)
+
+		miniScroll:ClearAllPoints()
+		miniScroll:Point("TOPLEFT", MiniGamesParentFrame.BottomInset, "TOPLEFT", 3, 20)
+		miniScroll:SetHeight(miniScroll:GetHeight() + 20)
 	end
 
 	if _G.LFDParentFrameArt then _G.LFDParentFrameArt:StripTextures() end
