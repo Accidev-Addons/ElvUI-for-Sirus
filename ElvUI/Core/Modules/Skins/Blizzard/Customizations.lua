@@ -72,6 +72,8 @@ local function ColorSourceIcon(icon, _, r, g, b)
 end
 
 local function SkinSourceIndicator(indicator)
+	if not indicator then return end
+
 	for _, texture in ipairs({ indicator.Icon, indicator.IconHighlight }) do
 		texture:SetTexture(E.Media.Textures.Help)
 		texture:ClearAllPoints()
