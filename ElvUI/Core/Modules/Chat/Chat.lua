@@ -1956,6 +1956,10 @@ function CH:SetupChat()
 	CH:StyleOverflowButton()
 	CH:PositionChats()
 
+	if CH:IsHooked('FCFTab_UpdateColors') then
+		_G.FCFDock_UpdateTabs(_G.GeneralDockManager, true)
+	end
+
 	if not CH.HookSecured then
 		CH:SecureHook('FCF_OpenTemporaryWindow', 'SetupChat')
 		CH.HookSecured = true
@@ -2558,6 +2562,8 @@ CH.TabStyles = {
 	CURVE1	= '%s(|r %s %s)|r',
 }
 
+local TAB_PADDING = -10
+
 local function TabDecorationWidth(tab, text, decorated)
 	local measure = CH.TabMeasure
 	if not measure then
@@ -2597,7 +2603,8 @@ function CH:FCFTab_UpdateColors(tab, selected)
 		decorated = format(CH.TabStyles[CH.db.tabSelector] or CH.TabStyles.ARROW1, hexColor, text, hexColor)
 	end
 
-	tab.sizePadding = (selected or not tab.Text) and 0 or TabDecorationWidth(tab, text, decorated)
+	local fitsText = not chat.isDocked or chat.isStaticDocked
+	tab.sizePadding = TAB_PADDING + ((fitsText and not selected and tab.Text) and TabDecorationWidth(tab, text, decorated) or 0)
 
 	if selected then -- color tables are class updated in UpdateMedia
 		tab:SetText(decorated)
