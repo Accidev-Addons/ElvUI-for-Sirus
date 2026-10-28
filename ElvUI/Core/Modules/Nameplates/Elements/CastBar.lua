@@ -19,6 +19,11 @@ local function resetAttributes(self)
 	self.spellName = nil
 end
 
+local function HideCastBar(castBar)
+	resetAttributes(castBar)
+	castBar:Hide()
+end
+
 function NP:Update_CastBarOnUpdate(elapsed)
 	if self.casting or self.channeling then
 		local isCasting = self.casting
@@ -98,6 +103,13 @@ end
 
 function NP:Update_CastBar(frame, event, unit)
 	local castBar = frame.CastBar
+
+	local unitDB = frame.UnitType and self.db.units[frame.UnitType]
+	if not unitDB or unitDB.castbar.enable ~= true then
+		HideCastBar(castBar)
+		return
+	end
+
 	if unit then
 		if not event then
 			if UnitChannelInfo(unit) then
@@ -111,7 +123,6 @@ function NP:Update_CastBar(frame, event, unit)
 		castBar:Hide()
 	end
 
-	if self.db.units[frame.UnitType].castbar.enable ~= true then return end
 	if not frame.Health:IsShown() then return end
 
 	if event == "UNIT_SPELLCAST_START" or event == "UNIT_SPELLCAST_CHANNEL_START" then
@@ -307,6 +318,10 @@ function NP:Configure_CastBar(frame, configuring)
 
 	castBar.castTimeFormat = db.castTimeFormat
 	castBar.channelTimeFormat = db.channelTimeFormat
+
+	if not db.enable then
+		HideCastBar(castBar)
+	end
 end
 
 function NP:Construct_CastBar(parent)

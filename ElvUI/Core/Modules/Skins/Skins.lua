@@ -1414,6 +1414,37 @@ function S:HandleIcon(icon, backdrop)
 	end
 end
 
+function S:StyleTalentIcon(button, icon)
+	if not (button and icon) then return end
+
+	icon:SetAllPoints()
+	icon:SetTexCoords()
+
+	local border = icon.elvBorder
+	if not border then
+		border = CreateFrame('Frame', nil, button)
+		border:SetBackdrop({ edgeFile = E.media.blankTex, edgeSize = E:PixelSize(1, border) })
+		border:SetBackdropBorderColor(unpack(E.media.bordercolor))
+		icon.elvBorder = border
+	end
+
+	border:SetAllPoints(icon)
+	border:SetFrameLevel(button:GetFrameLevel() + 1)
+
+	local rank = button.Rank
+	if rank then
+		local holder = button.elvRankHolder
+		if not holder then
+			holder = CreateFrame('Frame', nil, button)
+			holder:SetAllPoints(button)
+			holder:SetFrameLevel(button:GetFrameLevel() + 2)
+			button.elvRankHolder = holder
+		end
+
+		rank:SetParent(holder)
+	end
+end
+
 function S:HandleIconBorder(border, backdrop, customFunc)
 	if not border or not border.SetVertexColor then return end
 

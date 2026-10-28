@@ -4,6 +4,10 @@ local UF = E:GetModule("UnitFrames")
 --Lua functions
 --WoW API / Variables
 
+local function RaidIconPostUpdate(element, index)
+	if index then E:SetRaidIconTexture(element, index) end
+end
+
 function UF:Construct_RaidIcon(frame)
 	local holder = CreateFrame("Frame", nil, frame.RaisedElementParent)
 	holder:OffsetFrameLevel(20, frame.RaisedElementParent)
@@ -12,7 +16,7 @@ function UF:Construct_RaidIcon(frame)
 	tex:SetTexture(E.Media.Textures.RaidIcons)
 	tex:Size(18)
 	tex:Point("CENTER", frame.Health, "TOP", 0, 2)
-	tex.SetTexture = E.noop
+	tex.PostUpdate = RaidIconPostUpdate
 
 	return tex
 end
@@ -32,5 +36,13 @@ function UF:Configure_RaidIcon(frame)
 	else
 		frame:DisableElement("RaidTargetIndicator")
 		RI:Hide()
+	end
+end
+
+function UF:UpdateRaidIcons()
+	for _, frame in ipairs(E.oUF.objects) do
+		if frame:IsElementEnabled("RaidTargetIndicator") then
+			frame.RaidTargetIndicator:ForceUpdate()
+		end
 	end
 end

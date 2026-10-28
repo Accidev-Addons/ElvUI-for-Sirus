@@ -6,29 +6,16 @@ local ipairs = ipairs
 local select = select
 local hooksecurefunc = _G.hooksecurefunc
 
-local chromeMethods = {
-	'SetThreeSliceAtlas',
-	'SetNormalAtlas',
-	'SetHighlightAtlas',
-	'SetPushedAtlas',
-	'SetDisabledAtlas',
-	'UpdateButton',
-}
+local function RefreshButton(button)
+	button.Left:SetAlpha(0)
+	button.Right:SetAlpha(0)
+	button.Center:SetAlpha(0)
 
-local function ClearChrome(button)
-	if button.Left then button.Left:SetAlpha(0) end
-	if button.Right then button.Right:SetAlpha(0) end
-	if button.Center then button.Center:SetAlpha(0) end
-	if button.Glow then button.Glow:Hide() end
+	button:SetNormalTexture('')
+	button:SetHighlightTexture('')
+	button:SetPushedTexture('')
+	button:SetDisabledTexture('')
 
-	if button.SetNormalTexture then button:SetNormalTexture('') end
-	if button.SetHighlightTexture then button:SetHighlightTexture('') end
-	if button.SetPushedTexture then button:SetPushedTexture('') end
-	if button.SetDisabledTexture then button:SetDisabledTexture('') end
-end
-
-local function ChromeOnShow(button)
-	ClearChrome(button)
 	S:ApplyElvUIFontForce(button)
 end
 
@@ -38,27 +25,19 @@ local function ReskinButton(button)
 	if not button.elvChromeSkinned then
 		button.elvChromeSkinned = true
 
+		S:HandleButton(button, true)
+
 		for i = 1, (button:GetNumRegions() or 0) do
 			local region = select(i, button:GetRegions())
 			if region and region.IsObjectType and region:IsObjectType('Texture') then
-				region:SetTexture()
 				region:SetAlpha(0)
 			end
 		end
 
-		S:HandleButton(button, true)
-
-		for _, method in ipairs(chromeMethods) do
-			if button[method] then
-				hooksecurefunc(button, method, ClearChrome)
-			end
-		end
-
-		button:HookScript('OnShow', ChromeOnShow)
+		hooksecurefunc(button, 'UpdateButton', RefreshButton)
 	end
 
-	ClearChrome(button)
-	S:ApplyElvUIFontForce(button)
+	RefreshButton(button)
 end
 
 local function UpdateRowBorder(row)
@@ -80,8 +59,89 @@ local function RowStateChanged(state)
 	UpdateRowBorder(state:GetParent())
 end
 
-local function SkinItemRow(row)
-	if not row or row.elvRowSkinned then return end
+local function HideRowPlate(state)
+	if _G.NineSliceUtil and _G.NineSliceUtil.HideLayout then
+		_G.NineSliceUtil.HideLayout(state)
+	end
+
+	state:SetAlpha(0)
+end
+
+local function ColorSourceIcon(icon, _, r, g, b)
+	icon:SetVertexColor(r, g, b)
+end
+
+local function SkinSourceIndicator(indicator)
+	if not indicator then return end
+
+	for _, texture in ipairs({ indicator.Icon, indicator.IconHighlight }) do
+		texture:SetTexture(E.Media.Textures.Help)
+		texture:ClearAllPoints()
+		texture:Point('CENTER')
+		texture:Size(16)
+	end
+
+	ColorSourceIcon(indicator.Icon, nil, unpack(E.media.rgbvaluecolor))
+	E.valueColorUpdateFuncs[indicator.Icon] = ColorSourceIcon
+end
+
+local MISSING_DIM = .65
+
+local function IsRowCollected(row)
+	local collection = _G.C_CustomizationsCollection
+	local id = row.GetID and row:GetID()
+	local count = collection and collection.GetNumCustomizations and collection.GetNumCustomizations()
+
+	if not count or not id or id < 1 or id > count then return end
+
+	return collection.IsCustomizationCollected(id) == true
+end
+
+local function ApplyRowState(row, available)
+	if not row.elvCollection then return end
+
+	if available == nil then
+		available = IsRowCollected(row)
+	end
+
+	if available == nil then return end
+
+	local color = available and 1 or MISSING_DIM
+
+	row.Icon:SetDesaturated(not available)
+	row.Icon:SetVertexColor(color, color, color)
+
+	row.Name:SetAlpha(1)
+	row.Name:SetTextColor(color, color, color, 1)
+
+	row.Amount:SetAlpha(1)
+	row.Amount:SetTextColor(color, color, color, 1)
+end
+
+local function RaiseRowText(row)
+	if row.elvTextHolder then return end
+
+	local holder = CreateFrame('Frame', nil, row)
+	holder:SetAllPoints(row)
+	holder:SetFrameLevel(row:GetFrameLevel() + 30)
+	row.elvTextHolder = holder
+
+	row.Name:SetParent(holder)
+	row.Amount:SetParent(holder)
+end
+
+local function SkinItemRow(row, collection)
+	if not row then return end
+
+	row.elvCollection = collection
+
+	if not row.elvStateHooked then
+		row.elvStateHooked = true
+
+		hooksecurefunc(row, 'SetAvailable', ApplyRowState)
+	end
+
+	if row.elvRowSkinned then return end
 	row.elvRowSkinned = true
 
 	row.BackgroundLeft:SetAlpha(0)
@@ -94,8 +154,12 @@ local function SkinItemRow(row)
 	row.backdrop:Point('BOTTOMRIGHT', -2, 2)
 
 	for _, state in ipairs({ row.NineSliceHighlight, row.NineSliceSelection, row.NineSliceActive }) do
-		state:SetAlpha(0)
-		state:HookScript('OnShow', RowStateChanged)
+		HideRowPlate(state)
+		state:EnableMouse(false)
+		state:HookScript('OnShow', function(self)
+			HideRowPlate(self)
+			RowStateChanged(self)
+		end)
 		state:HookScript('OnHide', RowStateChanged)
 	end
 
@@ -106,7 +170,10 @@ local function SkinItemRow(row)
 		row.Icon:SetParent(row.Icon.backdrop)
 	end
 
+	SkinSourceIndicator(row.SourceIndicator)
+
 	S:ApplyElvUIFont(row)
+	RaiseRowText(row)
 end
 
 local function SkinModelRow(row)
@@ -142,11 +209,14 @@ local function SkinSubCategoryButtons(frame)
 end
 
 local function SkinItemRows(frame)
-	local buttons = frame.RightPanel.ItemList.Scroll.buttons
+	local buttons = frame and frame.RightPanel.ItemList.Scroll.buttons
 	if not buttons then return end
 
+	local collection = frame == _G.CustomizationsCollectionFrame
+
 	for _, row in ipairs(buttons) do
-		SkinItemRow(row)
+		SkinItemRow(row, collection)
+		ApplyRowState(row)
 	end
 end
 

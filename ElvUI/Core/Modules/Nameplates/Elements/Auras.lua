@@ -289,6 +289,8 @@ local function IsSirusCrowdControl(aura)
 	return NP:CheckFilter(aura.name, aura.spellId, aura.isFromPlayerOrPlayerPet, true, (aura.duration or 0) == 0, aura.canDispell, "CCDebuffs") == true
 end
 
+local PREVIEW_STACKS = 5
+
 local function GetPreviewAura(auraType)
 	if auraType == "lossofcontrol" then return end
 	local control = auraType == "crowdcontrol"
@@ -296,7 +298,7 @@ local function GetPreviewAura(auraType)
 	local name, _, icon = GetSpellInfo(spellID)
 	return {
 		name = name, icon = icon or [[Interface\Icons\INV_Misc_QuestionMark]],
-		applications = 1, dispelName = "Magic", duration = 30,
+		applications = PREVIEW_STACKS, dispelName = "Magic", duration = 30,
 		expirationTime = GetTime() + 20, spellId = spellID
 	}
 end

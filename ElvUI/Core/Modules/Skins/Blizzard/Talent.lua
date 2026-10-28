@@ -380,8 +380,7 @@ local function LoadSkin()
 		button:GetPushedTexture():SetTexCoords()
 		button:SetNormalTexture("")
 
-		button.icon:SetTexCoords()
-		button.icon:SetAllPoints()
+		S:StyleTalentIcon(button, button.icon)
 
 		button.Rank:FontTemplate()
 	end
@@ -494,7 +493,7 @@ local function LoadSkin()
 	local petPoints = select(4, PlayerTalentFramePetPanelHeaderIcon:GetRegions())
 	petPoints:FontTemplate(nil, 13, "OUTLINE")
 	petPoints:ClearAllPoints()
-	petPoints:Point("BOTTOMRIGHT", PlayerTalentFramePetPanelHeaderIcon, "BOTTOMRIGHT", 150, 15)
+	petPoints:Point("BOTTOMRIGHT", PlayerTalentFramePetPanelHeaderIcon.backdrop, "BOTTOMRIGHT", -2, -2)
 
 	PlayerTalentFramePetPanelArrow:SetFrameStrata("HIGH")
 
@@ -528,8 +527,7 @@ local function LoadSkin()
 
 					button:GetNormalTexture():SetTexCoords()
 				end
-				icon:SetTexCoords()
-				icon:SetAllPoints()
+				S:StyleTalentIcon(button, icon)
 
 				if button.Rank then
 					button.Rank:FontTemplate(nil, 12, "OUTLINE")

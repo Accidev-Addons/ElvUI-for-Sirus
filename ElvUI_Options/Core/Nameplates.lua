@@ -3,6 +3,12 @@ local C, L = unpack(E.Config)
 local NP = E:GetModule("NamePlates")
 local ACD = E.Libs.AceConfigDialog
 
+local sirusStackLayouts = NP:IsSirusNameplates() and {
+	["OVERLAP"] = _G.UNIT_NAMEPLATES_STACK_LAYOUT_OVERLAP,
+	["PILE"] = _G.UNIT_NAMEPLATES_STACK_LAYOUT_PILE,
+	["COLUMN"] = _G.UNIT_NAMEPLATES_STACK_LAYOUT_COLUMN
+}
+
 local next, pairs, type, tonumber = next, pairs, type, tonumber
 local format, match, strsplit = string.format, string.match, strsplit
 
@@ -1873,6 +1879,10 @@ function C:StyleFilterDeleted(value)
 end
 
 local ORDER = 100
+local PLATE_LABEL_LAYERS = {}
+for _, layer in ipairs(E.DrawLayers) do
+	PLATE_LABEL_LAYERS[layer] = layer
+end
 local function PlateLabelOptions(unit, key, name, order)
 	return {
 		order = order, type = "group", name = name,
@@ -1886,7 +1896,8 @@ local function PlateLabelOptions(unit, key, name, order)
 			font = { order = 5, type = "select", name = L["Font"], dialogControl = "LSM30_Font", values = AceGUIWidgetLSMlists.font },
 			fontSize = { order = 6, type = "range", name = L["Font Size"], min = 6, max = 32, step = 1 },
 			fontOutline = { order = 7, type = "select", name = L["Font Outline"], values = { NONE = L["None"], OUTLINE = "OUTLINE", THICKOUTLINE = "THICKOUTLINE" } },
-			justifyH = { order = 8, type = "select", name = L["JustifyH"], values = { LEFT = L["Left"], CENTER = L["Center"], RIGHT = L["Right"] } }
+			justifyH = { order = 8, type = "select", name = L["JustifyH"], values = { LEFT = L["Left"], CENTER = L["Center"], RIGHT = L["Right"] } },
+			layer = { order = 9, type = "select", name = L["Draw Layer"], values = PLATE_LABEL_LAYERS, sorting = E.DrawLayers }
 		}
 	}
 end
@@ -1925,6 +1936,8 @@ local function CustomTextOptions(unit)
 						size = { order = 5, type = "range", name = L["Font Size"], min = 6, max = 32, step = 1 },
 						fontOutline = { order = 6, type = "select", name = L["Font Outline"], desc = L["Set the font outline."], values = C.Values.FontFlags, sorting = C.Values.FontSorting },
 						justifyH = { order = 7, type = "select", name = L["JustifyH"], desc = L["Sets the font instance's horizontal text alignment style."], values = { LEFT = L["Left"], CENTER = L["Center"], RIGHT = L["Right"] } },
+						layer = { order = 7.5, type = "select", name = L["Draw Layer"], values = PLATE_LABEL_LAYERS, sorting = E.DrawLayers,
+							get = function() local db = Configs()[textName] return db and db.layer or "OVERLAY" end },
 						xOffset = { order = 8, type = "range", name = L["X-Offset"], min = -400, max = 400, step = 1 },
 						yOffset = { order = 9, type = "range", name = L["Y-Offset"], min = -400, max = 400, step = 1 },
 						attachTextTo = { order = 10, type = "select", name = L["Attach Text To"], values = { Frame = L["Frame"], Health = L["Health"], Name = L["Name"], CastBar = L["Castbar"] } },
@@ -1952,7 +1965,7 @@ local function CustomTextOptions(unit)
 				if key:lower() == name:lower() then E:Print(L["The name you have selected is already in use by another element."]) return end
 			end
 			local db = E.db.nameplates
-			configs[name] = { enable = true, text_format = "", size = db.fontSize, font = db.font, fontOutline = db.fontOutline, justifyH = "CENTER", attachTextTo = "Health", xOffset = 0, yOffset = 0 }
+			configs[name] = { enable = true, text_format = "", size = db.fontSize, font = db.font, fontOutline = db.fontOutline, justifyH = "CENTER", attachTextTo = "Health", xOffset = 0, yOffset = 0, layer = "OVERLAY" }
 			Refresh()
 			NP:ConfigureAll()
 		end
@@ -3753,7 +3766,6 @@ local function GetUnitSettings(unit, name)
 	if unit == "ENEMY_NPC" then
 		group.args.threatText = PlateLabelOptions(unit, "threatText", L["Threat Level"], 8)
 	end
-	group.args.targetText = PlateLabelOptions(unit, "targetText", L["Nameplate Target"], 8.1)
 	group.args.customText = CustomTextOptions(unit)
 	for key, aura in pairs({ buffsGroup = "buffs", debuffsGroup = "debuffs", crowdControlGroup = "crowdcontrol" }) do
 		local args = group.args[key].args
@@ -4004,11 +4016,21 @@ E.Options.args.nameplates = {
 							order = 3,
 							type = "select",
 							name = L["UNIT_NAMEPLATES_TYPES"],
-							desc = L["Set to either stack nameplates vertically or allow them to overlap."],
-							values = {
+							desc = sirusStackLayouts and _G.OPTION_TOOLTIP_UNIT_NAMEPLATES_STACK_LAYOUT or L["Set to either stack nameplates vertically or allow them to overlap."],
+							values = sirusStackLayouts or {
 								["STACKED"] = L["UNIT_NAMEPLATES_TYPE_2"],
 								["OVERLAP"] = L["UNIT_NAMEPLATES_TYPE_1"]
-							}
+							},
+							sorting = sirusStackLayouts and { "OVERLAP", "PILE", "COLUMN" } or nil,
+							customWidth = 250,
+							get = function(info)
+								return NP:GetSirusStackLayout() or E.db.nameplates[info[#info]]
+							end,
+							set = function(info, value)
+								E.db.nameplates[info[#info]] = value
+								NP:SetSirusStackLayout(value)
+								NP:ConfigureAll()
+							end
 						},
 						lowHealthThreshold = {
 							order = 4,
@@ -4794,21 +4816,5 @@ for i = 1, 5 do
 			t.r, t.g, t.b = r, g, b
 			NP:ConfigureAll()
 		end
-	}
-end
-
-do
-	local general = E.Options.args.nameplates.args.generalGroup.args.general.args
-
-	general.clientStacking = {
-		order = 3,
-		type = "description",
-		name = function()
-			local layout = NP:GetSirusStackLayout()
-			local text = layout and (_G["UNIT_NAMEPLATES_STACK_LAYOUT_" .. layout] or layout)
-
-			return text and format(L["Nameplate stacking is set in the game client's nameplate options: %s"], format("|cffFFD100%s|r", text)) or ""
-		end,
-		hidden = function() return not NP:IsSirusNameplates() end
 	}
 end

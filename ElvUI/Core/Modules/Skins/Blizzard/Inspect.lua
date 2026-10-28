@@ -256,13 +256,16 @@ local function LoadSkin()
 			talent:StyleButton()
 
 			if icon then
-				icon:SetInside()
-				icon:SetTexCoords()
 				icon:SetDrawLayer("ARTWORK")
+				S:StyleTalentIcon(talent, icon)
 			end
 
+			if talent.RankBorder then talent.RankBorder:SetAlpha(0) end
+
 			if rank then
-				rank:SetFont(E.LSM:Fetch("font", E.db.general.font), 12, "OUTLINE")
+				rank:ClearAllPoints()
+				rank:Point("CENTER", talent, "BOTTOMRIGHT", -3, 3)
+				rank:FontTemplate()
 			end
 		end
 	end

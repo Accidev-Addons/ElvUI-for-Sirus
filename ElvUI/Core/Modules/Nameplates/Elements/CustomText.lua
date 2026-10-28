@@ -2,6 +2,8 @@ local E = unpack(ElvUI)
 local NP = E:GetModule("NamePlates")
 local LSM = E.Libs.LSM
 
+local UPDATE_INTERVAL = 0.2
+
 function NP:Clear_CustomTexts(frame)
 	for _, text in pairs(frame.customTexts or {}) do
 		frame:Untag(text)
@@ -17,15 +19,20 @@ function NP:GetCustomTextAnchor(frame, point)
 	return anchor:IsShown() and anchor or frame.Health
 end
 
-local function RaisedTextParent(frame)
-	local parent = frame.CustomTextParent
+function NP:GetTextLayerParent(frame, layer)
+	frame.CustomTextParents = frame.CustomTextParents or {}
+
+	local parent = frame.CustomTextParents[layer]
 	if not parent then
 		parent = CreateFrame("Frame", nil, frame)
 		parent:SetAllPoints(frame)
-		frame.CustomTextParent = parent
+		frame.CustomTextParents[layer] = parent
 	end
+
 	local castLevel = frame.CastBar and frame.CastBar:GetFrameLevel() or 0
-	parent:SetFrameLevel(math.max(frame:GetFrameLevel(), frame.Health:GetFrameLevel(), castLevel) + 1)
+	local baseLevel = math.max(frame:GetFrameLevel(), frame.Health:GetFrameLevel(), castLevel)
+	parent:SetFrameLevel(baseLevel + E:GetDrawLayerLevel(layer))
+
 	return parent
 end
 
@@ -57,7 +64,7 @@ function NP:Configure_CustomTexts(frame)
 	local textParent
 	for name, db in pairs(configs) do
 		if db.enable ~= false then
-			textParent = textParent or RaisedTextParent(frame)
+			textParent = NP:GetTextLayerParent(frame, db.layer or "OVERLAY")
 			local text = frame.customTexts[name] or table.remove(frame.customTextPool)
 			if not text then
 				text = textParent:CreateFontString(nil, "OVERLAY")
@@ -68,7 +75,7 @@ function NP:Configure_CustomTexts(frame)
 			local font = db.font or self.db.font
 			local size = db.size or self.db.fontSize or 12
 			local outline = db.fontOutline or self.db.fontOutline or "OUTLINE"
-			text:SetParent(textParent)
+			if text:GetParent() ~= textParent then text:SetParent(textParent) end
 			text:FontTemplate(LSM:Fetch("font", font), size, outline)
 			text:SetJustifyH(db.justifyH or "CENTER")
 			text:ClearAllPoints()
@@ -77,7 +84,7 @@ function NP:Configure_CustomTexts(frame)
 			local tagFormat = db.text_format or ""
 			text.customMouseover = tagFormat:find("%[mouseover%]") and true or nil
 			if text.customMouseover then tagFormat = tagFormat:gsub("%[mouseover%]", "") end
-			text.frequentUpdates = E.oUF.Tags:NeedsFrequentUpdates(tagFormat) and 0.2 or nil
+			text.frequentUpdates = tagFormat ~= "" and UPDATE_INTERVAL or nil
 			text.__previewUnit = frame.testUnitType and "player" or nil
 			frame:Tag(text, tagFormat)
 			text:SetAlpha(text.customMouseover and 0 or 1)

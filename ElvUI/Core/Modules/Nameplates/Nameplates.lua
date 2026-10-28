@@ -117,9 +117,36 @@ end
 function NP:GetSirusStackLayout()
 	if not NP:IsSirusNameplates() then return end
 
-	local control = _G.InterfaceOptionsNamesPanelUnitNameplatesStackLayout
+	if GetCVar("nameplateAllowOverlap") == "1" then
+		return "OVERLAP"
+	elseif GetCVar("nameplateStackMode") == "0" then
+		return "PILE"
+	end
 
-	return control and control:GetValue()
+	return "COLUMN"
+end
+
+function NP:SetSirusStackLayout(layout)
+	if not NP:IsSirusNameplates() then return end
+
+	E:SetCVar("nameplateAllowOverlap", layout == "OVERLAP" and 1 or 0, "UNIT_NAMEPLATES_STACK_LAYOUT")
+
+	if layout ~= "OVERLAP" and GetCVar("nameplateStackMode") then
+		E:SetCVar("nameplateStackMode", layout == "PILE" and 0 or 1, "UNIT_NAMEPLATES_STACK_LAYOUT")
+	end
+
+	NP:RefreshSirusPlateSizes()
+end
+
+function NP:RefreshSirusPlateSizes()
+	NP.sirusStackHeight = nil
+	NP:UpdateClickableSizes()
+
+	for plate in pairs(NP.CreatedPlates) do
+		if plate.ElvUIFrame then
+			NP:SetSize(plate)
+		end
+	end
 end
 
 function NP:HookSirusStackLayout()
@@ -129,8 +156,7 @@ function NP:HookSirusStackLayout()
 	NP.sirusStackLayoutHooked = true
 
 	hooksecurefunc(control, "SetValue", function()
-		NP.sirusStackHeight = nil
-		NP:UpdateClickableSizes()
+		NP:RefreshSirusPlateSizes()
 	end)
 end
 
@@ -143,14 +169,7 @@ function NP:HookSirusPlateSize()
 	NP.sirusPlateSizeHooked = true
 
 	hooksecurefunc(driver, "UpdateNamePlateClickInsets", function()
-		NP.sirusStackHeight = nil
-		NP:UpdateClickableSizes()
-
-		for plate in pairs(NP.CreatedPlates) do
-			if plate.ElvUIFrame then
-				NP:SetSize(plate)
-			end
-		end
+		NP:RefreshSirusPlateSizes()
 	end)
 
 	hooksecurefunc(driver, "UpdateNamePlateHitTestArea", function(_, unit)
@@ -495,6 +514,9 @@ function NP:OnHide(isConfig)
 	local frame = self.ElvUIFrame
 	if not frame then return end
 
+	local unit = frame.unit
+	local hadHitTestOverride = frame.IconOnlyChanged
+
 	NP:Clear_CustomTexts(frame)
 	NP.VisiblePlates[frame] = nil
 
@@ -519,6 +541,10 @@ function NP:OnHide(isConfig)
 	end
 
 	NP:StyleFilterClear(frame)
+
+	if unit and hadHitTestOverride then
+		NP:UpdateHitTestArea(unit)
+	end
 
 	if frame.currentScale and frame.currentScale ~= 1 then
 		NP:SetFrameScale(frame, 1, true)
@@ -625,7 +651,6 @@ function NP:UpdateElement_All(frame, noTargetFrame, filterIgnore)
 
 	NP:UpdateElement_Auras(frame)
 	NP:Update_ThreatText(frame)
-	NP:Update_TargetText(frame)
 
 	NP:Update_RaidIcon(frame)
 	NP:Update_HealerIcon(frame)
@@ -661,22 +686,22 @@ local function GetPlateSize(unitType)
 end
 
 function NP:SetSize(frame)
+	local unitFrame = frame.ElvUIFrame
+	local width, height, mult, plateHeight = GetPlateSize(unitFrame and unitFrame.UnitType)
+
+	if unitFrame and NP:IsSirusNameplates() then
+		unitFrame:ClearAllPoints()
+		unitFrame:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 0, 0)
+		unitFrame:SetSize(width, height)
+	end
+
 	if InCombatLockdown() then
 		NP.ResizeQueue[frame] = true
-	else
-		local unitFrame = frame.ElvUIFrame
-		local width, height, mult, plateHeight = GetPlateSize(unitFrame and unitFrame.UnitType)
-
-		frame:SetSize(width * mult, plateHeight)
-
-		if unitFrame and NP:IsSirusNameplates() then
-			unitFrame:ClearAllPoints()
-			unitFrame:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 0, 0)
-			unitFrame:SetSize(width, height)
-		end
-
-		NP.ResizeQueue[frame] = nil
+		return
 	end
+
+	frame:SetSize(width * mult, plateHeight)
+	NP.ResizeQueue[frame] = nil
 end
 
 function NP:GetSirusStackHeight()
@@ -865,11 +890,6 @@ function NP:OnEvent(event, unit, ...)
 		return
 	end
 
-	if event == "UNIT_TARGET" then
-		NP:Update_TargetText(self)
-		return
-	end
-
 	if event == "UNIT_ABSORB_AMOUNT_CHANGED" then
 		NP:Update_Absorb(self)
 		return
@@ -905,7 +925,7 @@ function NP:OnEvent(event, unit, ...)
 end
 
 local unitEvents = {
-	"UNIT_HEALTH", "UNIT_MAXHEALTH", "UNIT_NAME_UPDATE", "UNIT_LEVEL", "UNIT_FACTION", "UNIT_AURA", "UNIT_ABSORB_AMOUNT_CHANGED", "UNIT_TARGET"
+	"UNIT_HEALTH", "UNIT_MAXHEALTH", "UNIT_NAME_UPDATE", "UNIT_LEVEL", "UNIT_FACTION", "UNIT_AURA", "UNIT_ABSORB_AMOUNT_CHANGED"
 }
 local castEvents = {
 	"UNIT_SPELLCAST_INTERRUPTED", "UNIT_SPELLCAST_DELAYED", "UNIT_SPELLCAST_CHANNEL_START",
@@ -1127,7 +1147,6 @@ pixelSnapper:SetScript("OnUpdate", function(_, elapsed)
 				NP:Update_Absorb(frame)
 			end
 			NP:Update_ThreatText(frame)
-			NP:Update_TargetText(frame)
 		end
 	end
 end)

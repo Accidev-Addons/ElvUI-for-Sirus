@@ -19,6 +19,7 @@ local GetInstanceInfo = _G.GetInstanceInfo
 local GetMinimapZoneText = GetMinimapZoneText
 local GetZonePVPInfo = GetZonePVPInfo
 local HideUIPanel = HideUIPanel
+local InCombatLockdown = InCombatLockdown
 local IsShiftKeyDown = IsShiftKeyDown
 local PlaySound = PlaySound
 local ShowUIPanel = ShowUIPanel
@@ -583,9 +584,18 @@ end
 
 function M:ClusterSize(width, height)
 	local holder = M.ClusterHolder
-	if holder and (width ~= holder.savedWidth or height ~= holder.savedHeight) then
+	if not holder or (width == holder.savedWidth and height == holder.savedHeight) then return end
+
+	if InCombatLockdown() then
+		M:RegisterEvent('PLAYER_REGEN_ENABLED', 'RestoreClusterSize')
+	else
 		self:SetSize(holder.savedWidth, holder.savedHeight)
 	end
+end
+
+function M:RestoreClusterSize()
+	M:UnregisterEvent('PLAYER_REGEN_ENABLED')
+	M.ClusterSize(MinimapCluster, MinimapCluster:GetSize())
 end
 
 function M:ClusterPoint(_, anchor)

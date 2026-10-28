@@ -25,7 +25,7 @@ function NP:Update_RaidIcon(frame)
 		return
 	end
 
-	SetRaidTargetIconTexture(icon, frame.RaidIconIndex or 1)
+	E:SetRaidIconTexture(icon, frame.RaidIconIndex or 1)
 	icon:Show()
 	icon:GetParent():Show()
 	icon:GetParent():SetFrameLevel(frame.CastBar.Icon:GetFrameLevel() + 1)
