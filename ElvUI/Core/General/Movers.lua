@@ -3,7 +3,7 @@ local Sticky = E.Libs.SimpleSticky
 
 local _G = _G
 local abs = abs
-local type, unpack, pairs, error, ipairs = type, unpack, pairs, error, ipairs
+local type, unpack, pairs, next, error, ipairs = type, unpack, pairs, next, error, ipairs
 local format, split, find, strupper = format, strsplit, strfind, strupper
 local GetPixelToUIUnitFactor = PixelUtil.GetPixelToUIUnitFactor
 
@@ -58,10 +58,33 @@ local function SnapMoverToPixels(mover)
 	mover:SetPoint(point, anchor, relativePoint, x - (offsetX * pixel), y - (offsetY * pixel))
 end
 
+local function IsScreenAnchored(mover)
+	local _, anchor = mover:GetPoint()
+	return not anchor or anchor == UIParent or anchor == E.UIParent
+end
+
 local function FlushMoverSnaps()
 	snapScheduled = false
 
 	if InCombatLockdown() then return end
+
+	local snapped
+	for mover in pairs(snapPending) do
+		if IsScreenAnchored(mover) then
+			snapPending[mover] = nil
+			snapped = true
+
+			SnapMoverToPixels(mover)
+		end
+	end
+
+	if snapped and next(snapPending) then
+		snapScheduled = true
+
+		E:Delay(0, FlushMoverSnaps)
+
+		return
+	end
 
 	for mover in pairs(snapPending) do
 		snapPending[mover] = nil

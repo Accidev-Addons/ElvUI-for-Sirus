@@ -92,8 +92,14 @@ function RB:UpdateRole()
 	defaultIcons[5], defaultIcons[6] = icons[1], icons[2]
 end
 
+local function MinimapBorder()
+	local scale = Minimap:GetEffectiveScale() / E.UIParent:GetEffectiveScale()
+	return E:Scale(E.Border) * scale, scale
+end
+
 function RB:GetButtonSize(count)
-	local minimapSize = E.MinimapSize or Minimap:GetHeight()
+	local border, scale = MinimapBorder()
+	local minimapSize = Minimap:GetHeight() * scale + border * 2
 	local height = minimapSize / count
 	local width = self.db.keepButtonSizeRatio and height or self.db.height
 
@@ -234,6 +240,7 @@ function RB:UpdateSettings()
 
 	self:UpdateRole()
 	frame:Size(width, minimapSize)
+	self:UpdateAnchor()
 
 	local shown, previous = 0, nil
 	for i = 1, 7 do
@@ -280,13 +287,23 @@ function RB:UpdateSettings()
 end
 
 function RB:GetAnchor()
-	local offset = 6 + E.Border
+	local border = MinimapBorder()
+	local offset = border + E:PixelSize(1, E.UIParent)
 
 	if self.db.position == 'RIGHT' then
-		return 'TOPLEFT', Minimap, 'TOPRIGHT', offset, 0
+		return 'TOPLEFT', Minimap, 'TOPRIGHT', offset, border
 	end
 
-	return 'TOPRIGHT', Minimap, 'TOPLEFT', -offset, 0
+	return 'TOPRIGHT', Minimap, 'TOPLEFT', -offset, border
+end
+
+function RB:UpdateAnchor()
+	local target = _G.ReminderBuffsMover or self.frame
+	local _, anchor = target:GetPoint()
+	if anchor ~= Minimap then return end
+
+	target:ClearAllPoints()
+	target:Point(self:GetAnchor())
 end
 
 function RB:UpdatePosition()
@@ -322,6 +339,7 @@ function RB:Initialize()
 
 	E:CreateMover(frame, 'ReminderBuffsMover', L['Reminder Buffs'], nil, nil, nil, nil, function() return not E.db.general.reminder.enable end, 'maps,minimap,reminder')
 	if not self.db.enable then E:DisableMover('ReminderBuffsMover') end
+	self:UpdateAnchor()
 
 	hooksecurefunc(M, 'UpdateSettings', function()
 		RB:UpdateSettings()
