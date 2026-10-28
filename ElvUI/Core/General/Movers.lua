@@ -26,36 +26,48 @@ end
 local function WidthChanged(frame, width)
 	if InCombatLockdown() then return end
 	frame.mover:SetWidth(width)
+	E:SnapMover(frame.mover)
 end
 
 local function HeightChanged(frame, height)
 	if InCombatLockdown() then return end
 	frame.mover:SetHeight(height)
+	E:SnapMover(frame.mover)
 end
 
 local snapPending, snapScheduled = {}, false
 
 local function SnapMoverToPixels(mover)
-	local region = mover.parent or mover
-	local left, bottom = region:GetLeft(), region:GetBottom()
-	if not left or not bottom then return end
-
-	local scale = region:GetEffectiveScale()
-	if not scale or scale <= 0 then return end
-
-	local factor = GetPixelToUIUnitFactor()
-	local offsetX = (left * scale / factor) % 1
-	local offsetY = (bottom * scale / factor) % 1
-	if offsetX > 0.5 then offsetX = offsetX - 1 end
-	if offsetY > 0.5 then offsetY = offsetY - 1 end
-	if abs(offsetX) < 0.01 and abs(offsetY) < 0.01 then return end
-
 	local point, anchor, relativePoint, x, y = mover:GetPoint()
 	if not point or not x or not y then return end
 
-	local pixel = factor / scale
+	local region = mover.parent or mover
+	local _, regionAnchor = region:GetPoint()
+	if regionAnchor ~= mover then region = mover end
+
+	local left, bottom = region:GetLeft(), region:GetBottom()
+	if not left or not bottom then return end
+
+	local scale, moverScale = region:GetEffectiveScale(), mover:GetEffectiveScale()
+	if not scale or scale < 0.01 or moverScale < 0.01 then return end
+
+	if not mover.snapX or mover.snapAnchor ~= anchor or mover.snapPoint ~= point or abs(x - mover.snapX) > 0.001 or abs(y - mover.snapY) > 0.001 then
+		mover.baseX, mover.baseY = x, y
+	end
+
+	local factor = GetPixelToUIUnitFactor()
+	local pixel = factor / moverScale
+	local offsetX = (left * scale / factor - (x - mover.baseX) / pixel) % 1
+	local offsetY = (bottom * scale / factor - (y - mover.baseY) / pixel) % 1
+	if offsetX > 0.5 then offsetX = offsetX - 1 end
+	if offsetY > 0.5 then offsetY = offsetY - 1 end
+
+	local snapX, snapY = mover.baseX - offsetX * pixel, mover.baseY - offsetY * pixel
+	mover.snapX, mover.snapY, mover.snapAnchor, mover.snapPoint = snapX, snapY, anchor, point
+	if abs(snapX - x) < 0.001 and abs(snapY - y) < 0.001 then return end
+
 	mover:ClearAllPoints()
-	mover:SetPoint(point, anchor, relativePoint, x - (offsetX * pixel), y - (offsetY * pixel))
+	mover:SetPoint(point, anchor, relativePoint, snapX, snapY)
 end
 
 local function IsScreenAnchored(mover)
@@ -109,7 +121,7 @@ local function GetPoint(obj)
 	local point, anchor, secondaryPoint, x, y = obj:GetPoint()
 	if not anchor then anchor = UIParent end
 
-	return format('%s,%s,%s,%d,%d', point, anchor:GetName(), secondaryPoint, x and E:Round(x) or 0, y and E:Round(y) or 0)
+	return format('%s,%s,%s,%s,%s', point, anchor:GetName(), secondaryPoint, x and E:Round(x, 2) or 0, y and E:Round(y, 2) or 0)
 end
 
 local function GetSettingPoints(text)
@@ -130,7 +142,7 @@ local function UpdateCoords(self)
 end
 
 function E:SetMoverPoints(name, parent)
-	local holder = E.CreatedMovers[name]
+	local holder = E.CreatedMovers[name] or E.DisabledMovers[name]
 	if not holder then return end
 
 	local point1, relativeTo1, relativePoint1, xOffset1, yOffset1 = unpack(holder.originPoint)
@@ -154,11 +166,13 @@ function E:SetMoverPoints(name, parent)
 
 		if point1 then
 			local setPoint = parent.SetPointBase or parent.SetPoint
-			setPoint(parent, point1, parent.mover, 0, 0)
+			setPoint(parent, point1, holder.mover, 0, 0)
 		end
 	end
 
-	E:SnapMover(holder.mover)
+	if E.CreatedMovers[name] then
+		E:SnapMover(holder.mover)
+	end
 end
 
 local isDragging = false
@@ -210,7 +224,7 @@ local function StopMoving(frame)
 end
 
 local function OnDragStop(frame)
-	if E:AlertCombat() then return end
+	if not isDragging or E:AlertCombat() then return end
 
 	if _G.ElvUIGrid and E.ConfigurationMode then
 		E:UIFrameFadeOut(_G.ElvUIGrid, 0.75, _G.ElvUIGrid:GetAlpha(), 0.4)
@@ -221,6 +235,20 @@ local function OnDragStop(frame)
 	isDragging = false
 
 	StopMoving(frame)
+end
+
+local function OnHide(self)
+	if not isDragging or coordFrame.child ~= self then return end
+
+	coordFrame.child = nil
+	coordFrame:Hide()
+	isDragging = false
+
+	Sticky:StopMoving(self)
+
+	if not InCombatLockdown() then
+		E:SetMoverPoints(self.name)
+	end
 end
 
 local function OnEnter(self)
@@ -362,6 +390,7 @@ local function UpdateMover(name, parent, textString, overlay, snapOffset, postdr
 	f:SetScript('OnMouseUp', OnMouseUp)
 	f:SetScript('OnMouseWheel', OnMouseWheel)
 	f:SetScript('OnShow', OnShow)
+	f:SetScript('OnHide', OnHide)
 	f:SetScript('OnEvent', HandlePostDrag)
 	f:RegisterEvent('PLAYER_ENTERING_WORLD')
 end
@@ -401,7 +430,7 @@ function E:HasMoverBeenMoved(name)
 end
 
 function E:GetMoverLayout(name)
-	local holder = E.CreatedMovers[name]
+	local holder = E.CreatedMovers[name] or E.DisabledMovers[name]
 	if not holder then return end
 
 	local layout, all = E.LayoutMoverPositions[E.db.layoutSet], E.LayoutMoverPositions.ALL
@@ -509,20 +538,22 @@ function E:ResetMovers(arg)
 	local all = not arg or arg == ''
 	if all then E.db.movers = nil end
 
-	for name, holder in pairs(E.CreatedMovers) do
-		if all or (holder.mover and holder.mover.textString == arg) then
-			if E.db.movers then
-				E.db.movers[name] = nil
-			end
+	for _, movers in ipairs({E.CreatedMovers, E.DisabledMovers}) do
+		for name, holder in pairs(movers) do
+			if all or name == arg or (holder.mover and holder.mover.textString == arg) then
+				if E.db.movers then
+					E.db.movers[name] = nil
+				end
 
-			E:SetMoverPoints(name)
+				E:SetMoverPoints(name)
 
-			if holder.mover then
-				HandlePostDrag(holder.mover)
-			end
+				if holder.mover then
+					HandlePostDrag(holder.mover)
+				end
 
-			if not all then
-				break
+				if not all then
+					return
+				end
 			end
 		end
 	end
@@ -540,6 +571,10 @@ function E:SetMoversPositions()
 	end
 
 	for name in pairs(E.CreatedMovers) do
+		E:SetMoverPoints(name)
+	end
+
+	for name in pairs(E.DisabledMovers) do
 		E:SetMoverPoints(name)
 	end
 end

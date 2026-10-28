@@ -228,8 +228,9 @@ function E:NudgeMover(nudgeX, nudgeY)
 	local x, y, point = E:CalculateMoverPoints(mover, nudgeX, nudgeY)
 
 	mover:ClearAllPoints()
-	mover:SetPoint(point, E.UIParent, point, x, y)
+	mover:SetPoint(point, UIParent, point, x, y)
 	E:SaveMoverPosition(mover.name)
+	E:SnapMover(mover)
 
 	--Update coordinates in Nudge Window
 	E:UpdateNudgeFrame(mover, x, y)
