@@ -55,9 +55,9 @@ P.general = {
 		width = 0
 	},
 	raidUtility = {
-		showTooltip = true,
-		raidIconStyle = 'blizzard'
+		showTooltip = true
 	},
+	raidIconStyle = 'blizzard',
 	fonts = {
 		cooldown = { enable = true, font = 'Expressway', size = 20, outline = 'SHADOWOUTLINE' },
 		errortext = { enable = true, font = 'Expressway', size = 18, outline = 'SHADOW' },

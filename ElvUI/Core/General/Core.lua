@@ -85,7 +85,7 @@ E.RaidIconStyles = {
 }
 
 function E:SetRaidIconTexture(texture, index)
-	local style = E.RaidIconStyles[E.db.general.raidUtility.raidIconStyle] or E.RaidIconStyles.blizzard
+	local style = E.RaidIconStyles[E.db.general.raidIconStyle] or E.RaidIconStyles.blizzard
 
 	texture:SetTexture(style.texture)
 	SetRaidTargetIconTexture(texture, index)

@@ -67,27 +67,22 @@ local function HideRowPlate(state)
 	state:SetAlpha(0)
 end
 
-local function StyleSourceIndicator(row)
-	local indicator = row and row.SourceIndicator
-	if not indicator then return end
-
-	indicator:SetAlpha(1)
-	indicator:SetFrameLevel(row:GetFrameLevel() + 20)
-
-	if indicator.Icon then
-		indicator.Icon:SetDesaturated(false)
-		indicator.Icon:SetVertexColor(1, 1, 1)
-		indicator.Icon:SetAlpha(1)
-	end
-
-	if indicator.IconHighlight then
-		indicator.IconHighlight:SetDesaturated(false)
-		indicator.IconHighlight:SetAlpha(.5)
-	end
+local function ColorSourceIcon(icon, _, r, g, b)
+	icon:SetVertexColor(r, g, b)
 end
 
-local PLATE_COLLECTED = { 0, 0, 0, .8 }
-local PLATE_MISSING = { .22, .22, .22, .9 }
+local function SkinSourceIndicator(indicator)
+	for _, texture in ipairs({ indicator.Icon, indicator.IconHighlight }) do
+		texture:SetTexture(E.Media.Textures.Help)
+		texture:ClearAllPoints()
+		texture:Point('CENTER')
+		texture:Size(16)
+	end
+
+	ColorSourceIcon(indicator.Icon, nil, unpack(E.media.rgbvaluecolor))
+	E.valueColorUpdateFuncs[indicator.Icon] = ColorSourceIcon
+end
+
 local MISSING_DIM = .65
 
 local function IsRowCollected(row)
@@ -100,18 +95,6 @@ local function IsRowCollected(row)
 	return collection.IsCustomizationCollected(id) == true
 end
 
-local function GetRowPlate(row)
-	local plate = row.elvPlate
-	if not plate then
-		plate = row:CreateTexture(nil, 'BACKGROUND')
-		plate:SetPoint('TOPLEFT', 2, -2)
-		plate:SetPoint('BOTTOMRIGHT', -2, 2)
-		row.elvPlate = plate
-	end
-
-	return plate
-end
-
 local function ApplyRowState(row, available)
 	if not row.elvCollection then return end
 
@@ -120,9 +103,6 @@ local function ApplyRowState(row, available)
 	end
 
 	if available == nil then return end
-
-	local plate = available and PLATE_COLLECTED or PLATE_MISSING
-	GetRowPlate(row):SetTexture(plate[1], plate[2], plate[3], plate[4])
 
 	local color = available and 1 or MISSING_DIM
 
@@ -134,8 +114,6 @@ local function ApplyRowState(row, available)
 
 	row.Amount:SetAlpha(1)
 	row.Amount:SetTextColor(color, color, color, 1)
-
-	StyleSourceIndicator(row)
 end
 
 local function RaiseRowText(row)
@@ -169,10 +147,9 @@ local function SkinItemRow(row, collection)
 	row.BackgroundCenter:SetAlpha(0)
 	row.Border:SetAlpha(0)
 
-	row:CreateBackdrop('Transparent', nil, true)
+	row:CreateBackdrop('Transparent')
 	row.backdrop:Point('TOPLEFT', 2, -2)
 	row.backdrop:Point('BOTTOMRIGHT', -2, 2)
-	row.backdrop:SetBackdropColor(0, 0, 0, 0)
 
 	for _, state in ipairs({ row.NineSliceHighlight, row.NineSliceSelection, row.NineSliceActive }) do
 		HideRowPlate(state)
@@ -191,7 +168,7 @@ local function SkinItemRow(row, collection)
 		row.Icon:SetParent(row.Icon.backdrop)
 	end
 
-	StyleSourceIndicator(row)
+	SkinSourceIndicator(row.SourceIndicator)
 
 	S:ApplyElvUIFont(row)
 	RaiseRowText(row)
