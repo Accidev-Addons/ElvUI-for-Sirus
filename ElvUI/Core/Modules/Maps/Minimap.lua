@@ -582,22 +582,20 @@ function M:Minimap_PostDrag()
 	_G.MinimapBackdrop:SetAllPoints(Minimap)
 end
 
-local clusterResizePending
-
 function M:ClusterSize(width, height)
 	local holder = M.ClusterHolder
-	if not holder or clusterResizePending then return end
-	if width == holder.savedWidth and height == holder.savedHeight then return end
+	if not holder or (width == holder.savedWidth and height == holder.savedHeight) then return end
 
-	clusterResizePending = true
+	if InCombatLockdown() then
+		M:RegisterEvent('PLAYER_REGEN_ENABLED', 'RestoreClusterSize')
+	else
+		self:SetSize(holder.savedWidth, holder.savedHeight)
+	end
+end
 
-	E:Delay(0, function()
-		clusterResizePending = nil
-
-		if not InCombatLockdown() then
-			self:SetSize(holder.savedWidth, holder.savedHeight)
-		end
-	end)
+function M:RestoreClusterSize()
+	M:UnregisterEvent('PLAYER_REGEN_ENABLED')
+	M.ClusterSize(MinimapCluster, MinimapCluster:GetSize())
 end
 
 function M:ClusterPoint(_, anchor)

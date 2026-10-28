@@ -129,10 +129,6 @@ end
 function NP:SetSirusStackLayout(layout)
 	if not NP:IsSirusNameplates() then return end
 
-	if layout == "STACKED" then
-		layout = "PILE"
-	end
-
 	E:SetCVar("nameplateAllowOverlap", layout == "OVERLAP" and 1 or 0, "UNIT_NAMEPLATES_STACK_LAYOUT")
 
 	if layout ~= "OVERLAP" and GetCVar("nameplateStackMode") then
@@ -756,18 +752,6 @@ function NP:UpdateClickableSizes()
 	end
 end
 
-local function ClientHitTestArea(unit)
-	local driver = _G.NamePlateDriverFrame
-	if not (driver and type(driver.UpdateNamePlateHitTestArea) == "function") then return false end
-	if NP.hitTestBusy then return true end
-
-	NP.hitTestBusy = true
-	driver:UpdateNamePlateHitTestArea(unit)
-	NP.hitTestBusy = nil
-
-	return true
-end
-
 function NP:UpdateHitTestArea(unit)
 	if InCombatLockdown() then
 		NP.HitTestQueue[unit] = true
@@ -781,7 +765,7 @@ function NP:UpdateHitTestArea(unit)
 			local side = max((width - size) * mult / 2, 0)
 
 			C_NamePlateManager.SetNamePlateHitTestInsetsOverride(unit, side, side, plateHeight - height * mult, max((height - size) * mult, 0))
-		elseif not (plate and ClientHitTestArea(unit)) then
+		else
 			C_NamePlateManager.ClearNamePlateHitTestInsetsOverride(unit)
 		end
 

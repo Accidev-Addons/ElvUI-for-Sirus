@@ -2,10 +2,8 @@ local _G = _G
 local E = unpack(_G.ElvUI)
 local S = E:GetModule('Skins')
 
-local GameTooltip = _G.GameTooltip
 local ipairs = ipairs
 local select = select
-local format = string.format
 local hooksecurefunc = _G.hooksecurefunc
 
 local function RefreshButton(button)
@@ -69,96 +67,6 @@ local function HideRowPlate(state)
 	state:SetAlpha(0)
 end
 
-local function Trim(value)
-	if type(value) ~= 'string' then return value end
-
-	while true do
-		local trimmed = value:gsub('%s+$', ''):gsub('|n$', '')
-		if trimmed == value then break end
-
-		value = trimmed
-	end
-
-	return (value:gsub('^%s+', ''))
-end
-
-local function BuildSourceText(row)
-	local description = Trim(row.description)
-	local sourceText = Trim(row.sourceText)
-	local lines = {}
-
-	if description and description ~= '' then
-		lines[#lines + 1] = format('|cffffffff%s|r', description)
-	end
-
-	if sourceText and sourceText ~= '' then
-		lines[#lines + 1] = format('|cffffcc00%s|r', sourceText)
-	end
-
-	return #lines > 0 and table.concat(lines, '\n') or nil
-end
-
-local function CreatePanel(name, level, width, fontSize)
-	local parent = _G.CustomizationsCollectionFrame or _G.UIParent
-	local panel = CreateFrame('Frame', name, parent)
-	panel:SetFrameStrata('TOOLTIP')
-	panel:SetFrameLevel(level)
-	panel:SetSize(width, 40)
-	panel:SetClampedToScreen(true)
-	panel:Hide()
-
-	panel.customBackdropAlpha = .9
-	panel:SetTemplate('Transparent')
-
-	panel.text = panel:CreateFontString(nil, 'OVERLAY')
-	panel.text:SetJustifyH('LEFT')
-	panel.text:SetWordWrap(true)
-	panel.text:FontTemplate(nil, fontSize, 'OUTLINE')
-	panel.text:SetPoint('TOPLEFT', 8, -8)
-	panel.text:SetPoint('TOPRIGHT', -8, -8)
-
-	return panel
-end
-
-local sourcePanel
-local function GetSourcePanel()
-	if not sourcePanel then
-		sourcePanel = CreatePanel('ElvUICustomizationsSourcePanel', 700, 380, 12)
-
-		local frame = _G.CustomizationsCollectionFrame
-		if frame then
-			frame:HookScript('OnHide', function() sourcePanel:Hide() end)
-		end
-	end
-
-	return sourcePanel
-end
-
-local function HideSourceTooltip()
-	if sourcePanel then sourcePanel:Hide() end
-end
-
-local function ShowSourceTooltip(row, indicator)
-	local text = BuildSourceText(row)
-	local panel = GetSourcePanel()
-
-	if not text then
-		panel:Hide()
-		return
-	end
-
-	panel.text:SetText(text)
-	panel:SetHeight(math.max(24, math.ceil(panel.text:GetStringHeight() or 0) + 16))
-	panel:ClearAllPoints()
-	panel:SetPoint('TOPRIGHT', indicator, 'TOPLEFT', -8, 2)
-	panel:Show()
-
-	if panel:GetLeft() and panel:GetLeft() < 0 then
-		panel:ClearAllPoints()
-		panel:SetPoint('TOPLEFT', indicator, 'BOTTOMRIGHT', 8, 2)
-	end
-end
-
 local function StyleSourceIndicator(row)
 	local indicator = row and row.SourceIndicator
 	if not indicator then return end
@@ -176,23 +84,6 @@ local function StyleSourceIndicator(row)
 		indicator.IconHighlight:SetDesaturated(false)
 		indicator.IconHighlight:SetAlpha(.5)
 	end
-end
-
-local function SkinSourceIndicator(row)
-	local indicator = row.SourceIndicator
-	if not indicator or indicator.elvSourceSkinned then return end
-	indicator.elvSourceSkinned = true
-
-	indicator:EnableMouse(true)
-	StyleSourceIndicator(row)
-
-	indicator:HookScript('OnEnter', function(self)
-		GameTooltip:Hide()
-
-		ShowSourceTooltip(row, self)
-	end)
-
-	indicator:HookScript('OnLeave', HideSourceTooltip)
 end
 
 local PLATE_COLLECTED = { 0, 0, 0, .8 }
@@ -300,7 +191,7 @@ local function SkinItemRow(row, collection)
 		row.Icon:SetParent(row.Icon.backdrop)
 	end
 
-	SkinSourceIndicator(row)
+	StyleSourceIndicator(row)
 
 	S:ApplyElvUIFont(row)
 	RaiseRowText(row)

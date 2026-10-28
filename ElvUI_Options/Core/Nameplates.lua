@@ -4,9 +4,9 @@ local NP = E:GetModule("NamePlates")
 local ACD = E.Libs.AceConfigDialog
 
 local sirusStackLayouts = NP:IsSirusNameplates() and {
-	["OVERLAP"] = L["UNIT_NAMEPLATES_STACK_OVERLAP"],
-	["PILE"] = L["UNIT_NAMEPLATES_STACK_PILE"],
-	["COLUMN"] = L["UNIT_NAMEPLATES_STACK_COLUMN"]
+	["OVERLAP"] = _G.UNIT_NAMEPLATES_STACK_LAYOUT_OVERLAP,
+	["PILE"] = _G.UNIT_NAMEPLATES_STACK_LAYOUT_PILE,
+	["COLUMN"] = _G.UNIT_NAMEPLATES_STACK_LAYOUT_COLUMN
 }
 
 local next, pairs, type, tonumber = next, pairs, type, tonumber
@@ -1897,7 +1897,7 @@ local function PlateLabelOptions(unit, key, name, order)
 			fontSize = { order = 6, type = "range", name = L["Font Size"], min = 6, max = 32, step = 1 },
 			fontOutline = { order = 7, type = "select", name = L["Font Outline"], values = { NONE = L["None"], OUTLINE = "OUTLINE", THICKOUTLINE = "THICKOUTLINE" } },
 			justifyH = { order = 8, type = "select", name = L["JustifyH"], values = { LEFT = L["Left"], CENTER = L["Center"], RIGHT = L["Right"] } },
-			layer = { order = 9, type = "select", name = L["Draw Layer"], values = PLATE_LABEL_LAYERS }
+			layer = { order = 9, type = "select", name = L["Draw Layer"], values = PLATE_LABEL_LAYERS, sorting = E.DrawLayers }
 		}
 	}
 end
@@ -1936,9 +1936,8 @@ local function CustomTextOptions(unit)
 						size = { order = 5, type = "range", name = L["Font Size"], min = 6, max = 32, step = 1 },
 						fontOutline = { order = 6, type = "select", name = L["Font Outline"], desc = L["Set the font outline."], values = C.Values.FontFlags, sorting = C.Values.FontSorting },
 						justifyH = { order = 7, type = "select", name = L["JustifyH"], desc = L["Sets the font instance's horizontal text alignment style."], values = { LEFT = L["Left"], CENTER = L["Center"], RIGHT = L["Right"] } },
-						layer = { order = 7.5, type = "select", name = L["Draw Layer"], values = PLATE_LABEL_LAYERS,
-							get = function() local db = Configs()[textName] return (db and db.layer) or "OVERLAY" end,
-							set = function(_, value) local db = Configs()[textName] if db then db.layer = value NP:ConfigureAll() end end },
+						layer = { order = 7.5, type = "select", name = L["Draw Layer"], values = PLATE_LABEL_LAYERS, sorting = E.DrawLayers,
+							get = function() local db = Configs()[textName] return db and db.layer or "OVERLAY" end },
 						xOffset = { order = 8, type = "range", name = L["X-Offset"], min = -400, max = 400, step = 1 },
 						yOffset = { order = 9, type = "range", name = L["Y-Offset"], min = -400, max = 400, step = 1 },
 						attachTextTo = { order = 10, type = "select", name = L["Attach Text To"], values = { Frame = L["Frame"], Health = L["Health"], Name = L["Name"], CastBar = L["Castbar"] } },
@@ -4017,7 +4016,7 @@ E.Options.args.nameplates = {
 							order = 3,
 							type = "select",
 							name = L["UNIT_NAMEPLATES_TYPES"],
-							desc = sirusStackLayouts and L["UNIT_NAMEPLATES_STACK_LAYOUT_DESC"] or L["Set to either stack nameplates vertically or allow them to overlap."],
+							desc = sirusStackLayouts and _G.OPTION_TOOLTIP_UNIT_NAMEPLATES_STACK_LAYOUT or L["Set to either stack nameplates vertically or allow them to overlap."],
 							values = sirusStackLayouts or {
 								["STACKED"] = L["UNIT_NAMEPLATES_TYPE_2"],
 								["OVERLAP"] = L["UNIT_NAMEPLATES_TYPE_1"]

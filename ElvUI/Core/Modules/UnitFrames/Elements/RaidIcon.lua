@@ -5,7 +5,7 @@ local UF = E:GetModule("UnitFrames")
 --WoW API / Variables
 
 local function RaidIconPostUpdate(element, index)
-	E:SetRaidIconTexture(element, index)
+	if index then E:SetRaidIconTexture(element, index) end
 end
 
 function UF:Construct_RaidIcon(frame)
@@ -40,13 +40,9 @@ function UF:Configure_RaidIcon(frame)
 end
 
 function UF:UpdateRaidIcons()
-	for unit in next, self.units do
-		local icon = self[unit] and self[unit].RaidTargetIndicator
-		if icon and icon.ForceUpdate then icon.ForceUpdate(icon) end
-	end
-
-	for unit in next, self.groupunits do
-		local icon = self[unit] and self[unit].RaidTargetIndicator
-		if icon and icon.ForceUpdate then icon.ForceUpdate(icon) end
+	for _, frame in ipairs(E.oUF.objects) do
+		if frame:IsElementEnabled("RaidTargetIndicator") then
+			frame.RaidTargetIndicator:ForceUpdate()
+		end
 	end
 end
