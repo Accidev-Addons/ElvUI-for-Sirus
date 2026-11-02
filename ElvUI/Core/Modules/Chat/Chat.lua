@@ -976,6 +976,21 @@ function CH:ClearSnapping()
 	CH.db.panelSnapRightID = nil
 end
 
+-- refresh the dock row on PLAYER_ENTERING_WORLD; without this, on the first client
+-- load the docked tabs keep the Blizzard layout (text widths measured with the default
+-- font and the scroll frame anchored 5px lower), which garbles them until something
+-- dirties the dock. ~fixes tabs getting mangled on first load
+function CH:ResnapDock()
+	if not CH.Initialized then return end
+
+	CH:PositionChats()
+
+	local dock = _G.GeneralDockManager
+	if dock and dock.primary then
+		_G.FCFDock_UpdateTabs(dock, true)
+	end
+end
+
 function CH:SnappingChanged(chat)
 	CH:Unsnapped(chat)
 
@@ -2820,6 +2835,12 @@ function CH:Initialize()
 	if not ElvCharacterDB.ChatEditHistory then ElvCharacterDB.ChatEditHistory = {} end
 	if not ElvCharacterDB.ChatHistoryLog or not CH.db.chatHistory then ElvCharacterDB.ChatHistoryLog = {} end
 
+	-- these have to be hooked before SetupChat, so the forced `FCFDock_UpdateTabs` inside it
+	-- actually rebuilds the tab row (our fonts, sizePadding and scroll frame anchor) on the very first load
+	CH:SecureHook('FCFTab_UpdateColors')
+	CH:SecureHook('FCFDock_SelectWindow')
+	CH:SecureHook('FCFDock_ScrollToSelectedTab')
+
 	CH:SetupChat()
 	CH:DefaultSmileys()
 	CH:UpdateChatKeywords()
@@ -2832,9 +2853,6 @@ function CH:Initialize()
 	CH:SecureHook('ChatEdit_DeactivateChat')
 	CH:SecureHook('ChatEdit_OnEnterPressed')
 	CH:SecureHook('ChatEdit_SetLastActiveWindow')
-	CH:SecureHook('FCFTab_UpdateColors')
-	CH:SecureHook('FCFDock_SelectWindow')
-	CH:SecureHook('FCFDock_ScrollToSelectedTab')
 	CH:SecureHook('FCF_SetButtonSide', 'PositionButtonFrame')
 	CH:SecureHook('FCF_Close', 'PostChatClose')
 	CH:SecureHook('FCF_DockFrame', 'SnappingChanged')
@@ -2853,6 +2871,7 @@ function CH:Initialize()
 	CH:RegisterEvent('RAID_ROSTER_UPDATE', 'CheckLFGRoles')
 	CH:RegisterEvent('PARTY_MEMBERS_CHANGED', 'CheckLFGRoles')
 	CH:RegisterEvent('CVAR_UPDATE')
+	CH:RegisterEvent('PLAYER_ENTERING_WORLD', 'ResnapDock')
 
 	if _G.WIM then
 		_G.WIM.RegisterWidgetTrigger('chat_display', 'whisper,chat,w2w,demo', 'OnHyperlinkClick', function(self) CH.clickedframe = self end)
