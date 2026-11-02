@@ -960,6 +960,10 @@ function AB:GetHotkeyConfig(db)
 	return font, size, flags, anchor, offsetX, offsetY, AB:GetTextJustify(anchor), { color.r or 1, color.g or 1, color.b or 1 }, show
 end
 
+local function PostKeybind(_, button)
+	AB:FixKeybindText(button)
+end
+
 function AB:UpdateButtonConfig(barName, buttonName)
 	if AB:DeferOutOfCombat('NeedsUpdateButtonSettings') then return end
 
@@ -1035,7 +1039,7 @@ function AB:UpdateButtonConfig(barName, buttonName)
 		local keyTarget = format('%s%d', buttonName, i)
 		config.keyBoundTarget = keyTarget -- for LAB
 		button.keyBoundTarget = keyTarget -- for bind mode
-		button.postKeybind = AB.FixKeybindText
+		button.postKeybind = PostKeybind
 
 		button:SetAttribute('buttonlock', AB.db.lockActionBars or nil)
 		button:SetAttribute('checkselfcast', AB.db.checkSelfCast or nil)

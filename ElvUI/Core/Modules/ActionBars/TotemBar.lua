@@ -392,8 +392,8 @@ function AB:CreateTotemBar()
 		local hotkey = button.HotKey or _G[name..'HotKey']
 
 		if isShaman then
-			button:SetAttribute("type2", "destroytotem")
-			button:SetAttribute("*totem-slot*", _G.TOTEM_PRIORITIES[i])
+			button:SetAttribute("type2", "macro")
+			button:SetAttribute("macrotext2", "/run DestroyTotem(mod("..name..":GetID() - 1, NUM_MULTI_CAST_BUTTONS_PER_PAGE) + 1)")
 		end
 
 		AB:SkinMultiCastButton(button, true, MasqueGroup and E.private.actionbar.masque.actionbars)
