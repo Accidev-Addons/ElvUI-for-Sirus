@@ -417,14 +417,14 @@ E:AddTag('health:deficit-percent:name', 'UNIT_HEALTH UNIT_MAXHEALTH UNIT_NAME_UP
 	end
 end)
 
-E:AddTag('power:max', 'UNIT_DISPLAYPOWER UNIT_MAXPOWER', function(unit)
+E:AddTag('power:max', 'UNIT_DISPLAYPOWER UNIT_MAXENERGY UNIT_MAXFOCUS UNIT_MAXMANA UNIT_MAXRAGE UNIT_MAXRUNIC_POWER', function(unit)
 	local powerType = UnitPowerType(unit)
 	local max = UnitPowerMax(unit, powerType)
 
 	return E:GetFormattedText('CURRENT', max, max)
 end)
 
-E:AddTag('power:max:shortvalue', 'UNIT_DISPLAYPOWER UNIT_MAXPOWER', function(unit)
+E:AddTag('power:max:shortvalue', 'UNIT_DISPLAYPOWER UNIT_MAXENERGY UNIT_MAXFOCUS UNIT_MAXMANA UNIT_MAXRAGE UNIT_MAXRUNIC_POWER', function(unit)
 	local pType = UnitPowerType(unit)
 	local max = UnitPowerMax(unit, pType)
 
@@ -437,7 +437,7 @@ E:AddTag('mana:max', 'UNIT_MAXMANA', function(unit)
 	return E:GetFormattedText('CURRENT', max, max)
 end)
 
-E:AddTag('mana:max:shortvalue', 'UNIT_MAXPOWER', function(unit)
+E:AddTag('mana:max:shortvalue', 'UNIT_MAXMANA', function(unit)
 	local max = UnitPowerMax(unit, SPELL_POWER_MANA)
 
 	return E:GetFormattedText('CURRENT', max, max, nil, true)
@@ -563,7 +563,7 @@ E:AddTag('classpowercolor', 'UNIT_DISPLAYPOWER', function(unit)
 end)
 
 
-E:AddTag('permana', 'UNIT_DISPLAYPOWER', function(unit)
+E:AddTag('permana', 'UNIT_DISPLAYPOWER UNIT_MANA UNIT_MAXMANA', function(unit)
 	local m = UnitPowerMax(unit, SPELL_POWER_MANA)
 	if m == 0 then
 		return 0
