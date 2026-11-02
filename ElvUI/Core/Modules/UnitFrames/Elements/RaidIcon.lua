@@ -5,6 +5,11 @@ local UF = E:GetModule("UnitFrames")
 --WoW API / Variables
 
 local function RaidIconPostUpdate(element, index)
+	if not index and element.__owner.isForced then
+		index = 8
+		element:Show()
+	end
+
 	if index then E:SetRaidIconTexture(element, index) end
 end
 
