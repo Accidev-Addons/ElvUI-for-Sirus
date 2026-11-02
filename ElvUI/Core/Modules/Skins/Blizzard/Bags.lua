@@ -115,9 +115,14 @@ S:AddCallback("Skin_ItemExpiration", function()
 	frame.Title:ClearAllPoints()
 	frame.Title:Point("TOPLEFT", 8, -9)
 	frame.Title:SetJustifyH("LEFT")
+	frame.Title:FontTemplate()
+	frame.Warning:FontTemplate()
 
 	frame.TextBackground:SetTexture(E.media.blankTex)
 	frame.TextBackground:SetVertexColor(0, 0, 0, 0.25)
+	frame.TextBackground:ClearAllPoints()
+	frame.TextBackground:Point("BOTTOMLEFT", 3, 5)
+	frame.TextBackground:Point("BOTTOMRIGHT", -3, 5)
 
 	S:HandleCloseButton(_G.ContainerItemExpirationFrameCloseButton)
 
@@ -136,6 +141,7 @@ S:AddCallback("Skin_ItemExpiration", function()
 
 			if not button.elvExpirationLayerHooked then
 				button:HookScript("OnShow", UpdateExpirationLayer)
+				button.ItemExpirationOverlay.TimeLeft:FontTemplate(nil, 11, "OUTLINE")
 				button.elvExpirationLayerHooked = true
 			end
 			UpdateExpirationLayer(button)

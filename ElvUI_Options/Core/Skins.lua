@@ -27,6 +27,7 @@ local toggles = {
 	inspect = L["Inspect"],
 	itembrowser = L["Item Browser"],
 	loot = L["Loot Frame"],
+	losscontrol = L["LOSS_OF_CONTROL"],
 	macro = L["MACROS"],
 	mail = L["Mail Frame"],
 	merchant = L["Merchant Frame"],

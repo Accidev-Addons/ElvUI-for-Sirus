@@ -111,6 +111,7 @@ V.skins = {
 		legacyCollection = true,
 		loot = true,
 		lootCasePreview = true,
+		losscontrol = true,
 		macro = true,
 		mail = true,
 		merchant = true,

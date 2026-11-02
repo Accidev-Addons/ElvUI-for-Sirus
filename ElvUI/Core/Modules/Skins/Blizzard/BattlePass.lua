@@ -424,9 +424,8 @@ local function HandleBattlePassFrame()
 		if d.CloseButton then
 			S:HandleCloseButton(d.CloseButton)
 		end
-		if d.PurchaseButton then
-
-			ReskinPKBTButton(d.PurchaseButton)
+		if d.Content and d.Content.PurchaseButton then
+			ReskinPKBTButton(d.Content.PurchaseButton)
 		end
 		S:ApplyElvUIFont(d)
 	end

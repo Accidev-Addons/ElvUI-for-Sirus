@@ -423,6 +423,19 @@ S:AddCallback('Skin_TimerTracker', function()
 	end)
 end)
 
+S:AddCallback('Skin_LossOfControl', function()
+	if not E.private.skins.blizzard.enable or not E.private.skins.blizzard.losscontrol then return end
+
+	local LossOfControlFrame = _G.LossOfControlFrame
+	if not LossOfControlFrame then return end
+
+	S:HandleIcon(LossOfControlFrame.Icon, true)
+
+	hooksecurefunc('LossOfControlFrame_SetUpDisplay', function(frame)
+		frame.Icon.Anim:Stop()
+	end)
+end)
+
 S:AddCallback("Skin_ChooseItem", function()
 	if not E.private.skins.blizzard.enable or not E.private.skins.blizzard.chooseitem then return end
 

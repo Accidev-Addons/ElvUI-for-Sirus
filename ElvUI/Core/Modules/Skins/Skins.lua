@@ -1530,12 +1530,13 @@ do
 		if not f.Texture then
 			f.Texture = f:CreateTexture(nil, 'OVERLAY')
 			f.Texture:Point('CENTER')
-			f.Texture:SetTexture(E.Media.Textures.Close)
 			f.Texture:Size(12)
 			f:HookScript('OnEnter', closeOnEnter)
 			f:HookScript('OnLeave', closeOnLeave)
 			f:SetHitRectInsets(6, 6, 7, 7)
 		end
+
+		f.Texture:SetTexture(E.Media.Textures.Close)
 
 		if point then
 			f:Point('TOPRIGHT', point, 'TOPRIGHT', x or 2, y or 2)
