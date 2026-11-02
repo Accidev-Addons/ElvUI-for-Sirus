@@ -41,6 +41,7 @@ local hooksecurefunc = hooksecurefunc
 local IsInGroup = IsInGroup
 local IsInRaid = IsInRaid
 
+local LANGUAGE_RENEGADE = LANGUAGE_RENEGADE
 local UNKNOWN = UNKNOWN
 
 -- GLOBALS: ElvCharacterDB
@@ -1458,7 +1459,7 @@ function CH:MessageFormatter(frame, info, chatType, chatGroup, chatTarget, chann
 	end
 
 	local usingEmote = (chatType == 'EMOTE') or (chatType == 'TEXT_EMOTE')
-	local usingDifferentLanguage = (arg3 ~= '') and (arg3 ~= relevantDefaultLanguage)
+	local usingDifferentLanguage = (arg3 ~= '') and (arg3 ~= relevantDefaultLanguage or arg3 == LANGUAGE_RENEGADE)
 	if usingDifferentLanguage or not usingEmote then
 		playerLinkDisplayText = format('[%s]', coloredName)
 	end
