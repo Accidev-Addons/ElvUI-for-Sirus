@@ -2285,11 +2285,7 @@ function CH:FCFDock_ScrollToSelectedTab(dock)
 	dock.scrollFrame:ClearAllPoints()
 	dock.scrollFrame:Point('LEFT', (logchat and logchat.isDocked and logchattab) or CH:GetTab(dock.primary), 'RIGHT')
 
-	if dock.overflowButton:IsShown() then
-		dock.scrollFrame:Point('BOTTOMRIGHT', dock.overflowButton, 'BOTTOMLEFT')
-	else
-		dock.scrollFrame:Point('BOTTOMRIGHT', dock, 'BOTTOMRIGHT')
-	end
+	dock.scrollFrame:Point('BOTTOMRIGHT', dock, 'BOTTOMRIGHT', dock.overflowButton:IsShown() and -dock.overflowButton:GetWidth() or 0, 0)
 
 	E:Delay(0.01, SettleDockTabs)
 end
