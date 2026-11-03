@@ -203,6 +203,59 @@ S:AddCallback('Skin_Misc', function()
 
 	S:SkinDropDownMenu('DropDownList')
 
+	if _G.MenuStyle1Mixin and _G.MenuVariants then
+		hooksecurefunc(_G.MenuStyle1Mixin, 'Generate', function(menu)
+			for _, child in next, { menu:GetChildren() } do
+				if child:GetAttribute('layoutTextureKit') == 'common-dropdown-bg' then
+					menu:SetScale(GetAppropriateTopLevelParent():GetScale())
+					child:StripTextures()
+					child:SetTemplate('Transparent')
+					child:SetAlpha(1)
+					child:ClearAllPoints()
+					child:Point('TOPLEFT', menu)
+					child:Point('BOTTOMRIGHT', menu, 0, 7)
+				end
+			end
+		end)
+
+		local function SkinSelection(_, button)
+			local border, check = button.leftTexture1, button.leftTexture2
+			border:SetTexture(E.media.blankTex)
+			border:SetTexCoord(0, 1, 0, 1)
+			border:SetVertexColor(unpack(E.media.bordercolor))
+			border:SetDrawLayer('BORDER')
+			border:SetSize(12, 12)
+
+			local fill = button:AttachTexture()
+			fill:SetTexture(E.media.blankTex)
+			fill:SetVertexColor(unpack(E.media.backdropcolor))
+			fill:SetDrawLayer('ARTWORK')
+			fill:SetPoint('CENTER', border)
+			fill:SetSize(10, 10)
+
+			if check then
+				check:SetTexture(E.media.normTex)
+				check:SetTexCoord(0, 1, 0, 1)
+				check:SetVertexColor(unpack(E.media.rgbvaluecolor))
+				check:SetDrawLayer('OVERLAY')
+				check:ClearAllPoints()
+				check:SetPoint('CENTER', border)
+				check:SetSize(8, 8)
+			end
+		end
+
+		hooksecurefunc(_G.MenuVariants, 'CreateRadio', SkinSelection)
+		hooksecurefunc(_G.MenuVariants, 'CreateCheckbox', SkinSelection)
+		hooksecurefunc(_G.MenuVariants, 'CreateHighlight', function(button)
+			local highlight = button.highlight
+			local width, height = highlight:GetSize()
+			highlight:SetTexture(E.Media.Textures.Highlight)
+			highlight:SetSize(width, height)
+			highlight:SetBlendMode('BLEND')
+			highlight:SetVertexColor(unpack(E.media.rgbvaluecolor))
+		end)
+	end
+
 	_G.TicketStatusFrameButton:SetTemplate('Transparent')
 	_G.AutoCompleteBox:SetTemplate('Transparent')
 	_G.ConsolidatedBuffsTooltip:SetTemplate('Transparent')

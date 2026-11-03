@@ -1240,6 +1240,35 @@ function S:HandleDropDownBox(frame, width, template)
 		frame:OffsetFrameLevel(2)
 	end
 
+	if frame.SetupMenu then
+		if frame.Arrow then frame.Arrow:SetAlpha(0) end
+		if frame.Background then frame.Background:SetAlpha(0) end
+
+		frame.backdrop:ClearAllPoints()
+		frame.backdrop:Point('TOPLEFT', 0, -2)
+		frame.backdrop:Point('BOTTOMRIGHT', 0, 2)
+
+		if not frame.backdrop.arrow then
+			local arrow = frame:CreateTexture(nil, 'OVERLAY')
+			arrow:SetTexture(E.Media.Textures.ArrowUp)
+			arrow:SetRotation(S.ArrowRotation.down)
+			arrow:Size(14)
+			arrow:Point('RIGHT', frame.backdrop, 'RIGHT', -4, 0)
+			frame.backdrop.arrow = arrow
+
+			frame:HookScript('OnEnter', S.SetModifiedBackdrop)
+			frame:HookScript('OnLeave', S.SetOriginalBackdrop)
+		end
+
+		if frame.Text then
+			frame.Text:ClearAllPoints()
+			frame.Text:Point('LEFT', frame.backdrop, 'LEFT', 6, 0)
+			frame.Text:Point('RIGHT', frame.backdrop.arrow, 'LEFT', -2, 0)
+		end
+
+		return
+	end
+
 	local frameName = frame.GetName and frame:GetName()
 	local button = frame.Button or frameName and (_G[frameName..'Button'] or _G[frameName..'_Button'])
 	local text = frameName and _G[frameName..'Text'] or frame.Text
