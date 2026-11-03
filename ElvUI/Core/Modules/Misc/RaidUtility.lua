@@ -280,7 +280,7 @@ function RU:CreateRoleIcons()
 			end
 		end
 
-		local texture = frame:CreateTexture(nil, 'OVERLAY')
+		local texture = frame:CreateTexture(nil, 'ARTWORK')
 		texture:SetTexture(E.Media.Textures.RoleIcons) -- 337499
 		texture:SetTexCoord(data.texA, data.texB, data.texC, data.texD)
 		texture:Point('TOPLEFT', frame, 'TOPLEFT', -2, 2)

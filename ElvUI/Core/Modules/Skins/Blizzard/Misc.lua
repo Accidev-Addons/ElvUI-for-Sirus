@@ -165,6 +165,7 @@ S:AddCallback('Skin_Misc', function()
 						iconFrame:StyleButton()
 						iconFrame.IconBorder:Kill()
 						iconFrame.icon:SetTexCoords()
+						iconFrame.icon:SetDrawLayer('BORDER')
 						iconFrame.icon:SetInside()
 
 						slot.NameFrame.Background:Kill()

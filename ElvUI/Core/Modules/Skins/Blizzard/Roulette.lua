@@ -28,7 +28,7 @@ local function LoadSkin()
 	if not frame then return end
 
 	frame:SetParent(UIParent)
-	frame:SetScale(0.75)
+	frame:SetScale(0.85)
 	frame:SetFrameStrata("HIGH")
 
 	local nineSliceInset = _G.Custom_RouletteFrameNineSliceInset
@@ -142,6 +142,9 @@ local function LoadSkin()
 		frame.SpinButton:SetHeight(48)
 		frame.SpinButton:SetPoint("CENTER", 0, 44)
 		S:HandleButton(frame.SpinButton)
+		if frame.SpinButton.PriceText then
+			frame.SpinButton.PriceText:SetTextColor(1, 1, 1)
+		end
 	end
 
 	for i = 1, #frame.itemButtons do

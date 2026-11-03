@@ -40,6 +40,15 @@ local function CleanPageButton(btn)
 	if not btn then
 		return
 	end
+
+	local chrome = {}
+	for i = 1, (btn:GetNumRegions() or 0) do
+		local region = select(i, btn:GetRegions())
+		if region and region.IsObjectType and region:IsObjectType("Texture") then
+			chrome[#chrome + 1] = region
+		end
+	end
+
 	S:HandleButton(btn)
 
 	if btn.SetNormalTexture then
@@ -66,12 +75,9 @@ local function CleanPageButton(btn)
 		btn.DisabledBackground:SetAlpha(0)
 	end
 
-	for i = 1, (btn:GetNumRegions() or 0) do
-		local region = select(i, btn:GetRegions())
-		if region and region.IsObjectType and region:IsObjectType("Texture") then
-			region:SetTexture()
-			region:SetAlpha(0)
-		end
+	for _, region in next, chrome do
+		region:SetTexture()
+		region:SetAlpha(0)
 	end
 
 	btn:HookScript("OnShow", function(self)
@@ -90,12 +96,9 @@ local function CleanPageButton(btn)
 			self.DisabledBackground:SetTexture(0, 0, 0, 0)
 			self.DisabledBackground:SetAlpha(0)
 		end
-		for i = 1, (self:GetNumRegions() or 0) do
-			local r = select(i, self:GetRegions())
-			if r and r.IsObjectType and r:IsObjectType("Texture") then
-				r:SetTexture()
-				r:SetAlpha(0)
-			end
+		for _, r in next, chrome do
+			r:SetTexture()
+			r:SetAlpha(0)
 		end
 	end)
 end

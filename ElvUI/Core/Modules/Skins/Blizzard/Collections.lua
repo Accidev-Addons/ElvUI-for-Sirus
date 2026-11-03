@@ -66,6 +66,7 @@ local function LoadSkin()
 		button.selectedTexture:SetTexCoord(0, 1, 0, 1)
 		button.selectedTexture:SetVertexColor(1, .8, .1, .35)
 		button.selectedTexture:SetAllPoints()
+		button.name:SetDrawLayer("OVERLAY")
 
 		if button.favorite then button.favorite:SetParent(button.backdrop) end
 	end

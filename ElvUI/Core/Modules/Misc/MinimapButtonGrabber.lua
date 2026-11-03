@@ -198,7 +198,10 @@ local function SkinButtonRegions(button)
 				region:SetTexCoords()
 				button:HookScript('OnLeave', function() region:SetTexCoords() end)
 
-				region:SetDrawLayer('ARTWORK')
+				local layer = region:GetDrawLayer()
+				if layer == 'BACKGROUND' or layer == 'BORDER' then
+					region:SetDrawLayer('ARTWORK')
+				end
 				region.SetPoint = E.noop
 				region.ClearAllPoints = E.noop
 				region.SetAllPoints = E.noop

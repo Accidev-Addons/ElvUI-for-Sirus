@@ -15,6 +15,8 @@ local function LoadSkin()
 		local button = EncounterJournal.searchBox["sbutton"..i]
 		S:HandleButton(button)
 		button.icon:SetTexCoords()
+		button.icon:SetDrawLayer("ARTWORK")
+		_G[button:GetName().."IconFrame"]:SetDrawLayer("OVERLAY")
 
 		if i ~= 1 then
 			button:Point("TOPLEFT",  EncounterJournal.searchBox["sbutton"..i-1], "BOTTOMLEFT", 0, -E.Border)
@@ -159,7 +161,7 @@ local function LoadSkin()
 
 				instanceButton.bgImage:SetInside()
 				instanceButton.bgImage:SetTexCoord(.08, .6, .08, .6)
-				instanceButton.bgImage:SetDrawLayer("BORDER")
+				instanceButton.bgImage:SetDrawLayer("ARTWORK")
 
 				instanceButton.name:SetTextColor(1, 1, 1)
 

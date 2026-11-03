@@ -316,6 +316,7 @@ function S:Ace3_RegisterAsWidget(widget)
 				local bar = widget.bar
 				if bar then
 					bar:SetParent(frame.backdrop)
+					bar:SetDrawLayer('ARTWORK')
 					bar:ClearAllPoints()
 					bar:Point('TOPLEFT', frame.backdrop, 'TOPLEFT', 1, -1)
 					bar:Point('BOTTOMRIGHT', frame.backdrop, 'BOTTOMRIGHT', -1, 1)

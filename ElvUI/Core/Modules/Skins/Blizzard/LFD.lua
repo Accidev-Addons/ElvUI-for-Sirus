@@ -393,6 +393,7 @@ local function LoadSkin()
 
 	LFDDungeonReadyDialog.backdrop:SetFrameLevel(LFDDungeonReadyDialog:GetFrameLevel())
 	LFDDungeonReadyDialog.background:SetInside(LFDDungeonReadyDialog.backdrop)
+	LFDDungeonReadyDialog.background:SetDrawLayer("BORDER")
 
 	LFDDungeonReadyDialogFiligree:SetTexture("")
 	LFDDungeonReadyDialogBottomArt:SetTexture("")
@@ -669,6 +670,11 @@ local function LoadSkin()
 				button.Background:SetDrawLayer("BORDER")
 				button.Background:SetInside()
 				button.Background:SetGradientAlpha("HORIZONTAL", 0, 0, 0, 0, 1, 1, 1, 1)
+				for _, region in next, { button:GetRegions() } do
+					if region:IsObjectType("FontString") then
+						region:SetDrawLayer("ARTWORK")
+					end
+				end
 
 				S:HandleSirusToggle(button.TogglePlus, E.Media.Textures.Plus)
 				S:HandleSirusToggle(button.ToggleMinus, E.Media.Textures.Minus)
@@ -759,6 +765,7 @@ local function LoadSkin()
 		if b.Ring then b.Ring:SetAlpha(0) end
 		if b.Background then b.Background:SetAlpha(0) end
 		S:HandleButton(b)
+		b.Icon:SetDrawLayer("ARTWORK")
 		b.Icon:Size(45)
 		b.Icon:ClearAllPoints()
 		b.Icon:Point("LEFT", 10, 0)
@@ -1176,6 +1183,7 @@ local function LoadSkin()
 					if button.Icon then
 						button.Icon:SetTexCoord(unpack(E.TexCoords))
 						button.Icon:SetInside()
+						button.Icon:SetDrawLayer("ARTWORK")
 					end
 					button.isSkinned = true
 				end
@@ -1541,9 +1549,12 @@ local function LoadSkin()
 			if button and not button.isSkinned then
 				button:SetTemplate("Transparent")
 				button:StyleButton()
-				if button.HighlightTexture then
-					button.HighlightTexture:SetTexture(1, 1, 1, 0.1)
-					button.HighlightTexture:SetInside()
+				if button.BackgroundTexture then
+					button.BackgroundTexture:SetDrawLayer("BORDER")
+				end
+				if button.Highlight then
+					button.Highlight:SetTexture(1, 1, 1, 0.1)
+					button.Highlight:SetInside()
 				end
 				if button.Selected then
 					button.Selected:SetTexture(E.media.normTex)

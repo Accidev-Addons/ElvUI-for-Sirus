@@ -222,7 +222,7 @@ function M:LootRoll_Create(index)
 	status.parent = bar
 	bar.status = status
 
-	local spark = status:CreateTexture(nil, 'ARTWORK', nil, 1)
+	local spark = status:CreateTexture(nil, 'OVERLAY')
 	spark:SetTexture([[Interface\CastingBar\UI-CastingBar-Spark]])
 	spark:SetBlendMode('ADD')
 	spark:Width(2)
@@ -237,7 +237,7 @@ function M:LootRoll_Create(index)
 	button:RegisterEvent('MODIFIER_STATE_CHANGED')
 	bar.button = button
 
-	button.icon = button:CreateTexture(nil, 'OVERLAY')
+	button.icon = button:CreateTexture(nil, 'ARTWORK')
 	button.icon:SetAllPoints()
 	button.icon:SetTexCoords()
 

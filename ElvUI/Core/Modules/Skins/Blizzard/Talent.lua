@@ -137,17 +137,18 @@ end
 function S:HandleGlyphSocket(glyph, globes)
 	glyph.background:SetTexture(E.ClearTexture)
 	glyph.ring:SetTexture(E.ClearTexture)
+	if glyph.highlight then glyph.highlight:SetDrawLayer("OVERLAY") end
 
 	glyph.Shadow = glyph:CreateTexture(nil, "BACKGROUND", nil, -2)
 	glyph.Shadow:SetTexture(GLYPH_ART.."shadow")
 	glyph.Shadow:Point("CENTER")
 
-	glyph.Globe = glyph:CreateTexture(nil, "BACKGROUND", nil, -1)
+	glyph.Globe = glyph:CreateTexture(nil, "BORDER")
 	glyph.Globe:Point("CENTER")
 	glyph.Globe:SetTexCoord(GlobeCoord(1))
 	globes[#globes + 1] = glyph.Globe
 
-	glyph.Gloss = glyph:CreateTexture(nil, "ARTWORK", nil, 3)
+	glyph.Gloss = glyph:CreateTexture(nil, "OVERLAY")
 	glyph.Gloss:SetTexture(GLYPH_ART.."orbgloss")
 	glyph.Gloss:Point("CENTER")
 

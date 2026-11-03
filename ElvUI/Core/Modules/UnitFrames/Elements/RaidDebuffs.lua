@@ -11,7 +11,7 @@ function UF:Construct_RaidDebuffs(frame)
 	rdebuff:OffsetFrameLevel(20, frame.RaisedElementParent) --Make them appear above regular buffs or debuffs
 
 	local offset = UF.thinBorders and E.mult or E.Border
-	rdebuff.icon = rdebuff:CreateTexture(nil, "OVERLAY")
+	rdebuff.icon = rdebuff:CreateTexture(nil, "ARTWORK")
 	rdebuff.icon:SetInside(rdebuff, offset, offset)
 
 	rdebuff.count = rdebuff:CreateFontString(nil, "OVERLAY")

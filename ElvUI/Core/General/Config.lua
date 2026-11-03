@@ -161,7 +161,7 @@ function E:Grid_Create()
 		local tx = E:Grid_GetRegion()
 		if i == gHalf then
 			tx:SetTexture(1, 0, 0)
-			tx:SetDrawLayer('BACKGROUND', 1)
+			tx:SetDrawLayer('BORDER')
 		else
 			tx:SetTexture(0, 0, 0)
 			tx:SetDrawLayer('BACKGROUND', 0)
@@ -176,7 +176,7 @@ function E:Grid_Create()
 	do
 		local tx = E:Grid_GetRegion()
 		tx:SetTexture(1, 0, 0)
-		tx:SetDrawLayer('BACKGROUND', 1)
+		tx:SetDrawLayer('BORDER')
 		tx:ClearAllPoints()
 		tx:SetPoint('TOPLEFT', grid, 'TOPLEFT', 0, -half + size)
 		tx:SetPoint('BOTTOMRIGHT', grid, 'TOPRIGHT', 0, -(half + size))

@@ -97,6 +97,7 @@ local function LoadSkin()
 		local skillButtonHighlight = _G["TradeSkillSkill"..i.."Highlight"]
 
 		S:HandleCollapseExpandButton(skillButton, "+", nil, nil, 1)
+		skillButton:SetFrameLevel(_G.TradeSkillHighlightFrame:GetFrameLevel() + 1)
 
 		if skillButtonHighlight then
 			E:LockMethod(skillButtonHighlight, "SetTexture", "")
@@ -131,7 +132,7 @@ local function LoadSkin()
 		icon.backdrop:SetOutside(icon)
 
 		icon:SetTexCoords()
-		icon:SetDrawLayer("OVERLAY")
+		icon:SetDrawLayer("ARTWORK")
 		icon:Size(E.PixelMode and 38 or 32)
 		icon:Point("TOPLEFT", E.PixelMode and 1 or 4, -(E.PixelMode and 1 or 4))
 		icon:SetParent(icon.backdrop)

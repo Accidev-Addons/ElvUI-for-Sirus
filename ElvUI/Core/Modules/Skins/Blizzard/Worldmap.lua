@@ -92,6 +92,7 @@ S:AddCallback("Skin_WorldMap", function()
 			poi.selectionGlow:SetTexture(E.media.blankTex)
 			poi.selectionGlow:SetVertexColor(1, 0.82, 0)
 			poi.selectionGlow:SetAlpha(0.35)
+			poi.selectionGlow:SetDrawLayer("BORDER")
 			poi.selectionGlow:SetInside()
 
 			poi.isSkinned = true

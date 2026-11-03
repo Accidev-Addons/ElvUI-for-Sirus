@@ -105,7 +105,7 @@ local function LoadSkin()
 					iconBackdrop:SetTemplate("Default", true)
 					iconBackdrop:SetFrameLevel(button:GetFrameLevel() + 2)
 					button.Icon:SetParent(iconBackdrop)
-					button.Icon:SetAllPoints(iconBackdrop)
+					button.Icon:SetInside(iconBackdrop)
 				end
 
 				if button.Name then

@@ -86,8 +86,7 @@ S:AddCallback("Skin_WorldStateScore", function()
 	WorldStateScoreFrameName:StyleButton()
 	WorldStateScoreFrameTeam:StyleButton()
 
-	S:HandleButton(WorldStateScoreFrameLeaveButton)
-	WorldStateScoreFrameLeaveButton:StripTextures()
+	S:HandleButton(WorldStateScoreFrameLeaveButton, true)
 
 	for i = 1, 3 do
 		local tab = _G["WorldStateScoreFrameTab"..i]

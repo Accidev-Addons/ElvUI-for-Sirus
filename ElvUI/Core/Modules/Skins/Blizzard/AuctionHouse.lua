@@ -27,6 +27,7 @@ local function HandleSearchHistory(History)
 		button.SelectedTexture:SetVertexColor(unpack(E.media.rgbvaluecolor))
 		button.SelectedTexture:SetAlpha(0.35)
 		button.SelectedTexture:SetInside()
+		button.SelectedTexture:SetDrawLayer("BACKGROUND")
 		button.Text:FontTemplate()
 	end
 

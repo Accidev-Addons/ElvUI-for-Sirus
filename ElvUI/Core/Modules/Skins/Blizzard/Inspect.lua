@@ -175,6 +175,11 @@ local function LoadSkin()
 				button.Background:SetDrawLayer("BORDER")
 				button.Background:SetInside()
 				button.Background:SetGradientAlpha("HORIZONTAL", 0, 0, 0, 0, 1, 1, 1, 1)
+				for _, region in next, { button:GetRegions() } do
+					if region:IsObjectType("FontString") then
+						region:SetDrawLayer("ARTWORK")
+					end
+				end
 
 				S:HandleSirusToggle(button.TogglePlus, E.Media.Textures.Plus)
 				S:HandleSirusToggle(button.ToggleMinus, E.Media.Textures.Minus)

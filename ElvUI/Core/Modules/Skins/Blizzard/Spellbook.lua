@@ -98,6 +98,9 @@ local function LoadSkin()
 		button:SetTemplate()
 		button:StyleButton()
 
+		button.ActiveTexture:SetTexture([[Interface\Buttons\CheckButtonHilight]])
+		button.ActiveTexture:SetInside()
+
 		button.IconTexture:SetInside()
 		button.IconTexture:SetTexCoords()
 	end

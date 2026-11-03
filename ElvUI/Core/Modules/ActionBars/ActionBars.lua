@@ -660,7 +660,7 @@ function AB:StyleButton(button, noBackdrop, useMasque, ignoreNormal)
 			flash:SetTexture(1.0, 0.2, 0.2, 0.45)
 			flash:ClearAllPoints()
 			flash:SetOutside(icon, flashOffset, flashOffset)
-			flash:SetDrawLayer('BACKGROUND', -1)
+			flash:SetDrawLayer('BORDER')
 		else
 			flash:SetTexture()
 		end
