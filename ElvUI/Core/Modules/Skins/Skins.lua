@@ -249,7 +249,7 @@ function S:SetBackdropBorderColor(frame, script)
 end
 
 function S:SetModifiedBackdrop()
-	if self:IsEnabled() then
+	if self:IsEnabled() == 1 then
 		S:SetBackdropBorderColor(self, 'OnEnter')
 	end
 end

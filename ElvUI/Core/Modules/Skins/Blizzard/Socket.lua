@@ -27,6 +27,12 @@ S:AddCallbackForAddon("Blizzard_ItemSocketingUI", "Skin_Blizzard_ItemSocketingUI
 	S:SetBackdropHitRect(ItemSocketingFrame)
 
 	ItemSocketingFramePortrait:Kill()
+	for _, region in ipairs({ ItemSocketingFrame:GetRegions() }) do
+		if region:IsObjectType("FontString") and region:GetText() == ITEM_SOCKETING then
+			region:ClearAllPoints()
+			region:Point("TOP", ItemSocketingFrame.backdrop, "TOP", 0, -6)
+		end
+	end
 
 	S:HandleCloseButton(ItemSocketingCloseButton, ItemSocketingFrame.backdrop)
 

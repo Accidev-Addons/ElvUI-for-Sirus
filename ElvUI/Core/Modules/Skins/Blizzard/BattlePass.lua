@@ -208,6 +208,7 @@ local function HandleBattlePassFrame()
 
 	local f = _G.BattlePassFrame
 
+	f:SetScale(GetBattlePassFrameScale())
 	f:StripTextures(true)
 	f:SetTemplate("NoBackdrop")
 	if f.NineSlice then

@@ -635,6 +635,7 @@ local function LoadSkin()
 	if not E.private.skins.blizzard.enable or not E.private.skins.blizzard.store then return end
 
 	local function ApplySkin()
+		StoreFrame:SetScale(GetStoreFrameScale())
 		StoreFrame:HookScript("OnShow", function()
 			StoreFrame:SetScale(GetStoreFrameScale())
 		end)
