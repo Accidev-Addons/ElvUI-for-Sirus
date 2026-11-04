@@ -2606,7 +2606,7 @@ function CH:FCFTab_UpdateColors(tab, selected)
 	if selected then -- color tables are class updated in UpdateMedia
 		tab:SetText(decorated)
 
-		if CH.db.tabSelectedTextEnabled then
+		if CH.db.tabSelectedTextEnabled and tab.Text then
 			local color = CH.db.tabSelectedTextColor
 			if color then
 				tab.Text:SetTextColor(color.r, color.g, color.b)
