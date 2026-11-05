@@ -88,7 +88,31 @@ function UF:Configure_Portrait(frame, dontHide)
 				portrait:SetParent(frame)
 			end
 
-			if frame.ORIENTATION == "LEFT" then
+			if frame.PORTRAIT_DETACHED then
+				local holder = frame.PortraitHolder
+				if not holder then
+					holder = CreateFrame("Frame", nil, frame)
+					holder:Size(db.portrait.detachedWidth, db.portrait.detachedHeight)
+					if frame.ORIENTATION == "RIGHT" then
+						holder:Point("LEFT", frame, "RIGHT", frame.BORDER, 0)
+					else
+						holder:Point("RIGHT", frame, "LEFT", -frame.BORDER, 0)
+					end
+
+					if frame.unitframeType == "player" then
+						E:CreateMover(holder, "PlayerPortraitMover", L["Player Portrait"], nil, nil, nil, "ALL,SOLO", nil, "unitframe,player,portrait")
+					else
+						E:CreateMover(holder, "TargetPortraitMover", L["Target Portrait"], nil, nil, nil, "ALL,SOLO", nil, "unitframe,target,portrait")
+					end
+
+					frame.PortraitHolder = holder
+				else
+					holder:Size(db.portrait.detachedWidth, db.portrait.detachedHeight)
+					E:EnableMover(holder.mover.name)
+				end
+
+				portrait.backdrop:SetAllPoints(holder)
+			elseif frame.ORIENTATION == "LEFT" then
 				portrait.backdrop:Point("TOPLEFT", frame, "TOPLEFT", frame.SPACING, frame.USE_MINI_CLASSBAR and -(frame.CLASSBAR_YOFFSET+frame.SPACING) or -frame.SPACING)
 
 				if frame.USE_MINI_POWERBAR or frame.USE_POWERBAR_OFFSET or not frame.USE_POWERBAR or frame.USE_INSET_POWERBAR or frame.POWERBAR_DETACHED then
@@ -114,6 +138,10 @@ function UF:Configure_Portrait(frame, dontHide)
 			portrait:Hide()
 			portrait.backdrop:Hide()
 		end
+	end
+
+	if frame.PortraitHolder and not frame.PORTRAIT_DETACHED then
+		E:DisableMover(frame.PortraitHolder.mover.name)
 	end
 end
 

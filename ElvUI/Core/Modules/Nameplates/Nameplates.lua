@@ -466,6 +466,7 @@ function NP:OnShow(isConfig, dontHideHighlight, unitToken)
 
 		NP:Configure_Level(frame)
 		NP:Configure_Name(frame)
+		NP:Configure_Title(frame)
 
 		NP:Configure_Auras(frame, "Buffs")
 		NP:Configure_Auras(frame, "Debuffs")
@@ -502,6 +503,7 @@ function NP:OnShow(isConfig, dontHideHighlight, unitToken)
 	end
 
 	frame:Show()
+	NP:ChatBubble_OnShow(frame)
 
 	NP:StyleFilterUpdate(frame, "NAME_PLATE_UNIT_ADDED")
 	NP:PixelSnap(frame)
@@ -518,6 +520,7 @@ function NP:OnHide(isConfig)
 	local hadHitTestOverride = frame.IconOnlyChanged
 
 	NP:Clear_CustomTexts(frame)
+	NP:ChatBubble_OnHide(frame)
 	NP.VisiblePlates[frame] = nil
 
 	if frame.unit and NP.PlatesByUnit[frame.unit] == self then
@@ -570,6 +573,7 @@ function NP:OnHide(isConfig)
 	frame.Name.r, frame.Name.g, frame.Name.b = nil, nil, nil
 	frame.Name:SetText()
 	frame.Name.NameOnlyGlow:Hide()
+	if frame.Title then frame.Title:Hide() end
 	frame.Elite:Hide()
 	frame.CPoints:Hide()
 	frame.IconFrame:Hide()
@@ -614,6 +618,7 @@ function NP:ConfigureAll()
 	NP:RefreshSirusAuraAnchors()
 	NP:SetCVars()
 	NP:UpdateClickableSizes()
+	NP:UpdateChatBubbles()
 end
 
 function NP:ForEachPlate(functionToRun, ...)
@@ -1086,6 +1091,7 @@ function NP:SetMouseoverFrame(frame)
 
 			NP:Update_Highlight(frame)
 			NP:UpdateElement_Auras(frame)
+			NP:Update_Title(frame)
 		end
 	elseif frame.isMouseover then
 		frame.isMouseover = nil
@@ -1407,6 +1413,7 @@ end
 
 function NP:PLAYER_UPDATE_RESTING()
 	NP:ForEachVisiblePlate("StyleFilterUpdate", "PLAYER_UPDATE_RESTING")
+	NP:ForEachVisiblePlate("Update_Title")
 end
 
 function NP:RAID_TARGET_UPDATE()
@@ -1517,6 +1524,8 @@ function NP:Initialize()
 	NP:RegisterEvent("RAID_TARGET_UPDATE")
 	NP:RegisterEvent("UPDATE_MOUSEOVER_UNIT")
 	NP:RegisterEvent("UNIT_COMBO_POINTS")
+
+	NP:UpdateChatBubbles()
 
 	if NP:IsSirusNameplates() then
 		NP:HookSirusPlateSize()

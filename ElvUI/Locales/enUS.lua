@@ -879,3 +879,10 @@ L["%2$s%4$s (%3$s)|r Level %1$s"] = true
 L["Hold Alt to allocate all available points."] = true
 L["Reset all bonus stat points."] = true
 L["Undress"] = true
+L["Declined duel request from %s"] = true
+L["Reported by %s"] = true
+L["Fortune Cookie Prediction"] = true
+
+L["Load AddOn"] = true
+L["Player Portrait"] = true
+L["Target Portrait"] = true

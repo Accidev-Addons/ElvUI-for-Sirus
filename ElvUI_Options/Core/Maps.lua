@@ -63,6 +63,11 @@ Maps.args.minimap.args.zoomResetGroup.args.enable = ACH:Toggle(L["Enable"], nil,
 Maps.args.minimap.args.zoomResetGroup.args.time = ACH:Range(L["Seconds"], nil, 2, { min = 1, max = 15, step = 1 })
 Maps.args.minimap.args.zoomResetGroup.inline = true
 
+Maps.args.minimap.args.combatHideGroup = ACH:Group(L["Hide In Combat"], nil, 11, nil, nil, nil, function() return not E.private.general.minimap.enable end)
+Maps.args.minimap.args.combatHideGroup.args.hideInCombat = ACH:Toggle(L["Enable"], L["Hide the minimap while in combat."], 1)
+Maps.args.minimap.args.combatHideGroup.args.fadeInDelay = ACH:Range(L["Fade In Delay"], L["Seconds to wait after combat before the minimap fades back in."], 2, { min = 0, max = 20, step = 1 }, nil, nil, nil, function() return not E.db.general.minimap.hideInCombat end)
+Maps.args.minimap.args.combatHideGroup.inline = true
+
 Maps.args.minimap.args.cluster = ACH:Group(L["Cluster"], nil, 40)
 Maps.args.minimap.args.cluster.args.clusterDisable = ACH:Toggle(L["Disable Cluster"], nil, 1, nil, nil, nil, function(info) return E.db.general.minimap[info[#info]] end, function(info, value) E.db.general.minimap[info[#info]] = value; MM:UpdateSettings(); E.ShowPopup = true end)
 Maps.args.minimap.args.cluster.args.clusterBackdrop = ACH:Toggle(L["Cluster Backdrop"], nil, 2, nil, nil, nil, function(info) return E.db.general.minimap[info[#info]] end, function(info, value) E.db.general.minimap[info[#info]] = value; MM:UpdateSettings() end, function() return E.db.general.minimap.clusterDisable end)
@@ -72,10 +77,12 @@ Maps.args.minimap.args.cluster.args.circle = ACH:Toggle(L["Circle"], nil, 4, nil
 Maps.args.minimap.args.cluster.args.circle.customWidth = 125
 
 Maps.args.minimap.args.cluster.args.locationTextGroup = ACH:Group(L["Location Text"], nil, 10, nil, function(info) return E.db.general.minimap[info[#info]] end, function(info, value) E.db.general.minimap[info[#info]] = value; MM:UpdateSettings() end, function() return not E.private.general.minimap.enable end)
-Maps.args.minimap.args.cluster.args.locationTextGroup.args.locationText = ACH:Select(L["Location Text"], L["Change settings for the display of the location text that is on the minimap."], 1, { MOUSEOVER = L["Minimap Mouseover"], SHOW = L["Always Display"], HIDE = L["Hide"] }, nil, nil, nil, nil, nil, function() return not E.db.general.minimap.clusterDisable end)
+Maps.args.minimap.args.cluster.args.locationTextGroup.args.locationText = ACH:Select(L["Location Text"], L["Change settings for the display of the location text that is on the minimap."], 1, { MOUSEOVER = L["Minimap Mouseover"], SHOW = L["Always Display"], ABOVE = L["Above Minimap"], HIDE = L["Hide"] }, nil, nil, nil, nil, nil, function() return not E.db.general.minimap.clusterDisable end)
 Maps.args.minimap.args.cluster.args.locationTextGroup.args.locationFont = ACH:SharedMediaFont(L["Font"], nil, 2)
 Maps.args.minimap.args.cluster.args.locationTextGroup.args.locationFontSize = ACH:Range(L["Font Size"], nil, 3, textFontSize)
 Maps.args.minimap.args.cluster.args.locationTextGroup.args.locationFontOutline = ACH:FontFlags(L["Font Outline"], nil, 4)
+Maps.args.minimap.args.cluster.args.locationTextGroup.args.locationCoords = ACH:Toggle(L["Coordinates"], L["Show the player coordinates on both sides of the location panel above the minimap."], 5, nil, nil, nil, nil, nil, function() return not (E.db.general.minimap.clusterDisable and E.db.general.minimap.locationText == 'ABOVE') end)
+Maps.args.minimap.args.cluster.args.locationTextGroup.args.locationDigits = ACH:Range(L["Coordinate Digits"], L["Number of decimal places in the coordinates."], 6, { min = 0, max = 2, step = 1 }, nil, nil, nil, function() return not (E.db.general.minimap.clusterDisable and E.db.general.minimap.locationText == 'ABOVE' and E.db.general.minimap.locationCoords) end)
 Maps.args.minimap.args.cluster.args.locationTextGroup.inline = true
 
 Maps.args.minimap.args.cluster.args.timeTextGroup = ACH:Group(L["Time Text"], nil, 20, nil, function(info) return E.db.general.minimap[info[#info]] end, function(info, value) E.db.general.minimap[info[#info]] = value; MM:UpdateSettings() end, function() return E.db.general.minimap.clusterDisable or not E.private.general.minimap.enable end)

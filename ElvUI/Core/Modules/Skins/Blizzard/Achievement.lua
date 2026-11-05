@@ -5,6 +5,7 @@ local _G = _G
 local ipairs = ipairs
 local unpack = unpack
 local hooksecurefunc = hooksecurefunc
+local band = bit.band
 local GetAchievementNumCriteria = GetAchievementNumCriteria
 local GetAchievementCriteriaInfo = GetAchievementCriteriaInfo
 local CRITERIA_TYPE_ACHIEVEMENT = CRITERIA_TYPE_ACHIEVEMENT
@@ -648,4 +649,105 @@ S:AddCallbackForAddon("Blizzard_AchievementUI", "Skin_Sirus_AchievementUI", func
 	if AchievementFrameSearchResultsScrollFrameScrollBar then
 		S:HandleSirusScrollBar(AchievementFrameSearchResultsScrollFrameScrollBar)
 	end
+end)
+
+S:AddCallbackForAddon("Blizzard_AchievementUI", "AnimatedAchievementBars", function()
+	if not E.private.skins.animatedAchievementBars then return end
+
+	local function AnimateStatusBar(bar, noNumber)
+		bar.anim = _G.CreateAnimationGroup(bar)
+		bar.anim.progress = bar.anim:CreateAnimation("Progress")
+		bar.anim.progress:SetEasing("Out")
+		bar.anim.progress:SetDuration(1.7)
+
+		bar.anim.color = bar.anim:CreateAnimation("Color")
+		bar.anim.color:SetEasing("Out")
+		bar.anim.color:SetColorType("Statusbar")
+		bar.anim.color:SetDuration(1.7)
+		bar.anim.color.StartR, bar.anim.color.StartG, bar.anim.color.StartB = 1, 0, 0
+
+		if not noNumber then
+			bar.anim2 = _G.CreateAnimationGroup(_G[bar:GetName().."Text"])
+			bar.anim2.number = bar.anim2:CreateAnimation("Number")
+			bar.anim2.number:SetDuration(1.7)
+		end
+	end
+
+	local function PlayStatusBar(bar, maxValue, value, noNumber)
+		if not value or not maxValue or value > maxValue then return end
+
+		bar.anim:Stop()
+		if bar.anim2 then
+			bar.anim2:Stop()
+		end
+
+		bar:SetValue(0)
+		bar.anim.progress:SetChange(value)
+		bar.anim.color:Reset()
+		bar.anim.color:SetChange(E:ColorGradient(value / maxValue, 1, 0, 0, 1, 1, 0, 0, 1, 0))
+		bar.anim:Play()
+
+		if not noNumber then
+			bar.anim2.number:SetPostfix("/"..maxValue)
+			bar.anim2.number:SetChange(value)
+			bar.anim2:Play()
+		end
+	end
+
+	AnimateStatusBar(AchievementFrameSummaryCategoriesStatusBar)
+	AnimateStatusBar(AchievementFrameComparisonSummaryPlayerStatusBar)
+	AnimateStatusBar(AchievementFrameComparisonSummaryFriendStatusBar)
+
+	for i = 1, 8 do
+		AnimateStatusBar(_G["AchievementFrameSummaryCategoriesCategory"..i])
+	end
+
+	hooksecurefunc("AchievementFrameCategory_StatusBarTooltip", function(self)
+		local statusBar = _G[GameTooltip:GetName().."StatusBar"..(GameTooltip.shownStatusBars or 0)]
+		if not statusBar then return end
+
+		if not statusBar.anim then
+			AnimateStatusBar(statusBar)
+		end
+
+		PlayStatusBar(statusBar, self.numAchievements, self.numCompleted)
+	end)
+
+	hooksecurefunc("AchievementFrameComparison_UpdateStatusBars", function(id)
+		if type(id) ~= "number" then return end
+
+		local numAchievements, numCompleted = GetCategoryNumAchievements(id)
+		PlayStatusBar(AchievementFrameComparisonSummaryPlayerStatusBar, numAchievements, numCompleted)
+		PlayStatusBar(AchievementFrameComparisonSummaryFriendStatusBar, numAchievements, GetComparisonCategoryNumAchievements(id))
+	end)
+
+	hooksecurefunc("AchievementFrameSummaryCategoriesStatusBar_Update", function()
+		local total, completed = GetNumCompletedAchievements()
+		PlayStatusBar(AchievementFrameSummaryCategoriesStatusBar, total, completed)
+	end)
+
+	hooksecurefunc("AchievementFrameSummaryCategory_OnShow", function(self)
+		local totalAchievements, totalCompleted = AchievementFrame_GetCategoryTotalNumAchievements(self:GetID(), true)
+		PlayStatusBar(self, totalAchievements, totalCompleted)
+	end)
+
+	hooksecurefunc("AchievementButton_GetProgressBar", function(index)
+		local frame = _G["AchievementFrameProgressBar"..index]
+		if frame and not frame.anim then
+			AnimateStatusBar(frame, true)
+		end
+	end)
+
+	hooksecurefunc("AchievementObjectives_DisplayCriteria", function(_, id)
+		if not id then return end
+
+		local progressBars = 0
+		for i = 1, GetAchievementNumCriteria(id) do
+			local _, criteriaType, _, quantity, reqQuantity, _, flags, assetID = GetAchievementCriteriaInfo(id, i)
+			if not (criteriaType == CRITERIA_TYPE_ACHIEVEMENT and assetID) and band(flags, ACHIEVEMENT_CRITERIA_PROGRESS_BAR) == ACHIEVEMENT_CRITERIA_PROGRESS_BAR then
+				progressBars = progressBars + 1
+				PlayStatusBar(AchievementButton_GetProgressBar(progressBars), reqQuantity, quantity, true)
+			end
+		end
+	end)
 end)

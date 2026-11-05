@@ -15,6 +15,7 @@ local DisableAddOn = DisableAddOn
 local InCombatLockdown = InCombatLockdown
 local IsAddOnLoaded = IsAddOnLoaded
 local IsAddOnLoadOnDemand = IsAddOnLoadOnDemand
+local LoadAddOn = LoadAddOn
 local ReloadUI = ReloadUI
 local SetCursor = SetCursor
 local UpdateAddOnMemoryUsage = UpdateAddOnMemoryUsage
@@ -360,6 +361,31 @@ local function GetStatusInfo(index)
 	end
 end
 
+local function CanLoadOnDemand(index)
+	local name, _, _, enabled = GetAddOnInfo(index)
+	if not name or enabled ~= 1 or IsAddOnLoaded(name) or not IsAddOnLoadOnDemand(name) then return end
+
+	local deps = { GetAddOnDependencies(name) }
+	for i = 1, #deps do
+		if not IsAddOnLoaded(deps[i]) then return end
+	end
+
+	return true
+end
+
+function AM:LoadAddOn(index)
+	local name, title = GetAddOnInfo(index)
+	if not name then return end
+
+	local loaded, reason = LoadAddOn(name)
+	if not loaded and reason then
+		E:Print(format('%s: %s', title or name, _G['ADDON_'..reason] or reason))
+	end
+
+	AM:UpdateRows()
+	AM:UpdateStatus()
+end
+
 function AM:UpdateRows()
 	if not AM.Rows or AM.updatingRows then return end
 	AM.updatingRows = true
@@ -388,6 +414,7 @@ function AM:UpdateRows()
 				row.addonName:Hide()
 				row.status:Hide()
 				row.memory:Hide()
+				row.load:Hide()
 
 				local isCollapsed = collapsed[entry.name]
 				row.expand:SetTexture(isCollapsed and E.Media.Textures.Plus or E.Media.Textures.Minus)
@@ -423,6 +450,7 @@ function AM:UpdateRows()
 				local statusText, statusColor = GetStatusInfo(index)
 				row.status:SetText(statusText or '')
 				row.status:SetTextColor(statusColor.r, statusColor.g, statusColor.b)
+				row.load:SetShown(CanLoadOnDemand(index))
 
 				row.check:Enable()
 				row.check:SetChecked(enabled == 1)
@@ -583,6 +611,24 @@ local function CreateRow(i)
 	row.status:FontTemplate(nil, 11)
 	row.status:SetJustifyH('RIGHT')
 	row.status:SetPoint('RIGHT', row.memory, 'LEFT', -10, 0)
+
+	row.load = CreateFrame('Button', nil, row)
+	row.load:SetSize(110, 18)
+	row.load:SetPoint('RIGHT', row.status, 'LEFT', -8, 0)
+	row.load:SetScript('OnClick', function(self)
+		local entry = self:GetParent().entry
+		if entry and entry.kind == 'addon' then
+			AM:LoadAddOn(entry.index)
+		end
+	end)
+	S:HandleButton(row.load)
+
+	local loadText = row.load:CreateFontString(nil, 'OVERLAY')
+	loadText:FontTemplate(nil, 11)
+	loadText:SetPoint('CENTER')
+	loadText:SetText(L['Load AddOn'])
+	row.load:SetFontString(loadText)
+	row.load:Hide()
 
 	return row
 end

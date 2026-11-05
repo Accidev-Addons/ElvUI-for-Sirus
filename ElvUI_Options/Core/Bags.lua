@@ -183,6 +183,7 @@ Bags.args.vendorGrays.args.enable = ACH:Toggle(L["Enable"], L["Automatically ven
 Bags.args.vendorGrays.args.interval = ACH:Range(L["Sell Interval"], L["Will attempt to sell another item in set interval after previous one was sold."], 2, { min = .1, max = 1, step = .1 })
 Bags.args.vendorGrays.args.details = ACH:Toggle(L["Vendor Gray Detailed Report"], L["Displays a detailed report of every item sold when enabled."], 3)
 Bags.args.vendorGrays.args.progressBar = ACH:Toggle(L["Progress Bar"], nil, 4)
+Bags.args.vendorGrays.args.deleteFortuneCookie = ACH:Toggle(L["Delete Fortune Cookie Predictions"], L["Also delete 'Fortune Cookie Prediction' items when you delete grays with the Vendor/Delete Grays button."], 5)
 
 Bags.args.bagSortingGroup = ACH:Group(L["Sorting"], nil, 5, nil, nil, nil, function() return not E.Bags.Initialized end)
 Bags.args.bagSortingGroup.args.sortInverted = ACH:Toggle(L["Sort Inverted"], L["Direction the bag sorting will use to allocate the items."], 1)

@@ -39,6 +39,7 @@ function UF:Construct_TargetFrame(frame)
 	frame.Fader = self:Construct_Fader()
 	frame.Cutaway = self:Construct_Cutaway(frame)
 	frame.HeadHuntingWantedFrame = self:Construct_HeadHuntingWanted(frame)
+	frame.ClassIcon = self:Construct_ClassIcon(frame)
 
 	frame.customTexts = {}
 	frame:Point("BOTTOM", E.UIParent, "BOTTOM", 342, 139)
@@ -67,7 +68,8 @@ function UF:Update_TargetFrame(frame, db)
 
 		frame.USE_PORTRAIT = db.portrait and db.portrait.enable
 		frame.USE_PORTRAIT_OVERLAY = frame.USE_PORTRAIT and (db.portrait.overlay or frame.ORIENTATION == "MIDDLE")
-		frame.PORTRAIT_WIDTH = (frame.USE_PORTRAIT_OVERLAY or not frame.USE_PORTRAIT) and 0 or db.portrait.width
+		frame.PORTRAIT_DETACHED = frame.USE_PORTRAIT and not frame.USE_PORTRAIT_OVERLAY and db.portrait.detachFromFrame
+		frame.PORTRAIT_WIDTH = (frame.USE_PORTRAIT_OVERLAY or frame.PORTRAIT_DETACHED or not frame.USE_PORTRAIT) and 0 or db.portrait.width
 
 		frame.CAN_HAVE_CLASSBAR = db.combobar.enable
 		frame.MAX_CLASS_BAR = MAX_COMBO_POINTS
@@ -154,6 +156,8 @@ function UF:Update_TargetFrame(frame, db)
 	UF:Configure_PVPIcon(frame)
 
 	UF:Configure_HeadHuntingWanted(frame)
+
+	UF:Configure_ClassIcon(frame)
 
 	--CustomTexts
 	UF:Configure_CustomTexts(frame)

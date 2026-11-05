@@ -33,6 +33,7 @@ local Minimap = _G.Minimap
 
 local IconParents = {}
 local IconPoints = {}
+local LOCATION_HEIGHT = 22
 
 --Create the minimap micro menu
 local menuFrame = CreateFrame('Frame', 'MinimapRightClickMenu', E.UIParent, 'UIDropDownMenuTemplate')
@@ -253,6 +254,85 @@ function M:Update_ZoneText()
 
 	Minimap.location:SetText(utf8sub(GetMinimapZoneText(), 1, 46))
 	Minimap.location:SetTextColor(M:GetLocTextColor())
+end
+
+function M:LocationPanel_OnUpdate(elapsed)
+	self.elapsed = (self.elapsed or 0) + elapsed
+	if self.elapsed < 0.1 then return end
+	self.elapsed = 0
+
+	local x, y = E:GetPlayerMapPos()
+	self.coordX.text:SetFormattedText(self.coordFormat, (x or 0) * 100)
+	self.coordY.text:SetFormattedText(self.coordFormat, (y or 0) * 100)
+end
+
+function M:CreateLocationBox(parent)
+	local box = CreateFrame('Frame', nil, parent)
+	box:SetTemplate('Transparent')
+
+	box.text = box:CreateFontString(nil, 'OVERLAY')
+	box.text:SetAllPoints()
+
+	return box
+end
+
+function M:UpdateLocationPanel(font, size, outline)
+	local panel, location = M.LocationPanel, Minimap.location
+	local above = M.db.clusterDisable and M.db.locationText == 'ABOVE'
+	panel:SetShown(above)
+
+	location:ClearAllPoints()
+	if not above then
+		location:Point('TOP', Minimap, 0, -2)
+		location:Width(E.MinimapSize)
+		panel:SetScript('OnUpdate', nil)
+		return
+	end
+
+	local zone, coords = panel.zone, M.db.locationCoords
+	location:SetAllPoints(zone)
+	panel.coordX:SetShown(coords)
+	panel.coordY:SetShown(coords)
+
+	zone:ClearAllPoints()
+	if coords then
+		local gap = E.PixelMode and -1 or 1
+		zone:Point('TOPLEFT', panel.coordX, 'TOPRIGHT', gap, 0)
+		zone:Point('BOTTOMRIGHT', panel.coordY, 'BOTTOMLEFT', -gap, 0)
+
+		panel.coordX.text:FontTemplate(font, size, outline)
+		panel.coordY.text:FontTemplate(font, size, outline)
+		panel.coordFormat = '%.'..M.db.locationDigits..'f'
+		panel:SetScript('OnUpdate', M.LocationPanel_OnUpdate)
+	else
+		zone:SetAllPoints()
+		panel:SetScript('OnUpdate', nil)
+	end
+end
+
+local function FadeInMinimap()
+	if InCombatLockdown() then return end
+
+	MinimapCluster:Show()
+	E:UIFrameFadeIn(MinimapCluster, 0.5, 0, 1)
+end
+
+local function HideMinimap()
+	MinimapCluster:Hide()
+end
+
+local function ShowMinimap()
+	E:Delay(M.db.fadeInDelay, FadeInMinimap)
+end
+
+function M:UpdateCombatHide()
+	if M.db.hideInCombat then
+		E:RegisterEventForObject('PLAYER_REGEN_DISABLED', M, HideMinimap)
+		E:RegisterEventForObject('PLAYER_REGEN_ENABLED', M, ShowMinimap)
+	else
+		E:UnregisterEventForObject('PLAYER_REGEN_DISABLED', M, HideMinimap)
+		E:UnregisterEventForObject('PLAYER_REGEN_ENABLED', M, ShowMinimap)
+	end
 end
 
 do
@@ -478,23 +558,27 @@ function M:UpdateSettings()
 	local panel, holder = _G.MinimapPanel, M.MapHolder
 	panel:SetShown(E.db.datatexts.panels.MinimapPanel.enable)
 
+	local locationFont, locaitonSize, locationOutline = LSM:Fetch('font', M.db.locationFont), M.db.locationFontSize, M.db.locationFontOutline
+	M:UpdateLocationPanel(locationFont, locaitonSize, locationOutline)
+	M:UpdateCombatHide()
+
+	local joinPanel = E:Scale(1)
+	local aboveSize = M.LocationPanel:IsShown() and (E:Scale(LOCATION_HEIGHT) - joinPanel) or 0
 	local mmOffset = E.PixelMode and 1 or 3
 	local mmScale = M.db.scale
 	Minimap:ClearAllPoints()
-	Minimap:Point('TOPRIGHT', holder, -mmOffset / mmScale, -mmOffset / mmScale)
+	Minimap:Point('TOPRIGHT', holder, -mmOffset / mmScale, -mmOffset / mmScale - aboveSize)
 	Minimap:Size(E.MinimapSize)
 
 	local mWidth, mHeight = Minimap:GetSize()
 	local bWidth, bHeight = E:Scale(E.PixelMode and 2 or 6), E:Scale(E.PixelMode and 2 or 8)
-	local panelSize, joinPanel = (panel:IsShown() and panel:GetHeight()) or E:Scale(E.PixelMode and 1 or -1), E:Scale(1)
-	local HEIGHT, WIDTH = (mHeight * mmScale) + (panelSize - joinPanel), mWidth * mmScale
+	local panelSize = (panel:IsShown() and panel:GetHeight()) or E:Scale(E.PixelMode and 1 or -1)
+	local HEIGHT, WIDTH = (mHeight * mmScale) + (panelSize - joinPanel) + aboveSize, mWidth * mmScale
 	holder:SetSize(WIDTH + bWidth, HEIGHT + bHeight)
 
-	local locationFont, locaitonSize, locationOutline = LSM:Fetch('font', M.db.locationFont), M.db.locationFontSize, M.db.locationFontOutline
 	if Minimap.location then
-		Minimap.location:Width(E.MinimapSize)
 		Minimap.location:FontTemplate(locationFont, locaitonSize, locationOutline)
-		Minimap.location:SetShown(M.db.locationText == 'SHOW' and noCluster)
+		Minimap.location:SetShown(noCluster and (M.db.locationText == 'SHOW' or M.db.locationText == 'ABOVE'))
 	end
 
 	local classicBorder = _G.MinimapBorder and _G.MinimapBorder:GetTexture() and _G.MinimapBorder
@@ -733,11 +817,27 @@ function M:Initialize()
 	end
 
 	Minimap.location = Minimap:CreateFontString(nil, 'OVERLAY')
-	Minimap.location:Point('TOP', Minimap, 0, -2)
 	Minimap.location:SetJustifyH('CENTER')
 	Minimap.location:SetJustifyV('MIDDLE')
 	Minimap.location:Hide()
 	M:SetMinimapMask(not M.db.circle)
+
+	local locationPanel = CreateFrame('Frame', 'ElvUI_MinimapLocationPanel', Minimap)
+	locationPanel:SetFrameStrata('BACKGROUND')
+	locationPanel:Point('BOTTOMLEFT', Minimap, 'TOPLEFT', -E.Border, E.PixelMode and 0 or 3)
+	locationPanel:Point('TOPRIGHT', Minimap, 'TOPRIGHT', E.Border, LOCATION_HEIGHT)
+	locationPanel:Hide()
+	M.LocationPanel = locationPanel
+
+	locationPanel.zone = M:CreateLocationBox(locationPanel)
+	locationPanel.coordX = M:CreateLocationBox(locationPanel)
+	locationPanel.coordX:Point('TOPLEFT')
+	locationPanel.coordX:Point('BOTTOMLEFT')
+	locationPanel.coordX:Width(40)
+	locationPanel.coordY = M:CreateLocationBox(locationPanel)
+	locationPanel.coordY:Point('TOPRIGHT')
+	locationPanel.coordY:Point('BOTTOMRIGHT')
+	locationPanel.coordY:Width(40)
 
 	M:RegisterEvent('PLAYER_ENTERING_WORLD')
 	M:RegisterEvent('ZONE_CHANGED_NEW_AREA', 'Update_ZoneText')

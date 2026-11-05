@@ -1902,6 +1902,64 @@ local function PlateLabelOptions(unit, key, name, order)
 	}
 end
 
+local function TitleOptions(unit)
+	local isPlayer = unit == "FRIENDLY_PLAYER"
+	local function titleDisabled() return not E.db.nameplates.units[unit].title.enable end
+	local group = {
+		order = 6.5, type = "group", name = isPlayer and L["Guild"] or L["NPC Title"],
+		get = function(info) return E.db.nameplates.units[unit].title[info[#info]] end,
+		set = function(info, value) E.db.nameplates.units[unit].title[info[#info]] = value NP:ConfigureAll() end,
+		args = {
+			header = { order = 1, type = "header", name = isPlayer and L["Guild"] or L["NPC Title"] },
+			enable = { order = 2, type = "toggle", name = L["Enable"], desc = L["Show the text under the name while the health bar is hidden."] },
+			separator = { order = 3, type = "select", name = L["Separator"], disabled = titleDisabled,
+				values = { [" "] = L["None"], ["<"] = "< >", ["("] = "( )", ["["] = "[ ]", ["{"] = "{ }" } },
+			fontGroup = {
+				order = 4, type = "group", name = L["Fonts"], guiInline = true, disabled = titleDisabled,
+				args = {
+					font = { order = 1, type = "select", name = L["Font"], dialogControl = "LSM30_Font", values = AceGUIWidgetLSMlists.font },
+					fontSize = { order = 2, type = "range", name = L["Font Size"], min = 4, max = 32, step = 1 },
+					fontOutline = { order = 3, type = "select", name = L["Font Outline"], desc = L["Set the font outline."], values = C.Values.FontFlags, sorting = C.Values.FontSorting }
+				}
+			}
+		}
+	}
+	if isPlayer then
+		group.args.colors = {
+			order = 5, type = "group", name = L["Colors"], guiInline = true, disabled = titleDisabled,
+			get = function(info) local c = E.db.nameplates.units[unit].title.colors[info[#info]] return c.r, c.g, c.b end,
+			set = function(info, r, g, b) local c = E.db.nameplates.units[unit].title.colors[info[#info]] c.r, c.g, c.b = r, g, b NP:ConfigureAll() end,
+			args = {
+				raid = { order = 1, type = "color", name = L["Raid"] },
+				party = { order = 2, type = "color", name = L["Party"] },
+				guild = { order = 3, type = "color", name = L["Guild"] },
+				none = { order = 4, type = "color", name = L["Other"] }
+			}
+		}
+		group.args.visibility = {
+			order = 6, type = "group", name = L["Visibility State"], guiInline = true, disabled = titleDisabled,
+			get = function(info) return E.db.nameplates.units[unit].title.visibility[info[#info]] end,
+			set = function(info, value) E.db.nameplates.units[unit].title.visibility[info[#info]] = value NP:ConfigureAll() end,
+			args = {
+				city = { order = 1, type = "toggle", name = L["City (Resting)"] },
+				pvp = { order = 2, type = "toggle", name = L["Battlegrounds"] },
+				arena = { order = 3, type = "toggle", name = L["Arena"] },
+				party = { order = 4, type = "toggle", name = L["Dungeons"] },
+				raid = { order = 5, type = "toggle", name = L["Raids"] }
+			}
+		}
+	else
+		group.args.reactionColor = { order = 5, type = "toggle", name = L["Reaction Color"], disabled = titleDisabled }
+		group.args.color = {
+			order = 6, type = "color", name = L["COLOR"],
+			disabled = function() return titleDisabled() or E.db.nameplates.units[unit].title.reactionColor end,
+			get = function() local c = E.db.nameplates.units[unit].title.color return c.r, c.g, c.b end,
+			set = function(_, r, g, b) local c = E.db.nameplates.units[unit].title.color c.r, c.g, c.b = r, g, b NP:ConfigureAll() end
+		}
+	end
+	return group
+end
+
 local function CustomTextOptions(unit)
 	local group = { order = 8.2, type = "group", name = L["Custom Texts"], args = {} }
 	local function Configs()
@@ -3767,6 +3825,9 @@ local function GetUnitSettings(unit, name)
 		group.args.threatText = PlateLabelOptions(unit, "threatText", L["Threat Level"], 8)
 	end
 	group.args.customText = CustomTextOptions(unit)
+	if P.nameplates.units[unit].title then
+		group.args.titleGroup = TitleOptions(unit)
+	end
 	for key, aura in pairs({ buffsGroup = "buffs", debuffsGroup = "debuffs", crowdControlGroup = "crowdcontrol" }) do
 		local args = group.args[key].args
 		args.resetSirusPosition = {
@@ -4557,6 +4618,22 @@ E.Options.args.nameplates = {
 							disabled = function() return not E.db.nameplates.cutawayHealth end
 						}
 					}
+				},
+				chatBubblesGroup = {
+					order = 10,
+					type = "group",
+					name = L["Chat Bubbles on Nameplates"],
+					get = function(info) return E.db.nameplates.chatBubbles[info[#info]] end,
+					set = function(info, value) E.db.nameplates.chatBubbles[info[#info]] = value NP:ConfigureAll() end,
+					args = {
+						header = { order = 1, type = "header", name = L["Chat Bubbles on Nameplates"] },
+						enable = { order = 2, type = "toggle", name = L["Enable"], desc = L["Show chat messages in bubbles above the nameplate of the speaker."] },
+						events = {
+							order = 3, type = "group", name = L["Chat"], guiInline = true,
+							disabled = function() return not E.db.nameplates.chatBubbles.enable end,
+							args = {}
+						}
+					}
 				}
 			}
 		},
@@ -4816,5 +4893,13 @@ for i = 1, 5 do
 			t.r, t.g, t.b = r, g, b
 			NP:ConfigureAll()
 		end
+	}
+end
+
+for i, event in ipairs(NP.ChatBubbleEvents) do
+	E.Options.args.nameplates.args.generalGroup.args.chatBubblesGroup.args.events.args[event] = {
+		order = i,
+		type = "toggle",
+		name = event == "CHAT_MSG_CHANNEL" and _G.CHANNELS or _G[event] or event
 	}
 end

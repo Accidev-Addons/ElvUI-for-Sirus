@@ -38,6 +38,7 @@ local ActionBars = E:GetModule('ActionBars')
 local AFK = E:GetModule('AFK')
 local Auras = E:GetModule('Auras')
 local Bags = E:GetModule('Bags')
+local Blizzard = E:GetModule('Blizzard')
 local Chat = E:GetModule('Chat')
 local DataBars = E:GetModule('DataBars')
 local DataTexts = E:GetModule('DataTexts')
@@ -1426,6 +1427,7 @@ end
 function E:UpdateChat(skipCallback)
 	Chat:SetupChat()
 	Chat:UpdateEditboxAnchors()
+	Chat:UpdateDPSLinks()
 
 	if not skipCallback then
 		E.callbacks:Fire('StaggeredUpdate')
@@ -1468,6 +1470,8 @@ end
 
 function E:UpdateMisc(skipCallback)
 	AFK:Toggle()
+	Blizzard:QuestLevelToggle()
+	Blizzard:UndressButtonToggle()
 	TotemTracker:PositionAndSize()
 
 	if ActionBars:TotemBarEnabled() then
@@ -1799,7 +1803,135 @@ function E:InitializeModules()
 	end
 end
 
+local function MoveEnhancedKeys(from, to, map)
+	if type(from) ~= 'table' or type(to) ~= 'table' then return end
+
+	for old, new in next, map do
+		local value = from[old]
+		if value ~= nil then
+			if type(value) == 'table' then
+				to[new] = E:CopyTable(to[new], value)
+			else
+				to[new] = value
+			end
+			from[old] = nil
+		end
+	end
+end
+
+local function KeepForWindTools(owner, key, enh, group, name)
+	local value = owner[key]
+	if type(value) ~= 'table' then return enh end
+
+	enh = type(enh) == 'table' and enh or {}
+	if name then
+		enh[group] = type(enh[group]) == 'table' and enh[group] or {}
+		if enh[group][name] == nil then enh[group][name] = value end
+	elseif enh[group] == nil then
+		enh[group] = value
+	end
+	owner[key] = nil
+
+	return enh
+end
+
+function E:DBConvertEnhanced()
+	local db, private = E.db, E.private
+	local progress = db.tooltip.progressInfo
+	if type(progress) == 'table' and progress.modifier == 'SHOW' then progress.modifier = 'ALL' end
+
+	E.db.enhanced = KeepForWindTools(db.general, 'fogClear', E.db.enhanced, 'map', 'fogClear')
+	E.db.enhanced = KeepForWindTools(db.tooltip, 'progressInfo', E.db.enhanced, 'tooltip', 'progressInfo')
+	E.db.enhanced = KeepForWindTools(db.general, 'interruptTracker', E.db.enhanced, 'interruptTracker')
+	E.private.enhanced = KeepForWindTools(private.general, 'interruptTracker', E.private.enhanced, 'interruptTracker')
+
+	local enh = E.db.enhanced
+	if type(enh) == 'table' then
+		local general = enh.general
+		if type(general) == 'table' then
+			if general.autoRepChange then db.general.autoTrackReputation = true end
+			MoveEnhancedKeys(general, db.general, { pvpAutoRelease = 'pvpAutoRelease', declineduel = 'declineDuel', showQuestLevel = 'showQuestLevel', undressButton = 'undressButton', moverTransparancy = 'moverTransparency' })
+			MoveEnhancedKeys(general, db.bags.vendorGrays, { deleteFortuneCookie = 'deleteFortuneCookie' })
+		end
+
+		MoveEnhancedKeys(enh.chat, db.chat, { dpsLinks = 'dpsLinks' })
+
+		local minimap = enh.minimap
+		if type(minimap) == 'table' then
+			if db.general.minimap.locationText == 'ABOVE' and not minimap.location then
+				db.general.minimap.locationText = 'HIDE'
+			end
+			MoveEnhancedKeys(minimap, db.general.minimap, { showlocationdigits = 'locationCoords', locationdigits = 'locationDigits', hideincombat = 'hideInCombat', fadeindelay = 'fadeInDelay' })
+		end
+
+		MoveEnhancedKeys(enh.actionbar, db.actionbar, { keyPressAnimation = 'keyPressAnimation' })
+
+		local uf = enh.unitframe
+		if type(uf) == 'table' then
+			local detach = uf.detachPortrait
+			if type(detach) == 'table' then
+				for _, unit in ipairs({ 'player', 'target' }) do
+					MoveEnhancedKeys(detach[unit], db.unitframe.units[unit].portrait, { enable = 'detachFromFrame', width = 'detachedWidth', height = 'detachedHeight' })
+				end
+			end
+			local target = type(uf.units) == 'table' and uf.units.target
+			MoveEnhancedKeys(target, db.unitframe.units.target, { classicon = 'classIcon' })
+		end
+
+		local np = enh.nameplates
+		if type(np) == 'table' then
+			local units = db.nameplates.units
+			local npcUnits = { units.FRIENDLY_NPC, units.ENEMY_NPC }
+			if np.titleCache ~= nil then
+				units.FRIENDLY_PLAYER.title.enable = np.titleCache
+				for _, unit in ipairs(npcUnits) do unit.title.enable = np.titleCache end
+			end
+			if type(np.guild) == 'table' then
+				E:CopyTable(units.FRIENDLY_PLAYER.title, np.guild)
+			end
+			if type(np.npc) == 'table' then
+				for _, unit in ipairs(npcUnits) do E:CopyTable(unit.title, np.npc) end
+			end
+			if np.chatBubblesEnable ~= nil then db.nameplates.chatBubbles.enable = np.chatBubblesEnable end
+			if type(np.chatBubblesTypes) == 'table' then
+				E:CopyTable(db.nameplates.chatBubbles, np.chatBubblesTypes)
+			end
+		end
+
+		local renames = { ['Combat Indicator'] = 'CombatIndicator', [INVTYPE_AMMO] = 'Ammo' }
+		for _, panel in next, db.datatexts.panels do
+			if type(panel) == 'table' then
+				for slot, name in next, panel do
+					if renames[name] then panel[slot] = renames[name] end
+				end
+			end
+		end
+
+		local keep = {}
+		for _, key in ipairs({ 'watchframe', 'loseControl', 'map', 'tooltip', 'interruptTracker' }) do keep[key] = enh[key] end
+		E.db.enhanced = next(keep) and keep or nil
+	end
+
+	local penh = E.private.enhanced
+	MoveEnhancedKeys(private.general, db.general, { selectQuestReward = 'questRewardSelect' })
+
+	if type(penh) == 'table' then
+		MoveEnhancedKeys(penh, private.skins, { animatedAchievementBars = 'animatedAchievementBars' })
+		MoveEnhancedKeys(penh.actionbar, private.actionbar, { keyPressAnimation = 'keyPressAnimation' })
+
+		local character = penh.character
+		if type(character) == 'table' then
+			MoveEnhancedKeys(character, private.general, { modelFrames = 'modelControls' })
+			MoveEnhancedKeys(character, db.general.characterInfo, { GearTexturesEnable = 'gearGradient', selectedBGTexture = 'modelBackground', customTexture = 'modelBackgroundCustom' })
+		end
+
+		E.private.enhanced = (penh.loseControl or penh.interruptTracker) and { loseControl = penh.loseControl, interruptTracker = penh.interruptTracker } or nil
+	end
+end
+
 function E:DBConversions()
+	E:DBConvertEnhanced()
+
 	local units = E.db.unitframe.units
 	local splitRaid = units.raid25 or units.raid10
 	if splitRaid then

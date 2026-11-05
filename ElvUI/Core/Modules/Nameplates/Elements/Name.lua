@@ -75,6 +75,8 @@ function NP:Update_Name(frame, triggered)
 	else
 		name.NameOnlyGlow:SetVertexColor(self.db.colors.glowColor.r, self.db.colors.glowColor.g, self.db.colors.glowColor.b, self.db.colors.glowColor.a)
 	end
+
+	self:Update_Title(frame)
 end
 
 function NP:Configure_Name(frame)

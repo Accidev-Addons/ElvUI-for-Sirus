@@ -6,4 +6,7 @@
 	<Script file='ColorPicker.lua'/>
 	<Script file='Vehicle.lua'/>
 	<Script file='MiscFrames.lua'/>
+	<Script file='QuestLevel.lua'/>
+	<Script file='UndressButton.lua'/>
+	<Script file='ModelControls.lua'/>
 </Ui>

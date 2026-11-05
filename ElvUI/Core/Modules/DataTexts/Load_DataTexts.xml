@@ -50,6 +50,7 @@
 	<Script file='Parry.lua'/>
 	<Script file='PrimaryStat.lua'/>
 	<Script file='Quests.lua'/>
+	<Script file='Reincarnation.lua'/>
 	<Script file='Reputation.lua'/>
 	<Script file='Resilience.lua'/>
 	<Script file='SpecSwitch.lua'/>

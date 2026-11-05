@@ -4,6 +4,7 @@ local AB = E:GetModule('ActionBars')
 local _G = _G
 local ipairs, pairs, next, pcall, unpack = ipairs, pairs, next, pcall, unpack
 local format, gsub, strmatch, strsplit, strupper = format, gsub, strmatch, strsplit, strupper
+local tinsert, tremove = tinsert, tremove
 
 local ClearOverrideBindings = ClearOverrideBindings
 local CreateFrame = CreateFrame
@@ -1194,10 +1195,65 @@ function AB:LAB_MouseDown()
 	end
 end
 
+local keyPressPool = {}
+
+local function KeyPress_OnFinished(anim)
+	tinsert(keyPressPool, anim.frame)
+end
+
+local function KeyPress_Create()
+	local frame = CreateFrame('Frame', nil, UIParent)
+
+	local texture = frame:CreateTexture()
+	texture:SetTexture([[Interface\Cooldown\star4]])
+	texture:SetAlpha(0)
+	texture:SetAllPoints()
+	texture:SetBlendMode('ADD')
+	frame.texture = texture
+
+	local anim = texture:CreateAnimationGroup()
+	anim:SetScript('OnFinished', KeyPress_OnFinished)
+	anim.frame = frame
+	frame.anim = anim
+
+	local alpha = anim:CreateAnimation('Alpha')
+	alpha:SetChange(1)
+	alpha:SetDuration(0)
+	alpha:SetOrder(1)
+
+	frame.scale = anim:CreateAnimation('Scale')
+	frame.scale:SetDuration(0.2)
+	frame.scale:SetOrder(2)
+
+	frame.rotation = anim:CreateAnimation('Rotation')
+	frame.rotation:SetDuration(0.2)
+	frame.rotation:SetOrder(2)
+
+	return frame
+end
+
+function AB:KeyPress_PreClick()
+	if not self:IsVisible() or self:GetParent():GetAlpha() == 0 then return end
+
+	local db = AB.db.keyPressAnimation
+	local frame = tremove(keyPressPool) or KeyPress_Create()
+	frame.texture:SetVertexColor(db.color.r, db.color.g, db.color.b)
+	frame.scale:SetScale(db.scale, db.scale)
+	frame.rotation:SetDegrees(db.rotation)
+	frame:SetFrameStrata(self:GetFrameStrata())
+	frame:SetFrameLevel(self:GetFrameLevel() + 10)
+	frame:SetAllPoints(self)
+	frame.anim:Play()
+end
+
 function AB:LAB_ButtonCreated(button)
 	-- this fixes Key Down getting the pushed texture stuck
 	button:HookScript('OnMouseUp', AB.LAB_MouseUp)
 	button:HookScript('OnMouseDown', AB.LAB_MouseDown)
+
+	if E.private.actionbar.keyPressAnimation then
+		button:HookScript('PreClick', AB.KeyPress_PreClick)
+	end
 end
 
 function AB:LAB_ButtonUpdate(button)

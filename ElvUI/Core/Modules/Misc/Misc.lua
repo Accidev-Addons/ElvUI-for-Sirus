@@ -44,6 +44,11 @@ local GetNumFactions = GetNumFactions
 local GetFactionInfo = GetFactionInfo
 local ExpandAllFactionHeaders = ExpandAllFactionHeaders
 local SetWatchedFactionIndex = SetWatchedFactionIndex
+local IsFactionInactive = IsFactionInactive
+local CancelDuel = CancelDuel
+local HasSoulstone = HasSoulstone
+local IsInInstance = IsInInstance
+local RepopMe = RepopMe
 
 local IsInGroup = IsInGroup
 local IsInRaid = IsInRaid
@@ -117,18 +122,37 @@ function M:COMBAT_TEXT_UPDATE(_, messagetype, faction, rep)
 	if not E.db.general.autoTrackReputation then return end
 
 	if messagetype == 'FACTION' then
-		local data = (rep and rep > 0) and E:GetWatchedFactionInfo()
+		local data = (rep and rep ~= 0) and E:GetWatchedFactionInfo()
 		if data and faction ~= data.name then
 			ExpandAllFactionHeaders()
 
 			for i = 1, GetNumFactions() do
 				if faction == GetFactionInfo(i) then
-					SetWatchedFactionIndex(i)
+					if not IsFactionInactive(i) then
+						SetWatchedFactionIndex(i)
+					end
 					break
 				end
 			end
 		end
 	end
+end
+
+function M:PLAYER_DEAD()
+	if not E.db.general.pvpAutoRelease then return end
+
+	local _, instanceType = IsInInstance()
+	if instanceType == 'pvp' and not HasSoulstone() then
+		RepopMe()
+	end
+end
+
+function M:DUEL_REQUESTED(_, name)
+	if not E.db.general.declineDuel then return end
+
+	StaticPopup_Hide('DUEL_REQUESTED')
+	CancelDuel()
+	E:Print(format(L["Declined duel request from %s"], name))
 end
 
 do -- Auto Repair Functions
@@ -269,15 +293,16 @@ function M:RESURRECT_REQUEST()
 end
 
 function M:QUEST_COMPLETE()
-	if not E.db.general.questRewardMostValueIcon then return end
+	local showIcon, autoSelect = E.db.general.questRewardMostValueIcon, E.db.general.questRewardSelect
+	if not showIcon and not autoSelect then return end
 
 	local firstItem = _G.QuestInfoItem1
 	if not firstItem then return end
 
 	local numQuests = GetNumQuestChoices()
-	if numQuests < 2 then return end
+	if numQuests < 1 or (numQuests == 1 and not autoSelect) then return end
 
-	local bestValue, bestItem = 0
+	local bestValue, bestItem = 0, (numQuests == 1) and 1 or nil
 	for i = 1, numQuests do
 		local questLink = GetQuestItemLink('choice', i)
 		local sellPrice = questLink and select(11, GetItemInfo(questLink))
@@ -294,9 +319,15 @@ function M:QUEST_COMPLETE()
 	if bestItem then
 		local btn = _G['QuestInfoItem'..bestItem]
 		if btn and btn.type == 'choice' then
-			M.QuestRewardGoldIconFrame:ClearAllPoints()
-			M.QuestRewardGoldIconFrame:Point('TOPRIGHT', btn, 'TOPRIGHT', -2, -2)
-			M.QuestRewardGoldIconFrame:Show()
+			if showIcon and numQuests > 1 then
+				M.QuestRewardGoldIconFrame:ClearAllPoints()
+				M.QuestRewardGoldIconFrame:Point('TOPRIGHT', btn, 'TOPRIGHT', -2, -2)
+				M.QuestRewardGoldIconFrame:Show()
+			end
+
+			if autoSelect then
+				_G.QuestInfoItem_OnClick(btn)
+			end
 		end
 	end
 end
@@ -408,6 +439,8 @@ function M:Initialize()
 	M:RegisterEvent('PARTY_INVITE_REQUEST', 'AutoInvite')
 	M:RegisterEvent('COMBAT_TEXT_UPDATE')
 	M:RegisterEvent('QUEST_COMPLETE')
+	M:RegisterEvent('PLAYER_DEAD')
+	M:RegisterEvent('DUEL_REQUESTED')
 
 	M:DelayTutorialFrames()
 

@@ -133,6 +133,14 @@ general.args.generalGroup.args.equippedItem = ACH:Toggle(L["Equipped Item"], nil
 general.args.generalGroup.args.useRangeColorText = ACH:Toggle(L["Color Keybind Text"], L["Color Keybind Text when Out of Range, instead of the button."], 15)
 general.args.generalGroup.args.handleOverlay = ACH:Toggle(L["Action Button Glow"], nil, 16)
 
+local keyPressDisabled = function() return not E.private.actionbar.keyPressAnimation end
+general.args.keyPressAnimation = ACH:Group(L["Key Press Animation"], nil, 22, nil, function(info) return E.db.actionbar.keyPressAnimation[info[#info]] end, function(info, value) E.db.actionbar.keyPressAnimation[info[#info]] = value end)
+general.args.keyPressAnimation.inline = true
+general.args.keyPressAnimation.args.enable = ACH:Toggle(L["Enable"], L["Flash a star over the action button when it is pressed."], 1, nil, nil, nil, function() return E.private.actionbar.keyPressAnimation end, function(_, value) E.private.actionbar.keyPressAnimation = value E.ShowPopup = true end)
+general.args.keyPressAnimation.args.color = ACH:Color(L["COLOR"], nil, 2, nil, nil, function() local t, d = E.db.actionbar.keyPressAnimation.color, P.actionbar.keyPressAnimation.color return t.r, t.g, t.b, 1, d.r, d.g, d.b, 1 end, function(_, r, g, b) local t = E.db.actionbar.keyPressAnimation.color t.r, t.g, t.b = r, g, b end, keyPressDisabled)
+general.args.keyPressAnimation.args.scale = ACH:Range(L["Scale"], nil, 3, { min = 1, max = 3, step = 0.1, isPercent = true }, nil, nil, nil, keyPressDisabled)
+general.args.keyPressAnimation.args.rotation = ACH:Range(L["Rotation"], nil, 4, { min = 0, max = 360, step = 1 }, nil, nil, nil, keyPressDisabled)
+
 general.args.castGroup = ACH:Group(L["Casting"], nil, 25)
 general.args.castGroup.args.focusCastKey = ACH:Select(L["Focus Cast Key"], nil, 10, castKeyValues, nil, nil, function() return GetModifiedClick('FOCUSCAST') end, function(_, value) SetModifiedClick('FOCUSCAST', value) SaveBindings(GetCurrentBindingSet()) end)
 general.args.castGroup.args.checkFocusCast = ACH:Toggle(L["Check Focus Cast"], nil, 11)

@@ -1101,6 +1101,14 @@ local function GetOptionsTable_Portrait(updateFunc, groupName, numUnits)
 		}
 	}
 
+	if groupName == "player" or groupName == "target" then
+		local function detachDisabled() local db = E.db.unitframe.units[groupName].portrait return not db.enable or db.overlay end
+		local function sizeDisabled() return detachDisabled() or not E.db.unitframe.units[groupName].portrait.detachFromFrame end
+		config.args.detachFromFrame = { order = 8, type = "toggle", name = L["Detach From Frame"], disabled = detachDisabled }
+		config.args.detachedWidth = { order = 9, type = "range", name = L["Detached Width"], min = 10, max = 600, step = 1, disabled = sizeDisabled }
+		config.args.detachedHeight = { order = 10, type = "range", name = L["Detached Height"], min = 10, max = 600, step = 1, disabled = sizeDisabled }
+	end
+
 	return config
 end
 
@@ -4519,6 +4527,20 @@ E.Options.args.unitframe.args.target = {
 					desc = L["HEADHUNTING_WANTED_DESC"],
 					width = "full"
 				}
+			}
+		},
+		classIcon = {
+			order = 451,
+			type = "group",
+			name = L["Class Icon"],
+			get = function(info) return E.db.unitframe.units.target.classIcon[info[#info]] end,
+			set = function(info, value) E.db.unitframe.units.target.classIcon[info[#info]] = value UF:CreateAndUpdateUF("target") end,
+			args = {
+				header = { order = 1, type = "header", name = L["Class Icon"] },
+				enable = { order = 2, type = "toggle", name = L["Enable"], desc = L["Show the class icon of player targets above the target frame."] },
+				size = { order = 3, type = "range", name = L["Size"], desc = L["Size of the indicator icon."], min = 16, max = 40, step = 1 },
+				xOffset = { order = 4, type = "range", name = L["X-Offset"], min = -100, max = 100, step = 1 },
+				yOffset = { order = 5, type = "range", name = L["Y-Offset"], min = -80, max = 40, step = 1 }
 			}
 		}
 	}

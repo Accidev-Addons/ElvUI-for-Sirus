@@ -4,6 +4,7 @@
 	<Script file="BuffIndicator.lua"/>
 	<Script file="CastBar.lua"/>
 	<Script file="ClassBars.lua"/>
+	<Script file="ClassIcon.lua"/>
 	<Script file="CombatIndicator.lua"/>
 	<Script file="ComboPoints.lua"/>
 	<Script file="CustomText.lua"/>

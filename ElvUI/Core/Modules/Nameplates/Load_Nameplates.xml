@@ -10,6 +10,8 @@
 	<Script file="Elements\CutawayHealth.lua"/>
 	<Script file="Elements\Level.lua"/>
 	<Script file="Elements\Name.lua"/>
+	<Script file="Elements\Title.lua"/>
+	<Script file="Elements\ChatBubbles.lua"/>
 	<Script file="Elements\RaidIcon.lua"/>
 	<Script file="Elements\HealerIcon.lua"/>
 	<Script file="Elements\Elite.lua"/>

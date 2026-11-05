@@ -1211,7 +1211,8 @@ end)
 do
 	local funcs = {
 		cpl = HyperLinkedCPL,
-		url = HyperLinkedURL
+		url = HyperLinkedURL,
+		edl = function(data) CH:ShowDPSLink(data) end
 	}
 
 	local SetHyperlink = _G.ItemRefTooltip.SetHyperlink
@@ -2860,6 +2861,8 @@ function CH:Initialize()
 		_G.WIM.RegisterItemRefHandler('url', HyperLinkedURL)
 		_G.WIM.RegisterItemRefHandler('cpl', HyperLinkedCPL)
 	end
+
+	CH:UpdateDPSLinks()
 
 	for _, event in ipairs(FindURL_Events) do
 		_G.ChatFrame_AddMessageEventFilter(event, CH[event] or CH.FindURL)

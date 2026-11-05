@@ -254,10 +254,11 @@ end
 local function OnEnter(self)
 	if isDragging then return end
 
+	local alpha = E.db.general.moverTransparency
 	for _, frame in pairs(E.CreatedMovers) do
 		local mover = frame.mover
 		if mover:IsShown() and mover ~= self then
-			E:UIFrameFadeOut(mover, 0.75, mover:GetAlpha(), 0.5)
+			E:UIFrameFadeOut(mover, 0.75, mover:GetAlpha(), alpha < 0.5 and alpha or 0.5)
 		end
 	end
 
@@ -272,10 +273,11 @@ end
 local function OnLeave(self)
 	if isDragging then return end
 
+	local alpha = E.db.general.moverTransparency
 	for _, frame in pairs(E.CreatedMovers) do
 		local mover = frame.mover
 		if mover:IsShown() and mover ~= self then
-			E:UIFrameFadeIn(mover, 0.75, mover:GetAlpha(), 1)
+			E:UIFrameFadeIn(mover, 0.75, mover:GetAlpha(), alpha)
 		end
 	end
 
@@ -349,6 +351,7 @@ local function UpdateMover(name, parent, textString, overlay, snapOffset, postdr
 	f:SetMovable(true)
 	f:SetTemplate('Transparent', nil, nil, true)
 	f:SetSize(parent:GetSize())
+	f:SetAlpha(E.db.general.moverTransparency)
 	f:Hide()
 
 	local fs = f:CreateFontString(nil, 'OVERLAY')
@@ -449,6 +452,18 @@ function E:SetMoverSnapOffset(name, offset)
 	if not holder then return end
 	holder.mover.snapOffset = offset or -2
 	holder.snapoffset = offset or -2
+end
+
+function E:UpdateMoverTransparency()
+	local alpha = E.db.general.moverTransparency
+
+	for _, holder in pairs(E.CreatedMovers) do
+		holder.mover:SetAlpha(alpha)
+	end
+
+	for _, holder in pairs(E.DisabledMovers) do
+		holder.mover:SetAlpha(alpha)
+	end
 end
 
 function E:CreateMover(parent, name, textString, overlay, snapoffset, postdrag, types, shouldDisable, configString, ignoreSizeChanged)
@@ -577,6 +592,8 @@ function E:SetMoversPositions()
 	for name in pairs(E.DisabledMovers) do
 		E:SetMoverPoints(name)
 	end
+
+	E:UpdateMoverTransparency()
 end
 
 function E:SetMoversClampedToScreen(value)

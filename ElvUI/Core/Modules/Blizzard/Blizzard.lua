@@ -51,6 +51,9 @@ function BL:Initialize()
 	BL:RegisterEvent('ADDON_LOADED')
 
 	BL:PositionVehicleFrame()
+	BL:QuestLevelToggle()
+	BL:UndressButtonToggle()
+	BL:ModelControls()
 
 	for _, addon in next, { 'Blizzard_GuildBankUI', 'Blizzard_TradeSkillUI' } do
 		if IsAddOnLoaded(addon) then

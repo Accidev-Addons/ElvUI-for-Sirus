@@ -2741,17 +2741,15 @@ local function LoadSkin()
 			local target = _G["Character"..slotName]
 			local slotId = slots[slotName]
 			local itemId = GetInventoryItemID("player", slotId)
+			local rarity = itemId and GetInventoryItemQuality("player", slotId)
 
-			if itemId then
-				local rarity = GetInventoryItemQuality("player", slotId)
-				if rarity then
-					target:SetBackdropBorderColor(E:GetItemQualityColor(rarity))
-				else
-					target:SetBackdropBorderColor(unpack(E.media.bordercolor))
-				end
+			if rarity then
+				target:SetBackdropBorderColor(E:GetItemQualityColor(rarity))
 			else
 				target:SetBackdropBorderColor(unpack(E.media.bordercolor))
 			end
+
+			S:UpdateEquipmentGradient(target, slotName, rarity)
 		end
 
 		S:ColorItemCharacterBorder()
@@ -2856,6 +2854,7 @@ local function LoadSkin()
 
 		ColorItemBorder()
 		UpdateEquipmentInfo()
+		S:UpdateModelBackground(CharacterModelFrame, "player")
 
 		local dataPending
 		for _, slotName in ipairs(slots) do
@@ -2892,6 +2891,9 @@ local function LoadSkin()
 	end)
 
 	CharacterFrame:HookScript("OnShow", UpdateCharacterEquipmentSockets)
+	hooksecurefunc("PaperDollFrame_SetBackground", function()
+		S:UpdateModelBackground(CharacterModelFrame, "player")
+	end)
 	CharacterFrame:HookScript("OnHide", function()
 		if socketUpdateTimer then
 			E:CancelTimer(socketUpdateTimer)

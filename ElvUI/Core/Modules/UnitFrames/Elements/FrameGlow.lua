@@ -64,7 +64,7 @@ function UF:FrameGlow_ClassGlowPosition(frame, powerName, glow, offset, fromScri
 		UF:FrameGlow_HookPowerBar(frame, power, powerName, glow, offset)
 	end
 
-	local portrait = (frame.USE_PORTRAIT and not frame.USE_PORTRAIT_OVERLAY) and (frame.Portrait and frame.Portrait.backdrop)
+	local portrait = (frame.USE_PORTRAIT and not frame.USE_PORTRAIT_OVERLAY and not frame.PORTRAIT_DETACHED) and (frame.Portrait and frame.Portrait.backdrop)
 
 	if powerName == "HappinessIndicator" and (power and power.backdrop and power:IsVisible()) then
 		if frame.ORIENTATION == "RIGHT" then
@@ -94,7 +94,7 @@ function UF:FrameGlow_PositionGlow(frame, mainGlow, powerGlow)
 	local happiness = frame.HappinessIndicator
 	local power = frame.Power and frame.Power.backdrop
 	local health = frame.Health and frame.Health.backdrop
-	local portrait = (frame.USE_PORTRAIT and not frame.USE_PORTRAIT_OVERLAY) and (frame.Portrait and frame.Portrait.backdrop)
+	local portrait = (frame.USE_PORTRAIT and not frame.USE_PORTRAIT_OVERLAY and not frame.PORTRAIT_DETACHED) and (frame.Portrait and frame.Portrait.backdrop)
 	local offset = (E.PixelMode and 3) or 4 -- edgeSize is 3
 
 	mainGlow:ClearAllPoints()

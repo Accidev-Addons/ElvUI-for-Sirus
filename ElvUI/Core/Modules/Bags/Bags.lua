@@ -1360,17 +1360,33 @@ B.ExcludeGrays = {
 	[28664] = "Nitrin's Instructions",
 }
 
-function B:GetGrays(vendor)
-	local value = 0
+local FORTUNE_COOKIE_FIRST_ID, FORTUNE_COOKIE_LAST_ID = 109196, 109961
+
+function B:IsFortuneCookie(info)
+	if not info.itemID or info.quality ~= 1 then return end
+
+	return (info.itemID >= FORTUNE_COOKIE_FIRST_ID and info.itemID <= FORTUNE_COOKIE_LAST_ID) or info.name == L["Fortune Cookie Prediction"]
+end
+
+function B:GetGrays(vendor, delete)
+	local value, cookies = 0, 0
+	local deleteCookies = B.db.vendorGrays.deleteFortuneCookie
 
 	for _, bagID in next, (B.BagFrame and B.BagFrame.BagIDs) or bagIDs do
 		if bagID ~= KEYRING_CONTAINER then
 			for slotID = 1, B:GetContainerNumSlots(bagID) do
 				local info = B:GetContainerItemInfo(bagID, slotID)
 				local itemLink = info.hyperlink
-				if itemLink and not info.hasNoValue and not B.ExcludeGrays[info.itemID] then
-					if info.quality == 0 and info.itemClassID ~= 12 then
-						local stackCount = info.stackCount or 1
+				if itemLink and not B.ExcludeGrays[info.itemID] then
+					local stackCount = info.stackCount or 1
+
+					if deleteCookies and B:IsFortuneCookie(info) then
+						cookies = cookies + 1
+
+						if delete then
+							tinsert(B.SellFrame.Info.itemList, {bagID, slotID, itemLink, stackCount, 0})
+						end
+					elseif not info.hasNoValue and info.quality == 0 and info.itemClassID ~= 12 then
 						local stackPrice = (info.itemPrice or 0) * stackCount
 
 						if vendor then
@@ -1384,7 +1400,7 @@ function B:GetGrays(vendor)
 		end
 	end
 
-	return value
+	return value, cookies
 end
 
 function B:GetGraysValue()
@@ -1400,7 +1416,7 @@ function B:VendorGrays(delete)
 	end
 
 	-- our sell grays
-	B:GetGrays(true)
+	B:GetGrays(true, delete)
 
 	local numItems = #B.SellFrame.Info.itemList
 	if numItems < 1 then return end
@@ -1423,10 +1439,11 @@ function B:VendorGrays(delete)
 end
 
 function B:VendorGrayCheck()
-	local value = B:GetGraysValue()
-	if value == 0 then
+	local value, cookies = B:GetGraysValue()
+	local atVendor = _G.MerchantFrame:IsShown()
+	if value == 0 and (atVendor or cookies == 0) then
 		E:Print(L["No gray items to sell."])
-	elseif not _G.MerchantFrame:IsShown() then
+	elseif not atVendor then
 		E.PopupDialogs.DELETE_GRAYS.Money = value
 		E:StaticPopup_Show('DELETE_GRAYS')
 	else

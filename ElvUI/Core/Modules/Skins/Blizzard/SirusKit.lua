@@ -28,6 +28,7 @@ local AcceptSockets = AcceptSockets
 local CloseSocketInfo = CloseSocketInfo
 local GameTooltip = GameTooltip
 local GameTooltip_Hide = GameTooltip_Hide
+local UnitClass = UnitClass
 local CreateFrame = CreateFrame
 local UIParent = UIParent
 local strmatch = string.match
@@ -812,6 +813,78 @@ function S:UpdateBlackDiamondHighlight(slotFrame, link)
 	end
 
 	if glow then glow:Hide() end
+end
+
+function S:UpdateEquipmentGradient(slotFrame, slotName, quality)
+	if not slotFrame then return end
+
+	local anchor = S.EquipmentSlotAnchors[slotName]
+	local gradient = slotFrame.QualityGradient
+	if not E.db.general.characterInfo.gearGradient or not quality or (anchor ~= "LEFT" and anchor ~= "RIGHT") then
+		if gradient then gradient:Hide() end
+		return
+	end
+
+	if not gradient then
+		gradient = slotFrame:CreateTexture(nil, "BACKGROUND")
+		gradient:Size(132, 41)
+		gradient:SetTexture(E.Media.Textures.Gradation)
+		if anchor == "RIGHT" then
+			gradient:SetPoint("LEFT", slotFrame, "LEFT")
+		else
+			gradient:SetPoint("RIGHT", slotFrame, "RIGHT")
+			gradient:SetTexCoord(1, 0, 0, 1)
+		end
+		slotFrame.QualityGradient = gradient
+	end
+
+	gradient:SetVertexColor(E:GetItemQualityColor(quality))
+	gradient:Show()
+end
+
+local ARMORY_PATH = [[Interface\AddOns\ElvUI\Core\Media\Textures\Armory\]]
+local modelBackgrounds = {
+	Space = ARMORY_PATH.."Space",
+	Castle = ARMORY_PATH.."Castle",
+	["Alliance-text"] = ARMORY_PATH.."Alliance-text",
+	["Horde-text"] = ARMORY_PATH.."Horde-text",
+	["Arena-bliz"] = [[Interface\PVPFrame\PvpBg-NagrandArena-ToastBG]],
+	fxpw = ARMORY_PATH.."FXPW",
+}
+local modelBackgroundParts = { "BackgroundTopLeft", "BackgroundTopRight", "BackgroundBotLeft", "BackgroundBotRight" }
+
+function S:UpdateModelBackground(model, unit)
+	local overlay = model and model.BackgroundOverlay
+	if not overlay then return end
+
+	local db = E.db.general.characterInfo
+	local choice = db.modelBackground
+	local isDefault = choice == "DEFAULT"
+
+	for _, key in ipairs(modelBackgroundParts) do
+		if model[key] then
+			model[key]:SetShown(isDefault)
+		end
+	end
+
+	if isDefault then
+		overlay:SetTexture(0, 0, 0)
+		overlay:SetAlpha(_G.GetDressUpTextureAlpha(unit or "player"))
+		return
+	end
+
+	local texture
+	if choice == "CUSTOM" then
+		texture = db.modelBackgroundCustom
+	elseif choice == "CLASS" then
+		local _, class = UnitClass(unit or "player")
+		texture = class and ARMORY_PATH..class
+	elseif choice ~= "HIDE" then
+		texture = modelBackgrounds[choice]
+	end
+
+	overlay:SetTexture(texture ~= "" and texture or nil)
+	overlay:SetAlpha(1)
 end
 
 function S:HandleSirusScrollFrame(scrollFrame, createBackdrop)

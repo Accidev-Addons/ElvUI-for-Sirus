@@ -32,6 +32,7 @@ General.args.lfgIcons = ACH:Toggle(L["Role Icon"], L["Display LFG Icons in group
 General.args.useAltKey = ACH:Toggle(L["Use Alt Key"], L["Require holding the Alt key down to move cursor or cycle through messages in the editbox."], 8, nil, nil, nil, nil, function(info, value) E.db.chat.useAltKey = value CH:UpdateSettings() end)
 General.args.copyChatLines = ACH:Toggle(L["Copy Chat Lines"], L["Adds an arrow infront of the chat lines to copy the entire line."], 9)
 General.args.hideCopyButton = ACH:Toggle(L["Hide Copy Button"], nil, 10, nil, nil, nil, nil, function(info, value) E.db.chat.hideCopyButton = value CH:ToggleCopyChatButtons() end)
+General.args.dpsLinks = ACH:Toggle(L["Collapse Damage Meter Reports"], L["Replaces reports from damage meters with a clickable hyperlink to reduce chat spam."], 11, nil, nil, nil, nil, function(info, value) E.db.chat.dpsLinks = value CH:UpdateDPSLinks() end)
 General.args.spacer = ACH:Spacer(14, 'full')
 General.args.throttleInterval = ACH:Range(L["Spam Interval"], L["Prevent the same messages from displaying in chat more than once within this set amount of seconds, set to zero to disable."], 20, { min = 0, max = 120, step = 1 }, nil, nil, function(info, value) E.db.chat[info[#info]] = value if value == 0 then CH:DisableChatThrottle() end end)
 General.args.scrollDownInterval = ACH:Range(L["Scroll Interval"], L["Number of time in seconds to scroll down to the bottom of the chat window if you are not scrolled down completely."], 21, { min = 0, max = 120, step = 1 })

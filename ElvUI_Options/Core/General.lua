@@ -79,13 +79,19 @@ GenGen.gameMenuGroup = ACH:Group(L["Game Menu"], nil, 70, nil, function(info) re
 GenGen.gameMenuGroup.inline = true
 GenGen.gameMenuGroup.args.gameMenuScale = ACH:Range(L["Scale"], L["Change the scale of the Game Menu which shows up when you press ESC."], 1, { min = 0.25, max = 1.50, step = 0.000000000000001, bigStep = 0.01 })
 
+GenGen.moversGroup = ACH:Group(L["Movers"], nil, 75)
+GenGen.moversGroup.inline = true
+GenGen.moversGroup.args.moverTransparency = ACH:Range(L["Mover Transparency"], L["Changes the transparency of all the movers."], 1, { min = 0.1, max = 1, step = 0.01, isPercent = true }, nil, nil, function(info, value) E.db.general[info[#info]] = value E:UpdateMoverTransparency() end)
+
 GenGen.automation = ACH:Group(L["Automation"], nil, 80)
 GenGen.automation.inline = true
 
 GenGen.automation.args.interruptAnnounce = ACH:Select(L["Announce Interrupts"], L["Announce when you interrupt a spell to the specified chat channel."], 1, { NONE = L["None"], SAY = L["Say"], YELL = L["Yell"], PARTY = L["Party Only"], RAID = L["Party / Raid"], RAID_ONLY = L["Raid Only"], EMOTE = L["CHAT_MSG_EMOTE"] }, nil, nil, nil, function(info, value) E.db.general[info[#info]] = value if value == 'NONE' then M:UnregisterEvent('COMBAT_LOG_EVENT_UNFILTERED') else M:RegisterEvent('COMBAT_LOG_EVENT_UNFILTERED') end end)
 GenGen.automation.args.autoAcceptInvite = ACH:Toggle(L["Accept Invites"], L["Automatically accept invites from guild/friends."], 2)
-GenGen.automation.args.autoTrackReputation = ACH:Toggle(L["Auto Track Reputation"], nil, 4)
+GenGen.automation.args.autoTrackReputation = ACH:Toggle(L["Auto Track Reputation"], L["Automatically change your watched faction on the reputation bar to the faction you gained or lost reputation with."], 4)
 GenGen.automation.args.autoRepair = ACH:Select(L["Auto Repair"], L["Automatically repair using the following method when visiting a merchant."], 5, { NONE = L["None"], GUILD = L["Guild"], PLAYER = L["Player"] })
+GenGen.automation.args.pvpAutoRelease = ACH:Toggle(L["PvP Autorelease"], L["Automatically release body when killed inside a battleground."], 6)
+GenGen.automation.args.declineDuel = ACH:Toggle(L["Decline Duel"], L["Automatically decline all duel requests."], 7)
 
 General.fonts = ACH:Group(L["Fonts"], nil, 10, nil, function(info) return E.db.general[info[#info]] end, function(info, value) E.db.general[info[#info]] = value end)
 local Fonts = General.fonts.args
@@ -214,6 +220,8 @@ blizz.general.args.loot = ACH:Toggle(L["Loot Frame"], L["Enable/Disable the loot
 blizz.general.args.hideZoneText = ACH:Toggle(L["Hide Zone Text"], L["Enable/Disable the on-screen zone text when you change zones."], 8, nil, nil, nil, function(info) return E.db.general[info[#info]] end, function(info, value) E.db.general[info[#info]] = value; M:ZoneTextToggle() end)
 blizz.general.args.hideTutorialFrames = ACH:Toggle(L["Hide Tutorial Frames"], L["Hides the Sirus tutorial hints, help tips and the Battle Pass splash screen."], 9, nil, nil, nil, function(info) return E.db.general[info[#info]] end, function(info, value) E.db.general[info[#info]] = value; M:HideTutorialFrames() end)
 blizz.general.args.hideServerNews = ACH:Toggle(L["Hide Server News"], L["Automatically hide the server news popup when it appears."], 10, nil, nil, nil, function(info) return E.db.general[info[#info]] end, function(info, value) E.db.general[info[#info]] = value; M:HideServerNews() end)
+blizz.general.args.undressButton = ACH:Toggle(L["Undress Button"], L["Adds an Undress button to the Dressing Room."], 11, nil, nil, nil, nil, function(info, value) E.db.general[info[#info]] = value BL:UndressButtonToggle() end)
+blizz.general.args.modelControls = ACH:Toggle(L["Model Controls"], L["Mouse wheel zooms, left-drag rotates and right-drag moves the pet, stable and companion models."], 12, nil, nil, nil, function(info) return E.private.general[info[#info]] end, function(info, value) E.private.general[info[#info]] = value E.ShowPopup = true end)
 blizz.general.args.spacer1 = ACH:Spacer(14, 'full')
 blizz.general.args.vehicleSeatIndicatorSize = ACH:Range(L["Vehicle Seat Indicator Size"], nil, 15, { min = 64, max = 128, step = 4 }, nil, nil, function(info, value) E.db.general[info[#info]] = value BL:UpdateVehicleFrame() end)
 blizz.general.inline = true
@@ -221,6 +229,8 @@ blizz.general.inline = true
 blizz.quest = ACH:Group(L["Quests"], nil, 10)
 blizz.quest.args.questRewardMostValueIcon = ACH:Toggle(L["Mark Quest Reward"], L["Marks the most valuable quest reward with a gold coin."], 1)
 blizz.quest.args.questXPPercent = ACH:Toggle(L["XP Quest Percent"], nil, 2)
+blizz.quest.args.questRewardSelect = ACH:Toggle(L["Select Quest Reward"], L["Automatically select the quest reward with the highest vendor sell value."], 3)
+blizz.quest.args.showQuestLevel = ACH:Toggle(L["Show Quest Level"], L["Display the quest level in front of each quest title in the Quest Log."], 4, nil, nil, nil, nil, function(info, value) E.db.general[info[#info]] = value BL:QuestLevelToggle() end)
 blizz.quest.inline = true
 
 blizz.raidControl = ACH:Group(L["RAID_CONTROL"], nil, 30, nil, function(info) return E.db.general.raidUtility[info[#info]] end, function(info, value) E.db.general.raidUtility[info[#info]] = value end)
@@ -262,7 +272,7 @@ blizz.totems.args.size.name = function() return E.db.general.totems.keepSizeRati
 blizz.totems.args.size.desc = function() return E.db.general.totems.keepSizeRatio and L["The size of the Totem buttons."] or L["The width of the totem buttons."] end
 blizz.totems.args.height.hidden = function() return E.db.general.totems.keepSizeRatio end
 
-blizz.classColors = ACH:Group(L["Custom Class Colors"], nil, 50, nil, function(info) local t, d = E.db.general.classColors[info[#info]], P.general.classColors[info[#info]] return t.r, t.g, t.b, 1, d.r, d.g, d.b, 1 end, function(info, r, g, b) E:UpdateCustomClassColor(info[#info], r, g, b) end)
+blizz.classColors =ACH:Group(L["Custom Class Colors"], nil, 50, nil, function(info) local t, d = E.db.general.classColors[info[#info]], P.general.classColors[info[#info]] return t.r, t.g, t.b, 1, d.r, d.g, d.b, 1 end, function(info, r, g, b) E:UpdateCustomClassColor(info[#info], r, g, b) end)
 blizz.classColors.args.enable = ACH:Toggle(L["Enable"], nil, 1, nil, nil, nil, function() return E.private.general.classColors end, function(_, value) E.private.general.classColors = value; E.ShowPopup = true end)
 blizz.classColors.args.spacer1 = ACH:Spacer(10, 'full')
 
@@ -333,6 +343,9 @@ local function CharInfoSet(info, value)
 	if SK.UpdateCharacterEquipmentSockets then
 		SK:UpdateCharacterEquipmentSockets()
 	end
+	if SK.UpdateInspectEquipment then
+		SK:UpdateInspectEquipment()
+	end
 end
 local function CharInfoDisabled(key)
 	return function() return not E.db.general.characterInfo[key] end
@@ -384,3 +397,9 @@ blizz.characterInfo.args.fontGroup.args.font = ACH:SharedMediaFont(L["Font"], ni
 blizz.characterInfo.args.fontGroup.args.fontSize = ACH:Range(L["Font Size"], nil, 2, C.Values.FontSize)
 blizz.characterInfo.args.fontGroup.args.fontOutline = ACH:FontFlags(L["Font Outline"], nil, 3)
 blizz.characterInfo.args.fontGroup.inline = true
+
+blizz.characterInfo.args.appearanceGroup = ACH:Group(L["Appearance"], nil, 7, nil, CharInfoGet, CharInfoSet)
+blizz.characterInfo.args.appearanceGroup.args.gearGradient = ACH:Toggle(L["Quality Gradient"], L["Show a strip in the item quality color behind the equipment slots."], 1)
+blizz.characterInfo.args.appearanceGroup.args.modelBackground = ACH:Select(L["Model Background"], nil, 2, { DEFAULT = L["Default"], HIDE = L["Hide"], CUSTOM = _G.CUSTOM, CLASS = L["Class"], Space = L["Space"], Castle = L["Castle"], ["Alliance-text"] = L["Alliance"], ["Horde-text"] = L["Horde"], ["Arena-bliz"] = L["Arena"], fxpw = "fxpw" })
+blizz.characterInfo.args.appearanceGroup.args.modelBackgroundCustom = ACH:Input(L["Custom Texture"], nil, 3, nil, "double", nil, nil, nil, function() return E.db.general.characterInfo.modelBackground ~= "CUSTOM" end)
+blizz.characterInfo.args.appearanceGroup.inline = true

@@ -28,6 +28,7 @@ V.general = {
 	noFontScale = false,
 	totemTracker = true,
 	addonManager = true,
+	modelControls = false,
 	minimapButtonGrabber = {
 		enable = true,
 	},
@@ -71,6 +72,7 @@ V.skins = {
 	libDropdown = true,
 	checkBoxSkin = true,
 	parchmentRemoverEnable = false,
+	animatedAchievementBars = false,
 	blizzard = {
 		enable = true,
 		achievement = true,
@@ -162,6 +164,7 @@ V.unitframe = {
 
 V.actionbar = {
 	enable = true,
+	keyPressAnimation = false,
 	masque = {
 		actionbars = false,
 		petBar = false,

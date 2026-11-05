@@ -18,6 +18,8 @@ P.general = {
 	interruptAnnounce = 'NONE',
 	autoRepair = 'NONE',
 	autoTrackReputation = false,
+	pvpAutoRelease = false,
+	declineDuel = false,
 	autoAcceptInvite = false,
 	hideErrorFrame = true,
 	hideZoneText = false,
@@ -28,8 +30,12 @@ P.general = {
 	vehicleSeatIndicatorSize = 128,
 	resurrectSound = false,
 	questRewardMostValueIcon = true,
+	questRewardSelect = false,
+	showQuestLevel = false,
+	undressButton = false,
 	questXPPercent = true,
 	gameMenuScale = 1,
+	moverTransparency = 0.8,
 	lockCameraDistanceMax = true,
 	cameraDistanceMax = 50,
 	afk = true,
@@ -115,6 +121,10 @@ P.general = {
 		locationFontSize = 14,
 		locationFontOutline = "OUTLINE",
 		locationFont = "Expressway",
+		locationCoords = true,
+		locationDigits = 1,
+		hideInCombat = false,
+		fadeInDelay = 5,
 		timeFontSize = 14,
 		timeFontOutline = "OUTLINE",
 		timeFont = "Expressway",
@@ -230,6 +240,9 @@ P.general = {
 		font = "PT Sans Narrow",
 		fontSize = 10,
 		fontOutline = "OUTLINE",
+		gearGradient = false,
+		modelBackground = "DEFAULT",
+		modelBackgroundCustom = "",
 	},
 	lootRoll = {
 		width = 325,
@@ -424,6 +437,7 @@ P.bags = {
 		interval = 0.2,
 		details = false,
 		progressBar = true,
+		deleteFortuneCookie = false,
 	},
 	split = {
 		bagSpacing = 5,
@@ -516,6 +530,24 @@ P.nameplates = {
 	cutawayHealthFadeOutTime = 0.6,
 
 	alwaysShowTargetHealth = true,
+
+	chatBubbles = {
+		enable = false,
+		CHAT_MSG_GUILD = true,
+		CHAT_MSG_OFFICER = true,
+		CHAT_MSG_PARTY = true,
+		CHAT_MSG_PARTY_LEADER = true,
+		CHAT_MSG_RAID = true,
+		CHAT_MSG_RAID_LEADER = true,
+		CHAT_MSG_RAID_WARNING = true,
+		CHAT_MSG_BATTLEGROUND = true,
+		CHAT_MSG_BATTLEGROUND_LEADER = true,
+		CHAT_MSG_CHANNEL = true,
+		CHAT_MSG_SAY = true,
+		CHAT_MSG_YELL = true,
+		CHAT_MSG_MONSTER_SAY = true,
+		CHAT_MSG_MONSTER_YELL = true
+	},
 
 	colors = {
 		glowColor = {r = 1, g = 1, b = 1, a = 1},
@@ -1191,6 +1223,39 @@ for _, unitContent in pairs(P.nameplates.units) do
 	end
 end
 
+P.nameplates.units.FRIENDLY_PLAYER.title = {
+	enable = false,
+	font = "PT Sans Narrow",
+	fontSize = 11,
+	fontOutline = "OUTLINE",
+	separator = " ",
+	colors = {
+		raid = { r = 1, g = 127/255, b = 0 },
+		party = { r = 118/255, g = 200/255, b = 1 },
+		guild = { r = 64/255, g = 1, b = 64/255 },
+		none = { r = 1, g = 1, b = 1 }
+	},
+	visibility = {
+		city = true,
+		pvp = true,
+		arena = true,
+		party = true,
+		raid = true
+	}
+}
+
+for _, unitType in ipairs({ "FRIENDLY_NPC", "ENEMY_NPC" }) do
+	P.nameplates.units[unitType].title = {
+		enable = false,
+		font = "PT Sans Narrow",
+		fontSize = 11,
+		fontOutline = "OUTLINE",
+		separator = " ",
+		reactionColor = false,
+		color = { r = 1, g = 1, b = 1 }
+	}
+end
+
 local TopAuras = {
 	barColor = { r = 0, g = .8, b = 0 },
 	barColorGradient = false,
@@ -1244,6 +1309,7 @@ P.auras.buffs.consolidateSize = 24
 --Chat
 P.chat = {
 	url = true,
+	dpsLinks = false,
 	panelSnapLeftID = nil, -- set by the snap code
 	panelSnapRightID = nil, -- same deal
 	panelSnapping = true,
@@ -1722,7 +1788,10 @@ P.unitframe = {
 				overlay = false,
 				fullOverlay = false,
 				style = "3D",
-				overlayAlpha = 0.35
+				overlayAlpha = 0.35,
+				detachFromFrame = false,
+				detachedWidth = 54,
+				detachedHeight = 54
 			},
 			buffs = {
 				enable = false,
@@ -1924,6 +1993,12 @@ P.unitframe = {
 			headHuntingWanted = {
 				enable = true
 			},
+			classIcon = {
+				enable = false,
+				size = 28,
+				xOffset = -58,
+				yOffset = -22
+			},
 			pvpIcon = {
 				enable = false,
 				anchorPoint = "CENTER",
@@ -1937,7 +2012,10 @@ P.unitframe = {
 				overlay = false,
 				fullOverlay = false,
 				style = "3D",
-				overlayAlpha = 0.35
+				overlayAlpha = 0.35,
+				detachFromFrame = false,
+				detachedWidth = 54,
+				detachedHeight = 54
 			},
 			buffs = {
 				enable = true,
@@ -4453,6 +4531,11 @@ P.actionbar = {
 	transparent = false,
 	usableColor = { r = 1, g = 1, b = 1 },
 	useRangeColorText = false,
+	keyPressAnimation = {
+		color = { r = 1, g = 1, b = 1 },
+		scale = 1.5,
+		rotation = 90,
+	},
 	barPet = {
 		enabled = true,
 		mouseover = false,

@@ -81,7 +81,8 @@ function UF:Update_PlayerFrame(frame, db)
 
 		frame.USE_PORTRAIT = db.portrait and db.portrait.enable
 		frame.USE_PORTRAIT_OVERLAY = frame.USE_PORTRAIT and (db.portrait.overlay or frame.ORIENTATION == "MIDDLE")
-		frame.PORTRAIT_WIDTH = (frame.USE_PORTRAIT_OVERLAY or not frame.USE_PORTRAIT) and 0 or db.portrait.width
+		frame.PORTRAIT_DETACHED = frame.USE_PORTRAIT and not frame.USE_PORTRAIT_OVERLAY and db.portrait.detachFromFrame
+		frame.PORTRAIT_WIDTH = (frame.USE_PORTRAIT_OVERLAY or frame.PORTRAIT_DETACHED or not frame.USE_PORTRAIT) and 0 or db.portrait.width
 
 		frame.CAN_HAVE_CLASSBAR = CAN_HAVE_CLASSBAR
 		frame.MAX_CLASS_BAR = frame.MAX_CLASS_BAR or UF.classMaxResourceBar[E.myclass] or 0

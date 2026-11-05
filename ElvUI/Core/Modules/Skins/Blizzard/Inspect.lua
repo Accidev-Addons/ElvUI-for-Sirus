@@ -1,5 +1,6 @@
 local E, L, V, P, G = unpack(ElvUI)
 local S = E:GetModule("Skins")
+local LSM = E.Libs.LSM
 
 local _G = _G
 local ipairs = ipairs
@@ -18,6 +19,29 @@ local Slots = {
 	"HandsSlot", "WaistSlot", "LegsSlot", "FeetSlot", "Finger0Slot", "Finger1Slot", "Trinket0Slot", "Trinket1Slot",
 	"MainHandSlot", "SecondaryHandSlot", "RangedSlot"
 }
+
+local itemLevelExcluded = { ShirtSlot = true, TabardSlot = true }
+
+local function UpdateItemLevel(button, quality, itemLevel)
+	local text = button.ItemLevel
+	if not text then return end
+
+	local db = E.db.general.characterInfo
+	text:ClearAllPoints()
+	text:SetPoint(db.itemLevelPosition, button, db.itemLevelXOffset, db.itemLevelYOffset)
+	text:FontTemplate(LSM:Fetch("font", db.font), db.fontSize, db.fontOutline)
+
+	if db.showItemLevel and itemLevel then
+		if db.itemLevelQualityColor and quality then
+			text:SetTextColor(E:GetItemQualityColor(quality))
+		else
+			text:SetTextColor(1, 1, 1)
+		end
+		text:SetText(itemLevel)
+	else
+		text:SetText("")
+	end
+end
 
 local function LoadSkin()
 	if not E.private.skins.blizzard.enable or not E.private.skins.blizzard.inspect then return end
@@ -52,6 +76,10 @@ local function LoadSkin()
 				icon:SetTexCoords()
 				icon:SetInside()
 			end
+
+			if not itemLevelExcluded[slot] then
+				frame.ItemLevel = frame:CreateFontString(nil, "OVERLAY")
+			end
 		end
 	end
 
@@ -66,10 +94,10 @@ local function LoadSkin()
 		end
 
 		styleButton = function(button)
+			local slotName = strsub(button:GetName(), 8)
 			if InspectFrame.unit then
 				button.lastLink = GetInventoryItemLink(InspectFrame.unit, button:GetID())
 
-				local slotName = strsub(button:GetName(), 8)
 				if S:HandleSirusEquipmentSocketInfo(button, button:GetID(), S.EquipmentSlotAnchors[slotName], slotName, InspectFrame.unit) and not button.awaitingCache then
 					button.awaitingCache = true
 					E:Delay(0.5, awaitCache, button)
@@ -78,27 +106,33 @@ local function LoadSkin()
 
 			S:UpdateBlackDiamondHighlight(button, InspectFrame.unit and button.lastLink)
 
-			if button.hasItem then
-				if button.lastLink then
-					local _, _, quality = GetItemInfo(button.lastLink)
-					if not quality then
-						button.backdrop:SetBackdropBorderColor(unpack(E.media.bordercolor))
-
-						if not button.awaitingCache then
-							button.awaitingCache = true
-							E:Delay(0.1, awaitCache, button)
-						end
-
-						return
-					elseif quality and quality > 1 then
-						button.backdrop:SetBackdropBorderColor(E:GetItemQualityColor(quality))
-						return
-					end
+			local quality, itemLevel, _
+			if button.hasItem and button.lastLink then
+				_, _, quality, itemLevel = GetItemInfo(button.lastLink)
+				if not quality and not button.awaitingCache then
+					button.awaitingCache = true
+					E:Delay(0.1, awaitCache, button)
 				end
 			end
 
-			button.backdrop:SetBackdropBorderColor(unpack(E.media.bordercolor))
+			if quality and quality > 1 then
+				button.backdrop:SetBackdropBorderColor(E:GetItemQualityColor(quality))
+			else
+				button.backdrop:SetBackdropBorderColor(unpack(E.media.bordercolor))
+			end
+
+			S:UpdateEquipmentGradient(button, slotName, quality)
+			UpdateItemLevel(button, quality, itemLevel)
 		end
+	end
+
+	S.UpdateInspectEquipment = function()
+		if not InspectFrame:IsShown() then return end
+
+		for _, slot in ipairs(Slots) do
+			styleButton(_G["Inspect"..slot])
+		end
+		S:UpdateModelBackground(InspectModelFrame, InspectFrame.unit)
 	end
 
 	hooksecurefunc("InspectPaperDollItemSlotButton_Update", styleButton)
@@ -123,6 +157,11 @@ local function LoadSkin()
 
 	hooksecurefunc("InspectFrame_UnitChanged", WatchInspectData)
 	InspectFrame:HookScript("OnShow", WatchInspectData)
+	hooksecurefunc("SetPaperDollBackground", function(model, unit)
+		if model == InspectModelFrame then
+			S:UpdateModelBackground(model, unit)
+		end
+	end)
 
 	if InspectModelFrameControlFrameRotateLeftButton then
 		S:HandleRotateButton(InspectModelFrameControlFrameRotateLeftButton)
