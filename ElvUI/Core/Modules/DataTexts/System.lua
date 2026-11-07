@@ -123,7 +123,7 @@ local function OnEnter(_, slow)
 	local _, _, worldPing = GetNetStats()
 	DT.tooltip:AddDoubleLine(L["World Latency:"], format(homeLatencyString, worldPing), .69, .31, .31, .84, .75, .65)
 
-	if slow == 1 or not slow then
+	if (slow == 1 or not slow) and not InCombatLockdown() then
 		UpdateAddOnMemoryUsage()
 	end
 

@@ -416,7 +416,9 @@ function CH:StyleChat(frame)
 	frame:FontTemplate(font, size, outline)
 
 	frame:SetTimeVisible(CH.db.inactivityTimer)
-	frame:SetMaxLines(CH.db.maxLines)
+	if frame:GetMaxLines() ~= CH.db.maxLines then
+		frame:SetMaxLines(CH.db.maxLines)
+	end
 	frame:SetFading(CH.db.fade)
 
 	tab:RegisterForClicks('AnyUp')
