@@ -1051,14 +1051,20 @@ local function PositionChatFrame(chat)
 end
 
 function CH:PositionChats()
-	_G.LeftChatPanel:Size(CH.db.panelWidth, CH.db.panelHeight)
-	if CH.db.separateSizes then
-		_G.RightChatPanel:Size(CH.db.panelWidthRight, CH.db.panelHeightRight)
+	if InCombatLockdown() then
+		CH:RegisterEvent('PLAYER_REGEN_ENABLED', 'PositionChats')
 	else
-		_G.RightChatPanel:Size(CH.db.panelWidth, CH.db.panelHeight)
-	end
+		CH:UnregisterEvent('PLAYER_REGEN_ENABLED')
 
-	LO:RepositionChatDataPanels()
+		_G.LeftChatPanel:Size(CH.db.panelWidth, CH.db.panelHeight)
+		if CH.db.separateSizes then
+			_G.RightChatPanel:Size(CH.db.panelWidthRight, CH.db.panelHeightRight)
+		else
+			_G.RightChatPanel:Size(CH.db.panelWidth, CH.db.panelHeight)
+		end
+
+		LO:RepositionChatDataPanels()
+	end
 
 	-- dont proceed when chat is disabled
 	if not E.private.chat.enable then return end
