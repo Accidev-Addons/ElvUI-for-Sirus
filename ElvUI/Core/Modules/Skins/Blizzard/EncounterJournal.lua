@@ -70,11 +70,17 @@ local function LoadSkin()
 	EncounterJournal.encounter.instance.title:SetPoint("TOP", 0, -65)
 	EncounterJournal.encounter.instance.titleBG:SetPoint("TOP", EncounterJournal.encounter.instance.loreBG)
 
-	EncounterJournal.encounter.instance.mapButton:StripTextures()
-	EncounterJournal.encounter.instance.mapButton:ClearAllPoints()
-	EncounterJournal.encounter.instance.mapButton:Point("BOTTOMLEFT", EncounterJournal.encounter.instance.loreBG.backdrop, 5, 5)
-	EncounterJournal.encounter.instance.mapButton:StripTextures()
-	S:HandleButton(EncounterJournal.encounter.instance.mapButton)
+	local mapButton = EncounterJournal.encounter.instance.mapButton
+
+	mapButton:StripTextures()
+	mapButton:ClearAllPoints()
+	mapButton:Point("BOTTOMLEFT", EncounterJournal.encounter.instance.loreBG.backdrop, 5, 5)
+	S:HandleButton(mapButton)
+
+	local mapIcon = mapButton:CreateTexture(nil, "OVERLAY")
+	mapIcon:SetTexture("Interface\\Icons\\INV_Misc_Map_01")
+	mapIcon:SetInside(mapButton)
+	mapIcon:SetTexCoords()
 
 	S:HandleSirusScrollBar(EncounterJournal.encounter.instance.loreScroll.ScrollBar)
 	EncounterJournal.encounter.instance.loreScroll.child.lore:SetTextColor(1, 1, 1)
@@ -229,6 +235,10 @@ local function LoadSkin()
 				E:LockMethod(header.description, "SetTextColor", 1, 1, 1)
 
 				header.isSkinned = true
+			end
+
+			if header.button.abilityIcon then
+				header.button.abilityIcon:SetTexCoords()
 			end
 
 			headerCount = headerCount + 1

@@ -248,14 +248,18 @@ function S:SetBackdropBorderColor(frame, script)
 	end
 end
 
+local function IsFrameEnabled(frame)
+	return not frame.IsEnabled or frame:IsEnabled()
+end
+
 function S:SetModifiedBackdrop()
-	if self:IsEnabled() == 1 then
+	if IsFrameEnabled(self) then
 		S:SetBackdropBorderColor(self, 'OnEnter')
 	end
 end
 
 function S:SetOriginalBackdrop()
-	if self:IsEnabled() then
+	if IsFrameEnabled(self) then
 		S:SetBackdropBorderColor(self, 'OnLeave')
 	end
 end
@@ -1227,13 +1231,137 @@ function S:HandleSearchBox(frame, unskinned)
 	frame.backdrop:Point('BOTTOMRIGHT', 2, -12)
 end
 
-function S:HandleDropDownBox(frame, width, template)
-	if not width then
-		width = 155
+local function IsClientArrowTexture(path)
+	if type(path) ~= 'string' then return false end
+
+	return strfind(path, 'ChatIcon') or strfind(path, 'DropDownButton') or strfind(path, 'ScrollDown')
+end
+
+local function HideClientArrowTextures(button, onlyClientArt)
+	local arrowPath = E.Media.Textures.ArrowUp
+
+	for _, region in next, { button:GetRegions() } do
+		if region:IsObjectType('Texture') then
+			local texture = region:GetTexture()
+			if type(texture) == 'string' and texture ~= arrowPath and (not onlyClientArt or IsClientArrowTexture(texture)) then
+				region:SetAlpha(0)
+			end
+		end
+	end
+end
+
+local function ApplyArrowTextures(button, arrowDir, color, disabledColor)
+	button:SetNormalTexture(E.Media.Textures.ArrowUp)
+	button:SetPushedTexture(E.Media.Textures.ArrowUp)
+	button:SetDisabledTexture(E.Media.Textures.ArrowUp)
+
+	local normal, pushed, disabled = button:GetNormalTexture(), button:GetPushedTexture(), button:GetDisabledTexture()
+	local rotation = arrowDir and S.ArrowRotation[arrowDir]
+
+	for _, texture in next, { normal, pushed, disabled } do
+		texture:SetInside(button)
+		texture:SetTexCoord(0, 1, 0, 1)
+
+		if rotation then
+			texture:SetRotation(rotation)
+		end
 	end
 
-	frame:Width(width)
+	if normal then
+		if color then
+			normal:SetVertexColor(color.r, color.g, color.b)
+		else
+			normal:SetVertexColor(1, 1, 1)
+		end
+	end
+
+	if disabled then
+		local r, g, b = .3, .3, .3
+		if disabledColor then r, g, b = disabledColor[1], disabledColor[2], disabledColor[3] end
+
+		disabled:SetVertexColor(r, g, b)
+	end
+end
+
+local function ApplyDropDownArrow(button)
+	local normal = button:GetNormalTexture()
+	local path = normal and normal:GetTexture()
+
+	if normal and path and path ~= E.Media.Textures.ArrowUp and not IsClientArrowTexture(path) then
+		normal:SetAlpha(1)
+		normal:SetInside(button)
+		normal:SetTexCoord(0, 1, 0, 1)
+
+		if not button.elvArrow then
+			local arrow = button:CreateTexture(nil, 'OVERLAY')
+			arrow:SetTexture(E.Media.Textures.ArrowUp)
+			arrow:SetRotation(S.ArrowRotation.down)
+			arrow:Size(10)
+			arrow:Point('RIGHT', button, 'RIGHT', -2, 0)
+
+			button.elvArrow = arrow
+		end
+
+		HideClientArrowTextures(button, true)
+
+		return
+	end
+
+	ApplyArrowTextures(button, 'down')
+	HideClientArrowTextures(button)
+end
+
+local function ApplyDropDownHover(frame, button, template)
+	if button.SetHighlightTexture then button:SetHighlightTexture(E.ClearTexture) end
+	if frame.SetHighlightTexture then frame:SetHighlightTexture(E.ClearTexture) end
+
+	if not button.backdrop then
+		button:CreateBackdrop(template)
+	end
+
+	if not button.elvDropDownHover then
+		button.elvDropDownHover = true
+
+		button:HookScript('OnEnter', S.SetModifiedBackdrop)
+		button:HookScript('OnLeave', S.SetOriginalBackdrop)
+	end
+
+	if frame.backdrop and not frame.elvDropDownHover then
+		frame.elvDropDownHover = true
+
+		frame:HookScript('OnEnter', S.SetModifiedBackdrop)
+		frame:HookScript('OnLeave', S.SetOriginalBackdrop)
+	end
+end
+
+hooksecurefunc('UIDropDownMenu_Initialize', function(frame)
+	local button = frame and frame.Button
+	if not button or not button.GetNormalTexture then return end
+	if button.elvArrowStyled then return end
+
+	button.elvArrowStyled = true
+
+	local arrowPath = E.Media.Textures.ArrowUp
+	local normal = button:GetNormalTexture()
+	local pushed = button:GetPushedTexture()
+	local normalPath = normal and normal:GetTexture()
+	local pushedPath = pushed and pushed:GetTexture()
+
+	if normalPath ~= arrowPath or pushedPath ~= arrowPath then
+		ApplyDropDownArrow(button)
+		ApplyDropDownHover(frame, button, 'Default')
+	end
+end)
+
+function S:HandleDropDownBox(frame, width, template)
+	if width then
+		frame:Width(width)
+	end
+
 	frame:StripTextures()
+
+	if frame.Arrow then frame.Arrow:SetAlpha(0) end
+	if frame.arrow then frame.arrow:SetAlpha(0) end
 
 	if not frame.backdrop then
 		frame:CreateBackdrop(template)
@@ -1241,7 +1369,6 @@ function S:HandleDropDownBox(frame, width, template)
 	end
 
 	if frame.SetupMenu then
-		if frame.Arrow then frame.Arrow:SetAlpha(0) end
 		if frame.Background then frame.Background:SetAlpha(0) end
 
 		frame.backdrop:ClearAllPoints()
@@ -1284,7 +1411,21 @@ function S:HandleDropDownBox(frame, width, template)
 	button:Point('RIGHT', frame, 'RIGHT', -10, 3)
 
 	E:LockPoints(button)
+
+	local normal = button:GetNormalTexture()
+	local iconPath = normal and normal:GetTexture()
+	local iconStyle = iconPath and iconPath ~= E.Media.Textures.ArrowUp and not IsClientArrowTexture(iconPath)
+
 	S:HandleNextPrevButton(button, 'down')
+
+	if iconStyle then
+		button:SetNormalTexture(iconPath)
+		button:SetDisabledTexture(iconPath)
+	end
+
+	ApplyDropDownArrow(button)
+
+	ApplyDropDownHover(frame, button, template)
 
 	if text then
 		text:ClearAllPoints()
@@ -1605,45 +1746,17 @@ do
 			btn:StripTexts()
 		end
 
-		btn:SetNormalTexture(E.Media.Textures.ArrowUp)
-		btn:SetPushedTexture(E.Media.Textures.ArrowUp)
-		btn:SetDisabledTexture(E.Media.Textures.ArrowUp)
+		btn:Size(noBackdrop and 24 or 22)
 
-		local Normal, Disabled, Pushed = btn:GetNormalTexture(), btn:GetDisabledTexture(), btn:GetPushedTexture()
+		ApplyArrowTextures(btn, arrowDir, color, noBackdrop and { .5, .5, .5 })
 
 		if noBackdrop then
-			btn:Size(24)
-			Disabled:SetVertexColor(.5, .5, .5)
-			btn.Texture = Normal
+			btn.Texture = btn:GetNormalTexture()
 
 			if not color then
 				btn:HookScript('OnEnter', closeOnEnter)
 				btn:HookScript('OnLeave', closeOnLeave)
 			end
-		else
-			btn:Size(22)
-			Disabled:SetVertexColor(.3, .3, .3)
-		end
-
-		Normal:SetInside()
-		Pushed:SetInside()
-		Disabled:SetInside()
-
-		Normal:SetTexCoord(0, 1, 0, 1)
-		Pushed:SetTexCoord(0, 1, 0, 1)
-		Disabled:SetTexCoord(0, 1, 0, 1)
-
-		local rotation = S.ArrowRotation[arrowDir]
-		if rotation then
-			Normal:SetRotation(rotation)
-			Pushed:SetRotation(rotation)
-			Disabled:SetRotation(rotation)
-		end
-
-		if color then
-			Normal:SetVertexColor(color.r, color.g, color.b)
-		else
-			Normal:SetVertexColor(1, 1, 1)
 		end
 
 		btn.isSkinned = true

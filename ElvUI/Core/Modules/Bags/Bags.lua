@@ -1,4 +1,141 @@
 local E, L, V, P, G = unpack(ElvUI)
+local TradeSkillRecipes, KnownRecipes, ScannedRecipes = {}, {}, {}
+
+local strgsub = string.gsub
+local strsub = string.sub
+local softHyphen = string.char(194, 173)
+
+local RECIPE_ITEM_CLASS = 9
+local RECIPE_ITEM_CLASS_INDEX = 13
+local RECIPE_LINE_PREFIX = 8
+
+local function CacheRecipeID(itemID)
+	itemID = tonumber(itemID)
+	if itemID then TradeSkillRecipes[itemID] = true end
+end
+
+local function ClearKnownRecipes(resetScanned)
+	for itemLink in next, KnownRecipes do
+		KnownRecipes[itemLink] = nil
+	end
+
+	if resetScanned then
+		for itemLink in next, ScannedRecipes do
+			ScannedRecipes[itemLink] = nil
+		end
+	end
+end
+
+function E:ResetKnownRecipes()
+	ClearKnownRecipes(true)
+end
+
+local function NormalizeRecipeLine(text)
+	text = strgsub(text or '', '|c%x%x%x%x%x%x%x%x', '')
+	text = strgsub(text, '|r', '')
+	text = strgsub(text, '%s', '')
+	text = strgsub(text, softHyphen, '')
+
+	return text
+end
+
+local function IsRecipeItem(itemLink)
+	if not (C_Item and C_Item.GetItemInfo) then return true end
+
+	local classID = select(RECIPE_ITEM_CLASS_INDEX, C_Item.GetItemInfo(itemLink))
+
+	return classID == nil or classID == RECIPE_ITEM_CLASS
+end
+
+local function IsRecipeKnownInTooltip(itemLink)
+	local info = E.ScanTooltip:GetHyperlinkInfo(itemLink)
+	local knownLine = NormalizeRecipeLine(ITEM_SPELL_KNOWN)
+	local knownPrefix = strsub(knownLine, 1, RECIPE_LINE_PREFIX)
+	local known
+
+	if info then
+		for index = 1, #info.lines do
+			local line = info.lines[index]
+			local text = line and NormalizeRecipeLine(line.leftText)
+
+			if text and (text == knownLine or strsub(text, 1, RECIPE_LINE_PREFIX) == knownPrefix) then
+				known = true
+				break
+			end
+		end
+	end
+
+	E.ScanTooltip:Hide()
+
+	return known
+end
+
+local function AddTradeSkillRecipes(resetScanned)
+	ClearKnownRecipes(resetScanned)
+
+	for i = 1, GetNumTradeSkills() do
+		local name, skillType = GetTradeSkillInfo(i)
+		if name and skillType and skillType ~= 'header' then
+			local link = GetTradeSkillRecipeLink and GetTradeSkillRecipeLink(i)
+			CacheRecipeID(link and strmatch(link, 'item:(%d+)'))
+		end
+	end
+end
+
+local recipeWatcher = CreateFrame('Frame')
+recipeWatcher:RegisterEvent('TRADE_SKILL_UPDATE')
+recipeWatcher:RegisterEvent('TRADE_SKILL_SHOW')
+recipeWatcher:SetScript('OnEvent', function(_, event) AddTradeSkillRecipes(event == 'TRADE_SKILL_SHOW') end)
+
+local spellWatcher = CreateFrame('Frame')
+spellWatcher:RegisterEvent('LEARNED_SPELL_IN_SKILL_LINE')
+spellWatcher:SetScript('OnEvent', function()
+	E:ResetKnownRecipes()
+
+	local bags = E.GetModule and E:GetModule('Bags')
+	if bags and bags.UpdateAllBagSlots then
+		bags:UpdateAllBagSlots()
+	end
+end)
+
+function E:IsKnownRecipe(itemLink)
+	if not itemLink then return end
+	if KnownRecipes[itemLink] then return true end
+
+	local itemID = tonumber(strmatch(itemLink, 'item:(%d+)'))
+	if itemID and TradeSkillRecipes[itemID] then
+		KnownRecipes[itemLink] = true
+		return true
+	end
+
+	local scanned = ScannedRecipes[itemLink]
+	if scanned == nil then
+		local _, spellID = GetItemSpell(itemLink)
+		spellID = tonumber(spellID)
+
+		if spellID and spellID > 0 and IsSpellKnown and IsSpellKnown(spellID) then
+			scanned = true
+		elseif IsRecipeItem(itemLink) and IsRecipeKnownInTooltip(itemLink) then
+			scanned = true
+		elseif GetItemInfo and GetItemInfo(itemLink) then
+			scanned = false
+		end
+
+		if scanned ~= nil then
+			ScannedRecipes[itemLink] = scanned
+		end
+	end
+
+	if scanned then
+		KnownRecipes[itemLink] = true
+		return true
+	end
+end
+
+function E:CacheKnownRecipe(itemID)
+	CacheRecipeID(itemID)
+end
+
 local B = E:GetModule('Bags')
 local TT = E:GetModule('Tooltip')
 local S = E:GetModule('Skins')
@@ -386,6 +523,14 @@ function B:SearchClear()
 	B:SetItemSearch('')
 end
 
+local function ApplyCountPosition(slot)
+	local shift = (slot.countShifted and slot.knownRecipeMark and slot.knownRecipeMark:GetWidth()) or 0
+
+	slot.Count:ClearAllPoints()
+	slot.Count:Point(B.db.countPosition, B.db.countxOffset - shift, B.db.countyOffset)
+end
+
+
 function B:UpdateItemDisplay()
 	if not E.private.bags.enable then return end
 
@@ -411,8 +556,7 @@ function B:UpdateItemDisplay()
 
 				slot.bindType:FontTemplate(LSM:Fetch('font', B.db.itemLevelFont), B.db.itemLevelFontSize, B.db.itemLevelFontOutline)
 
-				slot.Count:ClearAllPoints()
-				slot.Count:Point(B.db.countPosition, B.db.countxOffset, B.db.countyOffset)
+				ApplyCountPosition(slot)
 				slot.Count:FontTemplate(LSM:Fetch('font', B.db.countFont), B.db.countFontSize, B.db.countFontOutline)
 			end
 		end
@@ -599,11 +743,12 @@ function B:UpdateSlot(frame, bagID, slotID)
 	slot.name, slot.spellID, slot.itemID, slot.rarity, slot.locked, slot.itemLink = nil, nil, info.itemID, info.quality, info.isLocked, info.hyperlink
 	slot.isJunk = (slot.rarity and slot.rarity == 0) and not info.hasNoValue
 	slot.junkDesaturate = slot.isJunk and B.db.junkDesaturate
+	slot.knownRecipe = (B.db.knownRecipeDesaturate or B.db.knownRecipeMark) and slot.itemLink and E:IsKnownRecipe(slot.itemLink)
 	slot.hasItem = (info.iconFileID and 1) or nil -- used for ShowInspectCursor
 
 	SetItemButtonTexture(slot, info.iconFileID)
 	SetItemButtonCount(slot, info.stackCount)
-	SetItemButtonDesaturated(slot, slot.locked or slot.junkDesaturate)
+	SetItemButtonDesaturated(slot, (slot.locked or slot.junkDesaturate or (slot.knownRecipe and B.db.knownRecipeDesaturate)) and true or false)
 
 	slot.Count:SetTextColor(B.db.countFontColor.r, B.db.countFontColor.g, B.db.countFontColor.b)
 	slot.itemLevel:SetText('')
@@ -647,6 +792,17 @@ function B:UpdateSlot(frame, bagID, slotID)
 
 	if slot.questIcon then slot.questIcon:SetShown(B.db.questIcon and ((isQuestItem or questId) and not isActiveQuest)) end
 	if slot.JunkIcon then slot.JunkIcon:SetShown(slot.isJunk and B.db.junkIcon) end
+	if slot.knownRecipeMark or slot.knownRecipe then
+		local mark = E:CreateKnownRecipeMark(slot, slot.icon or slot)
+		mark:SetShown(slot.knownRecipe and B.db.knownRecipeMark)
+
+		local shifted = mark:IsShown() and B.db.countPosition == 'BOTTOMRIGHT'
+		if shifted ~= slot.countShifted then
+			slot.countShifted = shifted
+
+			ApplyCountPosition(slot)
+		end
+	end
 
 	if B.db.newItemGlow and (info.iconFileID or slot.newItemGlow:IsShown()) then
 		E:Delay(0.1, B.CheckSlotNewItem, B, slot, bagID, slotID)
@@ -2281,8 +2437,7 @@ function B:ConstructContainerButton(f, bagID, slotID)
 	end
 
 	slot.Count = _G[slotName..'Count']
-	slot.Count:ClearAllPoints()
-	slot.Count:Point(B.db.countPosition, B.db.countxOffset, B.db.countyOffset)
+	ApplyCountPosition(slot)
 	slot.Count:FontTemplate(LSM:Fetch('font', B.db.countFont), B.db.countFontSize, B.db.countFontOutline)
 
 	if not slot.questIcon then

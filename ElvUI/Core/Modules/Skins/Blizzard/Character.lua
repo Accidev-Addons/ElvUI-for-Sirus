@@ -2841,14 +2841,9 @@ local function LoadSkin()
 		end
 	end
 
-	local socketDataRetry, socketUpdateTimer
 	local function UpdateCharacterEquipmentSockets()
-		if socketUpdateTimer then
-			E:CancelTimer(socketUpdateTimer)
-			socketUpdateTimer = nil
-		end
 		if not CharacterFrame:IsShown() then
-			socketDataRetry = nil
+			S:ResetSocketRetry("character")
 			return
 		end
 
@@ -2856,19 +2851,18 @@ local function LoadSkin()
 		UpdateEquipmentInfo()
 		S:UpdateModelBackground(CharacterModelFrame, "player")
 
-		local dataPending
-		for _, slotName in ipairs(slots) do
-			if S:HandleSirusEquipmentSocketInfo(_G["Character"..slotName], slots[slotName], S.EquipmentSlotAnchors[slotName], slotName) then
-				dataPending = true
-			end
-		end
+		S:RetrySocketInfo("character", 10, 0.2, function()
+			if not CharacterFrame:IsShown() then return false end
 
-		socketDataRetry = (socketDataRetry or 0) + 1
-		if dataPending and socketDataRetry < 10 then
-			socketUpdateTimer = E:ScheduleTimer(UpdateCharacterEquipmentSockets, 0.2)
-		else
-			socketDataRetry = nil
-		end
+			local dataPending
+			for _, slotName in ipairs(slots) do
+				if S:HandleSirusEquipmentSocketInfo(_G["Character"..slotName], slots[slotName], S.EquipmentSlotAnchors[slotName], slotName) then
+					dataPending = true
+				end
+			end
+
+			return dataPending
+		end)
 	end
 
 	S.UpdateCharacterEquipmentSockets = UpdateCharacterEquipmentSockets

@@ -9,6 +9,7 @@ local unpack = unpack
 local strsub = strsub
 local hooksecurefunc = hooksecurefunc
 local GetInventoryItemLink = GetInventoryItemLink
+local GetInventoryItemTexture = GetInventoryItemTexture
 local GetItemInfo = GetItemInfo
 local C_Timer = C_Timer
 local GetTalentTabInfo = GetTalentTabInfo
@@ -85,6 +86,8 @@ local function LoadSkin()
 
 	local styleButton
 	do
+		local MAX_SOCKET_RETRIES = 20
+
 		local function awaitCache(button)
 			button.awaitingCache = nil
 
@@ -98,9 +101,12 @@ local function LoadSkin()
 			if InspectFrame.unit then
 				button.lastLink = GetInventoryItemLink(InspectFrame.unit, button:GetID())
 
-				if S:HandleSirusEquipmentSocketInfo(button, button:GetID(), S.EquipmentSlotAnchors[slotName], slotName, InspectFrame.unit) and not button.awaitingCache then
-					button.awaitingCache = true
-					E:Delay(0.5, awaitCache, button)
+				if S:HandleSirusEquipmentSocketInfo(button, button:GetID(), S.EquipmentSlotAnchors[slotName], slotName, InspectFrame.unit) then
+					S:RetrySocketInfo(button, MAX_SOCKET_RETRIES, 0.5, function()
+						if not InspectFrame.unit then return false end
+
+						return S:HandleSirusEquipmentSocketInfo(button, button:GetID(), S.EquipmentSlotAnchors[slotName], slotName, InspectFrame.unit)
+					end)
 				end
 			end
 
@@ -143,8 +149,15 @@ local function LoadSkin()
 
 		for _, slot in ipairs(Slots) do
 			local button = _G["Inspect"..slot]
-			if GetInventoryItemLink(unit, button:GetID()) ~= button.lastLink then
-				InspectPaperDollItemSlotButton_Update(button)
+			local slotID = button:GetID()
+			local texture = GetInventoryItemTexture(unit, slotID)
+
+			if GetInventoryItemLink(unit, slotID) ~= button.lastLink or (texture and texture ~= button.lastTexture) then
+				button.lastTexture = texture
+
+				if not S.socketRetries[button] then
+					InspectPaperDollItemSlotButton_Update(button)
+				end
 			end
 		end
 	end
@@ -152,7 +165,14 @@ local function LoadSkin()
 	local refreshTicker
 	local function WatchInspectData()
 		if refreshTicker then refreshTicker:Cancel() end
-		refreshTicker = C_Timer:NewTicker(0.2, RefreshChangedSlots, 25)
+
+		for _, slot in ipairs(Slots) do
+			local button = _G["Inspect"..slot]
+			button.lastTexture = nil
+			S:ResetSocketRetry(button)
+		end
+
+		refreshTicker = C_Timer:NewTicker(0.2, RefreshChangedSlots, 50)
 	end
 
 	hooksecurefunc("InspectFrame_UnitChanged", WatchInspectData)

@@ -171,14 +171,14 @@ function NP:Configure_HealthBar(frame, configuring)
 
 	healthBar:SetPoint("TOP", frame, "TOP", 0, 0)
 
+	healthBar.Text:FontTemplate(LSM:Fetch("font", db.text.font), db.text.fontSize, db.text.fontOutline)
+
 	if configuring then
 		healthBar:SetStatusBarTexture(LSM:Fetch("statusbar", self.db.statusbar), "BORDER")
 
 		self:Configure_HealthBarScale(frame, frame.currentScale or 1, configuring)
 
 		E:SetSmoothing(healthBar, self.db.smoothbars)
-
-		healthBar.Text:FontTemplate(LSM:Fetch("font", db.text.font), db.text.fontSize, db.text.fontOutline)
 
 		if db.text.enable then
 			healthBar.Text:ClearAllPoints()

@@ -62,47 +62,66 @@ S:AddCallback("Skin_WorldMap", function()
 		bar:Point("BOTTOMRIGHT", -15, 3)
 	end
 
-	local function SkinQuestPOI(poi, size)
-		if not poi then return end
+	if E.private.skins.questPOI then
+		local function SkinQuestPOI(poi, size)
+			if not poi then return end
 
-		if not poi.isSkinned then
-			poi:SetTemplate("Transparent")
-			poi:SetHitRectInsets(0, 0, 0, 0)
+			if not poi.isSkinned then
+				poi:SetTemplate("Transparent")
+				poi:SetHitRectInsets(0, 0, 0, 0)
 
-			poi.pushedTexture:SetTexture()
+				poi.pushedTexture:SetTexture()
 
-			if poi.number then
-				poi.number:Kill()
-				poi.normalTexture:SetTexture()
+				if poi.number then
+					poi.number:Kill()
+					poi.normalTexture:SetTexture()
 
-				poi.highlightTexture:SetTexture(E.media.blankTex)
-				poi.highlightTexture:SetVertexColor(1, 1, 1, 0.25)
-				poi.highlightTexture:SetInside()
+					poi.highlightTexture:SetTexture(E.media.blankTex)
+					poi.highlightTexture:SetVertexColor(1, 1, 1, 0.25)
+					poi.highlightTexture:SetInside()
 
-				poi.numberText = poi:CreateFontString(nil, "OVERLAY")
-				poi.numberText:Point("CENTER")
-			else
-				poi.turnin = poi.normalTexture
-				poi.highlightTexture:SetTexture()
+					poi.numberText = poi:CreateFontString(nil, "OVERLAY")
+					poi.numberText:Point("CENTER")
+				else
+					poi.turnin = poi.normalTexture
+					poi.highlightTexture:SetTexture()
+				end
+
+				poi.turnin:ClearAllPoints()
+				poi.turnin:SetInside()
+
+				poi.selectionGlow:SetTexture(E.media.blankTex)
+				poi.selectionGlow:SetVertexColor(1, 0.82, 0)
+				poi.selectionGlow:SetAlpha(0.35)
+				poi.selectionGlow:SetDrawLayer("BORDER")
+				poi.selectionGlow:SetInside()
+
+				poi.isSkinned = true
 			end
 
-			poi.turnin:ClearAllPoints()
-			poi.turnin:SetInside()
+			poi:Size(size)
 
-			poi.selectionGlow:SetTexture(E.media.blankTex)
-			poi.selectionGlow:SetVertexColor(1, 0.82, 0)
-			poi.selectionGlow:SetAlpha(0.35)
-			poi.selectionGlow:SetDrawLayer("BORDER")
-			poi.selectionGlow:SetInside()
-
-			poi.isSkinned = true
+			if poi.numberText then
+				poi.numberText:FontTemplate(nil, size * 0.6, "OUTLINE")
+			end
 		end
 
-		poi:Size(size)
+		hooksecurefunc("QuestPOI_DisplayButton", function(parentName, buttonType, buttonIndex)
+			local poi = _G["poi"..parentName..buttonType.."_"..buttonIndex]
+			if not poi then return end
 
-		if poi.numberText then
-			poi.numberText:FontTemplate(nil, size * 0.6, "OUTLINE")
-		end
+			local size = parentName == "WorldMapPOIFrame" and 15 or 19
+			SkinQuestPOI(poi, size)
+
+			if poi.numberText then
+				poi.numberText:SetText(buttonType == QUEST_POI_NUMERIC and buttonIndex or "")
+			end
+
+			local swap = QUEST_POI_SWAP_BUTTONS[parentName]
+			if swap then
+				SkinQuestPOI(swap, size)
+			end
+		end)
 	end
 
 	local function SkinQuestFrame(frame)
@@ -120,23 +139,6 @@ S:AddCallback("Skin_WorldMap", function()
 
 		frame.isSkinned = true
 	end
-
-	hooksecurefunc("QuestPOI_DisplayButton", function(parentName, buttonType, buttonIndex)
-		local poi = _G["poi"..parentName..buttonType.."_"..buttonIndex]
-		if not poi then return end
-
-		local size = parentName == "WorldMapPOIFrame" and 15 or 19
-		SkinQuestPOI(poi, size)
-
-		if poi.numberText then
-			poi.numberText:SetText(buttonType == QUEST_POI_NUMERIC and buttonIndex or "")
-		end
-
-		local swap = QUEST_POI_SWAP_BUTTONS[parentName]
-		if swap then
-			SkinQuestPOI(swap, size)
-		end
-	end)
 
 	hooksecurefunc("WorldMapFrame_UpdateQuests", function()
 		for i = 1, MAX_NUM_QUESTS do
