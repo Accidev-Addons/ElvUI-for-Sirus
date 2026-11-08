@@ -41,7 +41,8 @@ function M:PLAYER_REGEN_ENABLED()
 	_G.WorldMapBlobFrame:SetParent(WorldMapFrame)
 	_G.WorldMapBlobFrame:ClearAllPoints()
 	_G.WorldMapBlobFrame:SetPoint('TOPLEFT', _G.WorldMapDetailFrame)
-	_G.WorldMapBlobFrame:SetScale(M.blobNewScale or WORLDMAP_SETTINGS.size)
+	_G.WorldMapBlobFrame:SetScale(WORLDMAP_SETTINGS.size == _G.WORLDMAP_WINDOWED_SIZE and _G.WORLDMAP_WINDOWED_SIZE or _G.WORLDMAP_QUESTLIST_SIZE)
+	_G.WorldMapBlobFrame.xRatio = nil
 	_G.WorldMapBlobFrame:OffsetFrameLevel(1, _G.WorldMapDetailFrame)
 	_G.WorldMapBlobFrame:OffsetFrameLevel(1, _G.WorldMapDetailFrame)	-- called twice to set frame level above the default limit (256)
 
@@ -53,12 +54,8 @@ function M:PLAYER_REGEN_ENABLED()
 		_G.WorldMapBlobFrame:DrawQuestBlob(WORLDMAP_SETTINGS.selectedQuest.questId, false)
 	end
 
-	if M.blobWasVisible then
-		_G.WorldMapBlobFrame_CalculateHitTranslations()
-
-		if WORLDMAP_SETTINGS.selectedQuest and not WORLDMAP_SETTINGS.selectedQuest.completed then
-			_G.WorldMapBlobFrame:DrawQuestBlob(WORLDMAP_SETTINGS.selectedQuest.questId, true)
-		end
+	if M.blobWasVisible and WORLDMAP_SETTINGS.selectedQuest and not WORLDMAP_SETTINGS.selectedQuest.completed then
+		_G.WorldMapBlobFrame:DrawQuestBlob(WORLDMAP_SETTINGS.selectedQuest.questId, true)
 	end
 end
 
@@ -71,7 +68,6 @@ function M:PLAYER_REGEN_DISABLED()
 	_G.WorldMapBlobFrame:Hide()
 
 	M.blobDetached = true
-	M.blobNewScale = nil
 end
 
 function M:UpdateCoords(elapsed)
@@ -250,10 +246,6 @@ function M:Initialize()
 		end
 
 		M:SecureHook('ToggleMapFramerate')
-
-		hooksecurefunc(_G.WorldMapDetailFrame, 'SetScale', function(_, scale)
-			M.blobNewScale = scale
-		end)
 
 		_G.DropDownList1:HookScript('OnShow', function(self)
 			if self:GetScale() ~= E.uiscale then
