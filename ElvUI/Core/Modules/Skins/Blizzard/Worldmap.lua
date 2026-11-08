@@ -140,18 +140,6 @@ S:AddCallback("Skin_WorldMap", function()
 		frame.isSkinned = true
 	end
 
-	hooksecurefunc("WorldMapFrame_UpdateQuests", function()
-		for i = 1, MAX_NUM_QUESTS do
-			local frame = _G["WorldMapQuestFrame"..i]
-			if not frame then break end
-
-			if frame:IsShown() and frame.level then
-				local color = GetQuestDifficultyColor(frame.level)
-				frame.title:SetTextColor(color.r, color.g, color.b)
-			end
-		end
-	end)
-
 	hooksecurefunc("WorldMapFrame_GetQuestFrame", function(index)
 		local frame = _G["WorldMapQuestFrame"..index]
 		if not frame then return end
@@ -289,7 +277,9 @@ S:AddCallback("Skin_WorldMap", function()
 		E:LockMethod(WorldMapFrame, "EnableMouse", false)
 	end
 
-	WorldMapTitleButton:Hide()
+	if WORLDMAP_SETTINGS.size ~= WORLDMAP_WINDOWED_SIZE then
+		WorldMapTitleButton:Hide()
+	end
 	WorldMapFrame.backdrop:EnableMouse(true)
 
 	FixSkin()
