@@ -147,7 +147,7 @@ local _G = _G
 local gsub = string.gsub
 local tinsert, tremove, wipe = tinsert, tremove, wipe
 local type, pairs, ipairs, unpack, select = type, pairs, ipairs, unpack, select
-local ceil, next, max, floor, format, strsub = ceil, next, max, floor, format, strsub
+local ceil, next, max, floor, format = ceil, next, max, floor, format
 local pcall = pcall
 local band = bit.band
 

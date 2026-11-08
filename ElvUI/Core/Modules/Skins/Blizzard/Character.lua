@@ -2867,6 +2867,8 @@ local function LoadSkin()
 
 	S.UpdateCharacterEquipmentSockets = UpdateCharacterEquipmentSockets
 
+	local socketUpdateTimer
+
 	local equipmentWatcher = CreateFrame("Frame")
 	equipmentWatcher:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
 	equipmentWatcher:RegisterEvent("UNIT_INVENTORY_CHANGED")
@@ -2880,7 +2882,6 @@ local function LoadSkin()
 			return
 		end
 		if socketUpdateTimer then return end
-		socketDataRetry = nil
 		socketUpdateTimer = E:ScheduleTimer(UpdateCharacterEquipmentSockets, 0.1)
 	end)
 
@@ -2893,7 +2894,6 @@ local function LoadSkin()
 			E:CancelTimer(socketUpdateTimer)
 			socketUpdateTimer = nil
 		end
-		socketDataRetry = nil
 	end)
 
 	local function HandleResistanceFrame(frameName)
