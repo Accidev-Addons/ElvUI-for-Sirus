@@ -763,6 +763,23 @@ if not CooldownProto.SetSwipeColor then
 	CooldownProto.SetSwipeColor = SetSwipeColor
 end
 
+local KNOWN_RECIPE_MARK_SIZE = 24
+
+function E:CreateKnownRecipeMark(frame, anchor)
+	if frame.knownRecipeMark then return frame.knownRecipeMark end
+
+	local mark = frame:CreateTexture(nil, 'OVERLAY')
+	mark:SetTexture([[Interface\RaidFrame\ReadyCheck-Ready]])
+	mark:SetVertexColor(0.2, 1, 0.2)
+	mark:SetSize(KNOWN_RECIPE_MARK_SIZE, KNOWN_RECIPE_MARK_SIZE)
+	mark:Point('BOTTOMRIGHT', anchor or frame, 'BOTTOMRIGHT', 0, 0)
+	mark:Hide()
+
+	frame.knownRecipeMark = mark
+
+	return mark
+end
+
 local API = {
 	Kill = Kill,
 	Size = Size,

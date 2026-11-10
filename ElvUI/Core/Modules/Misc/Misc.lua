@@ -382,39 +382,45 @@ function M:DelayTutorialFrames()
 	E:Delay(2, M.HideTutorialFrames, M)
 end
 
-local ServerNewsPanels = { 'GameMenuFrameServerAnnounces', 'GameMenuFrameServerChanges' }
+local ServerNewsPanels = { 'ServerNewsFrame', 'GameMenuFrameServerAnnounces', 'GameMenuFrameServerChanges', 'StoreToastFrame' }
+local AD_AUTO_CLOSE_DELAY = 2
 
-local function ToggleServerNewsEvent(panel, hide)
-	if not panel or not panel.UnregisterCustomEvent then return end
+local function AutoCloseAd(frame)
+	if not frame or not frame.IsShown or not frame.Hide then return end
+	if not frame:IsShown() or frame.elvAdAutoClose then return end
 
-	if hide then
-		panel:UnregisterCustomEvent('SERVER_NEWS_UPDATE')
-	else
-		panel:RegisterCustomEvent('SERVER_NEWS_UPDATE')
-	end
+	frame.elvAdAutoClose = true
+
+	E:Delay(AD_AUTO_CLOSE_DELAY, function()
+		frame.elvAdAutoClose = nil
+
+		if frame:IsShown() then
+			frame:Hide()
+		end
+	end)
+end
+
+local function AutoCloseServerNews(frame)
+	if not E.db.general.hideServerNews then return end
+	if M.serverNewsUserOpened then return end
+
+	AutoCloseAd(frame or _G.ServerNewsFrame)
 end
 
 function M:HideServerNews(frame)
-	if M.serverNewsUserOpened then
-		M.serverNewsUserOpened = nil
-		return
-	end
+	AutoCloseServerNews(frame or _G.ServerNewsFrame)
+end
 
-	local hide = E.db.general.hideServerNews
-
-	frame = frame or _G.ServerNewsFrame
-	ToggleServerNewsEvent(frame, hide)
-
-	if hide and frame and frame:IsShown() then
-		HideUIPanel(frame)
-	end
-
+function M:HookServerNews()
 	for _, name in next, ServerNewsPanels do
-		local panel = _G[name]
-		ToggleServerNewsEvent(panel, hide)
+		local frame = _G[name]
+		if frame and not frame.elvAdAutoCloseHooked then
+			frame.elvAdAutoCloseHooked = true
 
-		if hide and panel then
-			panel:Hide()
+			hooksecurefunc(frame, 'Show', AutoCloseServerNews)
+			hooksecurefunc(frame, 'Hide', function()
+				M.serverNewsUserOpened = nil
+			end)
 		end
 	end
 end
@@ -448,6 +454,14 @@ function M:Initialize()
 		if panel == _G.ServerNewsFrame then
 			M:HideServerNews(panel)
 		end
+	end)
+
+	M:HookServerNews()
+
+	local newsWatcher = CreateFrame('Frame')
+	newsWatcher:RegisterEvent('PLAYER_ENTERING_WORLD')
+	newsWatcher:SetScript('OnEvent', function()
+		M:HookServerNews()
 	end)
 
 	local whatsNew = _G.GameMenuButtonWhatsNew
