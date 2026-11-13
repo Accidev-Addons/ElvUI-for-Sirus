@@ -7,7 +7,7 @@ local LSM = E.Libs.LSM
 local _G = _G
 local select, ipairs = select, ipairs
 local wipe, next, tinsert, tconcat = wipe, next, tinsert, table.concat
-local floor, tonumber, strlower = floor, tonumber, strlower
+local floor, abs, tonumber, strlower = floor, math.abs, tonumber, strlower
 local strfind, format, strmatch, strsub, gsub = strfind, format, strmatch, strsub, gsub
 
 local CreateFrame = CreateFrame
@@ -704,11 +704,26 @@ function TT:GameTooltip_ShowStatusBar(tt)
 	sb:SetStatusBarTexture(E.media.normTex)
 end
 
+local function BackdropColorGuard(tt)
+	local r, g, b, a = tt:GetBackdropColor()
+	local fr, fg, fb, fa = unpack(E.media.backdropfadecolor)
+	local alpha = tt.customBackdropAlpha or fa
+
+	if abs(r - fr) > 0.01 or abs(g - fg) > 0.01 or abs(b - fb) > 0.01 or abs(a - alpha) > 0.01 then
+		tt:SetBackdropColor(fr, fg, fb, alpha)
+	end
+end
+
 function TT:SetStyle(tt, quality)
 	if not tt or (tt == E.ScanTooltip) then return end
 
 	tt.customBackdropAlpha = TT.db.colorAlpha
 	tt:SetTemplate('Transparent')
+
+	if not tt.__BackdropColorGuard and not tt.callbackBackdropColor then
+		tt.__BackdropColorGuard = true
+		tt:HookScript('OnUpdate', BackdropColorGuard)
+	end
 
 	if not TT.db.itemQuality then return end
 
