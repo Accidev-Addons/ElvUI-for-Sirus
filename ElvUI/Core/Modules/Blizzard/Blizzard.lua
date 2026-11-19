@@ -13,6 +13,32 @@ local GetQuestLogRewardXP = GetQuestLogRewardXP
 local IsAddOnLoaded = IsAddOnLoaded
 local RegisterStateDriver = RegisterStateDriver
 local UnregisterStateDriver = UnregisterStateDriver
+local GetFramesRegisteredForEvent = GetFramesRegisteredForEvent
+
+function BL:ThrottleReagentBankRecount()
+	local recount
+	for _, frame in next, { GetFramesRegisteredForEvent('TRADE_SKILL_UPDATE') } do
+		if frame:IsEventRegistered('ITEM_DATA_LOAD_RESULT') and frame:IsEventRegistered('GUILDBANK_ITEM_LOCK_CHANGED') and not frame:IsEventRegistered('PLAYER_TARGET_CHANGED') then
+			recount = frame
+			break
+		end
+	end
+	if not recount then return end
+
+	local gate = CreateFrame('Frame')
+	gate:Hide()
+	gate:SetScript('OnEvent', function(self)
+		recount:UnregisterEvent('TRADE_SKILL_UPDATE')
+		self:UnregisterEvent('TRADE_SKILL_UPDATE')
+		self:Show()
+	end)
+	gate:SetScript('OnUpdate', function(self)
+		self:Hide()
+		recount:RegisterEvent('TRADE_SKILL_UPDATE')
+		self:RegisterEvent('TRADE_SKILL_UPDATE')
+	end)
+	gate:RegisterEvent('TRADE_SKILL_UPDATE')
+end
 
 function BL:QuestXPPercent()
 	if not E.db.general.questXPPercent then return end
@@ -54,6 +80,7 @@ function BL:Initialize()
 	BL:QuestLevelToggle()
 	BL:UndressButtonToggle()
 	BL:ModelControls()
+	BL:ThrottleReagentBankRecount()
 
 	for _, addon in next, { 'Blizzard_GuildBankUI', 'Blizzard_TradeSkillUI' } do
 		if IsAddOnLoaded(addon) then
