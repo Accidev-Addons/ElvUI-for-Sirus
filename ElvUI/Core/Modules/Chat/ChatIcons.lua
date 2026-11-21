@@ -9,16 +9,32 @@ local DEFAULT_SIZE = 32
 
 -- размер иконки: число = квадрат, 'высота:ширина' если нет. Не указан — 32.
 local SIZE = {
-	Apolexis    = '24:58',
-	ElvBlue     = '13:25',
-	eye2        = 25,
-	gyiffay     = 24,
-	KolbaskaSir = 24,
-	marazmat    = 24,
-	meat        = '20:40',
-	spokes      = 24,
-	thorncrown  = 28,
-	tokyo       = 24,
+	Apolexis     = '24:58',
+	bagdemagus   = 24,
+	butterfly    = 30,
+	Dodzo        = 16,
+	ElvBlue      = '13:25',
+	eye2         = 25,
+	funnyterry   = 24,
+	Gadgetino    = 24,
+	gyiffay      = 24,
+	kel          = 24,
+	kel2         = 24,
+	KolbaskaSir  = 24,
+	legion       = 30,
+	Litereal     = 24,
+	marazmat     = 24,
+	meat         = '20:40',
+	NightlyBlooD = 24,
+	nwd          = '20:40',
+	pika         = 40,
+	Pokemon3     = 30,
+	Sova         = 24,
+	spokes       = 24,
+	thorncrown   = 28,
+	tokyo        = 24,
+	Toss         = 24,
+	Unicorn      = 36,
 }
 
 local SETS = {
@@ -30,12 +46,14 @@ local REALMS = {
 	Sirus = {
 		angrybird   = 'Pain Масстаунт',
 		Apolexis    = 'Apolexis Алексей',
-		da1mon12    = 'Zippio Даймон Худший',
+		da1mon12    = 'Zippio Даймон Худший Shizenshi',
 		Elv         = 'Пьяная Шутка',
 		eye2        = 'Акация',
 		gbutterfly  = 'Колючая Колючка',
 		gyiffay     = 'Dadbod Furryfetish Gyiffay Hairybear Locktober',
 		kaiden      = 'Kaiden',
+		kel         = 'Хахантунчик Землетряска Капкрита',
+		kel2        = 'Кель Скилуха Духовенство Манимэйкер Экзозайка',
 		kirin       = 'Taumard Реинбоу Рейнбоу Рэинбоу Рэйнбоу',
 		KolbaskaSir = 'Антидонат Сырсколбасой',
 		lunt        = 'Lyntuk',
@@ -58,6 +76,35 @@ local REALMS = {
 		Elv          = 'Fxpw Шутка',
 		mottidowerro = 'Mottidowerro Mottyoka',
 		pepe         = 'Выстрелбелка',
+	},
+	Scourge = {
+		bagdemagus   = 'Багдемагус Чешшуйчатый Bagdemagus Сайона',
+		butterfly    = 'Ковёр Lastmemory',
+		darling      = 'Ankroa Анкроа Anae Анаэ Кицуняшка',
+		Dodzo        = 'Додзё',
+		ElvBlue      = 'Крольчонок',
+		Euphy        = 'Юфи Юфимея Euphy Юфичка',
+		eye2         = 'Шиккай',
+		funnyterry   = 'Кощей Саргерас King Warlock Asmodeus',
+		Gadgetino    = 'Gadgetino',
+		KolbaskaSir  = 'Стоматолог Ghostbuste Усталыч Сырсколбасой',
+		legion       = 'Legion Sumoner Qez Yo Death Pyrokines Xekc Neit Amoralka Kaizen',
+		Litereal     = 'Лайтрил Litereal',
+		lun          = 'Luana',
+		meat         = 'Miasii Destroyeded Naenche Farhik',
+		nerfed       = 'Nerfed',
+		NightlyBlooD = 'Мимирон Хальфбьерн Снэбьёрн Йотонхейм',
+		nwd          = 'Alliri Enecence',
+		pika         = 'Pika Дженгу',
+		Pokemon3     = 'Сандей Азес Qualler Betlgeuse Pudge',
+		raccon       = 'Главныйвагон Праска Шваблик Цепнойпес Кривойлучник',
+		Sova         = 'Микросовушка',
+		thorncrown   = 'Kwx Thornmuse',
+		Toss         = 'Tossman Toss Toc Aiid Covenant Sheelby',
+		Unicorn      = 'Pampeya Stabiya Inochan',
+	},
+	x100 = {
+		ElvPink = 'Крольчонак',
 	},
 	any = {
 		-- иконка = 'Имена через пробел' — сработает на любом реалме
@@ -82,7 +129,7 @@ local function Build()
 
 	local realm = E.myrealm or ''
 	realm = strmatch(realm, '^Proxy%a*%s+(.+)$') or realm
-	realm = strmatch(realm, '^(%a+)') or realm
+	realm = strmatch(realm, '^(%a+%d*)') or realm
 
 	for _, list in next, { REALMS[realm], REALMS.any } do
 		for icon, names in next, list do
