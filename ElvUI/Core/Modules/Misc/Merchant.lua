@@ -1,10 +1,13 @@
 local E, L = unpack(ElvUI)
+local B = E:GetModule("Bags")
 local _G = _G
 local select = select
 local GetItemInfo = GetItemInfo
+local GetItemInfoInstant = GetItemInfoInstant
 local GetMerchantItemMaxStack = GetMerchantItemMaxStack
 local GetMoney = GetMoney
 local IsAltKeyDown = IsAltKeyDown
+local LE_ITEM_CLASS_RECIPE = LE_ITEM_CLASS_RECIPE
 local floor = math.floor
 
 local function MerchantItemButton_AltStackBuy(button, mouseButton)
@@ -61,69 +64,38 @@ end
 
 hooksecurefunc(_G.GameTooltip, "SetMerchantItem", MerchantItemButton_AltStackHint)
 
-local function CacheMerchantRecipes()
-	if _G.PRIVATE and _G.PRIVATE.SEARCH_TEXT then return end
-
-	local numItems = GetMerchantNumItems()
-	for index = 1, numItems do
-		if select(3, GetMerchantItemInfoEx(index)) then
-			E:CacheKnownRecipe(GetMerchantItemID(index))
-		end
-	end
+local function SetKnownRecipe(button, known)
+	local icon = _G[button:GetName().."IconTexture"]
+	icon:SetDesaturated(known and E.db.bags.knownRecipeDesaturate)
+	B:SetKnownRecipeMark(button, icon, known and E.db.bags.knownRecipeMark)
 end
 
-local function ApplyKnownRecipe(button, icon, known, desaturate, mark)
-	if not button then return end
-
-	SetItemButtonDesaturated(button, desaturate and known and true or false)
-
-	if mark then
-		E:CreateKnownRecipeMark(button, icon):SetShown(known and true or false)
-	elseif button.knownRecipeMark then
-		button.knownRecipeMark:Hide()
-	end
+local function IsKnownRecipeLink(link)
+	return link and select(6, GetItemInfoInstant(link)) == LE_ITEM_CLASS_RECIPE and B:IsKnownRecipe(link)
 end
 
 local function UpdateKnownRecipes()
-	local frame = _G.MerchantFrame
-	if not frame then return end
+	local buyback = _G.MerchantFrame.selectedTab == 2
+	local offset = buyback and 0 or (_G.MerchantFrame.page - 1) * MERCHANT_ITEMS_PER_PAGE
+	local numItems = GetMerchantNumItems()
 
-	local desaturate = E.db.bags.knownRecipeDesaturate
-	local mark = E.db.bags.knownRecipeMark
-	local buyback = frame.selectedTab == 2
-	local count = buyback and BUYBACK_ITEMS_PER_PAGE or MERCHANT_ITEMS_PER_PAGE
-
-	if _G.PRIVATE and _G.PRIVATE.SEARCH_TEXT then
-		for i = 1, count do
-			ApplyKnownRecipe(_G['MerchantItem'..i..'ItemButton'], nil, false, desaturate, mark)
+	for i = 1, buyback and BUYBACK_ITEMS_PER_PAGE or MERCHANT_ITEMS_PER_PAGE do
+		local index = offset + i
+		local known
+		if buyback then
+			known = IsKnownRecipeLink(GetBuybackItemLink(index))
+		elseif index <= numItems then
+			known = select(3, GetMerchantItemInfoEx(index))
 		end
 
-		ApplyKnownRecipe(_G.MerchantBuyBackItemItemButton, nil, false, desaturate, mark)
-
-		return
+		SetKnownRecipe(_G["MerchantItem"..i.."ItemButton"], known)
 	end
 
-	local offset = buyback and 0 or ((frame.page or 1) - 1) * MERCHANT_ITEMS_PER_PAGE
-	local numItems = buyback and BUYBACK_ITEMS_PER_PAGE or GetMerchantNumItems()
-
-	for i = 1, count do
-		local button = _G['MerchantItem'..i..'ItemButton']
-		if button then
-			local index = offset + i
-			local link = index <= numItems and (buyback and GetBuybackItemLink(index) or GetMerchantItemLink(index))
-			local known = link and (buyback and E:IsKnownRecipe(link) or select(3, GetMerchantItemInfoEx(index)))
-
-			ApplyKnownRecipe(button, _G[button:GetName()..'IconTexture'], known, desaturate, mark)
-		end
-	end
-
-	local buybackLink = GetNumBuybackItems() > 0 and GetBuybackItemLink(GetNumBuybackItems())
-	ApplyKnownRecipe(_G.MerchantBuyBackItemItemButton, _G.MerchantBuyBackItemItemButtonIconTexture, buybackLink and E:IsKnownRecipe(buybackLink), desaturate, mark)
+	SetKnownRecipe(_G.MerchantBuyBackItemItemButton, IsKnownRecipeLink(GetBuybackItemLink(GetNumBuybackItems())))
 end
 
-hooksecurefunc('MerchantFrame_UpdateMerchantInfo', UpdateKnownRecipes)
-
-hooksecurefunc('MerchantFrame_UpdateBuybackInfo', UpdateKnownRecipes)
+hooksecurefunc("MerchantFrame_UpdateMerchantInfo", UpdateKnownRecipes)
+hooksecurefunc("MerchantFrame_UpdateBuybackInfo", UpdateKnownRecipes)
 
 local buttons = {}
 local function UpdateAltMouse()
@@ -159,17 +131,7 @@ local function InstallAltStackButtons()
 end
 local watcher = CreateFrame("Frame")
 watcher:RegisterEvent("MERCHANT_SHOW")
-watcher:RegisterEvent("MERCHANT_UPDATE")
 watcher:RegisterEvent("MODIFIER_STATE_CHANGED")
 watcher:SetScript("OnEvent", function(_, event)
-	if event == "MERCHANT_SHOW" then
-		InstallAltStackButtons()
-		UpdateKnownRecipes()
-		CacheMerchantRecipes()
-	elseif event == "MERCHANT_UPDATE" then
-		CacheMerchantRecipes()
-		UpdateKnownRecipes()
-	else
-		UpdateAltMouse()
-	end
+	if event == "MERCHANT_SHOW" then InstallAltStackButtons() else UpdateAltMouse() end
 end)

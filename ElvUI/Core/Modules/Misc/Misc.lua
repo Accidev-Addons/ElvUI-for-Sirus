@@ -383,45 +383,24 @@ function M:DelayTutorialFrames()
 end
 
 local ServerNewsPanels = { 'ServerNewsFrame', 'GameMenuFrameServerAnnounces', 'GameMenuFrameServerChanges', 'StoreToastFrame' }
-local AD_AUTO_CLOSE_DELAY = 2
 
-local function AutoCloseAd(frame)
-	if not frame or not frame.IsShown or not frame.Hide then return end
-	if not frame:IsShown() or frame.elvAdAutoClose then return end
+local function AutoCloseServerNews(frame)
+	if not E.db.general.hideServerNews or frame.elvAutoClose then return end
 
-	frame.elvAdAutoClose = true
+	frame.elvAutoClose = true
 
-	E:Delay(AD_AUTO_CLOSE_DELAY, function()
-		frame.elvAdAutoClose = nil
+	E:Delay(2, function()
+		frame.elvAutoClose = nil
 
-		if frame:IsShown() then
-			frame:Hide()
+		if not M.serverNewsUserOpened then
+			HideUIPanel(frame)
 		end
 	end)
 end
 
-local function AutoCloseServerNews(frame)
-	if not E.db.general.hideServerNews then return end
-	if M.serverNewsUserOpened then return end
-
-	AutoCloseAd(frame or _G.ServerNewsFrame)
-end
-
-function M:HideServerNews(frame)
-	AutoCloseServerNews(frame or _G.ServerNewsFrame)
-end
-
-function M:HookServerNews()
-	for _, name in next, ServerNewsPanels do
-		local frame = _G[name]
-		if frame and not frame.elvAdAutoCloseHooked then
-			frame.elvAdAutoCloseHooked = true
-
-			hooksecurefunc(frame, 'Show', AutoCloseServerNews)
-			hooksecurefunc(frame, 'Hide', function()
-				M.serverNewsUserOpened = nil
-			end)
-		end
+function M:HideServerNews()
+	if _G.ServerNewsFrame:IsShown() then
+		AutoCloseServerNews(_G.ServerNewsFrame)
 	end
 end
 
@@ -450,18 +429,12 @@ function M:Initialize()
 
 	M:DelayTutorialFrames()
 
-	hooksecurefunc('ShowUIPanel', function(panel)
-		if panel == _G.ServerNewsFrame then
-			M:HideServerNews(panel)
-		end
-	end)
+	for _, name in next, ServerNewsPanels do
+		hooksecurefunc(_G[name], 'Show', AutoCloseServerNews)
+	end
 
-	M:HookServerNews()
-
-	local newsWatcher = CreateFrame('Frame')
-	newsWatcher:RegisterEvent('PLAYER_ENTERING_WORLD')
-	newsWatcher:SetScript('OnEvent', function()
-		M:HookServerNews()
+	hooksecurefunc(_G.ServerNewsFrame, 'Hide', function()
+		M.serverNewsUserOpened = nil
 	end)
 
 	local whatsNew = _G.GameMenuButtonWhatsNew

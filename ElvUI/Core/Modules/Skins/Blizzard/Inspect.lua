@@ -86,8 +86,6 @@ local function LoadSkin()
 
 	local styleButton
 	do
-		local MAX_SOCKET_RETRIES = 20
-
 		local function awaitCache(button)
 			button.awaitingCache = nil
 
@@ -101,13 +99,9 @@ local function LoadSkin()
 			if InspectFrame.unit then
 				button.lastLink = GetInventoryItemLink(InspectFrame.unit, button:GetID())
 
-				if S:HandleSirusEquipmentSocketInfo(button, button:GetID(), S.EquipmentSlotAnchors[slotName], slotName, InspectFrame.unit) then
-					S:RetrySocketInfo(button, MAX_SOCKET_RETRIES, 0.5, function()
-						if not InspectFrame.unit then return false end
-
-						return S:HandleSirusEquipmentSocketInfo(button, button:GetID(), S.EquipmentSlotAnchors[slotName], slotName, InspectFrame.unit)
-					end)
-				end
+				S:RetrySocketInfo(button, 20, 0.5, function()
+					return InspectFrame.unit and S:HandleSirusEquipmentSocketInfo(button, button:GetID(), S.EquipmentSlotAnchors[slotName], slotName, InspectFrame.unit)
+				end)
 			end
 
 			S:UpdateBlackDiamondHighlight(button, InspectFrame.unit and button.lastLink)
@@ -154,10 +148,7 @@ local function LoadSkin()
 
 			if GetInventoryItemLink(unit, slotID) ~= button.lastLink or (texture and texture ~= button.lastTexture) then
 				button.lastTexture = texture
-
-				if not S.socketRetries[button] then
-					InspectPaperDollItemSlotButton_Update(button)
-				end
+				InspectPaperDollItemSlotButton_Update(button)
 			end
 		end
 	end

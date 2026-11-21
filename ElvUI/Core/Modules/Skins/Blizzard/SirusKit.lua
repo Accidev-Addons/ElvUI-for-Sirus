@@ -8,7 +8,7 @@ local ipairs = ipairs
 local find = string.find
 local hooksecurefunc = hooksecurefunc
 local pairs = pairs
-local wipe, select = wipe, select
+local select = select
 local GetInventoryItemLink = GetInventoryItemLink
 local GetItemGem = GetItemGem
 local SocketInventoryItem = SocketInventoryItem
@@ -690,16 +690,13 @@ hooksecurefunc(E, "UpdateFrameTemplates", function()
 	end
 end)
 
-local socketScanCache, socketScanSize = {}, 0
-local SOCKET_SCAN_CACHE_LIMIT = 300
-
-S.socketRetries = {}
+local socketRetries = {}
 
 function S:RetrySocketInfo(key, attempts, delay, callback)
-	local state = S.socketRetries[key]
+	local state = socketRetries[key]
 	if not state then
 		state = { attempt = 0 }
-		S.socketRetries[key] = state
+		socketRetries[key] = state
 	end
 
 	if state.timer then E:CancelTimer(state.timer) end
@@ -712,21 +709,17 @@ function S:RetrySocketInfo(key, attempts, delay, callback)
 			S:RetrySocketInfo(key, attempts, delay, callback)
 		end, delay)
 	else
-		S.socketRetries[key] = nil
+		socketRetries[key] = nil
 	end
 end
 
 function S:ResetSocketRetry(key)
-	local state = S.socketRetries[key]
+	local state = socketRetries[key]
 	if state and state.timer then E:CancelTimer(state.timer) end
-	S.socketRetries[key] = nil
+	socketRetries[key] = nil
 end
 
-local function ScanSocketInfo(unit, inventorySlot, slotName, link, showGems, showEnchants)
-	local key = link..(showGems and 'G' or '')..(showEnchants and 'E' or '')
-	local cached = socketScanCache[key]
-	if cached then return cached end
-
+local function ScanSocketInfo(unit, inventorySlot, slotName, showGems, showEnchants)
 	local gems, empty = {}, {}
 	local enchantText
 
@@ -762,19 +755,7 @@ local function ScanSocketInfo(unit, inventorySlot, slotName, link, showGems, sho
 
 	tooltip:Hide()
 
-	local entry = { gems = gems, empty = empty, enchant = enchantText }
-
-	if GetItemInfo(link) then
-		if socketScanSize >= SOCKET_SCAN_CACHE_LIMIT then
-			wipe(socketScanCache)
-			socketScanSize = 0
-		end
-
-		socketScanCache[key] = entry
-		socketScanSize = socketScanSize + 1
-	end
-
-	return entry
+	return { gems = gems, empty = empty, enchant = enchantText }
 end
 
 function S:HandleSirusEquipmentSocketInfo(slotFrame, inventorySlot, anchor, slotName, unit)
@@ -798,7 +779,7 @@ function S:HandleSirusEquipmentSocketInfo(slotFrame, inventorySlot, anchor, slot
 	local hasUnknown = link and not GetItemInfo(link)
 
 	if link and (showGems or showEnchants) then
-		local scan = ScanSocketInfo(unit, inventorySlot, slotName, link, showGems, showEnchants)
+		local scan = ScanSocketInfo(unit, inventorySlot, slotName, showGems, showEnchants)
 
 		if showGems then
 			local nextTexture, nextEmpty = 1, 1
@@ -1249,10 +1230,8 @@ function S:HandleSirusNavBar(navBar)
 		end
 	end
 
-
 	local function SkinButton(button)
 		if not button or button.isSkinned then return end
-
 		S:HandleButton(button, true)
 		S:ApplyElvUIFont(button)
 		button.xoffset = 1

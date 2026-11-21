@@ -1524,6 +1524,7 @@ function NP:Initialize()
 	NP:RegisterEvent("RAID_TARGET_UPDATE")
 	NP:RegisterEvent("UPDATE_MOUSEOVER_UNIT")
 	NP:RegisterEvent("UNIT_COMBO_POINTS")
+	NP:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
 
 	NP:UpdateChatBubbles()
 

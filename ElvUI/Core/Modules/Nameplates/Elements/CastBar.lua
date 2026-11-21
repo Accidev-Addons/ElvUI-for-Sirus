@@ -4,6 +4,7 @@ local LSM = E.Libs.LSM
 
 --Lua functions
 local abs = math.abs
+local next = next
 --WoW API / Variables
 local CreateFrame = CreateFrame
 local GetTime = GetTime
@@ -12,73 +13,49 @@ local UnitChannelInfo = UnitChannelInfo
 local FAILED = FAILED
 local INTERRUPTED = INTERRUPTED
 local GetPlayerInfoByGUID = GetPlayerInfoByGUID
-local GetSpellTexture = GetSpellTexture
-local UnitClass = UnitClass
+local GetSpellInfo = GetSpellInfo
 
 local interrupts = {}
-local INTERRUPT_INFO_LIFETIME = 2
-local INTERRUPT_INFO_CLEANUP = 10
-
-local function InterruptColorStr(guid, name)
-	local englishClass
-
-	if GetPlayerInfoByGUID and guid then
-		local ok, _, class = pcall(GetPlayerInfoByGUID, guid)
-		if ok then englishClass = class end
-	end
-
-	if not englishClass and name then
-		local ok, _, class = pcall(UnitClass, name)
-		if ok then englishClass = class end
-	end
-
-	local color = englishClass and E:ClassColor(englishClass)
-	return color and color.colorStr
-end
 
 local function ApplyInterruptInfo(castBar, info)
-	local colorStr = info.name and InterruptColorStr(info.guid, info.name)
+	local _, class = GetPlayerInfoByGUID(info.guid)
+	local color = class and E:ClassColor(class)
 
-	if colorStr then
-		castBar.Name:SetFormattedText("%s: |c%s%s|r", INTERRUPTED, colorStr, info.name)
+	if color then
+		castBar.Name:SetFormattedText("%s: |c%s%s|r", INTERRUPTED, color.colorStr, info.name)
 	else
 		castBar.Name:SetText(INTERRUPTED)
 	end
 
-	local texture = info.spellID and GetSpellTexture(info.spellID) or (info.spell and GetSpellTexture(info.spell))
-	if texture then
-		castBar.Icon.texture:SetTexture(texture)
+	local _, _, icon = GetSpellInfo(info.spellID)
+	if icon then
+		castBar.Icon.texture:SetTexture(icon)
 		castBar.Icon.texture:SetDesaturated(false)
 	end
 
-	castBar.Time:SetText(info.spell or "")
+	castBar.Time:SetText(info.spell)
 end
 
-local eventFrame = CreateFrame("Frame")
-eventFrame:SetScript("OnEvent", function(_, _, _, subevent, sourceGUID, sourceName, _, destGUID, _, _, spellID, spellName)
-	if subevent ~= "SPELL_INTERRUPT" or not destGUID then return end
+function NP:COMBAT_LOG_EVENT_UNFILTERED(_, _, subevent, sourceGUID, sourceName, _, destGUID, _, _, spellID, spellName)
+	if subevent ~= "SPELL_INTERRUPT" then return end
 
 	local now = GetTime()
-	local info = { guid = sourceGUID, name = sourceName, spellID = spellID, spell = spellName, time = now }
-
-	for guid, value in next, interrupts do
-		if now - value.time > INTERRUPT_INFO_CLEANUP then
+	for guid, info in next, interrupts do
+		if now - info.time > 10 then
 			interrupts[guid] = nil
 		end
 	end
 
+	local info = { guid = sourceGUID, name = sourceName, spellID = spellID, spell = spellName, time = now }
 	interrupts[destGUID] = info
 
 	for frame in next, NP.VisiblePlates do
-		if frame.guid == destGUID then
-			local castBar = frame.CastBar
-			if castBar and castBar:IsShown() and castBar.interrupted then
-				ApplyInterruptInfo(castBar, info)
-			end
+		local castBar = frame.guid == destGUID and frame.CastBar
+		if castBar and castBar:IsShown() and castBar.interrupted then
+			ApplyInterruptInfo(castBar, info)
 		end
 	end
-end)
-eventFrame:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+end
 
 local function resetAttributes(self)
 	self.casting = nil
@@ -241,15 +218,14 @@ function NP:Update_CastBar(frame, event, unit)
 		end
 	elseif event == "UNIT_SPELLCAST_FAILED" or event == "UNIT_SPELLCAST_INTERRUPTED" then
 		if castBar:IsShown() then
-			local progress = castBar:GetValue()
-
 			castBar.Spark:Hide()
 
 			if event == "UNIT_SPELLCAST_FAILED" then
 				castBar.Name:SetText(FAILED)
+				castBar:SetValue(castBar.max)
 			else
 				local info = frame.guid and interrupts[frame.guid]
-				if info and (GetTime() - info.time) <= INTERRUPT_INFO_LIFETIME then
+				if info and GetTime() - info.time <= 2 then
 					ApplyInterruptInfo(castBar, info)
 					interrupts[frame.guid] = nil
 				else
@@ -261,8 +237,6 @@ function NP:Update_CastBar(frame, event, unit)
 			castBar.interrupted = true
 
 			resetAttributes(castBar)
-
-			castBar:SetValue(event == "UNIT_SPELLCAST_INTERRUPTED" and progress or castBar.max)
 		end
 	elseif event == "UNIT_SPELLCAST_DELAYED" or event == "UNIT_SPELLCAST_CHANNEL_UPDATE" then
 		if frame:IsShown() then
