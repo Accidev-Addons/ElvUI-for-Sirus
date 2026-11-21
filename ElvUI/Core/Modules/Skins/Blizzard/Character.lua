@@ -2873,7 +2873,7 @@ local function LoadSkin()
 	equipmentWatcher:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
 	equipmentWatcher:RegisterEvent("UNIT_INVENTORY_CHANGED")
 	equipmentWatcher:RegisterEvent("SOCKET_INFO_CLOSE")
-	equipmentWatcher:RegisterEvent("GET_ITEM_INFO_RECEIVED")
+	equipmentWatcher:RegisterCustomEvent("GET_ITEM_INFO_RECEIVED")
 	equipmentWatcher:RegisterEvent("UPDATE_INVENTORY_DURABILITY")
 	equipmentWatcher:SetScript("OnEvent", function(_, event, unit)
 		if (event == "UNIT_INVENTORY_CHANGED" and unit ~= "player") or not CharacterFrame:IsShown() then return end

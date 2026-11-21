@@ -121,7 +121,6 @@ local function SkinItemDisplay(frame)
 	if ItemButton.Icon then S:HandleIcon(ItemButton.Icon, true) end
 	if ItemButton.IconBorder and ItemButton.Icon and ItemButton.Icon.backdrop then
 		S:HandleIconBorder(ItemButton.IconBorder, ItemButton.Icon.backdrop)
-		ItemButton.IconBorder:Kill()
 	end
 
 	local highlight = ItemButton.GetHighlightTexture and ItemButton:GetHighlightTexture()
@@ -235,7 +234,6 @@ local function HandleSellFrame(frame)
 
 	if ItemButton.IconBorder and ItemButton.Icon and ItemButton.Icon.backdrop then
 		S:HandleIconBorder(ItemButton.IconBorder, ItemButton.Icon.backdrop)
-		ItemButton.IconBorder:Kill()
 	end
 
 	if frame.SecondaryPriceInput and frame.SecondaryPriceInput.MoneyInputFrame then

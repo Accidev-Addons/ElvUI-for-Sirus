@@ -70,26 +70,27 @@ end
 
 local function UpdateKnownRecipes()
 	local buyback = _G.MerchantFrame.selectedTab == 2
-	local offset = buyback and 0 or (_G.MerchantFrame.page - 1) * MERCHANT_ITEMS_PER_PAGE
-	local numItems = GetMerchantNumItems()
 
-	for i = 1, buyback and BUYBACK_ITEMS_PER_PAGE or MERCHANT_ITEMS_PER_PAGE do
-		local index = offset + i
+	for i = 1, math.huge do
+		local button = _G["MerchantItem"..i.."ItemButton"]
+		if not button then break end
+
 		local known
-		if buyback then
-			known = B:IsKnownRecipeLink(GetBuybackItemLink(index))
-		elseif index <= numItems then
-			known = select(3, GetMerchantItemInfoEx(index))
+		if button:IsShown() then
+			if buyback then
+				known = B:IsKnownRecipeLink(GetBuybackItemLink(button:GetID()))
+			else
+				known = select(3, GetMerchantItemInfoEx(button:GetID()))
+			end
 		end
 
-		SetKnownRecipe(_G["MerchantItem"..i.."ItemButton"], known)
+		SetKnownRecipe(button, known)
 	end
 
 	SetKnownRecipe(_G.MerchantBuyBackItemItemButton, B:IsKnownRecipeLink(GetBuybackItemLink(GetNumBuybackItems())))
 end
 
-hooksecurefunc("MerchantFrame_UpdateMerchantInfo", UpdateKnownRecipes)
-hooksecurefunc("MerchantFrame_UpdateBuybackInfo", UpdateKnownRecipes)
+hooksecurefunc("MerchantFrame_Update", UpdateKnownRecipes)
 
 local buttons = {}
 local function UpdateAltMouse()
@@ -97,9 +98,10 @@ local function UpdateAltMouse()
 	for _, button in ipairs(buttons) do button:EnableMouse(enabled) end
 end
 local function InstallAltStackButtons()
-	for i = 1, 12 do
+	for i = 1, math.huge do
 		local button = _G["MerchantItem"..i.."ItemButton"]
-		if button and not button.elvAltStackButton then
+		if not button then break end
+		if not button.elvAltStackButton then
 			local altButton = CreateFrame("Button", nil, button)
 			altButton:SetAllPoints(button)
 			altButton:SetFrameLevel(button:GetFrameLevel() + 1)

@@ -16,7 +16,6 @@ local CanMerchantRepair = CanMerchantRepair
 local GetGuildBankWithdrawMoney = GetGuildBankWithdrawMoney
 local GetInstanceInfo = GetInstanceInfo
 local GetItemInfo = GetItemInfo
-local GetQuestItemLink = GetQuestItemLink
 local GetFriendInfo = GetFriendInfo
 local GetGuildRosterInfo = GetGuildRosterInfo
 local GetNumQuestChoices = GetNumQuestChoices
@@ -292,22 +291,21 @@ function M:RESURRECT_REQUEST()
 	end
 end
 
-function M:QUEST_COMPLETE()
-	local showIcon, autoSelect = E.db.general.questRewardMostValueIcon, E.db.general.questRewardSelect
-	if not showIcon and not autoSelect then return end
+local QuestRewardValue = { [45724] = 100000 }
 
-	local firstItem = _G.QuestInfoItem1
-	if not firstItem then return end
+function M:GetQuestRewardChoice()
+	local numChoices = GetNumQuestChoices()
+	if numChoices < 2 then
+		return numChoices == 1 and 1 or nil
+	end
 
-	local numQuests = GetNumQuestChoices()
-	if numQuests < 1 or (numQuests == 1 and not autoSelect) then return end
-
-	local bestValue, bestItem = 0, (numQuests == 1) and 1 or nil
-	for i = 1, numQuests do
-		local questLink = GetQuestItemLink('choice', i)
-		local sellPrice = questLink and select(11, GetItemInfo(questLink))
-		if sellPrice and sellPrice > 0 then
-			local _, _, amount = GetQuestItemInfo('choice', i)
+	local bestValue, bestItem, pending = 0, nil, false
+	for i = 1, numChoices do
+		local _, _, amount, _, _, itemID = GetQuestItemInfo('choice', i)
+		local sellPrice = itemID and (QuestRewardValue[itemID] or select(11, GetItemInfo(itemID)))
+		if not sellPrice then
+			pending = true
+		else
 			local totalValue = (amount and amount > 0) and (sellPrice * amount) or 0
 			if totalValue > bestValue then
 				bestValue = totalValue
@@ -316,19 +314,42 @@ function M:QUEST_COMPLETE()
 		end
 	end
 
-	if bestItem then
-		local btn = _G['QuestInfoItem'..bestItem]
-		if btn and btn.type == 'choice' then
-			if showIcon and numQuests > 1 then
-				M.QuestRewardGoldIconFrame:ClearAllPoints()
-				M.QuestRewardGoldIconFrame:Point('TOPRIGHT', btn, 'TOPRIGHT', -2, -2)
-				M.QuestRewardGoldIconFrame:Show()
-			end
+	if pending then
+		return nil, true
+	end
 
-			if autoSelect then
-				_G.QuestInfoItem_OnClick(btn)
-			end
-		end
+	return bestItem
+end
+
+function M:QuestRewardUpdate()
+	local icon = M.QuestRewardGoldIconFrame
+	icon:Hide()
+
+	local showIcon, autoSelect = E.db.general.questRewardMostValueIcon, E.db.general.questRewardSelect
+	local numChoices = GetNumQuestChoices()
+	local bestItem, pending
+	if (showIcon or autoSelect) and (numChoices > 1 or (numChoices == 1 and autoSelect)) and _G.QuestFrameRewardPanel:IsShown() and _G.QuestInfoFrame.chooseItems then
+		bestItem, pending = M:GetQuestRewardChoice()
+	end
+
+	if pending then
+		E:RegisterEventForObject('GET_ITEM_INFO_RECEIVED', M, M.QuestRewardUpdate)
+		return
+	end
+
+	E:UnregisterEventForObject('GET_ITEM_INFO_RECEIVED', M, M.QuestRewardUpdate)
+
+	local btn = bestItem and _G['QuestInfoItem'..bestItem]
+	if not btn or btn.type ~= 'choice' then return end
+
+	if showIcon and numChoices > 1 then
+		icon:ClearAllPoints()
+		icon:Point('TOPRIGHT', btn, 'TOPRIGHT', -2, -2)
+		icon:Show()
+	end
+
+	if autoSelect and _G.QuestInfoFrame.itemChoice == 0 then
+		_G.QuestInfoItem_OnClick(btn)
 	end
 end
 
@@ -423,7 +444,6 @@ function M:Initialize()
 	M:RegisterEvent('CHAT_MSG_BG_SYSTEM_NEUTRAL', 'PVPMessageEnhancement')
 	M:RegisterEvent('PARTY_INVITE_REQUEST', 'AutoInvite')
 	M:RegisterEvent('COMBAT_TEXT_UPDATE')
-	M:RegisterEvent('QUEST_COMPLETE')
 	M:RegisterEvent('PLAYER_DEAD')
 	M:RegisterEvent('DUEL_REQUESTED')
 
@@ -464,6 +484,12 @@ function M:Initialize()
 		hooksecurefunc(_G.QuestFrameRewardPanel, 'Hide', function()
 			if M.QuestRewardGoldIconFrame then
 				M.QuestRewardGoldIconFrame:Hide()
+			end
+		end)
+
+		_G.QuestFrame:HookScript('OnEvent', function(_, event)
+			if event == 'QUEST_COMPLETE' or event == 'QUEST_ITEM_UPDATE' then
+				M:QuestRewardUpdate()
 			end
 		end)
 	end

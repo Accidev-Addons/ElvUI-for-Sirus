@@ -1525,6 +1525,38 @@ function S:StyleTalentIcon(button, icon)
 	end
 end
 
+local function IconBorderColor(border, r, g, b, a)
+	if border.customFunc then
+		local br, bg, bb = unpack(E.media.bordercolor)
+		border.customFunc(border, br, bg, bb)
+		return
+	end
+
+	local backdrop = border.customBackdrop
+	if not (backdrop and backdrop.SetBackdropBorderColor) then return end
+
+	if r and g and b then
+		backdrop:SetBackdropBorderColor(r, g, b, a or 1)
+	else
+		backdrop:SetBackdropBorderColor(unpack(E.media.bordercolor))
+	end
+end
+
+local function IconBorderVertexColor(border)
+	IconBorderColor(border, border:GetVertexColor())
+end
+
+local function IconBorderShow(border)
+	border:Hide(0)
+	IconBorderVertexColor(border)
+end
+
+local function IconBorderHide(border, value)
+	if value ~= 0 then
+		IconBorderColor(border)
+	end
+end
+
 function S:HandleIconBorder(border, backdrop, customFunc)
 	if not border or not border.SetVertexColor then return end
 
@@ -1533,39 +1565,24 @@ function S:HandleIconBorder(border, backdrop, customFunc)
 		backdrop = (parent and parent.backdrop) or parent
 	end
 
+	border.customBackdrop = backdrop
+
 	if customFunc then
 		border.customFunc = customFunc
 	end
 
-	local function applyColor(self)
-		if not self or not self.SetVertexColor then return end
+	if border.IconBorderHooked then return end
+	border.IconBorderHooked = true
 
-		if self.customFunc then
-			local br, bg, bb = unpack(E.media.bordercolor)
-			self.customFunc(self, br, bg, bb)
-			return
-		end
+	hooksecurefunc(border, 'SetVertexColor', IconBorderVertexColor)
+	hooksecurefunc(border, 'Show', IconBorderShow)
+	hooksecurefunc(border, 'Hide', IconBorderHide)
 
-		local r, g, b, a = self:GetVertexColor()
-		if r and g and b then
-			if backdrop and backdrop.SetBackdropBorderColor then
-				backdrop:SetBackdropBorderColor(r, g, b, a or 1)
-			end
-		else
-			local br, bg, bb = unpack(E.media.bordercolor)
-			if backdrop and backdrop.SetBackdropBorderColor then
-				backdrop:SetBackdropBorderColor(br, bg, bb)
-			end
-		end
+	if border:IsShown() then
+		IconBorderShow(border)
+	else
+		IconBorderColor(border)
 	end
-
-	if not border.IconBorderHooked then
-		border.IconBorderHooked = true
-		hooksecurefunc(border, 'SetVertexColor', applyColor)
-	end
-
-	border:Hide()
-	applyColor(border)
 end
 
 function S:HandleItemButton(b, setInside)

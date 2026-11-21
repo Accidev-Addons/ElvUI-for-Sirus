@@ -2,10 +2,13 @@ local E, L, V, P, G = unpack(ElvUI)
 local S = E:GetModule("Skins")
 
 local _G = _G
-local unpack, select = unpack, select
+local ipairs, unpack, select = ipairs, unpack, select
 local CreateFrame = CreateFrame
 local hooksecurefunc = hooksecurefunc
 local GetItemInfo = GetItemInfo
+local GetItemInfoInstant = GetItemInfoInstant
+local GetSpellInfo = GetSpellInfo
+local SetPortraitToTexture = SetPortraitToTexture
 local GetTradeSkillItemLink = GetTradeSkillItemLink
 local GetTradeSkillNumReagents = GetTradeSkillNumReagents
 local GetTradeSkillReagentInfo = GetTradeSkillReagentInfo
@@ -45,6 +48,15 @@ local function UpdateProfessionArt()
 		portrait:SetAlpha(0)
 		TradeSkillFrame.portraitRing:SetAlpha(0)
 	end
+end
+
+local function GetBorderColor(quality)
+	local color = quality and _G.BAG_ITEM_QUALITY_COLORS[quality]
+	if color then
+		return color.r, color.g, color.b
+	end
+
+	return unpack(E.media.bordercolor)
 end
 
 local function LoadSkin()
@@ -201,7 +213,7 @@ local function LoadSkin()
 				ResultIcon:SetBackdropBorderColor(r, g, b)
 				_G.TradeSkillSkillName:SetTextColor(r, g, b)
 			else
-				ResultIcon:SetBackdropBorderColor(unpack(E.media.bordercolor))
+				ResultIcon:SetBackdropBorderColor(GetBorderColor(quality))
 				_G.TradeSkillSkillName:SetTextColor(1, 1, 1)
 			end
 		end
@@ -226,12 +238,61 @@ local function LoadSkin()
 						reagent.Name:SetTextColor(r, g, b)
 					end
 				else
-					reagent:SetBackdropBorderColor(unpack(E.media.bordercolor))
-					reagent.Icon.backdrop:SetBackdropBorderColor(unpack(E.media.bordercolor))
+					r, g, b = GetBorderColor(quality)
+					reagent:SetBackdropBorderColor(r, g, b)
+					reagent.Icon.backdrop:SetBackdropBorderColor(r, g, b)
 				end
 			end
 		end
 	end)
 end
 
+local function UpdateOutputIcon(button)
+	local texture
+	if button.craftedType == "spell" then
+		texture = select(3, GetSpellInfo(button.spellID))
+	elseif button.itemID then
+		texture = select(5, GetItemInfoInstant(button.itemID))
+	end
+
+	SetPortraitToTexture(button.Icon, "")
+	button.Icon:SetTexture(texture or [[Interface\Icons\INV_Misc_QuestionMark]])
+	button.Icon:SetTexCoords()
+end
+
+local function SkinReagentSlots(form)
+	for _, slot in ipairs(form.reagentSlots) do
+		local button = slot.Button
+		if not button.isSkinned then
+			S:HandleItemButton(button, true)
+			S:HandleIconBorder(button.IconBorder)
+		end
+	end
+end
+
+local function LoadInspectRecipeSkin()
+	if not E.private.skins.blizzard.enable or not E.private.skins.blizzard.tradeskill then return end
+
+	local InspectRecipeFrame = _G.InspectRecipeFrame
+	if not (InspectRecipeFrame and InspectRecipeFrame.SchematicForm) then return end
+
+	S:HandleSirusFrame(InspectRecipeFrame)
+
+	local SchematicForm = InspectRecipeFrame.SchematicForm
+	SchematicForm.NineSlice:Hide()
+	SchematicForm:CreateBackdrop("Transparent")
+	SchematicForm.Background:SetVertexColor(0.8, 0.8, 0.8)
+
+	S:HandleCheckBox(SchematicForm.TrackRecipeCheckbox)
+
+	local OutputIcon = SchematicForm.OutputIcon
+	OutputIcon:SetAttribute("useCircularIconBorder", false)
+	S:HandleIcon(OutputIcon.Icon, true)
+	S:HandleIconBorder(OutputIcon.IconBorder, OutputIcon.Icon.backdrop)
+
+	hooksecurefunc(OutputIcon, "UpdateOutputInfo", UpdateOutputIcon)
+	hooksecurefunc(SchematicForm, "Init", SkinReagentSlots)
+end
+
 S:AddCallback("Skin_Tradeskill", LoadSkin)
+S:AddCallback("Skin_InspectRecipe", LoadInspectRecipeSkin)
