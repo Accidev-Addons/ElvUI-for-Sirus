@@ -28,6 +28,7 @@ local GetCursorInfo = GetCursorInfo
 local GetCursorMoney = GetCursorMoney
 local GetCVarBool = GetCVarBool
 local GetInventoryItemTexture = GetInventoryItemTexture
+local GetItemInfoInstant = GetItemInfoInstant
 local GetItemSpell = GetItemSpell
 local GetKeyRingSize = GetKeyRingSize
 local GetMoney = GetMoney
@@ -604,6 +605,10 @@ function B:IsKnownRecipe(itemLink)
 	E.ScanTooltip:Hide()
 
 	return B.KnownRecipeCache[itemLink]
+end
+
+function B:IsKnownRecipeLink(link)
+	return link and select(6, GetItemInfoInstant(link)) == LE_ITEM_CLASS_RECIPE and B:IsKnownRecipe(link)
 end
 
 function B:SetKnownRecipeMark(button, anchor, shown)

@@ -3,11 +3,9 @@ local B = E:GetModule("Bags")
 local _G = _G
 local select = select
 local GetItemInfo = GetItemInfo
-local GetItemInfoInstant = GetItemInfoInstant
 local GetMerchantItemMaxStack = GetMerchantItemMaxStack
 local GetMoney = GetMoney
 local IsAltKeyDown = IsAltKeyDown
-local LE_ITEM_CLASS_RECIPE = LE_ITEM_CLASS_RECIPE
 local floor = math.floor
 
 local function MerchantItemButton_AltStackBuy(button, mouseButton)
@@ -70,10 +68,6 @@ local function SetKnownRecipe(button, known)
 	B:SetKnownRecipeMark(button, icon, known and E.db.bags.knownRecipeMark)
 end
 
-local function IsKnownRecipeLink(link)
-	return link and select(6, GetItemInfoInstant(link)) == LE_ITEM_CLASS_RECIPE and B:IsKnownRecipe(link)
-end
-
 local function UpdateKnownRecipes()
 	local buyback = _G.MerchantFrame.selectedTab == 2
 	local offset = buyback and 0 or (_G.MerchantFrame.page - 1) * MERCHANT_ITEMS_PER_PAGE
@@ -83,7 +77,7 @@ local function UpdateKnownRecipes()
 		local index = offset + i
 		local known
 		if buyback then
-			known = IsKnownRecipeLink(GetBuybackItemLink(index))
+			known = B:IsKnownRecipeLink(GetBuybackItemLink(index))
 		elseif index <= numItems then
 			known = select(3, GetMerchantItemInfoEx(index))
 		end
@@ -91,7 +85,7 @@ local function UpdateKnownRecipes()
 		SetKnownRecipe(_G["MerchantItem"..i.."ItemButton"], known)
 	end
 
-	SetKnownRecipe(_G.MerchantBuyBackItemItemButton, IsKnownRecipeLink(GetBuybackItemLink(GetNumBuybackItems())))
+	SetKnownRecipe(_G.MerchantBuyBackItemItemButton, B:IsKnownRecipeLink(GetBuybackItemLink(GetNumBuybackItems())))
 end
 
 hooksecurefunc("MerchantFrame_UpdateMerchantInfo", UpdateKnownRecipes)
