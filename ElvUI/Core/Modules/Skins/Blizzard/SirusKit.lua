@@ -14,6 +14,8 @@ local GetItemGem = GetItemGem
 local SocketInventoryItem = SocketInventoryItem
 local SendServerMessage = SendServerMessage
 local GetItemInfo = GetItemInfo
+local GetItemIcon = GetItemIcon
+local GetItemInfoInstant = GetItemInfoInstant
 local GetContainerNumSlots = GetContainerNumSlots
 local GetContainerItemID = GetContainerItemID
 local GetContainerItemInfo = GetContainerItemInfo
@@ -61,53 +63,12 @@ local function SetSocketRowPoint(row, point, relativeTo, relativePoint, x, y)
 	end
 end
 
-local BLACK_DIAMONDS = {
-	[100754] = 1, [100758] = 1, [100762] = 1, [100764] = 1,
-	[100765] = 1, [100766] = 1, [100767] = 1, [100769] = 1,
-	[100770] = 1, [100771] = 1, [100773] = 1, [100774] = 1,
-	[100775] = 1, [100777] = 1, [100778] = 1, [100781] = 1,
-	[100782] = 1, [100783] = 1, [100784] = 1, [100785] = 1,
-	[100786] = 1, [100787] = 1, [100788] = 1, [100789] = 1,
-	[100790] = 1, [100791] = 1, [100792] = 1, [100793] = 1,
-	[100794] = 1, [100795] = 1, [100796] = 1, [100797] = 1,
-	[100798] = 1, [100799] = 1, [100801] = 1, [100802] = 1,
-	[100803] = 1, [100805] = 1, [100806] = 1, [100807] = 1,
-	[100809] = 1, [100810] = 1, [100813] = 1, [100814] = 1,
-	[100815] = 1, [100817] = 1, [100818] = 1, [100821] = 1,
-	[100822] = 1, [149186] = 1,
-}
-
-local META_BLACK_DIAMONDS = {}
-
-do
-	local function AddGemRange(target, firstID, lastID, priority)
-		for itemID = firstID, lastID do
-			target[itemID] = priority
-		end
-	end
-
-	AddGemRange(BLACK_DIAMONDS, 100700, 100752, 1)
-	AddGemRange(BLACK_DIAMONDS, 100824, 100884, 2)
-	AddGemRange(BLACK_DIAMONDS, 103501, 103520, 1)
-	AddGemRange(BLACK_DIAMONDS, 104000, 104019, 2)
-	AddGemRange(BLACK_DIAMONDS, 260030, 260048, 1)
-	AddGemRange(META_BLACK_DIAMONDS, 260050, 260070, 1)
-end
-
 local SOCKET_COLORS = {
 	[utf8lower(EMPTY_SOCKET_RED or "")] = { 1, .11, .08, .5 },
 	[utf8lower(EMPTY_SOCKET_YELLOW or "")] = { 1, .95, .08, .5 },
 	[utf8lower(EMPTY_SOCKET_BLUE or "")] = { .08, .26, 1, .5 },
 	[utf8lower(EMPTY_SOCKET_META or "")] = { 1, 1, 1, 1 },
 	[utf8lower(EMPTY_SOCKET_NO_COLOR or "")] = { .99, .15, .9, .5 },
-}
-
-local EMPTY_SOCKET_TEXTURES = {
-	[utf8lower(EMPTY_SOCKET_RED or "")] = "Interface\\ItemSocketingFrame\\UI-EmptySocket-Red",
-	[utf8lower(EMPTY_SOCKET_YELLOW or "")] = "Interface\\ItemSocketingFrame\\UI-EmptySocket-Yellow",
-	[utf8lower(EMPTY_SOCKET_BLUE or "")] = "Interface\\ItemSocketingFrame\\UI-EmptySocket-Blue",
-	[utf8lower(EMPTY_SOCKET_META or "")] = "Interface\\ItemSocketingFrame\\UI-EmptySocket-Meta",
-	[utf8lower(EMPTY_SOCKET_NO_COLOR or "")] = "Interface\\ItemSocketingFrame\\UI-EmptySocket",
 }
 
 S.EquipmentSlotAnchors = {
@@ -417,28 +378,29 @@ local function Socket_OnEnter(self)
 	GameTooltip:Show()
 end
 
-local function FindBlackDiamond(socketType)
-	local candidates
-	if socketType == "Meta" then
-		candidates = META_BLACK_DIAMONDS
-	elseif socketType == "Red" or socketType == "Yellow" or socketType == "Blue" or socketType == "Socket" then
-		candidates = BLACK_DIAMONDS
-	else
-		return
+local function IsBlackDiamond(itemID, isMeta)
+	local _, _, _, _, _, classID, subclassID = GetItemInfoInstant(itemID)
+	if classID ~= 3 then return end
+
+	if isMeta then
+		return itemID >= 260050 and itemID <= 260071
 	end
 
-	local bestBag, bestSlot, bestID, bestPriority
+	return subclassID == 8
+end
+
+local function FindBlackDiamond(socketType)
+	local isMeta = socketType == "Meta"
+	local bestBag, bestSlot, bestID, bestLevel
 	for bag = 0, 4 do
 		for slot = 1, GetContainerNumSlots(bag) do
 			local itemID = GetContainerItemID(bag, slot)
-			local priority = itemID and candidates[itemID]
-			if priority and (not bestPriority or priority > bestPriority) then
+			if itemID and IsBlackDiamond(itemID, isMeta) then
+				local _, _, quality, level = GetItemInfo(itemID)
 				local _, _, locked = GetContainerItemInfo(bag, slot)
-				if not locked then
-					bestBag, bestSlot, bestID, bestPriority = bag, slot, itemID, priority
-					if priority == 2 or candidates == META_BLACK_DIAMONDS then
-						return bestBag, bestSlot, bestID
-					end
+				level = level or 0
+				if quality == 5 and not locked and (not bestLevel or level > bestLevel) then
+					bestBag, bestSlot, bestID, bestLevel = bag, slot, itemID, level
 				end
 			end
 		end
@@ -609,17 +571,14 @@ local function CreateSocketInfo(slotFrame, anchor, slotName)
 	return info
 end
 
-local function SetGemSocket(socket, gemLink, texture)
-	local quality
-	if gemLink then
-		local _, _, gemQuality, _, _, _, _, _, _, gemTexture = GetItemInfo(gemLink)
-		quality, texture = gemQuality, gemTexture or texture
-	end
+local function SetGemSocket(socket, gemLink)
+	local _, _, quality = GetItemInfo(gemLink)
+	local texture = GetItemIcon(gemLink)
 
 	socket.isEmpty = nil
 	socket.gemLink = gemLink
 	socket.lineText = nil
-	socket.canRemove = gemLink and quality == 5
+	socket.canRemove = quality == 5
 
 	if texture then
 		socket.Icon:SetTexture(texture)
@@ -636,21 +595,15 @@ local function SetGemSocket(socket, gemLink, texture)
 	return texture ~= nil and quality ~= nil
 end
 
-local function SetEmptySocket(socket, name, color, texture)
+local function SetEmptySocket(socket, name, color)
 	socket.isEmpty = true
 	socket.gemLink = nil
 	socket.lineText = name
 	socket.canRemove = nil
 
-	if texture then
-		socket.Icon:SetTexture(texture)
-		socket.Icon:SetTexCoord(0, 1, 0, 1)
-		socket.Icon:SetVertexColor(1, 1, 1, 1)
-	else
-		socket.Icon:SetTexture(E.Media.Textures.NormTex2)
-		socket.Icon:SetTexCoord(0, 1, 0, 1)
-		socket.Icon:SetVertexColor(unpack(color))
-	end
+	socket.Icon:SetTexture(E.Media.Textures.NormTex2)
+	socket.Icon:SetTexCoord(0, 1, 0, 1)
+	socket.Icon:SetVertexColor(unpack(color))
 
 	socket:Show()
 end
@@ -720,22 +673,13 @@ function S:ResetSocketRetry(key)
 end
 
 local function ScanSocketInfo(unit, inventorySlot, slotName, showGems, showEnchants)
-	local gems, empty = {}, {}
+	local empty = {}
 	local enchantText
 
 	local tooltip = E.ScanTooltip
 	tooltip:SetOwner(UIParent, "ANCHOR_NONE")
 	tooltip:SetInventoryItem(unit, inventorySlot)
 	tooltip:Show()
-
-	if showGems then
-		for index = 1, MAX_DISPLAYED_SOCKETS do
-			local texture = _G["ElvUI_ScanTooltipTexture"..index]
-			if texture and texture:IsShown() then
-				gems[#gems + 1] = texture:GetTexture()
-			end
-		end
-	end
 
 	for index = 1, tooltip:NumLines() do
 		local line = _G["ElvUI_ScanTooltipTextLeft"..index]
@@ -745,7 +689,7 @@ local function ScanSocketInfo(unit, inventorySlot, slotName, showGems, showEncha
 			local normalized = utf8lower(plain)
 			local socketColor = showGems and SOCKET_COLORS[normalized]
 			if socketColor then
-				empty[#empty + 1] = { name = plain, color = socketColor, texture = EMPTY_SOCKET_TEXTURES[normalized] }
+				empty[#empty + 1] = { name = plain, color = socketColor }
 			elseif showEnchants and not enchantText then
 				enchantText = MatchEnchant(line, plain, normalized, slotName)
 			end
@@ -755,7 +699,7 @@ local function ScanSocketInfo(unit, inventorySlot, slotName, showGems, showEncha
 
 	tooltip:Hide()
 
-	return { gems = gems, empty = empty, enchant = enchantText }
+	return { empty = empty, enchant = enchantText }
 end
 
 function S:HandleSirusEquipmentSocketInfo(slotFrame, inventorySlot, anchor, slotName, unit)
@@ -782,19 +726,18 @@ function S:HandleSirusEquipmentSocketInfo(slotFrame, inventorySlot, anchor, slot
 		local scan = ScanSocketInfo(unit, inventorySlot, slotName, showGems, showEnchants)
 
 		if showGems then
-			local nextTexture, nextEmpty = 1, 1
+			local nextEmpty = 1
 			for index = 1, MAX_DISPLAYED_SOCKETS do
 				local socket = info.slots[index]
 				local _, gemLink = GetItemGem(link, index)
 
 				if gemLink then
-					if not SetGemSocket(socket, gemLink, scan.gems[nextTexture]) then
+					if not SetGemSocket(socket, gemLink) then
 						hasUnknown = true
 					end
-					nextTexture = nextTexture + 1
 				elseif scan.empty[nextEmpty] then
 					local empty = scan.empty[nextEmpty]
-					SetEmptySocket(socket, empty.name, empty.color, empty.texture)
+					SetEmptySocket(socket, empty.name, empty.color)
 					nextEmpty = nextEmpty + 1
 				else
 					break

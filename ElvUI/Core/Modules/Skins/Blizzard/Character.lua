@@ -53,6 +53,7 @@ local UnitResistance = UnitResistance
 local UnitStat = UnitStat
 
 local GetItemInfo = GetItemInfo
+local IsEquippedItem = IsEquippedItem
 local GetNumFactions = GetNumFactions
 local GetPetHappiness = GetPetHappiness
 local HasPetUI = HasPetUI
@@ -2841,7 +2842,12 @@ local function LoadSkin()
 		end
 	end
 
+	local socketUpdateTimer
 	local function UpdateCharacterEquipmentSockets()
+		if socketUpdateTimer then
+			E:CancelTimer(socketUpdateTimer)
+			socketUpdateTimer = nil
+		end
 		if not CharacterFrame:IsShown() then
 			S:ResetSocketRetry("character")
 			return
@@ -2867,16 +2873,14 @@ local function LoadSkin()
 
 	S.UpdateCharacterEquipmentSockets = UpdateCharacterEquipmentSockets
 
-	local socketUpdateTimer
-
 	local equipmentWatcher = CreateFrame("Frame")
 	equipmentWatcher:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
 	equipmentWatcher:RegisterEvent("UNIT_INVENTORY_CHANGED")
 	equipmentWatcher:RegisterEvent("SOCKET_INFO_CLOSE")
 	equipmentWatcher:RegisterCustomEvent("GET_ITEM_INFO_RECEIVED")
 	equipmentWatcher:RegisterEvent("UPDATE_INVENTORY_DURABILITY")
-	equipmentWatcher:SetScript("OnEvent", function(_, event, unit)
-		if (event == "UNIT_INVENTORY_CHANGED" and unit ~= "player") or not CharacterFrame:IsShown() then return end
+	equipmentWatcher:SetScript("OnEvent", function(_, event, arg)
+		if (event == "UNIT_INVENTORY_CHANGED" and arg ~= "player") or (event == "GET_ITEM_INFO_RECEIVED" and not IsEquippedItem(arg)) or not CharacterFrame:IsShown() then return end
 		if event == "UPDATE_INVENTORY_DURABILITY" then
 			if not socketUpdateTimer then UpdateEquipmentInfo() end
 			return
@@ -2888,12 +2892,6 @@ local function LoadSkin()
 	CharacterFrame:HookScript("OnShow", UpdateCharacterEquipmentSockets)
 	hooksecurefunc("PaperDollFrame_SetBackground", function()
 		S:UpdateModelBackground(CharacterModelFrame, "player")
-	end)
-	CharacterFrame:HookScript("OnHide", function()
-		if socketUpdateTimer then
-			E:CancelTimer(socketUpdateTimer)
-			socketUpdateTimer = nil
-		end
 	end)
 
 	local function HandleResistanceFrame(frameName)
