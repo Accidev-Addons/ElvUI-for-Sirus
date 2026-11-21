@@ -382,40 +382,25 @@ function M:DelayTutorialFrames()
 	E:Delay(2, M.HideTutorialFrames, M)
 end
 
-local ServerNewsPanels = { 'GameMenuFrameServerAnnounces', 'GameMenuFrameServerChanges' }
+local ServerNewsPanels = { 'ServerNewsFrame', 'GameMenuFrameServerAnnounces', 'GameMenuFrameServerChanges', 'StoreToastFrame' }
 
-local function ToggleServerNewsEvent(panel, hide)
-	if not panel or not panel.UnregisterCustomEvent then return end
+local function AutoCloseServerNews(frame)
+	if not E.db.general.hideServerNews or frame.elvAutoClose then return end
 
-	if hide then
-		panel:UnregisterCustomEvent('SERVER_NEWS_UPDATE')
-	else
-		panel:RegisterCustomEvent('SERVER_NEWS_UPDATE')
-	end
+	frame.elvAutoClose = true
+
+	E:Delay(2, function()
+		frame.elvAutoClose = nil
+
+		if not M.serverNewsUserOpened then
+			HideUIPanel(frame)
+		end
+	end)
 end
 
-function M:HideServerNews(frame)
-	if M.serverNewsUserOpened then
-		M.serverNewsUserOpened = nil
-		return
-	end
-
-	local hide = E.db.general.hideServerNews
-
-	frame = frame or _G.ServerNewsFrame
-	ToggleServerNewsEvent(frame, hide)
-
-	if hide and frame and frame:IsShown() then
-		HideUIPanel(frame)
-	end
-
-	for _, name in next, ServerNewsPanels do
-		local panel = _G[name]
-		ToggleServerNewsEvent(panel, hide)
-
-		if hide and panel then
-			panel:Hide()
-		end
+function M:HideServerNews()
+	if _G.ServerNewsFrame:IsShown() then
+		AutoCloseServerNews(_G.ServerNewsFrame)
 	end
 end
 
@@ -444,10 +429,12 @@ function M:Initialize()
 
 	M:DelayTutorialFrames()
 
-	hooksecurefunc('ShowUIPanel', function(panel)
-		if panel == _G.ServerNewsFrame then
-			M:HideServerNews(panel)
-		end
+	for _, name in next, ServerNewsPanels do
+		hooksecurefunc(_G[name], 'Show', AutoCloseServerNews)
+	end
+
+	hooksecurefunc(_G.ServerNewsFrame, 'Hide', function()
+		M.serverNewsUserOpened = nil
 	end)
 
 	local whatsNew = _G.GameMenuButtonWhatsNew

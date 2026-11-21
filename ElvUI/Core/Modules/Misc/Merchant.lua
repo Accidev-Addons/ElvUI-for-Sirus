@@ -1,4 +1,5 @@
 local E, L = unpack(ElvUI)
+local B = E:GetModule("Bags")
 local _G = _G
 local select = select
 local GetItemInfo = GetItemInfo
@@ -60,6 +61,35 @@ local function MerchantItemButton_AltStackHint(tooltip, index)
 end
 
 hooksecurefunc(_G.GameTooltip, "SetMerchantItem", MerchantItemButton_AltStackHint)
+
+local function SetKnownRecipe(button, known)
+	local icon = _G[button:GetName().."IconTexture"]
+	icon:SetDesaturated(known and E.db.bags.knownRecipeDesaturate)
+	B:SetKnownRecipeMark(button, icon, known and E.db.bags.knownRecipeMark)
+end
+
+local function UpdateKnownRecipes()
+	local buyback = _G.MerchantFrame.selectedTab == 2
+	local offset = buyback and 0 or (_G.MerchantFrame.page - 1) * MERCHANT_ITEMS_PER_PAGE
+	local numItems = GetMerchantNumItems()
+
+	for i = 1, buyback and BUYBACK_ITEMS_PER_PAGE or MERCHANT_ITEMS_PER_PAGE do
+		local index = offset + i
+		local known
+		if buyback then
+			known = B:IsKnownRecipeLink(GetBuybackItemLink(index))
+		elseif index <= numItems then
+			known = select(3, GetMerchantItemInfoEx(index))
+		end
+
+		SetKnownRecipe(_G["MerchantItem"..i.."ItemButton"], known)
+	end
+
+	SetKnownRecipe(_G.MerchantBuyBackItemItemButton, B:IsKnownRecipeLink(GetBuybackItemLink(GetNumBuybackItems())))
+end
+
+hooksecurefunc("MerchantFrame_UpdateMerchantInfo", UpdateKnownRecipes)
+hooksecurefunc("MerchantFrame_UpdateBuybackInfo", UpdateKnownRecipes)
 
 local buttons = {}
 local function UpdateAltMouse()

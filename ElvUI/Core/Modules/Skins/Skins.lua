@@ -249,13 +249,13 @@ function S:SetBackdropBorderColor(frame, script)
 end
 
 function S:SetModifiedBackdrop()
-	if self:IsEnabled() == 1 then
+	if not self.IsEnabled or self:IsEnabled() == 1 then
 		S:SetBackdropBorderColor(self, 'OnEnter')
 	end
 end
 
 function S:SetOriginalBackdrop()
-	if self:IsEnabled() then
+	if not self.IsEnabled or self:IsEnabled() then
 		S:SetBackdropBorderColor(self, 'OnLeave')
 	end
 end
@@ -1227,13 +1227,55 @@ function S:HandleSearchBox(frame, unskinned)
 	frame.backdrop:Point('BOTTOMRIGHT', 2, -12)
 end
 
-function S:HandleDropDownBox(frame, width, template)
-	if not width then
-		width = 155
+local function IsClientArrowTexture(path)
+	return type(path) == 'string' and (strfind(path, 'ChatIcon') or strfind(path, 'DropDownButton') or strfind(path, 'ScrollDown'))
+end
+
+local function SetDropDownIcon(button, icon)
+	button:SetNormalTexture(icon)
+	button:SetDisabledTexture(icon)
+
+	local normal = button:GetNormalTexture()
+	normal:SetInside(button)
+	normal:SetTexCoord(0, 1, 0, 1)
+
+	local arrow = button:CreateTexture(nil, 'OVERLAY')
+	arrow:SetTexture(E.Media.Textures.ArrowUp)
+	arrow:SetRotation(S.ArrowRotation.down)
+	arrow:Size(10)
+	arrow:Point('RIGHT', button, 'RIGHT', -2, 0)
+end
+
+local function ApplyDropDownHover(frame, button, template)
+	if button.SetHighlightTexture then button:SetHighlightTexture(E.ClearTexture) end
+	if frame.SetHighlightTexture then frame:SetHighlightTexture(E.ClearTexture) end
+
+	if not button.backdrop then
+		button:CreateBackdrop(template)
 	end
 
-	frame:Width(width)
+	if not button.elvDropDownHover then
+		button.elvDropDownHover = true
+
+		button:HookScript('OnEnter', S.SetModifiedBackdrop)
+		button:HookScript('OnLeave', S.SetOriginalBackdrop)
+	end
+
+	if frame.backdrop and not frame.elvDropDownHover then
+		frame.elvDropDownHover = true
+
+		frame:HookScript('OnEnter', S.SetModifiedBackdrop)
+		frame:HookScript('OnLeave', S.SetOriginalBackdrop)
+	end
+end
+
+function S:HandleDropDownBox(frame, width, template)
+	frame:Width(width or 155)
+
 	frame:StripTextures()
+
+	if frame.Arrow then frame.Arrow:SetAlpha(0) end
+	if frame.arrow then frame.arrow:SetAlpha(0) end
 
 	if not frame.backdrop then
 		frame:CreateBackdrop(template)
@@ -1241,7 +1283,6 @@ function S:HandleDropDownBox(frame, width, template)
 	end
 
 	if frame.SetupMenu then
-		if frame.Arrow then frame.Arrow:SetAlpha(0) end
 		if frame.Background then frame.Background:SetAlpha(0) end
 
 		frame.backdrop:ClearAllPoints()
@@ -1284,7 +1325,17 @@ function S:HandleDropDownBox(frame, width, template)
 	button:Point('RIGHT', frame, 'RIGHT', -10, 3)
 
 	E:LockPoints(button)
+
+	local normal = button:GetNormalTexture()
+	local buttonIcon = not button.isSkinned and normal and normal:GetTexture()
+
 	S:HandleNextPrevButton(button, 'down')
+
+	if buttonIcon and not IsClientArrowTexture(buttonIcon) then
+		SetDropDownIcon(button, buttonIcon)
+	end
+
+	ApplyDropDownHover(frame, button, template)
 
 	if text then
 		text:ClearAllPoints()

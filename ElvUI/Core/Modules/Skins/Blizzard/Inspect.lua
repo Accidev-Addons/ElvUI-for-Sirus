@@ -9,6 +9,7 @@ local unpack = unpack
 local strsub = strsub
 local hooksecurefunc = hooksecurefunc
 local GetInventoryItemLink = GetInventoryItemLink
+local GetInventoryItemTexture = GetInventoryItemTexture
 local GetItemInfo = GetItemInfo
 local C_Timer = C_Timer
 local GetTalentTabInfo = GetTalentTabInfo
@@ -98,10 +99,9 @@ local function LoadSkin()
 			if InspectFrame.unit then
 				button.lastLink = GetInventoryItemLink(InspectFrame.unit, button:GetID())
 
-				if S:HandleSirusEquipmentSocketInfo(button, button:GetID(), S.EquipmentSlotAnchors[slotName], slotName, InspectFrame.unit) and not button.awaitingCache then
-					button.awaitingCache = true
-					E:Delay(0.5, awaitCache, button)
-				end
+				S:RetrySocketInfo(button, 20, 0.5, function()
+					return InspectFrame.unit and S:HandleSirusEquipmentSocketInfo(button, button:GetID(), S.EquipmentSlotAnchors[slotName], slotName, InspectFrame.unit)
+				end)
 			end
 
 			S:UpdateBlackDiamondHighlight(button, InspectFrame.unit and button.lastLink)
@@ -143,7 +143,11 @@ local function LoadSkin()
 
 		for _, slot in ipairs(Slots) do
 			local button = _G["Inspect"..slot]
-			if GetInventoryItemLink(unit, button:GetID()) ~= button.lastLink then
+			local slotID = button:GetID()
+			local texture = GetInventoryItemTexture(unit, slotID)
+
+			if GetInventoryItemLink(unit, slotID) ~= button.lastLink or (texture and texture ~= button.lastTexture) then
+				button.lastTexture = texture
 				InspectPaperDollItemSlotButton_Update(button)
 			end
 		end
@@ -152,7 +156,14 @@ local function LoadSkin()
 	local refreshTicker
 	local function WatchInspectData()
 		if refreshTicker then refreshTicker:Cancel() end
-		refreshTicker = C_Timer:NewTicker(0.2, RefreshChangedSlots, 25)
+
+		for _, slot in ipairs(Slots) do
+			local button = _G["Inspect"..slot]
+			button.lastTexture = nil
+			S:ResetSocketRetry(button)
+		end
+
+		refreshTicker = C_Timer:NewTicker(0.2, RefreshChangedSlots, 50)
 	end
 
 	hooksecurefunc("InspectFrame_UnitChanged", WatchInspectData)

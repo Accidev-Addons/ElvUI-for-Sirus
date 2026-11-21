@@ -4,6 +4,7 @@ local LSM = E.Libs.LSM
 
 --Lua functions
 local abs = math.abs
+local next = next
 --WoW API / Variables
 local CreateFrame = CreateFrame
 local GetTime = GetTime
@@ -11,6 +12,50 @@ local UnitCastingInfo = UnitCastingInfo
 local UnitChannelInfo = UnitChannelInfo
 local FAILED = FAILED
 local INTERRUPTED = INTERRUPTED
+local GetPlayerInfoByGUID = GetPlayerInfoByGUID
+local GetSpellInfo = GetSpellInfo
+
+local interrupts = {}
+
+local function ApplyInterruptInfo(castBar, info)
+	local _, class = GetPlayerInfoByGUID(info.guid)
+	local color = class and E:ClassColor(class)
+
+	if color then
+		castBar.Name:SetFormattedText("%s: |c%s%s|r", INTERRUPTED, color.colorStr, info.name)
+	else
+		castBar.Name:SetText(INTERRUPTED)
+	end
+
+	local _, _, icon = GetSpellInfo(info.spellID)
+	if icon then
+		castBar.Icon.texture:SetTexture(icon)
+		castBar.Icon.texture:SetDesaturated(false)
+	end
+
+	castBar.Time:SetText(info.spell)
+end
+
+function NP:COMBAT_LOG_EVENT_UNFILTERED(_, _, subevent, sourceGUID, sourceName, _, destGUID, _, _, spellID, spellName)
+	if subevent ~= "SPELL_INTERRUPT" then return end
+
+	local now = GetTime()
+	for guid, info in next, interrupts do
+		if now - info.time > 10 then
+			interrupts[guid] = nil
+		end
+	end
+
+	local info = { guid = sourceGUID, name = sourceName, spellID = spellID, spell = spellName, time = now }
+	interrupts[destGUID] = info
+
+	for frame in next, NP.VisiblePlates do
+		local castBar = frame.guid == destGUID and frame.CastBar
+		if castBar and castBar:IsShown() and castBar.interrupted then
+			ApplyInterruptInfo(castBar, info)
+		end
+	end
+end
 
 local function resetAttributes(self)
 	self.casting = nil
@@ -174,13 +219,24 @@ function NP:Update_CastBar(frame, event, unit)
 	elseif event == "UNIT_SPELLCAST_FAILED" or event == "UNIT_SPELLCAST_INTERRUPTED" then
 		if castBar:IsShown() then
 			castBar.Spark:Hide()
-			castBar.Name:SetText(event == "UNIT_SPELLCAST_FAILED" and FAILED or INTERRUPTED)
+
+			if event == "UNIT_SPELLCAST_FAILED" then
+				castBar.Name:SetText(FAILED)
+				castBar:SetValue(castBar.max)
+			else
+				local info = frame.guid and interrupts[frame.guid]
+				if info and GetTime() - info.time <= 2 then
+					ApplyInterruptInfo(castBar, info)
+					interrupts[frame.guid] = nil
+				else
+					castBar.Name:SetText(INTERRUPTED)
+				end
+			end
 
 			castBar.holdTime = self.db.units[frame.UnitType].castbar.timeToHold --How long the castbar should stay visible after being interrupted, in seconds
 			castBar.interrupted = true
 
 			resetAttributes(castBar)
-			castBar:SetValue(castBar.max)
 		end
 	elseif event == "UNIT_SPELLCAST_DELAYED" or event == "UNIT_SPELLCAST_CHANNEL_UPDATE" then
 		if frame:IsShown() then

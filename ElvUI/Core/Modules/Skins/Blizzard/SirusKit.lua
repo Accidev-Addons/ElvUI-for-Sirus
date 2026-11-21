@@ -8,7 +8,7 @@ local ipairs = ipairs
 local find = string.find
 local hooksecurefunc = hooksecurefunc
 local pairs = pairs
-local wipe, select = wipe, select
+local select = select
 local GetInventoryItemLink = GetInventoryItemLink
 local GetItemGem = GetItemGem
 local SocketInventoryItem = SocketInventoryItem
@@ -690,9 +690,75 @@ hooksecurefunc(E, "UpdateFrameTemplates", function()
 	end
 end)
 
-local gemTextures, emptyNames, emptyColors, emptyTextures = {}, {}, {}, {}
+local socketRetries = {}
+
+function S:RetrySocketInfo(key, attempts, delay, callback)
+	local state = socketRetries[key]
+	if not state then
+		state = { attempt = 0 }
+		socketRetries[key] = state
+	end
+
+	if state.timer then E:CancelTimer(state.timer) end
+
+	state.attempt = state.attempt + 1
+
+	if callback() and state.attempt < attempts then
+		state.timer = E:ScheduleTimer(function()
+			state.timer = nil
+			S:RetrySocketInfo(key, attempts, delay, callback)
+		end, delay)
+	else
+		socketRetries[key] = nil
+	end
+end
+
+function S:ResetSocketRetry(key)
+	local state = socketRetries[key]
+	if state and state.timer then E:CancelTimer(state.timer) end
+	socketRetries[key] = nil
+end
+
+local function ScanSocketInfo(unit, inventorySlot, slotName, showGems, showEnchants)
+	local gems, empty = {}, {}
+	local enchantText
+
+	local tooltip = E.ScanTooltip
+	tooltip:SetOwner(UIParent, "ANCHOR_NONE")
+	tooltip:SetInventoryItem(unit, inventorySlot)
+	tooltip:Show()
+
+	if showGems then
+		for index = 1, MAX_DISPLAYED_SOCKETS do
+			local texture = _G["ElvUI_ScanTooltipTexture"..index]
+			if texture and texture:IsShown() then
+				gems[#gems + 1] = texture:GetTexture()
+			end
+		end
+	end
+
+	for index = 1, tooltip:NumLines() do
+		local line = _G["ElvUI_ScanTooltipTextLeft"..index]
+		local text = line and line:GetText()
+		if text then
+			local plain = StripColor(text)
+			local normalized = utf8lower(plain)
+			local socketColor = showGems and SOCKET_COLORS[normalized]
+			if socketColor then
+				empty[#empty + 1] = { name = plain, color = socketColor, texture = EMPTY_SOCKET_TEXTURES[normalized] }
+			elseif showEnchants and not enchantText then
+				enchantText = MatchEnchant(line, plain, normalized, slotName)
+			end
+		end
+		if not showGems and enchantText then break end
+	end
+
+	tooltip:Hide()
+
+	return { gems = gems, empty = empty, enchant = enchantText }
+end
+
 function S:HandleSirusEquipmentSocketInfo(slotFrame, inventorySlot, anchor, slotName, unit)
-	local hasUnknown
 	if not slotFrame or not inventorySlot then return end
 	unit = unit or "player"
 
@@ -710,41 +776,10 @@ function S:HandleSirusEquipmentSocketInfo(slotFrame, inventorySlot, anchor, slot
 
 	local link = GetInventoryItemLink(unit, inventorySlot)
 	local numSockets, enchantText = 0
+	local hasUnknown = link and not GetItemInfo(link)
 
 	if link and (showGems or showEnchants) then
-		local tooltip = E.ScanTooltip
-		tooltip:SetOwner(UIParent, "ANCHOR_NONE")
-		tooltip:SetInventoryItem(unit, inventorySlot)
-		tooltip:Show()
-
-		if showGems then
-			for index = 1, 10 do
-				local texture = _G["ElvUI_ScanTooltipTexture"..index]
-				if texture and texture:IsShown() then
-					gemTextures[#gemTextures + 1] = texture:GetTexture()
-				end
-			end
-		end
-
-		for index = 1, tooltip:NumLines() do
-			local line = _G["ElvUI_ScanTooltipTextLeft"..index]
-			local text = line:GetText()
-			if text then
-				local plain = StripColor(text)
-				local normalized = utf8lower(plain)
-				local socketColor = showGems and SOCKET_COLORS[normalized]
-				if socketColor then
-					emptyNames[#emptyNames + 1] = plain
-					emptyColors[#emptyColors + 1] = socketColor
-					emptyTextures[#emptyTextures + 1] = EMPTY_SOCKET_TEXTURES[normalized]
-				elseif showEnchants and not enchantText then
-					enchantText = MatchEnchant(line, plain, normalized, slotName)
-				end
-			end
-			if not showGems and enchantText then break end
-		end
-
-		tooltip:Hide()
+		local scan = ScanSocketInfo(unit, inventorySlot, slotName, showGems, showEnchants)
 
 		if showGems then
 			local nextTexture, nextEmpty = 1, 1
@@ -753,12 +788,13 @@ function S:HandleSirusEquipmentSocketInfo(slotFrame, inventorySlot, anchor, slot
 				local _, gemLink = GetItemGem(link, index)
 
 				if gemLink then
-					if not SetGemSocket(socket, gemLink, gemTextures[nextTexture]) then
+					if not SetGemSocket(socket, gemLink, scan.gems[nextTexture]) then
 						hasUnknown = true
 					end
 					nextTexture = nextTexture + 1
-				elseif emptyNames[nextEmpty] then
-					SetEmptySocket(socket, emptyNames[nextEmpty], emptyColors[nextEmpty], emptyTextures[nextEmpty])
+				elseif scan.empty[nextEmpty] then
+					local empty = scan.empty[nextEmpty]
+					SetEmptySocket(socket, empty.name, empty.color, empty.texture)
 					nextEmpty = nextEmpty + 1
 				else
 					break
@@ -770,10 +806,7 @@ function S:HandleSirusEquipmentSocketInfo(slotFrame, inventorySlot, anchor, slot
 			end
 		end
 
-		wipe(gemTextures)
-		wipe(emptyNames)
-		wipe(emptyColors)
-		wipe(emptyTextures)
+		enchantText = scan.enchant
 	end
 
 	for index = numSockets + 1, MAX_DISPLAYED_SOCKETS do
@@ -1170,42 +1203,59 @@ function S:HandleSirusNavBar(navBar)
 	navBar:StripTextures()
 	if navBar.overlay then navBar.overlay:StripTextures() end
 
+	local function SkinArrow(arrow)
+		if not arrow or arrow.elvArrowSkinned then return end
+		arrow.elvArrowSkinned = true
+
+		local function HideClientState()
+			for _, key in next, { 'NormalTexture', 'PushedTexture', 'HighlightTexture' } do
+				local texture = arrow[key]
+				if texture then texture:SetAlpha(0) end
+			end
+		end
+
+		HideClientState()
+
+		if arrow.Art then
+			arrow.Art:SetVertexColor(1, 1, 1)
+
+			arrow:HookScript('OnEnter', function()
+				HideClientState()
+				arrow.Art:SetVertexColor(1, 0.82, 0)
+			end)
+
+			arrow:HookScript('OnLeave', function()
+				arrow.Art:SetVertexColor(1, 1, 1)
+			end)
+		end
+	end
+
 	local function SkinButton(button)
 		if not button or button.isSkinned then return end
 		S:HandleButton(button, true)
 		S:ApplyElvUIFont(button)
 		button.xoffset = 1
 
-		local arrow = button.MenuArrowButton
-		if arrow then
-			if arrow.NormalTexture then arrow.NormalTexture:Hide() end
-			if arrow.PushedTexture then arrow.PushedTexture:Hide() end
-			if arrow.HighlightTexture then arrow.HighlightTexture:Hide() end
-
-			if arrow.Art then
-				arrow.Art:SetVertexColor(1, 1, 1)
-				arrow:HookScript("OnEnter", function(self)
-					if self.Art then self.Art:SetVertexColor(1, 0.82, 0) end
-				end)
-				arrow:HookScript("OnLeave", function(self)
-					if self.Art then self.Art:SetVertexColor(1, 1, 1) end
-				end)
-			end
-		end
+		SkinArrow(button.MenuArrowButton)
 
 		button.isSkinned = true
 	end
 
-	SkinButton(navBar.home)
+	local function SkinButtons()
+		SkinButton(navBar.home)
 
-	if navBar.navList then
-		for _, button in ipairs(navBar.navList) do
-			SkinButton(button)
+		if navBar.navList then
+			for _, button in ipairs(navBar.navList) do
+				SkinButton(button)
+			end
 		end
 	end
 
+	SkinButtons()
+	navBar:HookScript('OnShow', SkinButtons)
+
 	if _G.NavBar_AddButton then
-		hooksecurefunc("NavBar_AddButton", function(self)
+		hooksecurefunc('NavBar_AddButton', function(self)
 			if self ~= navBar then return end
 			SkinButton(self.navList[#self.navList])
 		end)

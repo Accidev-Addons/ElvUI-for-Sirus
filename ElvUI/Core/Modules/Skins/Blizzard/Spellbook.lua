@@ -60,21 +60,51 @@ local function LoadSkin()
 			_G["SpellButton"..i.."Highlight"]:SetTexture(1, 1, 1, 0.3)
 		end
 	end)
-	local nt
-	for i = 1, 10 do
-		local button = _G["SpellBookSkillLineTab"..i]
-		if button then
-			button:GetRegions():SetAlpha(0)
-			button:SetTemplate()
-			button:StyleButton(nil, true)
-			nt = button:GetNormalTexture()
-			if nt then
-				nt:SetInside()
-				nt:SetTexCoords()
+	local function SkinSkillLineTabs()
+		for i = 1, 10 do
+			local button = _G["SpellBookSkillLineTab"..i]
+			if button then
+				if not button.elvSpellbookSkinned then
+					button.elvSpellbookSkinned = true
+
+					button:GetRegions():SetAlpha(0)
+					button:SetTemplate()
+					button:StyleButton(nil, true)
+				end
+
+				local texture = button:GetNormalTexture()
+				local path = texture and texture:GetTexture()
+
+				if path and button.elvSpellbookTexture ~= path then
+					button.elvSpellbookTexture = path
+
+					texture:SetInside()
+					texture:SetTexCoords()
+				end
 			end
 		end
 
+		local sideTabs = _G.SpellBookSideTabsFrame
+		local tabs = sideTabs and sideTabs.tabs
+		if not tabs then return end
+
+		local anchorTop = sideTabs:GetTop()
+
+		for index = 1, #tabs do
+			local button = tabs[index]
+			if button and button:IsShown() then
+				local top = button:GetTop()
+
+				if top and anchorTop then
+					button:ClearAllPoints()
+					button:Point('TOPLEFT', sideTabs, 'TOPRIGHT', 2, top - anchorTop)
+				end
+			end
+		end
 	end
+
+	SkinSkillLineTabs()
+	hooksecurefunc("SpellBookFrame_Update", SkinSkillLineTabs)
 
 	SpellBookCompanionButton1:ClearAllPoints()
 	SpellBookCompanionButton1:Point("TOPLEFT", 62, -282)

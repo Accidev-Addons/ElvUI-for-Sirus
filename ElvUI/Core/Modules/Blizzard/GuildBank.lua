@@ -76,6 +76,17 @@ function BL:GuildBank_CountText(button)
 	count:SetTextColor(db.countFontColor.r, db.countFontColor.g, db.countFontColor.b)
 end
 
+function BL:GuildBank_KnownRecipe(button, tab)
+	local db = E.db.bags
+	local known = (db.knownRecipeDesaturate or db.knownRecipeMark) and B:IsKnownRecipeLink(GetGuildBankItemLink(tab, button:GetID()))
+	local icon = _G[button:GetName()..'IconTexture']
+	if known and db.knownRecipeDesaturate then
+		icon:SetDesaturated(true)
+	end
+
+	B:SetKnownRecipeMark(button, icon, known and db.knownRecipeMark)
+end
+
 function BL:GuildBank_Update()
 	local frame = _G.GuildBankFrame
 	if not frame or not frame:IsShown() then return end
@@ -90,12 +101,14 @@ function BL:GuildBank_Update()
         _G.GuildBankColumn1:Point('TOPLEFT', 20, -70)
     end
 
+	local tab = GetCurrentGuildBankTab()
 	for i = 1, NUM_GUILDBANK_COLUMNS do
 		for x = 1, NUM_SLOTS_PER_GUILDBANK_GROUP do
 			local button = _G['GuildBankColumn'..i..'Button'..x]
 
 			BL:GuildBank_ItemLevel(button)
 			BL:GuildBank_CountText(button)
+			BL:GuildBank_KnownRecipe(button, tab)
 		end
 	end
 end

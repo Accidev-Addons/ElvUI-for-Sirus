@@ -93,7 +93,7 @@ E.Options.args.skins = Skins
 
 Skins.args.intro = ACH:Description(L["SKINS_DESC"], 0)
 Skins.args.general = ACH:MultiSelect(L["General"], nil, 1, nil, nil, nil, function(_, key) if key == 'blizzardEnable' then return E.private.skins.blizzard.enable else return E.private.skins[key] end end, function(_, key, value) if key == 'blizzardEnable' then E.private.skins.blizzard.enable = value else E.private.skins[key] = value end E.ShowPopup = true end)
-Skins.args.general.values = { blizzardEnable = L["Blizzard"], ace3Enable = 'Ace3', libDropdown = L["Library Dropdown"], checkBoxSkin = L["CheckBox Skin"], parchmentRemoverEnable = L["Parchment Remover"], animatedAchievementBars = L["Animated Achievement Bars"] }
+Skins.args.general.values = { blizzardEnable = L["Blizzard"], ace3Enable = 'Ace3', libDropdown = L["Library Dropdown"], checkBoxSkin = L["CheckBox Skin"], parchmentRemoverEnable = L["Parchment Remover"], animatedAchievementBars = L["Animated Achievement Bars"], questPOI = L["World Map Quest Markers"] }
 Skins.args.general.sortByValue = true
 Skins.args.general.customWidth = 140
 

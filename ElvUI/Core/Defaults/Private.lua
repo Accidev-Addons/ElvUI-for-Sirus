@@ -71,6 +71,7 @@ V.skins = {
 	ace3Enable = true,
 	libDropdown = true,
 	checkBoxSkin = true,
+	questPOI = false,
 	parchmentRemoverEnable = false,
 	animatedAchievementBars = false,
 	blizzard = {

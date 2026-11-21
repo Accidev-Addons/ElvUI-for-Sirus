@@ -28,6 +28,7 @@ local GetCursorInfo = GetCursorInfo
 local GetCursorMoney = GetCursorMoney
 local GetCVarBool = GetCVarBool
 local GetInventoryItemTexture = GetInventoryItemTexture
+local GetItemInfoInstant = GetItemInfoInstant
 local GetItemSpell = GetItemSpell
 local GetKeyRingSize = GetKeyRingSize
 local GetMoney = GetMoney
@@ -86,6 +87,8 @@ local ITEM_BIND_ON_PICKUP = ITEM_BIND_ON_PICKUP
 local BANK, REAGENT_BANK, REAGENTBANK_DEPOSIT = BANK, REAGENT_BANK, REAGENTBANK_DEPOSIT
 local ITEM_BIND_ON_EQUIP = ITEM_BIND_ON_EQUIP
 local ITEM_BIND_ON_USE = ITEM_BIND_ON_USE
+local ITEM_SPELL_KNOWN = ITEM_SPELL_KNOWN
+local LE_ITEM_CLASS_RECIPE = LE_ITEM_CLASS_RECIPE
 local NUM_BANKGENERIC_SLOTS = NUM_BANKGENERIC_SLOTS
 local MAX_WATCHED_TOKENS = MAX_WATCHED_TOKENS
 local NUM_BAG_FRAMES = NUM_BAG_FRAMES
@@ -386,6 +389,14 @@ function B:SearchClear()
 	B:SetItemSearch('')
 end
 
+local function UpdateCountPosition(slot)
+	local mark = slot.knownRecipeMark
+	local shift = mark and mark:IsShown() and B.db.countPosition == 'BOTTOMRIGHT' and mark:GetWidth() or 0
+
+	slot.Count:ClearAllPoints()
+	slot.Count:Point(B.db.countPosition, B.db.countxOffset - shift, B.db.countyOffset)
+end
+
 function B:UpdateItemDisplay()
 	if not E.private.bags.enable then return end
 
@@ -411,8 +422,7 @@ function B:UpdateItemDisplay()
 
 				slot.bindType:FontTemplate(LSM:Fetch('font', B.db.itemLevelFont), B.db.itemLevelFontSize, B.db.itemLevelFontOutline)
 
-				slot.Count:ClearAllPoints()
-				slot.Count:Point(B.db.countPosition, B.db.countxOffset, B.db.countyOffset)
+				UpdateCountPosition(slot)
 				slot.Count:FontTemplate(LSM:Fetch('font', B.db.countFont), B.db.countFontSize, B.db.countFontOutline)
 			end
 		end
@@ -577,6 +587,47 @@ function B:GetItemQuestInfo(itemLink, classID)
 	end
 end
 
+B.KnownRecipeCache = {}
+
+function B:IsKnownRecipe(itemLink)
+	if B.KnownRecipeCache[itemLink] then return true end
+
+	local info = E.ScanTooltip:GetHyperlinkInfo(itemLink)
+	if info then
+		for _, line in next, info.lines do
+			if line.leftText == ITEM_SPELL_KNOWN then
+				B.KnownRecipeCache[itemLink] = true
+				break
+			end
+		end
+	end
+
+	E.ScanTooltip:Hide()
+
+	return B.KnownRecipeCache[itemLink]
+end
+
+function B:IsKnownRecipeLink(link)
+	return link and select(6, GetItemInfoInstant(link)) == LE_ITEM_CLASS_RECIPE and B:IsKnownRecipe(link)
+end
+
+function B:SetKnownRecipeMark(button, anchor, shown)
+	local mark = button.knownRecipeMark
+	if not mark then
+		if not shown then return end
+
+		mark = button:CreateTexture(nil, 'OVERLAY')
+		mark:SetTexture(READY_TEX)
+		mark:SetVertexColor(0.2, 1, 0.2)
+		mark:Size(24)
+		mark:Point('BOTTOMRIGHT', anchor)
+
+		button.knownRecipeMark = mark
+	end
+
+	mark:SetShown(shown)
+end
+
 function B:UpdateItemLevel(slot)
 	if slot.itemLink and B.db.itemLevel then
 		local canShowItemLevel = B:IsItemEligibleForItemLevelDisplay(slot.itemClassID, slot.itemSubClassID, slot.itemEquipLoc, slot.rarity)
@@ -599,11 +650,12 @@ function B:UpdateSlot(frame, bagID, slotID)
 	slot.name, slot.spellID, slot.itemID, slot.rarity, slot.locked, slot.itemLink = nil, nil, info.itemID, info.quality, info.isLocked, info.hyperlink
 	slot.isJunk = (slot.rarity and slot.rarity == 0) and not info.hasNoValue
 	slot.junkDesaturate = slot.isJunk and B.db.junkDesaturate
+	slot.knownRecipe = info.itemClassID == LE_ITEM_CLASS_RECIPE and (B.db.knownRecipeDesaturate or B.db.knownRecipeMark) and B:IsKnownRecipe(slot.itemLink)
 	slot.hasItem = (info.iconFileID and 1) or nil -- used for ShowInspectCursor
 
 	SetItemButtonTexture(slot, info.iconFileID)
 	SetItemButtonCount(slot, info.stackCount)
-	SetItemButtonDesaturated(slot, slot.locked or slot.junkDesaturate)
+	SetItemButtonDesaturated(slot, slot.locked or slot.junkDesaturate or (slot.knownRecipe and B.db.knownRecipeDesaturate))
 
 	slot.Count:SetTextColor(B.db.countFontColor.r, B.db.countFontColor.g, B.db.countFontColor.b)
 	slot.itemLevel:SetText('')
@@ -647,6 +699,10 @@ function B:UpdateSlot(frame, bagID, slotID)
 
 	if slot.questIcon then slot.questIcon:SetShown(B.db.questIcon and ((isQuestItem or questId) and not isActiveQuest)) end
 	if slot.JunkIcon then slot.JunkIcon:SetShown(slot.isJunk and B.db.junkIcon) end
+	if slot.knownRecipe or slot.knownRecipeMark then
+		B:SetKnownRecipeMark(slot, slot.icon, slot.knownRecipe and B.db.knownRecipeMark)
+		UpdateCountPosition(slot)
+	end
 
 	if B.db.newItemGlow and (info.iconFileID or slot.newItemGlow:IsShown()) then
 		E:Delay(0.1, B.CheckSlotNewItem, B, slot, bagID, slotID)
@@ -2281,8 +2337,7 @@ function B:ConstructContainerButton(f, bagID, slotID)
 	end
 
 	slot.Count = _G[slotName..'Count']
-	slot.Count:ClearAllPoints()
-	slot.Count:Point(B.db.countPosition, B.db.countxOffset, B.db.countyOffset)
+	UpdateCountPosition(slot)
 	slot.Count:FontTemplate(LSM:Fetch('font', B.db.countFont), B.db.countFontSize, B.db.countFontOutline)
 
 	if not slot.questIcon then
