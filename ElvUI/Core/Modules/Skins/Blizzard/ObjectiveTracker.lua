@@ -23,6 +23,7 @@ local TRACKER_MODULES = {
 	"QuestObjectiveTracker",
 	"AchievementObjectiveTracker",
 	"BattlePassQuestTracker",
+	"ReturningCharacterQuestTracker",
 	"ProfessionsRecipeTracker",
 }
 
@@ -274,10 +275,22 @@ local function SkinTrackerItemButton(button)
 	button.isSkinned = true
 end
 
+local function TrackerBarBackdropColor(backdrop)
+	backdrop.fill:SetVertexColor(unpack(E.media.backdropfadecolor))
+	backdrop:SetBackdropColor(0, 0, 0, 0)
+end
+
 local function SkinTrackerBar(bar, color)
 	if not bar or bar.isSkinned then return end
 
 	S:HandleStatusBar(bar, color, "Transparent")
+
+	local backdrop = bar.backdrop
+	backdrop.fill = bar:CreateTexture(nil, "BACKGROUND")
+	backdrop.fill:SetTexture(E.media.blankTex)
+	backdrop.fill:SetInside(backdrop)
+	backdrop.callbackBackdropColor = TrackerBarBackdropColor
+	TrackerBarBackdropColor(backdrop)
 
 	bar.isSkinned = true
 end
@@ -381,7 +394,7 @@ local function TrackerProgressValue(progressBar)
 	S:StatusBarColorGradient(bar, bar:GetValue(), maxValue)
 end
 
-local ForceScenarioBarFill
+local ForceScenarioBarFill, FixScenarioBarArt
 
 local function GetTrackerBarHeight(progressBar)
 	local bar = progressBar.Bar
@@ -551,14 +564,14 @@ local function LoadTrackerSkin()
 		SkinTrackerModule(_G[name])
 	end
 
+	local scenarioModule = _G.ScenarioObjectiveTracker
+	if scenarioModule and scenarioModule.GetProgressBar then
+		hooksecurefunc(scenarioModule, "GetProgressBar", FixScenarioBarArt)
+	end
+
 	local questModule = _G.QuestObjectiveTracker
 	if questModule and questModule.UpdateSingle then
 		hooksecurefunc(questModule, "UpdateSingle", TrackerQuestDifficulty)
-	end
-
-	local returningModule = _G.ReturningCharacterQuestTracker
-	if returningModule and returningModule.AddBlock then
-		hooksecurefunc(returningModule, "AddBlock", TrackerBlockColor)
 	end
 
 	local manager = _G.ObjectiveTrackerManager
@@ -660,7 +673,7 @@ ForceScenarioBarFill = function(bar, progressBar)
 	end
 end
 
-local function FixScenarioBarArt(module, key)
+FixScenarioBarArt = function(module, key)
 	local progressBars = module.usedProgressBars
 	local progressBar = progressBars and progressBars[key]
 	if not progressBar then return end
@@ -697,11 +710,6 @@ local function FixScenarioBarArt(module, key)
 			ForceScenarioBarFill(self.Bar, self)
 		end)
 	end
-end
-
-local scenarioTracker = _G.ScenarioObjectiveTracker
-if scenarioTracker and scenarioTracker.GetProgressBar then
-	hooksecurefunc(scenarioTracker, "GetProgressBar", FixScenarioBarArt)
 end
 
 S:AddCallback("Skin_ObjectiveTracker", LoadTrackerSkin)

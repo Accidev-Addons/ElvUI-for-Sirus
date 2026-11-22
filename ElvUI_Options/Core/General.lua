@@ -353,6 +353,7 @@ end
 local characterInfoPositions = { default = L["Default"], TOPLEFT = 'TOPLEFT', TOP = 'TOP', TOPRIGHT = 'TOPRIGHT', LEFT = 'LEFT', CENTER = 'CENTER', RIGHT = 'RIGHT', BOTTOMLEFT = 'BOTTOMLEFT', BOTTOM = 'BOTTOM', BOTTOMRIGHT = 'BOTTOMRIGHT' }
 
 blizz.characterInfo = ACH:Group(L["Character Information"], nil, 100, nil, CharInfoGet, CharInfoSet)
+blizz.characterInfo.args.statsPane = ACH:Toggle(L["ElvUI Stats Pane"], L["Replace the stats panel of the character window with the ElvUI one: collapsible stat categories, titles and equipment sets on side tabs. Disable to keep the stock panel, only skinned."], 0, nil, nil, nil, function() return E.private.character.character.enable end, function(_, value) E.private.character.character.enable = value E.ShowPopup = true end, function() return not E.private.skins.blizzard.enable or not E.private.skins.blizzard.character end)
 
 blizz.characterInfo.args.gemsAndEnchants = ACH:Group(L["Gems and Enchants"], nil, 1, nil, CharInfoGet, CharInfoSet)
 blizz.characterInfo.args.gemsAndEnchants.args.showGems = ACH:Toggle(L["Display Gems"], nil, 1)

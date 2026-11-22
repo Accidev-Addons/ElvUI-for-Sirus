@@ -187,6 +187,11 @@ do
 	local GetSpecializationInfoForClassID = _G.GetSpecializationInfoForClassID
 	local LGTRoleTable = {melee = 'DAMAGER', caster = 'DAMAGER', healer = 'HEALER', tank = 'TANK'}
 
+	local inspectGUID
+	local inspectWatcher = CreateFrame('Frame')
+	inspectWatcher:RegisterEvent('INSPECT_TALENT_READY')
+	inspectWatcher:SetScript('OnEvent', function(_, _, guid) inspectGUID = guid end)
+
 	local function IsSpecInfoReady()
 		return not (C_GlobalStorage and C_GlobalStorage.GetVar) or C_GlobalStorage.GetVar('ASMSG_SPEC_INFO') ~= nil
 	end
@@ -243,6 +248,11 @@ do
 					c3 = select(3, LGT:GetTalentTabInfo(unit, 3, talentGroup))
 				else
 					_, c1, c2, c3 = LGT:GetUnitTalentSpec(unit, talentGroup)
+					if not c1 and UnitGUID(unit) == inspectGUID then
+						c1 = select(3, GetTalentTabInfo(1, true))
+						c2 = select(3, GetTalentTabInfo(2, true))
+						c3 = select(3, GetTalentTabInfo(3, true))
+					end
 				end
 
 				local maxPoints, tab = 0, 0

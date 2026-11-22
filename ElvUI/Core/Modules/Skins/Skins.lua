@@ -1322,7 +1322,7 @@ function S:HandleDropDownBox(frame, width, template)
 
 	E:UnlockPoints(button)
 	button:ClearAllPoints()
-	button:Point('RIGHT', frame, 'RIGHT', -10, 3)
+	button:Point('RIGHT', frame, 'RIGHT', -10, 2)
 
 	E:LockPoints(button)
 
@@ -1330,6 +1330,7 @@ function S:HandleDropDownBox(frame, width, template)
 	local buttonIcon = not button.isSkinned and normal and normal:GetTexture()
 
 	S:HandleNextPrevButton(button, 'down')
+	button:Size(20)
 
 	if buttonIcon and not IsClientArrowTexture(buttonIcon) then
 		SetDropDownIcon(button, buttonIcon)

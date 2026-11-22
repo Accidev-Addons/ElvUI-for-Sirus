@@ -2318,6 +2318,8 @@ L["Mouse wheel zooms, left-drag rotates and right-drag moves the pet, stable and
 L["Appearance"] = "Оформление"
 L["Quality Gradient"] = "Полосы цвета качества"
 L["Show a strip in the item quality color behind the equipment slots."] = "Показывать за ячейками экипировки полосу цвета качества предмета."
+L["ElvUI Stats Pane"] = "Панель характеристик ElvUI"
+L["Replace the stats panel of the character window with the ElvUI one: collapsible stat categories, titles and equipment sets on side tabs. Disable to keep the stock panel, only skinned."] = "Заменяет панель характеристик окна персонажа панелью ElvUI: сворачиваемые разделы характеристик, звания и комплекты экипировки на боковых вкладках. Выключите, чтобы оставить стандартную панель, только в оформлении ElvUI."
 L["Model Background"] = "Фон модели"
 L["Space"] = "Космос"
 L["Castle"] = "Замок"

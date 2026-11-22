@@ -2288,6 +2288,8 @@ L["Mouse wheel zooms, left-drag rotates and right-drag moves the pet, stable and
 L["Appearance"] = true
 L["Quality Gradient"] = true
 L["Show a strip in the item quality color behind the equipment slots."] = true
+L["ElvUI Stats Pane"] = true
+L["Replace the stats panel of the character window with the ElvUI one: collapsible stat categories, titles and equipment sets on side tabs. Disable to keep the stock panel, only skinned."] = true
 L["Model Background"] = true
 L["Space"] = true
 L["Castle"] = true

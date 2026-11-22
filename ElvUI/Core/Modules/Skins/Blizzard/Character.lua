@@ -142,8 +142,6 @@ local STAT_RESILIENCE = STAT_RESILIENCE
 
 local C_PlayerInfo = C_PlayerInfo
 
-local CHARACTERFRAME_EXPANDED_WIDTH = 252
-
 local SCROLL_WIDTH_SIRUS_STATS = 145
 local SCROLL_WIDTH_SIRUS_STATS_CHILD = 245
 
@@ -588,66 +586,6 @@ function S:PaperDollSidebarTab(button)
 	button:SetScript("OnHide", HideStatTooltip)
 	button:HookScript("OnShow", function() S:PaperDollFrame_UpdateSidebarTabs() end)
 	S:PaperDollSidebarTab_SetSelected(button, false)
-end
-
-function S:CharacterFrame_Collapse(sizeOnly)
-	if self.skinEnabled then
-		CharacterFrame.backdrop:Width(341)
-
-		S:SetBackdropHitRect(PaperDollFrame, CharacterFrame.backdrop)
-		S:SetBackdropHitRect(PetPaperDollFrame, CharacterFrame.backdrop)
-	else
-		CharacterFrame:Width(384)
-
-		S:SetBackdropHitRect(PaperDollFrame)
-		S:SetBackdropHitRect(PetPaperDollFrame)
-	end
-
-	S:SetUIPanelWindowInfo(CharacterFrame, "width")
-
-	if sizeOnly then return end
-
-	CharacterFrame.Expanded = false
-
-	S:SetNextPrevButtonDirection(CharacterFrameExpandButton, "right")
-
-	for i = 1, #PAPERDOLL_SIDEBARS do
-		_G[PAPERDOLL_SIDEBARS[i].frame]:Hide()
-	end
-
-	PaperDollSidebarTabs:Hide()
-end
-
-function S:CharacterFrame_Expand(sizeOnly)
-	if self.skinEnabled then
-		CharacterFrame.backdrop:Width(341 + CHARACTERFRAME_EXPANDED_WIDTH)
-
-		S:SetBackdropHitRect(PaperDollFrame, CharacterFrame.backdrop)
-		S:SetBackdropHitRect(PetPaperDollFrame, CharacterFrame.backdrop)
-	else
-		CharacterFrame:Width(352 + CHARACTERFRAME_EXPANDED_WIDTH)
-
-		S:SetBackdropHitRect(PaperDollFrame)
-		S:SetBackdropHitRect(PetPaperDollFrame)
-	end
-
-	S:SetUIPanelWindowInfo(CharacterFrame, "width")
-
-	if sizeOnly then return end
-
-	CharacterFrame.Expanded = true
-
-	S:SetNextPrevButtonDirection(CharacterFrameExpandButton, "left")
-
-	if PaperDollFrame:IsShown() and PaperDollFrame.currentSideBar then
-		CharacterStatsPane:Hide()
-		PaperDollFrame.currentSideBar:Show()
-	else
-		CharacterStatsPane:Show()
-	end
-
-	S:PaperDollFrame_UpdateSidebarTabs()
-	PaperDollSidebarTabs:Show()
 end
 
 local StatCategoryFrames = {}
@@ -1784,11 +1722,9 @@ function S:CharacterInit()
 	if characterSettings and characterSettings.character then
 		characterSettings = characterSettings.character
 	end
-	if not characterSettings or not characterSettings.enable then return end
+	if not characterSettings or not characterSettings.enable or not E.private.skins.blizzard.enable or not E.private.skins.blizzard.character then return end
 	characterSettings.player = characterSettings.player or {}
 	characterSettings.pet = characterSettings.pet or {}
-	local realmName = GetRealmName()
-	local showWeaponItemLevel = realmName == "Sirus x5 - 3.3.5a+" or realmName:match("x4") or realmName:match("x5") or realmName:match("x2")
 
 	local function UpdateCharacterEquipmentContents(inset)
 		CharacterModelFrame:ClearAllPoints()
@@ -1801,7 +1737,7 @@ function S:CharacterInit()
 		CharacterHeadSlot:SetPoint("TOPLEFT", inset, "TOPLEFT", 10, -columnOffset)
 		CharacterHandsSlot:ClearAllPoints()
 		CharacterHandsSlot:SetPoint("TOPRIGHT", inset, "TOPRIGHT", -8, -columnOffset)
-		if showWeaponItemLevel and CharacterItemLevelFrame then
+		if CharacterItemLevelFrame then
 			CharacterItemLevelFrame:ClearAllPoints()
 			CharacterItemLevelFrame:SetParent(inset)
 			CharacterItemLevelFrame:SetPoint("BOTTOM", CharacterSecondaryHandSlot, "TOP", 0, 6)
@@ -1838,12 +1774,9 @@ function S:CharacterInit()
 			frame:Kill()
 		end
 	end
-	if showWeaponItemLevel then
-		PaperDollFrameStatsFrameLeftCategory:Kill()
-		PaperDollFrameStatsFrameRightCategory:Kill()
-
-		PaperDollFrameStatsFrameItemLevelCategory:Kill()
-	end
+	PaperDollFrameStatsFrameLeftCategory:Kill()
+	PaperDollFrameStatsFrameRightCategory:Kill()
+	PaperDollFrameStatsFrameItemLevelCategory:Kill()
 
 
 
@@ -2443,6 +2376,7 @@ local Slots = {"HeadSlot", "NeckSlot", "ShoulderSlot", "BackSlot", "ChestSlot", 
 	}
 
 function S:ColorItemCharacterBorder()
+	if not E.private.skins.blizzard.enable or not E.private.skins.blizzard.character then return end
 	local enabled = E.db.general.characterInfo.highlightBlackDiamonds
 	for _, slotName in ipairs(Slots) do
 		local link = enabled and GetInventoryItemLink("player", GetInventorySlotInfo(slotName))
@@ -2451,6 +2385,7 @@ function S:ColorItemCharacterBorder()
 end
 
 function S:ColorItemInspectBorder()
+	if not E.private.skins.blizzard.enable or not E.private.skins.blizzard.inspect then return end
 	local unit = InspectFrame and InspectFrame:IsShown() and InspectFrame.unit
 	local enabled = E.db.general.characterInfo.highlightBlackDiamonds
 	for _, slotName in ipairs(Slots) do
@@ -2563,7 +2498,7 @@ local function LoadSkin()
 	ColorizeStatPane(PaperDollFrameStrengthenFrame.Title)
 	PaperDollFrameStrengthenFrame.Title.Background:SetAlpha(0)
 
-	DisableStrengthenResetButton()
+	S:HandleButton(PaperDollFrameStrengthenFrame.ResetButton)
 
 	for i = 1, C_PlayerInfo.GetNumBonusStats() do
 		local statPlus = _G["PaperDollFrameStrengthenFrameStat"..i.."Plus"]
@@ -2577,6 +2512,8 @@ local function LoadSkin()
 			statPlus:SetDisabledTexture(E.Media.Textures.Plus)
 			statPlus:GetDisabledTexture():SetInside()
 			statPlus:GetDisabledTexture():SetDesaturated(true)
+			statPlus:GetParent().Background:SetTexture(1, 1, 1)
+			statPlus:GetParent().Background:SetAlpha(0.07)
 		end
 	end
 
@@ -2603,6 +2540,22 @@ local function LoadSkin()
 	local characterSettings = E.private.character.character or E.private.character
 	if characterSettings.enable then
 		CharacterModelFrame.backdrop:Hide()
+	else
+		for _, category in ipairs({ PaperDollFrameStatsFrameItemLevelCategory, PaperDollFrameStatsFrameLeftCategory, PaperDollFrameStatsFrameRightCategory }) do
+			ColorizeStatPane(category)
+			category.Background:SetAlpha(0)
+			if category.Highlight then
+				category.Highlight:SetTexture(1, 1, 1, 0.3)
+				category.Highlight:SetAllPoints()
+			end
+		end
+		for i = 1, 6 do
+			for _, row in ipairs({ _G["PlayerStatFrameLeft"..i], _G["PlayerStatFrameRight"..i] }) do
+				row.Background:SetTexture(1, 1, 1)
+				row.Background:SetAlpha(0.07)
+				row.Background:SetAllPoints()
+			end
+		end
 	end
 	CharacterModelFrame:DisableDrawLayer("OVERLAY")
 
@@ -2625,6 +2578,8 @@ local function LoadSkin()
 
 	for i = 1, #PlayerTitlePickerScrollFrame.buttons do
 		PlayerTitlePickerScrollFrame.buttons[i].text:FontTemplate()
+		PlayerTitlePickerScrollFrame.buttons[i].Stripe:SetTexture(0.9, 0.9, 1)
+		PlayerTitlePickerScrollFrame.buttons[i].Stripe:SetAlpha(0.1)
 	end
 
 	S:HandleSirusScrollBar(PlayerTitlePickerScrollFrameScrollBar)
@@ -2636,6 +2591,8 @@ local function LoadSkin()
 			tab.Icon:SetAllPoints()
 			tab.Highlights:SetTexture(1, 1, 1, .3)
 			tab.Highlights:SetAllPoints()
+			tab.Hider:SetTexture(0.4, 0.4, 0.4, 0.4)
+			tab.Hider:SetAllPoints()
 			tab.TabBg:Kill()
 		end
 	end

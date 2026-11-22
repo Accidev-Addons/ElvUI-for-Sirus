@@ -1140,27 +1140,6 @@ function E:Config_WindowOpened(frame)
 		E:Config_SaveOldPosition(content)
 		E:Config_ContentPlacement(frame, content, unskinned)
 
-		if not frame.clipScroll then
-			local clip = CreateFrame('ScrollFrame', nil, frame)
-			clip:SetAllPoints(content)
-
-			local child = CreateFrame('Frame', nil, clip)
-			child:Point('TOPLEFT')
-			clip:SetScrollChild(child)
-
-			local function syncClip()
-				local width, height = clip:GetWidth(), clip:GetHeight()
-				child:SetSize((width and width > 0 and width) or 1, (height and height > 0 and height) or 1)
-			end
-
-			frame:HookScript('OnSizeChanged', syncClip)
-			frame:HookScript('OnShow', syncClip)
-			syncClip()
-
-			content:SetParent(child)
-			frame.clipScroll = clip
-		end
-
 		local titlebg = frame.obj.titlebg
 		E:Config_SaveOldPosition(titlebg)
 		titlebg:ClearAllPoints()
