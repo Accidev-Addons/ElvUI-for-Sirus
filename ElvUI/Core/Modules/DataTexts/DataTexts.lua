@@ -813,7 +813,7 @@ end
 function DT:GetTokenIDFromItemID(index)
     local listSize = GetCurrencyListSize()
     for i = 1, listSize do
-        local _, _, _, _, _, _, _, _, id = GetCurrencyListInfo(i)
+        local _, _, _, _, _, _, _, _, itemID = GetCurrencyListInfo(i)
         if id == index then
             return i
         end
