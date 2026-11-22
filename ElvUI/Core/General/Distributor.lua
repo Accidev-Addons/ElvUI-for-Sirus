@@ -91,7 +91,8 @@ D.GeneratedKeys = {
 		movers = true,
 		actionbar = {},
 		nameplates = { -- this is supposed to have an 's' because yeah, oh well
-			filters = true
+			filters = true,
+			units = {} -- required for the scope below for customTexts
 		},
 		datatexts = {
 			panels = true,
@@ -129,6 +130,11 @@ do
 	local units = D.GeneratedKeys.profile.unitframe.units
 	for unit in pairs(P.unitframe.units) do
 		units[unit] = {customTexts = true}
+	end
+
+	local nameplateUnits = D.GeneratedKeys.profile.nameplates.units
+	for unit in pairs(P.nameplates.units) do
+		nameplateUnits[unit] = {customTexts = true}
 	end
 
 	for i = 1, 10 do
