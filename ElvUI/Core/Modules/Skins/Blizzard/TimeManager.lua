@@ -27,10 +27,7 @@ S:AddCallbackForAddon("Blizzard_TimeManager", "Skin_Blizzard_TimeManager", funct
 
 	S:HandleEditBox(TimeManagerAlarmMessageEditBox)
 
-	E:LockMethod(TimeManagerAlarmEnabledButton, "SetNormalTexture", nil)
-	E:LockMethod(TimeManagerAlarmEnabledButton, "SetPushedTexture", nil)
-	S:HandleButton(TimeManagerAlarmEnabledButton)
-
+	S:HandleCheckBox(TimeManagerAlarmEnabledButton)
 	S:HandleCheckBox(TimeManagerMilitaryTimeCheck)
 	S:HandleCheckBox(TimeManagerLocalTimeCheck)
 
@@ -49,8 +46,7 @@ S:AddCallbackForAddon("Blizzard_TimeManager", "Skin_Blizzard_TimeManager", funct
 	TimeManagerAlarmMessageEditBox:Width(168)
 	TimeManagerAlarmMessageEditBox:Point("TOPLEFT", TimeManagerAlarmMessageLabel, "BOTTOMLEFT", 1, -7)
 
-	TimeManagerAlarmEnabledButton:Size(170, 22)
-	TimeManagerAlarmEnabledButton:Point("LEFT", 8, -50)
+	TimeManagerAlarmEnabledButton:Point("LEFT", 4, -50)
 
 	TimeManagerMilitaryTimeCheck:Point("TOPLEFT", 158, -175)
 

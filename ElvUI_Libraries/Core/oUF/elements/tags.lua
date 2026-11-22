@@ -1006,7 +1006,7 @@ oUF.Tags = {
 			end
 		end
 	end,
-	RefreshEvents = function(self, tag)
+	RefreshEvents = function(_, tag)
 		if not tag then return end
 
 		-- if a tag's name contains magic chars, there's a chance that string.match will fail to find the match
@@ -1016,8 +1016,8 @@ oUF.Tags = {
 			if StripTag(tagstr):match(tag) then
 				for fs, ts in next, taggedFontStrings do
 					if ts == tagstr then
-						UnregisterEvents(self, fs)
-						RegisterEvents(self, fs, tagstr)
+						UnregisterEvents(fs.parent, fs)
+						RegisterEvents(fs.parent, fs, tagstr)
 					end
 				end
 			end
