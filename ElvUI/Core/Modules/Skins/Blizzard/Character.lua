@@ -1768,11 +1768,8 @@ function S:CharacterInit()
 	PaperDollFrameStrengthenFrame:SetAlpha(0)
 	DisableStrengthenResetButton()
 
-	for i = 1, PaperDollFrameStrengthenFrame:GetNumChildren() do
-		local frame = select(i, PaperDollFrameStrengthenFrame:GetChildren())
-		if frame then
-			frame:Kill()
-		end
+	for _, frame in next, { PaperDollFrameStrengthenFrame:GetChildren() } do
+		frame:Kill()
 	end
 	PaperDollFrameStatsFrameLeftCategory:Kill()
 	PaperDollFrameStatsFrameRightCategory:Kill()
@@ -2876,8 +2873,8 @@ local function LoadSkin()
 	select(1, MagicResFrame4:GetRegions()):SetTexCoord(0.21875, 0.8125, 0.36328125, 0.4375)
 	select(1, MagicResFrame5:GetRegions()):SetTexCoord(0.21875, 0.8125, 0.4765625, 0.55078125)
 
-	S:HandleDropDownBox(PlayerStatFrameLeftDropDown, 140, "down")
-	S:HandleDropDownBox(PlayerStatFrameRightDropDown, 140, "down")
+	S:HandleDropDownBox(PlayerStatFrameLeftDropDown, 140)
+	S:HandleDropDownBox(PlayerStatFrameRightDropDown, 140)
 	CharacterAttributesFrame:StripTextures()
 
 	PetPaperDollFrame:StripTextures(true)
@@ -3017,6 +3014,13 @@ local function LoadSkin()
 	S:HandleCheckBox(ReputationDetailMainScreenCheckBox)
 
 	TokenFrame:StripTextures(true)
+
+	for _, button in next, { ReputationFrame.TutorialButton, TokenFrame.TutorialButton } do
+		button:ClearAllPoints()
+		button:SetPoint("TOPLEFT", 6, -2)
+		button:SetSize(28, 28)
+		S:HandleSirusTutorialButton(button)
+	end
 
 	local function SkinTokenButtons()
 		local scrollFrame = TokenFrameContainer

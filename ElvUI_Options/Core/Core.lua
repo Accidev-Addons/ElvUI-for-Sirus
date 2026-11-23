@@ -323,8 +323,8 @@ E.Options.args.info.args.credits.args.donators.args.string = ACH:Description(DON
 E.Options.args.profiles = ACH:Group(L["Profiles"], nil, 4, 'tab')
 E.Options.args.profiles.args.desc = ACH:Description(L["This feature will allow you to transfer settings to other characters."], 0)
 E.Options.args.profiles.args.distributeProfile = ACH:Execute(L["Share Profile"], L["Sends your current profile to your target."], 1, function() if not UnitExists('target') or not UnitIsPlayer('target') or not UnitIsFriend('player', 'target') or UnitIsUnit('player', 'target') then E:Print(L["You must be targeting a player."]) return end local name, server = UnitName('target') if name and (not server or server == '') then D:Distribute(name) elseif server then D:Distribute(name, true) end end, nil, nil, nil, nil, nil, function() return not E.global.general.allowDistributor end)
-E.Options.args.profiles.args.distributePrivate = ACH:Execute(L["Share Private"], nil, 2, function() if not UnitExists('target') or not UnitIsPlayer('target') or not UnitIsFriend('player', 'target') or UnitIsUnit('player', 'target') then E:Print(L["You must be targeting a player."]) return end local name, server = UnitName('target') if name and (not server or server == '') then D:Distribute(name, false, 'private') elseif server then D:Distribute(name, true, 'private') end end, nil, nil, nil, nil, nil, function() return not E.global.general.allowDistributor end)
-E.Options.args.profiles.args.distributeGlobal = ACH:Execute(L["Share Global"], nil, 3, function() if not UnitExists('target') or not UnitIsPlayer('target') or not UnitIsFriend('player', 'target') or UnitIsUnit('player', 'target') then E:Print(L["You must be targeting a player."]) return end local name, server = UnitName('target') if name and (not server or server == '') then D:Distribute(name, false, 'global') elseif server then D:Distribute(name, true, 'global') end end, nil, nil, nil, nil, nil, function() return not E.global.general.allowDistributor end)
+E.Options.args.profiles.args.distributePrivate = ACH:Execute(L["Share Private"], L["Sends your current private settings to your target."], 2, function() if not UnitExists('target') or not UnitIsPlayer('target') or not UnitIsFriend('player', 'target') or UnitIsUnit('player', 'target') then E:Print(L["You must be targeting a player."]) return end local name, server = UnitName('target') if name and (not server or server == '') then D:Distribute(name, false, 'private') elseif server then D:Distribute(name, true, 'private') end end, nil, nil, nil, nil, nil, function() return not E.global.general.allowDistributor end)
+E.Options.args.profiles.args.distributeGlobal = ACH:Execute(L["Share Global"], L["Sends your global settings to your target."], 3, function() if not UnitExists('target') or not UnitIsPlayer('target') or not UnitIsFriend('player', 'target') or UnitIsUnit('player', 'target') then E:Print(L["You must be targeting a player."]) return end local name, server = UnitName('target') if name and (not server or server == '') then D:Distribute(name, false, 'global') elseif server then D:Distribute(name, true, 'global') end end, nil, nil, nil, nil, nil, function() return not E.global.general.allowDistributor end)
 E.Options.args.profiles.args.allowDistributor = ACH:Toggle(L["Allow Sharing"], L["Both users will need this option enabled."], 4, nil, nil, nil, function() return E.global.general.allowDistributor end, function(_, value) E.global.general.allowDistributor = value; D:UpdateSettings() end)
 E.Options.args.profiles.args.spacer = ACH:Spacer(10)
 
@@ -393,7 +393,7 @@ do -- Import and Export
 
 			local offset = count * 2
 			local textKey = 'text'..count
-			local input = ACH:Input('', nil, 51 + offset, 5, 'full', get, set, nil, hidden)
+			local input = ACH:Input(importTexts and format('%s %d', L["Import String"], count) or L["Export String"], importTexts and L["Paste an export string here."] or L["Copy this string and paste it on the import page."], 51 + offset, 5, 'full', get, set, nil, hidden)
 			input.disableButton = true
 			input.focusSelect = true
 			config.args[textKey] = input
@@ -445,9 +445,10 @@ do -- Import and Export
 		local function Import_Get(info) return importTexts[info[#info]] end
 		BuildEditboxes(import, Import_Get, Import_Set, false, importTexts)
 
-		import.args.importButton = ACH:Execute(L["Import"], nil, 1, function() Import('text') end, nil, nil, 120)
-		import.args.decodeButton = ACH:Execute(L["Decode"], nil, 2, function() Import('luaTable') end, nil, nil, 120)
-		import.args.clearButton = ACH:Execute(L["Clear"], nil, 3, function() Import('clear') end, nil, nil, 120)
+		import.args.intro = ACH:Description(L["Paste one export string into each box and press the import button. Every box accepts any kind of string: Profile, Private, Global, Aura Filters or NamePlate Style Filters."], 0)
+		import.args.importButton = ACH:Execute(L["Import"], L["Import every string pasted below. A Profile string adds a profile and switches to it. Private and Global strings replace the current settings; Private needs a UI reload. Filter strings replace filters with the same name."], 1, function() Import('text') end, nil, nil, 120)
+		import.args.decodeButton = ACH:Execute(L["Decode"], L["Show the pasted strings as readable Lua tables without importing them."], 2, function() Import('luaTable') end, nil, nil, 120)
+		import.args.clearButton = ACH:Execute(L["Clear"], L["Clear the pasted text."], 3, function() Import('clear') end, nil, nil, 120)
 	end
 
 	do
@@ -504,11 +505,12 @@ do -- Import and Export
 			HandleExporting(which)
 		end
 
-		export.args.exportButton = ACH:Execute(L["Export"], nil, 1, function() Export('text') end, nil, nil, 120)
-		export.args.decodeButton = ACH:Execute(L["Table"], nil, 2, function() Export('luaTable') end, nil, nil, 120)
-		export.args.pluginButton = ACH:Execute(L["Plugin"], nil, 3, function() Export('luaPlugin') end, nil, nil, 120)
-		export.args.profileTye = ACH:MultiSelect(L["Choose What To Export"], nil, 10, profileTypeItems, nil, nil, Filters_Get, Filters_Set)
+		export.args.exportButton = ACH:Execute(L["Export"], L["Create a compressed string for each selected kind of settings. Use it to share and to import."], 1, function() Export('text') end, nil, nil, 120)
+		export.args.decodeButton = ACH:Execute(L["Table"], L["Create a readable Lua table. It can also be imported."], 2, function() Export('luaTable') end, nil, nil, 120)
+		export.args.pluginButton = ACH:Execute(L["Plugin"], L["Create Lua code for plugin authors. This format cannot be imported."], 3, function() Export('luaPlugin') end, nil, nil, 120)
+		export.args.profileTye = ACH:MultiSelect(L["Choose What To Export"], L["Profile, Private and Global also carry the settings that plugins such as WindTools keep in them. Aura Filters and NamePlate Style Filters are exported separately and are not part of Global. Settings equal to the defaults are left out of the string."], 10, profileTypeItems, nil, nil, Filters_Get, Filters_Set)
 		export.args.profileTye.customWidth = 225
+		export.args.note = ACH:Description(L["Profile, Private and Global also carry the settings that plugins such as WindTools keep in them. Aura Filters and NamePlate Style Filters are exported separately and are not part of Global. Settings equal to the defaults are left out of the string."], 11)
 	end
 end
 
@@ -775,10 +777,10 @@ do -- Module Copy
 	E.Options.args.profiles.args.modulecopy.args.intro = ACH:Description(L["This section will allow you to copy settings to a select module from or to a different profile."], 1, 'medium')
 	E.Options.args.profiles.args.modulecopy.args.pluginInfo = ACH:Description(L["If you have any plugins supporting this feature installed you can find them in the selection dropdown to the right."], 2, 'medium')
 	E.Options.args.profiles.args.modulecopy.args.profile = ACH:Select(L["Profile"], L["Select a profile to copy from/to."], 3, function() local tbl = {} for profile in pairs(E.data.profiles) do tbl[profile] = profile end return tbl end, nil, nil, function() return E.global.profileCopy.selected end, function(_, value) E.global.profileCopy.selected = value end)
-	E.Options.args.profiles.args.modulecopy.args.clear = ACH:Execute(L["Clear All"], nil, 4, nil, nil, nil, 120)
-	E.Options.args.profiles.args.modulecopy.args.select = ACH:Execute(L["Select All"], nil, 5, nil, nil, nil, 120)
-	E.Options.args.profiles.args.modulecopy.args.import = ACH:Execute(L["Import"], nil, 6, nil, nil, nil, 120)
-	E.Options.args.profiles.args.modulecopy.args.export = ACH:Execute(L["Export"], nil, 7, nil, nil, nil, 120)
+	E.Options.args.profiles.args.modulecopy.args.clear = ACH:Execute(L["Clear All"], L["Uncheck every option of the selected module."], 4, nil, nil, nil, 120)
+	E.Options.args.profiles.args.modulecopy.args.select = ACH:Execute(L["Select All"], L["Check every option of the selected module."], 5, nil, nil, nil, 120)
+	E.Options.args.profiles.args.modulecopy.args.import = ACH:Execute(L["Import"], L["Copy the selected settings from the chosen profile to your current profile."], 6, nil, nil, nil, 120)
+	E.Options.args.profiles.args.modulecopy.args.export = ACH:Execute(L["Export"], L["Copy the selected settings from your current profile to the chosen profile."], 7, nil, nil, nil, 120)
 
 	E.Options.args.profiles.args.modulecopy.args.elvui = ACH:Group('ElvUI', L["Core |cff1784d1ElvUI|r options."], 10, 'tree')
 	E.Options.args.profiles.args.modulecopy.args.elvui.args.actionbar = CreateActionbarsConfig()

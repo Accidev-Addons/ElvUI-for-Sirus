@@ -279,7 +279,9 @@ function S:StatusBarColorGradient(bar, value, max, backdrop)
 		backdrop = bar.backdrop
 	end
 
-	if backdrop then
+	if backdrop and backdrop.fill then
+		backdrop.fill:SetVertexColor(r * 0.25, g * 0.25, b * 0.25, 1)
+	elseif backdrop then
 		backdrop:SetBackdropColor(r * 0.25, g * 0.25, b * 0.25)
 	end
 end
@@ -1348,6 +1350,11 @@ function S:HandleDropDownBox(frame, width, template)
 	end
 end
 
+local function StatusBarBackdropColor(backdrop)
+	backdrop.fill:SetVertexColor(unpack(backdrop.template == 'Transparent' and E.media.backdropfadecolor or E.media.backdropcolor))
+	backdrop:SetBackdropColor(0, 0, 0, 0)
+end
+
 function S:HandleStatusBar(frame, color, template)
 	frame:OffsetFrameLevel(1)
 	frame:StripTextures()
@@ -1355,6 +1362,20 @@ function S:HandleStatusBar(frame, color, template)
 	frame:SetStatusBarTexture(E.media.normTex)
 	frame:SetStatusBarColor(unpack(color or {.01, .39, .1}))
 	E:RegisterStatusBar(frame)
+
+	local texture = frame:GetStatusBarTexture()
+	if texture:GetDrawLayer() == 'BACKGROUND' then
+		texture:SetDrawLayer('BORDER')
+	end
+
+	local backdrop = frame.backdrop
+	if not backdrop.fill then
+		backdrop.fill = frame:CreateTexture(nil, 'BACKGROUND')
+		backdrop.fill:SetTexture(E.media.blankTex)
+		backdrop.fill:SetInside(backdrop)
+		backdrop.callbackBackdropColor = StatusBarBackdropColor
+	end
+	StatusBarBackdropColor(backdrop)
 end
 
 function S:ForEachCheckboxTextureRegion(checkbox, func)

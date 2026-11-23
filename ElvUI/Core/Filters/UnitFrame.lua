@@ -467,7 +467,7 @@ G.unitframe.aurafilters.RaidDebuffs = {
 }
 
 -- BuffWatch: List of personal spells to show on unitframes as icon
-local function ClassBuff(id, point, color, anyUnit, onlyShowMissing, style, displayText, decimalThreshold, textColor, textThreshold, xOffset, yOffset, sizeOverride)
+local function ClassBuff(id, point, color, anyUnit, onlyShowMissing, style, displayText, decimalThreshold, textColor, textThreshold, xOffset, yOffset, sizeOffset)
 	local r, g, b = unpack(color)
 
 	local r2, g2, b2 = 1, 1, 1
@@ -489,7 +489,7 @@ local function ClassBuff(id, point, color, anyUnit, onlyShowMissing, style, disp
 		textThreshold = textThreshold or -1,
 		xOffset = xOffset or 0,
 		yOffset = yOffset or 0,
-		sizeOverride = sizeOverride or 0
+		sizeOffset = sizeOffset or 0
 	}
 end
 

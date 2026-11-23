@@ -265,7 +265,17 @@ do
 					if tab == 3 then
 						index = 4
 					else
-						local points = LGT:UnitHasTalent(unit, GetSpellInfo(57881))
+						local talent = GetSpellInfo(57881)
+						local points = LGT:UnitHasTalent(unit, talent)
+						if not points and UnitGUID(unit) == inspectGUID then
+							for i = 1, GetNumTalents(2, true) do
+								local name, _, _, _, rank = GetTalentInfo(2, i, true)
+								if name == talent then
+									points = rank
+									break
+								end
+							end
+						end
 						index = (points and points > 0) and 3 or 2
 					end
 				end

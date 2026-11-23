@@ -275,22 +275,10 @@ local function SkinTrackerItemButton(button)
 	button.isSkinned = true
 end
 
-local function TrackerBarBackdropColor(backdrop)
-	backdrop.fill:SetVertexColor(unpack(E.media.backdropfadecolor))
-	backdrop:SetBackdropColor(0, 0, 0, 0)
-end
-
 local function SkinTrackerBar(bar, color)
 	if not bar or bar.isSkinned then return end
 
 	S:HandleStatusBar(bar, color, "Transparent")
-
-	local backdrop = bar.backdrop
-	backdrop.fill = bar:CreateTexture(nil, "BACKGROUND")
-	backdrop.fill:SetTexture(E.media.blankTex)
-	backdrop.fill:SetInside(backdrop)
-	backdrop.callbackBackdropColor = TrackerBarBackdropColor
-	TrackerBarBackdropColor(backdrop)
 
 	bar.isSkinned = true
 end
@@ -459,9 +447,6 @@ local function TrackerProgressBar(module, key)
 	end
 
 	TrackerProgressValue(progressBar)
-	if progressBar.isScenarioEnemyForces and ForceScenarioBarFill then
-		ForceScenarioBarFill(bar, progressBar)
-	end
 end
 
 local function TrackerTimerBar(module, key)
@@ -680,8 +665,6 @@ FixScenarioBarArt = function(module, key)
 
 	local bar = progressBar.Bar
 	if not bar then return end
-
-	progressBar.isScenarioEnemyForces = true
 
 	FitTrackerProgressBar(progressBar)
 

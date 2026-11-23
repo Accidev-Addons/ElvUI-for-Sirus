@@ -749,6 +749,24 @@ local function KeySort(a, b)
 	return A < B
 end
 
+local function LuaString(str)
+	return '"'..str:gsub('\\', '\\\\'):gsub('\n', '\\n'):gsub('\r', '\\r'):gsub('"', '\\"'):gsub('\124', '\124\124')..'"'
+end
+
+local function LuaValue(value)
+	local valueType = type(value)
+	if valueType == 'string' then
+		return LuaString(value)
+	elseif valueType == 'number' then
+		local str = tostring(value)
+		return (tonumber(str) == value and str) or format('%.17g', value)
+	elseif valueType == 'boolean' then
+		return tostring(value)
+	end
+
+	return LuaString(tostring(value))
+end
+
 do	--The code in this function is from WeakAuras, credit goes to Mirrored and the WeakAuras Team
 	--Code slightly modified by Simpy, sorting from @sighol
 	local function Recurse(tbl, level, ret)
@@ -759,26 +777,16 @@ do	--The code in this function is from WeakAuras, credit goes to Mirrored and th
 		for _, i in ipairs(tkeys) do
 			local v = tbl[i]
 
-			ret = ret..strrep('    ', level)..'['
-			if type(i) == 'string' then ret = ret..'"'..i..'"' else ret = ret..i end
-			ret = ret..'] = '
+			tinsert(ret, strrep('    ', level)..'['..LuaValue(i)..'] = ')
 
-			if type(v) == 'number' then
-				ret = ret..v..',\n'
-			elseif type(v) == 'string' then
-				ret = ret..'"'..v:gsub('\\', '\\\\'):gsub('\n', '\\n'):gsub('"', '\\"'):gsub('\124', '\124\124')..'",\n'
-			elseif type(v) == 'boolean' then
-				if v then ret = ret..'true,\n' else ret = ret..'false,\n' end
-			elseif type(v) == 'table' then
-				ret = ret..'{\n'
-				ret = Recurse(v, level + 1, ret)
-				ret = ret..strrep('    ', level)..'},\n'
+			if type(v) == 'table' then
+				tinsert(ret, '{\n')
+				Recurse(v, level + 1, ret)
+				tinsert(ret, strrep('    ', level)..'},\n')
 			else
-				ret = ret..'"'..tostring(v)..'",\n'
+				tinsert(ret, LuaValue(v)..',\n')
 			end
 		end
-
-		return ret
 	end
 
 	function E:TableToLuaString(inTable)
@@ -787,11 +795,11 @@ do	--The code in this function is from WeakAuras, credit goes to Mirrored and th
 			return
 		end
 
-		local ret = '{\n'
-		if inTable then ret = Recurse(inTable, 1, ret) end
-		ret = ret..'}'
+		local ret = {'{\n'}
+		Recurse(inTable, 1, ret)
+		tinsert(ret, '}')
 
-		return ret
+		return table.concat(ret)
 	end
 end
 
@@ -807,11 +815,7 @@ do	--The code in this function is from WeakAuras, credit goes to Mirrored and th
 
 	local function BuildLineStructure(str) -- str is profileText
 		for _, v in ipairs(lineStructureTable) do
-			if type(v) == 'string' then
-				str = str..'["'..v..'"]'
-			else
-				str = str..'['..v..']'
-			end
+			str = str..'['..LuaValue(v)..']'
 		end
 
 		return str
@@ -828,45 +832,23 @@ do	--The code in this function is from WeakAuras, credit goes to Mirrored and th
 			local v = tbl[k]
 
 			if not sameLine then
-				ret = ret..lineStructure
+				tinsert(ret, lineStructure)
 			end
 
-			ret = ret..'['
-
-			if type(k) == 'string' then
-				ret = ret..'"'..k..'"'
-			else
-				ret = ret..k
-			end
+			tinsert(ret, '['..LuaValue(k))
 
 			if type(v) == 'table' then
 				tinsert(lineStructureTable, k)
 				sameLine = true
-				ret = ret..']'
-				ret = Recurse(v, ret, profileText)
+				tinsert(ret, ']')
+				Recurse(v, ret, profileText)
 			else
 				sameLine = false
-				ret = ret..'] = '
-
-				if type(v) == 'number' then
-					ret = ret..v..'\n'
-				elseif type(v) == 'string' then
-					ret = ret..'"'..v:gsub('\\', '\\\\'):gsub('\n', '\\n'):gsub('"', '\\"'):gsub('\124', '\124\124')..'"\n'
-				elseif type(v) == 'boolean' then
-					if v then
-						ret = ret..'true\n'
-					else
-						ret = ret..'false\n'
-					end
-				else
-					ret = ret..'"'..tostring(v)..'"\n'
-				end
+				tinsert(ret, '] = '..LuaValue(v)..'\n')
 			end
 		end
 
 		tremove(lineStructureTable)
-
-		return ret
 	end
 
 	function E:ProfileTableToPluginFormat(inTable, profileType)
@@ -875,13 +857,13 @@ do	--The code in this function is from WeakAuras, credit goes to Mirrored and th
 
 		wipe(lineStructureTable)
 
-		local ret = ''
+		local ret = {}
 		if inTable and profileType then
 			sameLine = false
-			ret = Recurse(inTable, ret, profileText)
+			Recurse(inTable, ret, profileText)
 		end
 
-		return ret
+		return table.concat(ret)
 	end
 end
 

@@ -142,6 +142,7 @@ general.args.keyPressAnimation.args.scale = ACH:Range(L["Scale"], nil, 3, { min 
 general.args.keyPressAnimation.args.rotation = ACH:Range(L["Rotation"], nil, 4, { min = 0, max = 360, step = 1 }, nil, nil, nil, keyPressDisabled)
 
 general.args.castGroup = ACH:Group(L["Casting"], nil, 25)
+general.args.castGroup.inline = true
 general.args.castGroup.args.focusCastKey = ACH:Select(L["Focus Cast Key"], nil, 10, castKeyValues, nil, nil, function() return GetModifiedClick('FOCUSCAST') end, function(_, value) SetModifiedClick('FOCUSCAST', value) SaveBindings(GetCurrentBindingSet()) end)
 general.args.castGroup.args.checkFocusCast = ACH:Toggle(L["Check Focus Cast"], nil, 11)
 general.args.castGroup.args.spacer2 = ACH:Spacer(12, 'full')
@@ -161,6 +162,7 @@ general.args.colorGroup.args.colorSwipeNormal = ACH:Color(L["Swipe: Normal"], ni
 general.args.colorGroup.args.equippedItemColor = ACH:Color(L["Equipped Item"], nil, 7)
 
 general.args.applyGroup = ACH:Group(L["Apply To All"], nil, 35, nil, function(info) return E.db.actionbar[info[#info]] end, function(info, value) E.db.actionbar[info[#info]] = value AB:ApplyTextOption(info[#info], value, info[#info - 1] == 'fontGroup') end)
+general.args.applyGroup.inline = true
 general.args.applyGroup.args.fontGroup = ACH:Group(L["Font Group"], nil, 1)
 general.args.applyGroup.args.fontGroup.inline = true
 general.args.applyGroup.args.fontGroup.args.font = ACH:SharedMediaFont(L["Font"], nil, 1)

@@ -83,12 +83,12 @@ do
 	end
 
 	StyleFilters.import = ACH:Group(L["Import"], nil, 15)
-	StyleFilters.import.args.importButton = ACH:Execute(L["Import"], nil, 2, Import_Button, nil, nil, 120)
-	StyleFilters.import.args.importDecode = ACH:Execute(L["Decode"], nil, 3, Import_Decode, nil, nil, 120)
-	StyleFilters.import.args.importClear = ACH:Execute(L["Clear"], nil, 4, Import_Clear, nil, nil, 120)
+	StyleFilters.import.args.importButton = ACH:Execute(L["Import"], L["Import the pasted style filter string. Filters with the same name are replaced."], 2, Import_Button, nil, nil, 120)
+	StyleFilters.import.args.importDecode = ACH:Execute(L["Decode"], L["Show the pasted strings as readable Lua tables without importing them."], 3, Import_Decode, nil, nil, 120)
+	StyleFilters.import.args.importClear = ACH:Execute(L["Clear"], L["Clear the pasted text."], 4, Import_Clear, nil, nil, 120)
 	StyleFilters.import.args.label = label
 
-	StyleFilters.import.args.text = ACH:Input('', nil, -10, 10, 'full', Import_Get, Import_Set)
+	StyleFilters.import.args.text = ACH:Input(L["Import String"], L["Paste an export string here."], -10, 10, 'full', Import_Get, Import_Set)
 	StyleFilters.import.args.text.disableButton = true
 	StyleFilters.import.args.text.focusSelect = true
 	StyleFilters.import.args.text.textChanged = Import_TextChanged
@@ -114,6 +114,9 @@ do
 
 		NP:StyleFilterClearDefaults(data.nameplates.filters)
 		data = E:RemoveTableDuplicates(data, G, D.GeneratedKeys.global)
+		if which ~= 'luaPlugin' then
+			D:KeepFilterNames(data, 'nameplates', 'filters', exportList)
+		end
 
 		local printableString
 		if which == 'text' then
@@ -136,13 +139,13 @@ do
 	end
 
 	StyleFilters.export = ACH:Group(L["Export"], nil, 20)
-	StyleFilters.export.args.filters = ACH:MultiSelect(L["Filters"], nil, 2, GetFilters, nil, nil, Filters_Get, Filters_Set, nil, nil, true)
-	StyleFilters.export.args.exportButton = ACH:Execute(L["Export"], nil, 3, function() Export('text') end, nil, nil, 120)
-	StyleFilters.export.args.exportDecode = ACH:Execute(L["Table"], nil, 4, function() Export('luaTable') end, nil, nil, 120)
-	StyleFilters.export.args.exportPlugin = ACH:Execute(L["Plugin"], nil, 5, function() Export('luaPlugin') end, nil, nil, 120)
+	StyleFilters.export.args.filters = ACH:MultiSelect(L["Filters"], L["Select the filters to export."], 2, GetFilters, nil, nil, Filters_Get, Filters_Set, nil, nil, true)
+	StyleFilters.export.args.exportButton = ACH:Execute(L["Export"], L["Create a compressed string for each selected kind of settings. Use it to share and to import."], 3, function() Export('text') end, nil, nil, 120)
+	StyleFilters.export.args.exportDecode = ACH:Execute(L["Table"], L["Create a readable Lua table. It can also be imported."], 4, function() Export('luaTable') end, nil, nil, 120)
+	StyleFilters.export.args.exportPlugin = ACH:Execute(L["Plugin"], L["Create Lua code for plugin authors. This format cannot be imported."], 5, function() Export('luaPlugin') end, nil, nil, 120)
 	StyleFilters.export.args.label = label
 
-	StyleFilters.export.args.text = ACH:Input('', nil, -10, 10, 'full', Export_Get, Export_Set, nil, true)
+	StyleFilters.export.args.text = ACH:Input(L["Export String"], L["Copy this string and paste it on the import page."], -10, 10, 'full', Export_Get, Export_Set, nil, true)
 	StyleFilters.export.args.text.disableButton = true
 	StyleFilters.export.args.text.focusSelect = true
 end

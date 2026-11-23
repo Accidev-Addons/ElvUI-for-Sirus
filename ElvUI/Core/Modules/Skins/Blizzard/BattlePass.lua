@@ -12,30 +12,6 @@ local function GetBattlePassFrameScale()
 	return parentScale
 end
 
-local function StyleTutorialButton(btn)
-	if not btn then
-		return
-	end
-	if btn.backdrop then
-		btn.backdrop:Hide()
-	end
-	if btn.HelpI then
-		btn.HelpI:SetAllPoints(btn)
-		btn.HelpI:SetDrawLayer("ARTWORK")
-		btn.HelpI:SetVertexColor(1, 1, 1)
-	end
-	local ht = (btn.GetHighlightTexture and btn:GetHighlightTexture()) or btn.HighlightTexture
-	if not ht then
-		ht = btn:CreateTexture(nil, "HIGHLIGHT")
-		ht:SetAllPoints(btn)
-		btn.HighlightTexture = ht
-	end
-	S:HandleButtonHighlight(ht, 1, 1, 1, 0.25)
-	if btn.SetHitRectInsets then
-		btn:SetHitRectInsets(4, 4, 4, 4)
-	end
-end
-
 local function CleanPageButton(btn)
 	if not btn then
 		return
@@ -311,7 +287,7 @@ local function HandleBattlePassFrame()
 			CleanPageButton(f.TopPanel.QuestPageButton)
 		end
 		if f.TopPanel.Tutorial then
-			StyleTutorialButton(f.TopPanel.Tutorial)
+			S:HandleSirusTutorialButton(f.TopPanel.Tutorial)
 		end
 	end
 

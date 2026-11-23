@@ -1008,6 +1008,35 @@ function S:HandleSirusStatusBar(statusBar)
 	return statusBar
 end
 
+function S:HandleSirusTutorialButton(btn)
+	if not btn then
+		return
+	end
+	if btn.backdrop then
+		btn.backdrop:Hide()
+	end
+	local icon = btn.HelpI or btn.I
+	if icon then
+		icon:SetAllPoints(btn)
+		icon:SetDrawLayer("ARTWORK")
+		icon:SetVertexColor(1, 1, 1)
+	end
+	local ht = (btn.GetHighlightTexture and btn:GetHighlightTexture()) or btn.HighlightTexture
+	if not ht then
+		ht = btn:CreateTexture(nil, "HIGHLIGHT")
+		ht:SetAllPoints(btn)
+		btn.HighlightTexture = ht
+	end
+	if btn.Ring then
+		btn.Ring:SetAlpha(0)
+		ht:SetAllPoints(btn)
+	end
+	S:HandleButtonHighlight(ht, 1, 1, 1, 0.25)
+	if btn.SetHitRectInsets then
+		btn:SetHitRectInsets(4, 4, 4, 4)
+	end
+end
+
 function S:HandleSirusCollapseToggle(button, size)
 	if not button then return end
 

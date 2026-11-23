@@ -118,7 +118,8 @@ end
 function B:SizeAndPositionBagBar()
 	if not B.BagBar then return end
 
-	local db = B.BagBar.db
+	local db = E.db.bags.bagBar
+	B.BagBar.db = db
 	local bagBarSize = db.size
 	local buttonSpacing = db.spacing
 	local growthDirection = db.growthDirection
