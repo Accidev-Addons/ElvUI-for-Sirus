@@ -151,15 +151,16 @@ function UF:Configure_Power(frame)
 		elseif frame.USE_MINI_POWERBAR then
 			power:Height(frame.POWERBAR_HEIGHT - (frame.BORDER + frame.SPACING) * 2)
 
+			local yOffset = (frame.POWERBAR_HEIGHT - frame.BORDER) / 2 + E:Scale(frame.INFO_PANEL_HEIGHT)
 			if frame.ORIENTATION == "LEFT" then
 				power:Width(frame.POWERBAR_WIDTH - frame.BORDER * 2)
-				power:Point("RIGHT", frame, "BOTTOMRIGHT", -(frame.BORDER * 2 + 4) - (frame.HAPPINESS_WIDTH or 0), (frame.POWERBAR_HEIGHT - frame.BORDER) / 2)
+				power:Point("RIGHT", frame, "BOTTOMRIGHT", -(frame.BORDER * 2 + 4) - (frame.HAPPINESS_WIDTH or 0), yOffset)
 			elseif frame.ORIENTATION == "RIGHT" then
 				power:Width(frame.POWERBAR_WIDTH - frame.BORDER*2)
-				power:Point("LEFT", frame, "BOTTOMLEFT", frame.BORDER * 2 + 4 + (frame.HAPPINESS_WIDTH or 0), (frame.POWERBAR_HEIGHT - frame.BORDER) / 2)
+				power:Point("LEFT", frame, "BOTTOMLEFT", frame.BORDER * 2 + 4 + (frame.HAPPINESS_WIDTH or 0), yOffset)
 			else
-				power:Point("LEFT", frame, "BOTTOMLEFT", frame.BORDER * 2 + 4, ((frame.POWERBAR_HEIGHT-frame.BORDER)/2))
-				power:Point("RIGHT", frame, "BOTTOMRIGHT", -(frame.BORDER * 2 + 4) - (frame.HAPPINESS_WIDTH or 0), (frame.POWERBAR_HEIGHT - frame.BORDER) / 2)
+				power:Point("LEFT", frame, "BOTTOMLEFT", frame.BORDER * 2 + 4, yOffset)
+				power:Point("RIGHT", frame, "BOTTOMRIGHT", -(frame.BORDER * 2 + 4) - (frame.HAPPINESS_WIDTH or 0), yOffset)
 			end
 
 			power:SetFrameLevel(50)
