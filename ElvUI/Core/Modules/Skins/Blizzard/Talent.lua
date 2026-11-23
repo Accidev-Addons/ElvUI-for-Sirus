@@ -440,24 +440,8 @@ local function LoadSkin()
 		specPurchaseButton:StripTextures()
 		specPurchaseButton:SetTemplate("Default")
 		specPurchaseButton:StyleButton()
-
-		hooksecurefunc("PlayerTalentFrame_UpdateSpecs", function()
-			local button = PlayerTalentFrameSpecPurchaseButton
-			local icon = button and (button.icon or button.IconTexture)
-			if not icon and button then
-				for i = 1, button:GetNumRegions() do
-					local region = select(i, button:GetRegions())
-					if region:GetObjectType() == "Texture" and region:GetTexture() then
-						icon = region
-						break
-					end
-				end
-			end
-			if icon then
-				icon:SetInside()
-				icon:SetTexCoords()
-			end
-		end)
+		specPurchaseButton:GetNormalTexture():SetInside()
+		specPurchaseButton:GetNormalTexture():SetTexCoords()
 	end
 
 	PlayerTalentFramePetInfo:StripTextures()

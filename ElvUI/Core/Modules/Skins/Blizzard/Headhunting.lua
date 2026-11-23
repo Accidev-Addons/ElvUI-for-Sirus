@@ -30,6 +30,9 @@ local function LoadSkin()
 	S:HandleSirusTabs("HeadHuntingFrameTab", 4)
 		S:HandleButton(HeadHuntingFrame.Container.AllTargetsTab, true)
 		S:HandleButton(HeadHuntingFrame.Container.YouTargetsTab, true)
+		S:HandleSelectedTexture(HeadHuntingFrame.Container.HomeTab.selectedGlow)
+		S:HandleSelectedTexture(HeadHuntingFrame.Container.AllTargetsTab.selectedGlow)
+		S:HandleSelectedTexture(HeadHuntingFrame.Container.YouTargetsTab.selectedGlow)
 	end
 
 	local function Panel_OnShow(self)

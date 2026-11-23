@@ -72,6 +72,15 @@ local function UpdateMiniGameRewards(self)
 	end
 end
 
+local function UpdateCategorySelected(texture, _, _, top)
+	texture:SetShown(top == 0.59179688)
+end
+
+local function HandleCategorySelected(texture)
+	S:HandleSelectedTexture(texture)
+	hooksecurefunc(texture, "SetTexCoord", UpdateCategorySelected)
+end
+
 local function LoadSkin()
 	if not E.private.skins.blizzard.enable or not E.private.skins.blizzard.lfd then return end
 
@@ -108,7 +117,7 @@ local function LoadSkin()
 		local button = _G["LFDParentFrameGroupButton" .. i]
 		if button then
 			button.ring:Kill()
-			button.bg:Kill()
+			HandleCategorySelected(button.bg)
 			S:HandleButton(button)
 			button.icon:Size(45)
 			button.icon:ClearAllPoints()
@@ -477,7 +486,7 @@ local function LoadSkin()
 	for i = 1, 3 do
 		local b = PVPQueueFrame["CategoryButton" .. i]
 		b.Ring:Kill()
-		b.Background:Kill()
+		HandleCategorySelected(b.Background)
 		S:HandleButton(b)
 		b.Icon:Size(45)
 		b.Icon:ClearAllPoints()
@@ -706,7 +715,9 @@ local function LoadSkin()
 		_G["PVPUI_ArenaTeamDetailsColumnHeader" .. i]:StripTextures()
 	end
 	for i = 1, 10 do
-		_G["PVPUI_ArenaTeamDetailsButton" .. i]:StripTextures()
+		local button = _G["PVPUI_ArenaTeamDetailsButton" .. i]
+		button:StyleButton()
+		S:HandleLockHighlight(button)
 	end
 
 	S:HandleButton(PVPUI_ArenaTeamDetailsAddTeamMember)
@@ -736,6 +747,7 @@ local function LoadSkin()
 				if child and not child.isSkinned then
 					if child.Shadow then child.Shadow:Kill() end
 					S:HandleButton(child)
+					child:StyleButton()
 					if child.Artwork then
 						child.Artwork:SetInside()
 						child.Artwork:SetDrawLayer("ARTWORK")
@@ -763,7 +775,7 @@ local function LoadSkin()
 	local function SkinCategoryButton(b, i)
 		if not b or b.isSkinned then return end
 		if b.Ring then b.Ring:SetAlpha(0) end
-		if b.Background then b.Background:SetAlpha(0) end
+		if b.Background then HandleCategorySelected(b.Background) end
 		S:HandleButton(b)
 		b.Icon:SetDrawLayer("ARTWORK")
 		b.Icon:Size(45)
@@ -955,6 +967,7 @@ local function LoadSkin()
 
 	if RenegadeLadderFrame then
 		SkinLadderSubPanel(RenegadeLadderFrame)
+		RenegadeLadderFrame.Container.CategoryButton1.Background:Show()
 	end
 
 	if LadderDummyFrame then
@@ -1176,7 +1189,10 @@ local function LoadSkin()
 			for button in self.gameButtonPool:EnumerateActive() do
 				if not button.isSkinned then
 					if button.Ring then button.Ring:Kill() end
-					if button.Selected then button.Selected:Kill() end
+					if button.Selected then
+						S:HandleSelectedTexture(button.Selected)
+						button.Selected:SetDrawLayer("OVERLAY")
+					end
 
 					S:HandleButton(button)
 					button:StyleButton()
@@ -1252,18 +1268,7 @@ local function LoadSkin()
 					end
 
 					if button.SelectedTexture then
-						button.SelectedTexture:SetAlpha(0)
-
-						hooksecurefunc(button.SelectedTexture, "Show", function()
-							button:SetBackdropBorderColor(unpack(E.media.rgbvaluecolor))
-						end)
-						hooksecurefunc(button.SelectedTexture, "Hide", function()
-							button:SetBackdropBorderColor(unpack(E.media.bordercolor))
-						end)
-
-						if button.SelectedTexture:IsShown() then
-							button:SetBackdropBorderColor(unpack(E.media.rgbvaluecolor))
-						end
+						S:HandleSelectedTexture(button.SelectedTexture)
 					end
 
 					S:ApplyElvUIFont(button)
@@ -1313,6 +1318,12 @@ local function LoadSkin()
 			if categorySelection.StartGroupButton then
 				categorySelection.StartGroupButton:StripTextures()
 				S:HandleButton(categorySelection.StartGroupButton)
+			end
+			if categorySelection.SubscribeButton then
+				if categorySelection.SubscribeButton.ResetButton then
+					S:HandleCloseButton(categorySelection.SubscribeButton.ResetButton)
+				end
+				S:HandleButton(categorySelection.SubscribeButton)
 			end
 		end
 
@@ -1564,6 +1575,9 @@ local function LoadSkin()
 				end
 				if button.ExpirationTime and button.ExpirationTime.pointed then
 					button.ExpirationTime.pointed:Kill()
+				end
+				if button.CancelButton then
+					S:HandleButton(button.CancelButton, nil, true)
 				end
 
 				if button.Selected then

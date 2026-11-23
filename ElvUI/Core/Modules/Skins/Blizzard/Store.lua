@@ -59,6 +59,7 @@ local function ClearPKBTChrome(b)
 	if b.SetPushedTexture then b:SetPushedTexture("") end
 	if b.SetDisabledTexture then b:SetDisabledTexture("") end
 	if b.Glow then b.Glow:Hide() end
+	if b.SelectedTexture then b.SelectedTexture:SetShown(b:GetChecked()) end
 end
 
 local function HookClearPKBTChrome(btn)
@@ -110,6 +111,8 @@ local function SkinStoreCategoryButton(btn)
 	btn._ElvCategorySkinned = true
 
 	S:HandleButton(btn, false)
+	btn.SelectedTexture = btn:CreateTexture()
+	S:HandleSelectedTexture(btn.SelectedTexture)
 	ClearPKBTChrome(btn)
 	S:ApplyElvUIFont(btn)
 	HookClearPKBTChrome(btn)
@@ -194,6 +197,8 @@ local function SkinStoreTabButton(btn)
 
 	if not btn._Elv_TabHooked then
 		btn._Elv_TabHooked = true
+		btn.SelectedTexture = btn:CreateTexture()
+		S:HandleSelectedTexture(btn.SelectedTexture)
 		if btn.SetThreeSliceAtlas then
 			hooksecurefunc(btn, "SetThreeSliceAtlas", function(self) clearChrome(self) end)
 		end
@@ -211,6 +216,8 @@ local function SkinStoreTabButton(btn)
 			S:ApplyElvUIFont(self)
 		end)
 	end
+
+	btn.SelectedTexture:SetShown(btn:IsSelected())
 end
 
 local function SkinStoreRowButton(row)

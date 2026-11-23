@@ -124,13 +124,11 @@ function S:HandleButtonHighlight(frame, r, g, b, a)
 	end
 
 	if not frame.highlightGradient then
-		local width, h = frame:GetSize()
-		local height = h * 0.95
-
 		local gradient = frame:CreateTexture(nil, 'HIGHLIGHT')
 		gradient:SetTexture(E.Media.Textures.Highlight)
-		gradient:Point('LEFT', frame)
-		gradient:Size(width, height)
+		gradient:Point('TOPLEFT', frame)
+		gradient:Point('BOTTOMLEFT', frame)
+		gradient:Width(frame:GetWidth())
 
 		frame.highlightGradient = gradient
 	end
@@ -140,6 +138,29 @@ function S:HandleButtonHighlight(frame, r, g, b, a)
 	if not b then b = 0.9 end
 
 	frame.highlightGradient:SetVertexColor(r, g, b, 0.3)
+end
+
+function S:HandleSelectedTexture(texture, alpha)
+	texture:SetTexture(E.media.blankTex)
+	texture:SetVertexColor(unpack(E.media.rgbvaluecolor))
+	texture:SetAlpha(alpha or 0.35)
+	texture:SetInside()
+	texture:SetDrawLayer('BACKGROUND')
+	texture:SetBlendMode('BLEND')
+end
+
+local function LockSelected(button) button.selectedTex:Show() end
+local function UnlockSelected(button) button.selectedTex:Hide() end
+
+function S:HandleLockHighlight(button)
+	if button.selectedTex then return end
+
+	button.selectedTex = button:CreateTexture()
+	S:HandleSelectedTexture(button.selectedTex)
+	button.selectedTex:Hide()
+
+	hooksecurefunc(button, 'LockHighlight', LockSelected)
+	hooksecurefunc(button, 'UnlockHighlight', UnlockSelected)
 end
 
 function S:HandleFrame(frame, setBackdrop, template, x1, y1, x2, y2)
@@ -819,21 +840,18 @@ do --Tab Regions
 
 	local hookedTexts = {}
 
+	function S:IsTabSelected(tab)
+		local parent = tab.GetParent and tab.GetID and PanelTemplates_GetSelectedTab and tab:GetParent()
+		return parent and PanelTemplates_GetSelectedTab(parent) == tab:GetID() or false
+	end
+
 	local function HandleTabText(text)
 		local tab = hookedTexts[text]
 		if not tab or text._elvTabTextForced then return end
 
-		local y = 0
-		if tab.GetParent and tab.GetID and PanelTemplates_GetSelectedTab then
-			local parent = tab:GetParent()
-			if parent and PanelTemplates_GetSelectedTab(parent) == tab:GetID() then
-				y = -1
-			end
-		end
-
 		text._elvTabTextForced = true
 		text:ClearAllPoints()
-		text:SetPoint('CENTER', tab, 'CENTER', 0, y)
+		text:SetPoint('CENTER', tab, 'CENTER', 0, S:IsTabSelected(tab) and -1 or 0)
 		text._elvTabTextForced = false
 	end
 
@@ -851,16 +869,37 @@ do --Tab Regions
 		return tab and (tab.isSkinned or tab.backdrop)
 	end
 
+	function S:UpdateTabSelected(tab, selected)
+		if not tab.backdrop then return end
+
+		if not tab.selectedTex then
+			if not selected then return end
+			tab.selectedTex = tab.backdrop:CreateTexture()
+			S:HandleSelectedTexture(tab.selectedTex)
+		end
+
+		tab.selectedTex:SetShown(selected)
+	end
+
 	hooksecurefunc('PanelTemplates_SelectTab', function(tab)
-		if IsSkinnedTab(tab) then ForceTabTextCenter(tab, -1) end
+		if IsSkinnedTab(tab) then
+			ForceTabTextCenter(tab, -1)
+			S:UpdateTabSelected(tab, true)
+		end
 	end)
 
 	hooksecurefunc('PanelTemplates_DeselectTab', function(tab)
-		if IsSkinnedTab(tab) then ForceTabTextCenter(tab, 0) end
+		if IsSkinnedTab(tab) then
+			ForceTabTextCenter(tab, 0)
+			S:UpdateTabSelected(tab, false)
+		end
 	end)
 
 	hooksecurefunc('PanelTemplates_SetDisabledTabState', function(tab)
-		if IsSkinnedTab(tab) then ForceTabTextCenter(tab, 0) end
+		if IsSkinnedTab(tab) then
+			ForceTabTextCenter(tab, 0)
+			S:UpdateTabSelected(tab, false)
+		end
 	end)
 
 	function S:HandleTab(tab, noBackdrop, template)
@@ -900,6 +939,8 @@ do --Tab Regions
 			tab.backdrop:Point('TOPLEFT', spacing, E.PixelMode and -1 or -3)
 			tab.backdrop:Point('BOTTOMRIGHT', -spacing, 3)
 		end
+
+		S:UpdateTabSelected(tab, S:IsTabSelected(tab))
 	end
 end
 

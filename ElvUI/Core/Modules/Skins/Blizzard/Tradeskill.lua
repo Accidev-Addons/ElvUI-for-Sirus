@@ -138,6 +138,7 @@ local function LoadSkin()
 
 		reagent:SetTemplate("Default")
 		reagent:StyleButton(nil, true)
+		reagent:Width(146)
 
 		icon.backdrop = CreateFrame("Frame", nil, reagent)
 		icon.backdrop:SetTemplate()

@@ -892,6 +892,8 @@ function S:HandleSirusTab(tab, previousTab)
 		tab.backdrop:Point("BOTTOMRIGHT", 0, 3)
 	end
 
+	S:UpdateTabSelected(tab, S:IsTabSelected(tab))
+
 	if previousTab then
 		tab:ClearAllPoints()
 		tab:Point("TOPLEFT", previousTab, "TOPRIGHT", 2, 0)
@@ -927,6 +929,10 @@ function S:HandleSirusTabFlow(tabs, onUpdate)
 	Reflow()
 end
 
+local function UpdateTabSystemSelected(tab, isSelected)
+	S:UpdateTabSelected(tab, isSelected)
+end
+
 function S:HandleSirusTabSystem(tabSystem)
 	if not tabSystem then return end
 
@@ -945,6 +951,11 @@ function S:HandleSirusTabSystem(tabSystem)
 			if tab.backdrop then
 				tab.backdrop:Point("TOPLEFT", 3, -3)
 				tab.backdrop:Point("BOTTOMRIGHT", -3, 1)
+			end
+
+			if tab.SetTabSelected then
+				hooksecurefunc(tab, "SetTabSelected", UpdateTabSystemSelected)
+				S:UpdateTabSelected(tab, tab.isSelected)
 			end
 
 			tab.isSkinned = true

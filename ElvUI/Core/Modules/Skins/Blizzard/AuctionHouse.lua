@@ -23,11 +23,7 @@ local function HandleSearchHistory(History)
 	for i = 1, #History.buttons do
 		local button = History.buttons[i]
 		button:StripTextures()
-		button.SelectedTexture:SetTexture(E.media.blankTex)
-		button.SelectedTexture:SetVertexColor(unpack(E.media.rgbvaluecolor))
-		button.SelectedTexture:SetAlpha(0.35)
-		button.SelectedTexture:SetInside()
-		button.SelectedTexture:SetDrawLayer("BACKGROUND")
+		S:HandleSelectedTexture(button.SelectedTexture)
 		button.Text:FontTemplate()
 	end
 

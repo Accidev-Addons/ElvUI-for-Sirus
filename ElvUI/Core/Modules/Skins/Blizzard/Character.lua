@@ -3040,6 +3040,9 @@ local function LoadSkin()
 				if button.HighlightRight then button.HighlightRight:Kill() end
 				if button.HighlightMiddle then button.HighlightMiddle:Kill() end
 
+				button.SelectedTexture = button:CreateTexture()
+				S:HandleSelectedTexture(button.SelectedTexture)
+
 				if button.HeaderButton then
 					if button.HeaderButton.HighlightLeft then button.HeaderButton.HighlightLeft:Kill() end
 					if button.HeaderButton.HighlightRight then button.HeaderButton.HighlightRight:Kill() end
@@ -3057,6 +3060,8 @@ local function LoadSkin()
 
 				button.isSkinned = true
 			end
+
+			button.SelectedTexture:SetShown(name and not isHeader and name == TokenFrame.selectedToken)
 
 			if isHeader and button.HeaderButton then
 				if button.HeaderButton.Left then button.HeaderButton.Left:SetTexture() end

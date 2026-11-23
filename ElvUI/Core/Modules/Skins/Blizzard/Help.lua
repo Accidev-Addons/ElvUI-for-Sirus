@@ -15,6 +15,7 @@ local function LoadSkin()
 			S:HandleButton(btn)
 			btn:StripTextures(nil, true)
 			if btn.icon then btn.icon:SetAlpha(1) end
+			if btn.selected then S:HandleSelectedTexture(btn.selected) end
 		end
 	end
 

@@ -16,6 +16,7 @@ local function SkinItemRows()
 
 			button:StripTextures()
 			S:HandleButton(button)
+			S:HandleSelectedTexture(button.Selection)
 
 			if button.Item then
 				S:HandleItemButton(button.Item)

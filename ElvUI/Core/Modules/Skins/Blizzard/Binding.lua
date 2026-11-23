@@ -18,6 +18,8 @@ S:AddCallbackForAddon("Blizzard_BindingUI", "Skin_Blizzard_BindingUI", function(
 
 		S:HandleButton(bindingKey1)
 		S:HandleButton(bindingKey2)
+		S:HandleLockHighlight(bindingKey1)
+		S:HandleLockHighlight(bindingKey2)
 		bindingKey2:SetPoint("LEFT", bindingKey1, "RIGHT", 1, 0)
 	end
 

@@ -7,10 +7,10 @@ local function LoadSkin()
 	local HardcoreFrame = HardcoreFrame
 	S:HandleSirusFrame(HardcoreFrame)
 
-	S:HandleButton(HardcoreFrame.SuggestTab, true)
-	S:HandleButton(HardcoreFrame.ChallengeListTab, true)
-	S:HandleButton(HardcoreFrame.ParticipantsTab, true)
-	S:HandleButton(HardcoreFrame.LadderTab, true)
+	for _, tab in ipairs({ HardcoreFrame.SuggestTab, HardcoreFrame.ChallengeListTab, HardcoreFrame.ParticipantsTab, HardcoreFrame.LadderTab }) do
+		S:HandleButton(tab, true)
+		S:HandleSelectedTexture(tab.selectedGlow)
+	end
 
 	S:HandleSirusTabs("HardcoreFrameTab", 4)
 
@@ -136,6 +136,7 @@ local function LoadSkin()
 						local tab = info.RightFrame["TabButton"..i]
 						if tab and not tab.isSkinned then
 							tab:StripTextures()
+							S:HandleSelectedTexture(tab.SelectedGlow)
 							tab:SetTemplate("Default", true)
 							tab:StyleButton(nil, true)
 							if tab.Text then

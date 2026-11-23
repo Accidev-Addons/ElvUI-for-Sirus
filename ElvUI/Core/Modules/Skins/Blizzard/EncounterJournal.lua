@@ -43,6 +43,8 @@ local function LoadSkin()
 	local function SkinTierTab(tab)
 		tab:StripTextures(nil, true)
 		tab.grayBox:SetAlpha(0)
+		S:HandleSelectedTexture(tab.selectedGlow)
+		E:LockMethod(tab.selectedGlow, "SetVertexColor", unpack(E.media.rgbvaluecolor))
 
 		tab:SetTemplate("Default", true)
 
@@ -164,6 +166,7 @@ local function LoadSkin()
 		while instanceButton do
 			if not instanceButton.isSkinned then
 				S:HandleButton(instanceButton)
+				instanceButton:StyleButton()
 
 				instanceButton.bgImage:SetInside()
 				instanceButton.bgImage:SetTexCoord(.08, .6, .08, .6)
@@ -200,6 +203,8 @@ local function LoadSkin()
 			if not bossButton.isSkinned then
 				S:HandleButton(bossButton)
 				bossButton:SetTemplate("Transparent")
+
+				S:HandleLockHighlight(bossButton)
 
 				bossButton.creature:ClearAllPoints()
 				bossButton.creature:Point("TOPLEFT", 1, -4)
