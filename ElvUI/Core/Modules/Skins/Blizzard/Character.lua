@@ -3112,26 +3112,22 @@ local function LoadSkin()
 			if not source then return end
 
 			local level = source:GetFrameLevel() + 10
-			flyoutFrame:SetFrameStrata("HIGH")
+			flyoutFrame:SetFrameStrata("DIALOG")
 			flyoutFrame:SetFrameLevel(level)
 			local buttons = flyoutFrame.buttonFrame
 			if buttons then
-				buttons:SetFrameStrata("HIGH")
 				buttons:SetFrameLevel(level + 1)
 				buttons:EnableMouse(true)
 			end
 			local nav = flyoutFrame.NavigationFrame
 			if nav then
-				nav:SetFrameStrata("HIGH")
 				nav:SetFrameLevel(level + 1)
 				nav:EnableMouse(true)
 				for _, button in next, { nav.PrevButton, nav.NextButton } do
-					button:SetFrameStrata("HIGH")
 					button:SetFrameLevel(level + 2)
 				end
 			end
 			for _, button in next, flyoutFrame.buttons or {} do
-				button:SetFrameStrata("HIGH")
 				button:SetFrameLevel(level + 2)
 				if button.cooldown then button.cooldown:SetFrameLevel(level + 3) end
 			end

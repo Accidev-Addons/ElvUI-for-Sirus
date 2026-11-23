@@ -302,6 +302,8 @@ function NP:StyleFilterSetChanges(frame, actions, HealthColorChanged, BorderChan
 		if frame.Health:IsShown() then frame.Health:Hide() end
 		frame.Level:SetText()
 		frame.Name:SetText()
+		if frame.Title then frame.Title:Hide() end
+		NP:SetTextLayersShown(frame, false)
 		NP:Configure_Glow(frame)
 		NP:Update_Glow(frame)
 		NP:Update_RaidIcon(frame)
@@ -387,6 +389,7 @@ function NP:StyleFilterClearChanges(frame, HealthColorChanged, BorderChanged, Fl
 	end
 	if IconOnlyChanged then
 		frame.IconOnlyChanged = nil
+		NP:SetTextLayersShown(frame, true)
 		NP:Update_IconFrame(frame)
 		if NP.db.units[frame.UnitType].iconFrame and NP.db.units[frame.UnitType].iconFrame.enable then
 			NP:Configure_IconFrame(frame)

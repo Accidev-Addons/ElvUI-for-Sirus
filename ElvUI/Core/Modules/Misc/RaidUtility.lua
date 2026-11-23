@@ -20,6 +20,7 @@ local GetRaidDifficulty = GetRaidDifficulty
 local GetRaidRosterInfo = GetRaidRosterInfo
 local GetTexCoordsByGrid = GetTexCoordsByGrid
 local InCombatLockdown = InCombatLockdown
+local IsShiftKeyDown = IsShiftKeyDown
 local SendChatMessage = SendChatMessage
 local SecureHandlerSetFrameRef = SecureHandlerSetFrameRef
 local SecureHandler_OnClick = SecureHandler_OnClick
@@ -45,6 +46,7 @@ local PANEL_HEIGHT = 152
 local PANEL_WIDTH = 250
 local BUTTON_HEIGHT = 20
 local TARGET_SIZE = 22
+local TARGET_TO_WORLD = { 7, 2, 3, 1, 5, 0, 4, 6 }
 
 local countdownInProgress = false
 
@@ -339,8 +341,12 @@ function RU:CreateTargetIcons()
 		button:SetScript('OnMouseUp', RU.TargetIcons_MouseUp)
 		button:SetScript('OnEnter', RU.TargetIcons_OnEnter)
 		button:SetScript('OnLeave', RU.TargetIcons_OnLeave)
-		button:SetScript('OnClick', RU.TargetIcons_OnClick)
+		button:HookScript('OnClick', RU.TargetIcons_OnClick)
 		button:RegisterForClicks('AnyUp')
+		local worldID = TARGET_TO_WORLD[id]
+		button:SetAttribute('shift-type*', 'macro')
+		button:SetAttribute('shift-macrotext1', worldID and format('/wm %d', worldID) or '/cwm '.._G.ALL)
+		button:SetAttribute('shift-macrotext2', worldID and format('/cwm %d', worldID) or '/cwm '.._G.ALL)
 		button:SetNormalTexture(i == num and [[Interface\Buttons\UI-GroupLoot-Pass-Up]] or [[Interface\TargetingFrame\UI-RaidTargetingIcons]])
 		button:SetID(id)
 		button:Size(TARGET_SIZE)
@@ -408,6 +414,12 @@ function RU:TargetIcons_OnEnter()
 
 	_G.GameTooltip:SetOwner(self, 'ANCHOR_BOTTOM')
 	_G.GameTooltip:SetText(L["Click to mark the target."])
+	if self:GetID() == 0 then
+		_G.GameTooltip:AddLine(L["Shift + Click to remove all ground markers."], 1, 1, 1)
+	else
+		_G.GameTooltip:AddLine(L["Shift + Left Click to place this marker on the ground."], 1, 1, 1)
+		_G.GameTooltip:AddLine(L["Shift + Right Click to remove it from the ground."], 1, 1, 1)
+	end
 	_G.GameTooltip:Show()
 end
 
@@ -427,6 +439,7 @@ function RU:TargetIcons_MouseUp()
 end
 
 function RU:TargetIcons_OnClick()
+	if IsShiftKeyDown() then return end
 	SetRaidTarget('target', self:GetID())
 end
 

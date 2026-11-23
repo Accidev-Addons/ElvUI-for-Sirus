@@ -3,7 +3,7 @@ local DT = E:GetModule('DataTexts')
 local B = E:GetModule('Bags')
 
 local select, wipe = select, wipe
-local format, strjoin = format, strjoin
+local format, strjoin, strmatch = format, strjoin, strmatch
 
 local C_Item_GetItemInfo = C_Item.GetItemInfo
 local GetAuctionItemSubClasses = GetAuctionItemSubClasses
@@ -22,13 +22,30 @@ local INVSLOT_RANGED = INVSLOT_RANGED
 local INVSLOT_AMMO = INVSLOT_AMMO
 local NOT_APPLICABLE = NOT_APPLICABLE
 local CURRENTLY_EQUIPPED = CURRENTLY_EQUIPPED
+local NONE = NONE
 
 local ItemClass_Quiver = 11
+local ItemClass_Ammo = 6
 local SOULBAG = select(2, GetAuctionItemSubClasses(3))
+local ShooterSubClass = { [2] = true, [3] = true, [18] = true }
 
 local iconString = '|T%s:24:24:0:0:64:64:4:55:4:55|t'
+local missingString = '|cffff3333'..NONE..'|r'
 local displayString = ''
 local itemName = {}
+
+local function GetAmmoEnchant()
+	local info = E.ScanTooltip:GetInventoryInfo('player', INVSLOT_RANGED)
+	E.ScanTooltip:Hide()
+
+	for i = 2, #info.lines do
+		local text = info.lines[i].leftText
+		local timeLeft = text and strmatch(text, '^.+ %((%d+ [^()]+)%)$')
+		if timeLeft then
+			return text, timeLeft
+		end
+	end
+end
 
 local waitingItemID
 local function OnEvent(self, event, ...)
@@ -61,8 +78,12 @@ local function OnEvent(self, event, ...)
 		self.text:SetFormattedText(displayString, name or 'Soul Shard', count or 0) -- Does not need localized. It gets updated.
 	else
 		local RangeItemID = GetInventoryItemID('player', INVSLOT_RANGED)
+		local subClassID, timeLeft, _
 		if RangeItemID then
-			itemEquipLoc = select(9, GetItemInfo(RangeItemID))
+			itemEquipLoc, _, _, _, _, subClassID = select(9, C_Item_GetItemInfo(RangeItemID))
+			if ShooterSubClass[subClassID] then
+				_, timeLeft = GetAmmoEnchant()
+			end
 		end
 
 		if itemEquipLoc == 'INVTYPE_THROWN' then
@@ -71,7 +92,10 @@ local function OnEvent(self, event, ...)
 			itemID, count = GetInventoryItemID('player', INVSLOT_AMMO), GetInventoryItemCount('player', INVSLOT_AMMO)
 		end
 
-		if (itemID and itemID > 0) and (count and count > 0) then
+		if timeLeft then
+			name = INVTYPE_AMMO
+			self.text:SetFormattedText(displayString, name, timeLeft)
+		elseif (itemID and itemID > 0) and (count and count > 0) then
 			if itemID then
 				name = itemName[itemID] or GetItemInfo(itemID)
 			end
@@ -79,6 +103,9 @@ local function OnEvent(self, event, ...)
 				itemName[itemID] = name
 			end
 			self.text:SetFormattedText(displayString, name or INVTYPE_AMMO, count or 0) -- Does not need localized. It gets updated.
+		elseif ShooterSubClass[subClassID] then
+			name = INVTYPE_AMMO
+			self.text:SetFormattedText(displayString, name, missingString)
 		else
 			self.text:SetFormattedText(displayString, INVTYPE_AMMO, 0)
 		end
@@ -90,6 +117,15 @@ local function OnEvent(self, event, ...)
 		if self.RegisterCustomEvent and not self:IsEventRegistered('GET_ITEM_INFO_RECEIVED') then
 			pcall(self.RegisterCustomEvent, self, 'GET_ITEM_INFO_RECEIVED')
 		end
+	end
+end
+
+local function OnUpdate(self, elapsed)
+	self.timeSinceUpdate = (self.timeSinceUpdate or 0) + elapsed
+
+	if self.timeSinceUpdate > 30 then
+		self.timeSinceUpdate = 0
+		OnEvent(self, 'ELVUI_FORCE_UPDATE')
 	end
 end
 
@@ -107,7 +143,7 @@ local function OnEnter()
 				local info = B:GetContainerItemInfo(containerIndex, slotIndex)
 				if info and info.itemID and not itemCount[info.itemID] then
 					local count = GetItemCount(info.itemID)
-					if info.itemEquipLoc == 'INVTYPE_AMMO' or info.itemEquipLoc == 'INVTYPE_THROWN' then
+					if info.itemClassID == ItemClass_Ammo or info.itemEquipLoc == 'INVTYPE_THROWN' then
 						DT.tooltip:AddDoubleLine(strjoin('', format(iconString, info.iconFileID), ' ', info.name), count, E:GetItemQualityColor(info.quality))
 						itemCount[info.itemID] = count
 						totalItemCount = totalItemCount + 1
@@ -122,13 +158,22 @@ local function OnEnter()
 
 		local itemID = GetInventoryItemID('player', 18) -- ranged weapon
 		if itemID then
-			local name, _, quality, _, _, _, _, _, equipLoc, texture = GetItemInfo(itemID)
+			local name, _, quality, _, _, _, _, _, equipLoc, texture, _, _, _, subClassID = C_Item_GetItemInfo(itemID)
 			local count = GetItemCount(itemID)
 			itemCount[itemID] = count
-			if equipLoc == 'INVTYPE_RANGED' or equipLoc == 'INVTYPE_THROWN' then
+			if equipLoc == 'INVTYPE_RANGED' or equipLoc == 'INVTYPE_RANGEDRIGHT' or equipLoc == 'INVTYPE_THROWN' then
 				DT.tooltip:AddLine(' ')
 				DT.tooltip:AddLine(CURRENTLY_EQUIPPED)
 				DT.tooltip:AddDoubleLine(strjoin('', format(iconString, texture), ' ', name), count, E:GetItemQualityColor(quality))
+
+				if ShooterSubClass[subClassID] then
+					local enchant = GetAmmoEnchant()
+					if enchant then
+						DT.tooltip:AddLine(enchant, 0, 1, 0)
+					else
+						DT.tooltip:AddDoubleLine(INVTYPE_AMMO, NONE, 1, 1, 1, 1, 0.2, 0.2)
+					end
+				end
 			end
 		end
 	end
@@ -169,7 +214,7 @@ local function OnClick(_, btn)
 end
 
 local function ApplySettings(_, hex)
-	displayString = strjoin('', '%s: ', hex, '%d|r')
+	displayString = strjoin('', '%s: ', hex, '%s|r')
 end
 
-DT:RegisterDatatext('Ammo', nil, { 'BAG_UPDATE', 'UNIT_INVENTORY_CHANGED' }, OnEvent, nil, OnClick, OnEnter, nil, L["Ammo/Shard Counter"], nil, ApplySettings)
+DT:RegisterDatatext('Ammo', nil, { 'BAG_UPDATE', 'UNIT_INVENTORY_CHANGED' }, OnEvent, OnUpdate, OnClick, OnEnter, nil, L["Ammo/Shard Counter"], nil, ApplySettings)

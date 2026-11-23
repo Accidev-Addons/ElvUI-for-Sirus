@@ -65,7 +65,7 @@ function NP:Update_Title(frame)
 	local db = units.title
 	local text, color
 
-	if unit and db and db.enable and units.name.enable and not frame.Health:IsShown() then
+	if unit and db and db.enable and units.name.enable and not frame.IconOnlyChanged and not frame.Health:IsShown() then
 		if unitType == "FRIENDLY_PLAYER" then
 			local guildName = GetGuildInfo(unit)
 			if guildName and IsGuildShown(db.visibility) then

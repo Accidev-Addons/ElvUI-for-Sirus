@@ -36,6 +36,14 @@ function NP:GetTextLayerParent(frame, layer)
 	return parent
 end
 
+function NP:SetTextLayersShown(frame, shown)
+	if not frame.CustomTextParents then return end
+
+	for _, parent in pairs(frame.CustomTextParents) do
+		parent:SetShown(shown)
+	end
+end
+
 function NP:UpdateCustomTextMouseover(frame)
 	local mouseover = frame.testUnitType or (frame.unit and UnitIsUnit and UnitIsUnit(frame.unit, "mouseover"))
 	for _, text in pairs(frame.customTexts or {}) do
