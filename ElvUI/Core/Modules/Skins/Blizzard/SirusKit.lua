@@ -529,6 +529,14 @@ local function LoadTablets()
 	end
 end
 
+local ETHNOGRAPHY_SPELL = 382308
+local function HasEthnography()
+	local name = GetSpellInfo(ETHNOGRAPHY_SPELL)
+	for i = 1, GetNumSkillLines() do
+		if GetSkillLineInfo(i) == name then return true end
+	end
+end
+
 local function GetTabletIcon(name)
 	LoadTablets()
 	return tabletIcons[name]
@@ -1141,7 +1149,7 @@ function S:HandleSirusEquipmentSocketInfo(slotFrame, inventorySlot, anchor, slot
 	local showForUnit = unit == "player" or db.showOnInspect
 	local showGems, showEnchants = db.showGems, db.showEnchants and showForUnit
 	local iconStyle = db.enchantStyle == "ICON"
-	local showTablets = db.showTablets and showForUnit
+	local showTablets = db.showTablets and showForUnit and HasEthnography()
 	local info = slotFrame.sirusSocketInfo
 	if not showGems and not showEnchants and not showTablets then
 		if info then info:Hide() end
