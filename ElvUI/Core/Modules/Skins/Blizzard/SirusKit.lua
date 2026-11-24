@@ -488,7 +488,188 @@ function Enchant_OnEnter(self, retry)
 	GameTooltip:Show()
 end
 
+local TABLET_SLOTS = { ShoulderSlot = 1, ChestSlot = 2, WristSlot = 3, LegsSlot = 4, NeckSlot = 5 }
+local TABLET_SPECS = {
+	WARRIOR = { "arms", "fury", "protection" },
+	PALADIN = { "holy", "protection", "retribution" },
+	HUNTER = { "beastmastery", "marksman", "survival" },
+	ROGUE = { "assasinate", "combat", "subtlety" },
+	PRIEST = { "discipline", "holy", "shadow" },
+	DEATHKNIGHT = { "blood", "frost", "unholy" },
+	SHAMAN = { "elemental", "enhancement", "restoration" },
+	MAGE = { "arcane", "fire", "frost" },
+	WARLOCK = { "affliction", "demonology", "destruction" },
+	DRUID = { "moonkin", "feral", "restoration" },
+}
+local TABLET_RARITY = { ["Необычное"] = 2, ["Редкое"] = 3, ["Эпическое"] = 4 }
+local TABLET_SPELL_FIRST, TABLET_SPELL_LAST = 381000, 382700
+local tabletIcons, tabletCatalog, tabletByName, emptyTabletIcon
+local function LoadTablets()
+	if tabletIcons then return end
+	tabletIcons, tabletCatalog, tabletByName = {}, {}, {}
+	for spellID = TABLET_SPELL_FIRST, TABLET_SPELL_LAST do
+		local spellName, rank, icon = GetSpellInfo(spellID)
+		local class, spec, slot
+		if icon then class, spec, slot = strmatch(lower(icon), "_tablets_(%a+)_(%a+)_(%d)") end
+		if class then
+			local key = class.."_"..spec.."_"..slot
+			local name = gsub(spellName, "%s*%b()$", "")
+			tabletIcons[name] = icon
+			emptyTabletIcon = emptyTabletIcon or icon
+			if rank and rank ~= "" then
+				local entry = tabletCatalog[key]
+				if not entry then
+					entry = { name = name, icon = icon, spells = {} }
+					tabletCatalog[key] = entry
+					tabletByName[name] = entry
+				end
+				entry.spells[#entry.spells + 1] = spellID
+			end
+		end
+	end
+end
+
+local function GetTabletIcon(name)
+	LoadTablets()
+	return tabletIcons[name]
+end
+
+local function GetTabletSuggestion(unit, slotName)
+	local slot = TABLET_SLOTS[slotName]
+	local _, classFile = UnitClass(unit)
+	local specs = slot and classFile and TABLET_SPECS[classFile]
+	if not specs then return end
+
+	local best, bestPoints = nil, 0
+	for tab = 1, 3 do
+		local _, _, points = GetTalentTabInfo(tab, unit ~= "player")
+		if points and points > bestPoints then best, bestPoints = tab, points end
+	end
+	if not best then return nil, true end
+
+	LoadTablets()
+	return tabletCatalog[lower(classFile).."_"..specs[best].."_"..slot]
+end
+
+local function GetTabletRanks(entry)
+	if entry.ranks then return entry.ranks end
+
+	local ranks, tooltip = {}, E.ScanTooltip
+	for _, spellID in ipairs(entry.spells) do
+		tooltip:SetOwner(UIParent, "ANCHOR_NONE")
+		tooltip:SetHyperlink("spell:"..spellID)
+		local lines, recipe = {}, false
+		for line = 2, tooltip:NumLines() do
+			local text = _G["ElvUI_ScanTooltipTextLeft"..line]:GetText()
+			if text and find(text, "Реагенты", 1, true) then recipe = true break end
+			if text and text ~= "" then lines[#lines + 1] = text end
+		end
+		tooltip:Hide()
+		if not recipe and #lines > 0 then
+			ranks[#ranks + 1] = { rank = select(2, GetSpellInfo(spellID)), text = table.concat(lines, "\n") }
+		end
+	end
+
+	if #ranks > 0 then entry.ranks = ranks end
+	return ranks
+end
+
+local function GetTabletDescription(entry)
+	local ranks = GetTabletRanks(entry)
+	return ranks[#ranks] and ranks[#ranks].text or ""
+end
+
+local function RarityHex(rank)
+	local r, g, b = E:GetItemQualityColor(TABLET_RARITY[rank] or 1)
+	return string.format("|cff%02x%02x%02x", r * 255, g * 255, b * 255)
+end
+
+local function AddTabletRarities(entry)
+	local ranks = GetTabletRanks(entry)
+	if #ranks == 0 then return end
+
+	local numbers, legend = {}, {}
+	for index, rank in ipairs(ranks) do
+		local list = {}
+		for number in string.gmatch(StripColor(rank.text), "%d+[%.,]?%d*") do list[#list + 1] = number end
+		numbers[index] = list
+		legend[index] = RarityHex(rank.rank)..rank.rank.."|r"
+	end
+
+	local position = 0
+	local text = gsub(StripColor(ranks[#ranks].text), "%d+[%.,]?%d*", function(number)
+		position = position + 1
+		local same = true
+		for index = 1, #numbers do
+			if numbers[index][position] ~= number then same = false end
+		end
+		if same then return number end
+
+		local values = {}
+		for index, rank in ipairs(ranks) do
+			values[index] = RarityHex(rank.rank)..(numbers[index][position] or "?").."|r"
+		end
+		return table.concat(values, " / ")
+	end)
+
+	GameTooltip:AddLine(table.concat(legend, " / "), 1, 1, 1)
+	GameTooltip:AddLine(text, 1, 1, 1, true)
+end
+
+local function Tablet_OnEnter(self)
+	GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+	local entry = self.entry or self.suggestion
+	if entry and IsShiftKeyDown() then
+		GameTooltip:SetText(entry.name, 1, 1, 1)
+		AddTabletRarities(entry)
+	elseif self.title then
+		GameTooltip:SetText(self.title, 1, 1, 1)
+		if self.text ~= "" then
+			GameTooltip:AddLine(self.text, 1, 1, 1, true)
+		end
+	elseif self.suggestion then
+		GameTooltip:SetText(self.suggestion.name, .6, .6, .6)
+		local description = GetTabletDescription(self.suggestion)
+		if description ~= "" then
+			GameTooltip:AddLine(description, .6, .6, .6, true)
+		end
+		GameTooltip:AddLine(L["No ethnography"], 1, .2, .2)
+	else
+		GameTooltip:SetText(L["Ethnography"], 1, 1, 1)
+		GameTooltip:AddLine(L["No ethnography"], 1, .2, .2)
+	end
+	if entry and not IsShiftKeyDown() then
+		GameTooltip:AddLine(L["<Shift: compare rarities>"], .5, .5, .5)
+	end
+	GameTooltip:Show()
+	self:RegisterEvent("MODIFIER_STATE_CHANGED")
+end
+
+local function Tablet_OnEvent(self)
+	if GameTooltip:IsOwned(self) then
+		Tablet_OnEnter(self)
+	else
+		self:UnregisterEvent("MODIFIER_STATE_CHANGED")
+	end
+end
+
+local function Tablet_OnLeave(self)
+	self:UnregisterEvent("MODIFIER_STATE_CHANGED")
+	GameTooltip_Hide()
+end
+
 local function ScanEnchantLine(state, line, plain)
+	if not state.tabletIcon then
+		local name = strmatch(plain, "^(.-) %(")
+		local icon = name and GetTabletIcon(name)
+		if icon then
+			state.tabletIcon, state.tabletName = icon, name
+			state.tabletTitle, state.tabletText = strmatch(line:GetText(), "^([^\n]*)\n?(.*)$")
+			state.tabletText = gsub(gsub(state.tabletText, "|r$", ""), "%s*|T[^|]+|t%s*$", "")
+			return
+		end
+	end
+
 	local low = utf8lower(plain)
 	if not state.illusion and find(low, "^иллюзия:") then
 		state.illusion = plain
@@ -641,7 +822,21 @@ local function CreateEnchantButton(info)
 	return button
 end
 
-local INFO_ICONS = { { "enchantIcon", "enchant" } }
+local function CreateTabletButton(info)
+	local button = CreateFrame("Button", nil, info)
+	button:SetTemplate("Default", nil, nil, true)
+	button:SetScript("OnEnter", Tablet_OnEnter)
+	button:SetScript("OnEvent", Tablet_OnEvent)
+	button:SetScript("OnLeave", Tablet_OnLeave)
+	button:Hide()
+
+	button.Icon = button:CreateTexture(nil, "ARTWORK")
+	button.Icon:SetTexCoord(unpack(E.TexCoords))
+
+	return button
+end
+
+local INFO_ICONS = { { "enchantIcon", "enchant" }, { "tablet", "tablet" } }
 local WEAPON_ROW_ALIGN = { MainHandSlot = "RIGHT", SecondaryHandSlot = "", RangedSlot = "LEFT" }
 
 local function CountInfoIcons(info)
@@ -785,6 +980,7 @@ local function CreateSocketInfo(slotFrame, anchor, slotName)
 	info.enchant:SetWordWrap(false)
 	info.enchant:SetWidth(220)
 	info.enchantIcon = CreateEnchantButton(info)
+	info.tablet = CreateTabletButton(info)
 
 	for index = 1, MAX_DISPLAYED_SOCKETS do
 		info.slots[index] = CreateSocket(info, index)
@@ -841,7 +1037,9 @@ local function UpdateSocketInfoStyle(info, db)
 		info.layoutSize ~= db.socketSize or info.layoutPosition ~= db.socketPosition or
 		info.layoutX ~= db.socketXOffset or info.layoutY ~= db.socketYOffset or
 		info.layoutEnchantPosition ~= db.enchantPosition or
-		info.layoutEnchantX ~= db.enchantXOffset or info.layoutEnchantY ~= db.enchantYOffset then
+		info.layoutEnchantX ~= db.enchantXOffset or info.layoutEnchantY ~= db.enchantYOffset or
+		info.layoutTabletPosition ~= db.tabletPosition or
+		info.layoutTabletX ~= db.tabletXOffset or info.layoutTabletY ~= db.tabletYOffset then
 		ApplySocketInfoLayout(info)
 		info.layoutPixel, info.layoutLeft, info.layoutBottom = pixel, left, bottom
 		info.layoutSockets, info.layoutWidth, info.layoutIcons = info.numSockets, width, icons
@@ -849,6 +1047,8 @@ local function UpdateSocketInfoStyle(info, db)
 		info.layoutX, info.layoutY = db.socketXOffset, db.socketYOffset
 		info.layoutEnchantPosition = db.enchantPosition
 		info.layoutEnchantX, info.layoutEnchantY = db.enchantXOffset, db.enchantYOffset
+		info.layoutTabletPosition = db.tabletPosition
+		info.layoutTabletX, info.layoutTabletY = db.tabletXOffset, db.tabletYOffset
 	end
 
 	local font = LSM:Fetch("font", db.enchantFont or "Expressway")
@@ -896,11 +1096,11 @@ function S:ResetSocketRetry(key)
 	socketRetries[key] = nil
 end
 
-local function ScanSocketInfo(unit, inventorySlot, slotName, showGems, showEnchants, iconStyle)
+local function ScanSocketInfo(unit, inventorySlot, slotName, showGems, showEnchants, iconStyle, showTablets)
 	local empty = {}
 	local enchantText
 	local icon = {}
-	local scanIcons = showEnchants and iconStyle
+	local scanIcons = (showEnchants and iconStyle) or showTablets
 
 	local tooltip = E.ScanTooltip
 	tooltip:SetOwner(UIParent, "ANCHOR_NONE")
@@ -941,8 +1141,9 @@ function S:HandleSirusEquipmentSocketInfo(slotFrame, inventorySlot, anchor, slot
 	local showForUnit = unit == "player" or db.showOnInspect
 	local showGems, showEnchants = db.showGems, db.showEnchants and showForUnit
 	local iconStyle = db.enchantStyle == "ICON"
+	local showTablets = db.showTablets and showForUnit
 	local info = slotFrame.sirusSocketInfo
-	if not showGems and not showEnchants then
+	if not showGems and not showEnchants and not showTablets then
 		if info then info:Hide() end
 		return
 	end
@@ -955,8 +1156,8 @@ function S:HandleSirusEquipmentSocketInfo(slotFrame, inventorySlot, anchor, slot
 	local numSockets, enchantText, scan = 0
 	local hasUnknown = link and not GetItemInfo(link)
 
-	if link and (showGems or showEnchants) then
-		scan = ScanSocketInfo(unit, inventorySlot, slotName, showGems, showEnchants, iconStyle)
+	if link and (showGems or showEnchants or showTablets) then
+		scan = ScanSocketInfo(unit, inventorySlot, slotName, showGems, showEnchants, iconStyle, showTablets)
 
 		if showGems then
 			local nextEmpty = 1
@@ -1010,6 +1211,29 @@ function S:HandleSirusEquipmentSocketInfo(slotFrame, inventorySlot, anchor, slot
 		end
 	end
 	enchantIcon:SetShown(showEnchantIcon)
+
+	local tablet = info.tablet
+	local iconScan = scan and scan.icon or {}
+	local showTablet = showTablets and link and (iconScan.tabletIcon or TABLET_SLOTS[slotName]) and true or false
+	if showTablet then
+		if iconScan.tabletIcon then
+			tablet.Icon:SetTexture(iconScan.tabletIcon)
+			tablet.title, tablet.text, tablet.suggestion = iconScan.tabletTitle, iconScan.tabletText, nil
+			tablet.entry = tabletByName[iconScan.tabletName]
+			tablet:SetBackdropBorderColor(unpack(E.media.bordercolor))
+		else
+			LoadTablets()
+			local suggestion, pending = GetTabletSuggestion(unit, slotName)
+			if pending and unit ~= "player" then hasUnknown = true end
+			tablet.Icon:SetTexture(suggestion and suggestion.icon or emptyTabletIcon)
+			tablet.title, tablet.text, tablet.suggestion = nil, nil, suggestion
+			tablet.entry = nil
+			tablet:SetBackdropBorderColor(1, 0, 0)
+		end
+		tablet.Icon:SetDesaturated(not iconScan.tabletIcon)
+		tablet.Icon:SetAlpha(iconScan.tabletIcon and 1 or .6)
+	end
+	tablet:SetShown(showTablet)
 
 	local showIcons = CountInfoIcons(info) > 0
 	info.iconsInline = showIcons and (numSockets == 0 or (info.anchor == "TOP" and numSockets < MAX_DISPLAYED_SOCKETS))
