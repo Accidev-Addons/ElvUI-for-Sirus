@@ -82,6 +82,7 @@ end
 
 E.RaidIconStyles = {
 	elvui = { title = 'ElvUI', texture = E.TexturePath..'RaidIcons' },
+	flat = { title = 'Flat', texture = E.TexturePath..'RaidIconsFlat' },
 	blizzard = { title = 'Blizzard', texture = [[Interface\TargetingFrame\UI-RaidTargetingIcons]] },
 }
 
