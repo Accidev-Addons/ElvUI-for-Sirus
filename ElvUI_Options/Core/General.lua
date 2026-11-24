@@ -359,6 +359,7 @@ blizz.characterInfo.args.gemsAndEnchants = ACH:Group(L["Gems and Enchants"], nil
 blizz.characterInfo.args.gemsAndEnchants.args.showGems = ACH:Toggle(L["Display Gems"], nil, 1)
 blizz.characterInfo.args.gemsAndEnchants.args.showEnchants = ACH:Toggle(L["Display Enchants"], nil, 2)
 blizz.characterInfo.args.gemsAndEnchants.args.highlightBlackDiamonds = ACH:Toggle(L["Highlight Black Diamonds"], L["Highlight items socketed with a black diamond without changing their quality borders."], 3)
+blizz.characterInfo.args.gemsAndEnchants.args.showOnInspect = ACH:Toggle(L["Show on Inspect"], nil, 5)
 blizz.characterInfo.args.gemsAndEnchants.inline = true
 
 blizz.characterInfo.args.socketGroup = ACH:Group(L["Sockets"], nil, 2, nil, CharInfoGet, CharInfoSet, CharInfoDisabled("showGems"))
@@ -369,12 +370,14 @@ blizz.characterInfo.args.socketGroup.args.socketYOffset = ACH:Range(L["Y-Offset"
 blizz.characterInfo.args.socketGroup.inline = true
 
 blizz.characterInfo.args.enchantGroup = ACH:Group(L["Enchant Text"], nil, 3, nil, CharInfoGet, CharInfoSet, CharInfoDisabled("showEnchants"))
+local function EnchantIconStyle() return E.db.general.characterInfo.enchantStyle == "ICON" end
+blizz.characterInfo.args.enchantGroup.args.enchantStyle = ACH:Select(L["Display Style"], nil, 0, { TEXT = L["Text"], ICON = L["Icon"] })
 blizz.characterInfo.args.enchantGroup.args.enchantPosition = ACH:Select(L["Position"], nil, 1, characterInfoPositions)
 blizz.characterInfo.args.enchantGroup.args.enchantXOffset = ACH:Range(L["X-Offset"], nil, 2, { min = -120, max = 120, step = 1 })
 blizz.characterInfo.args.enchantGroup.args.enchantYOffset = ACH:Range(L["Y-Offset"], nil, 3, { min = -120, max = 120, step = 1 })
-blizz.characterInfo.args.enchantGroup.args.enchantFont = ACH:SharedMediaFont(L["Font"], nil, 4)
-blizz.characterInfo.args.enchantGroup.args.enchantFontSize = ACH:Range(L["Font Size"], nil, 5, C.Values.FontSize)
-blizz.characterInfo.args.enchantGroup.args.enchantFontOutline = ACH:FontFlags(L["Font Outline"], nil, 6)
+blizz.characterInfo.args.enchantGroup.args.enchantFont = ACH:SharedMediaFont(L["Font"], nil, 4, nil, nil, nil, nil, EnchantIconStyle)
+blizz.characterInfo.args.enchantGroup.args.enchantFontSize = ACH:Range(L["Font Size"], nil, 5, C.Values.FontSize, nil, nil, nil, nil, EnchantIconStyle)
+blizz.characterInfo.args.enchantGroup.args.enchantFontOutline = ACH:FontFlags(L["Font Outline"], nil, 6, nil, nil, nil, nil, EnchantIconStyle)
 blizz.characterInfo.args.enchantGroup.inline = true
 
 blizz.characterInfo.args.itemLevelGroup = ACH:Group(L["Item Level"], nil, 4, nil, CharInfoGet, CharInfoSet)

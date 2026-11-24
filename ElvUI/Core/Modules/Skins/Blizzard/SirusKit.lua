@@ -357,6 +357,177 @@ local function MatchEnchant(line, text, plain, slotName)
 	end
 end
 
+local ALWAYS_ENCHANTABLE = { HeadSlot = true, NeckSlot = true, ShoulderSlot = true, BackSlot = true, ChestSlot = true, WristSlot = true, HandsSlot = true, LegsSlot = true, FeetSlot = true, MainHandSlot = true }
+local ENCHANTABLE_OFFHAND = { INVTYPE_WEAPON = true, INVTYPE_WEAPONOFFHAND = true, INVTYPE_SHIELD = true, INVTYPE_2HWEAPON = true }
+
+local function IsEnchanter()
+	for index = 1, GetNumSkillLines() do
+		if GetSkillLineInfo(index) == "Наложение чар" then return true end
+	end
+end
+
+local function CanEnchant(slotName, link, unit)
+	if ALWAYS_ENCHANTABLE[slotName] then return true end
+	if slotName == "SecondaryHandSlot" then return ENCHANTABLE_OFFHAND[select(9, GetItemInfo(link))] end
+	if slotName == "Finger0Slot" or slotName == "Finger1Slot" then return unit == "player" and IsEnchanter() end
+end
+
+local SCROLL_SLOT_WORDS = { MainHandSlot = "оружи", SecondaryHandSlot = "оружи", WristSlot = "наруч", HandsSlot = "перчат", BackSlot = "плащ", ChestSlot = "нагрудн", FeetSlot = "обув" }
+
+local enchantScrolls
+local function FindEnchantScroll(name, slotName)
+	if not enchantScrolls then
+		enchantScrolls = {}
+		for itemID, data in pairs(_G.ItemsCache or {}) do
+			if data[6] == 0 and data[7] == 6 and type(data[2]) == "string" then
+				enchantScrolls[#enchantScrolls + 1] = { itemID, utf8lower(data[2]) }
+			end
+		end
+	end
+
+	local exact = utf8lower(name)
+	local tail, word, anyID = " - "..exact, SCROLL_SLOT_WORDS[slotName]
+	for _, scroll in ipairs(enchantScrolls) do
+		if scroll[2] == exact then return scroll[1] end
+		if sub(scroll[2], -#tail) == tail then
+			if word and find(scroll[2], word, 1, true) then return scroll[1] end
+			anyID = anyID or scroll[1]
+		end
+	end
+	return anyID
+end
+
+local RUNE_SPELLS = { 53344, 53343, 53341, 53331, 53342, 53323, 54447, 54446, 62158, 70164 }
+local function GetRuneStats(name)
+	for _, spellID in ipairs(RUNE_SPELLS) do
+		if GetSpellInfo(spellID) == name then
+			local tooltip = E.ScanTooltip
+			tooltip:SetOwner(UIParent, "ANCHOR_NONE")
+			tooltip:SetHyperlink("spell:"..spellID)
+
+			local stats
+			for index = 1, tooltip:NumLines() do
+				local text = _G["ElvUI_ScanTooltipTextLeft"..index]:GetText() or ""
+				if find(text, "^Гравировка") then
+					stats = strmatch(text, "^(.-%.)%s") or text
+					break
+				end
+			end
+
+			tooltip:Hide()
+			return stats
+		end
+	end
+end
+
+local function GetScrollStats(itemID)
+	local tooltip = E.ScanTooltip
+	tooltip:SetOwner(UIParent, "ANCHOR_NONE")
+	tooltip:SetHyperlink("item:"..itemID)
+
+	local stats
+	for index = 1, tooltip:NumLines() do
+		local text = _G["ElvUI_ScanTooltipTextLeft"..index]:GetText() or ""
+		local use = strmatch(text, "^Использование:%s*(.-%.)%s") or strmatch(text, "^Использование:%s*(.+)$")
+		if use then
+			local clause = strmatch(use, "^[^,]-, (увеличивающ.-)%.")
+			stats = clause and gsub(clause, "^увеличивающ%S+", "Увеличивает") or use
+			break
+		end
+	end
+
+	tooltip:Hide()
+	return stats
+end
+
+local Enchant_OnEnter
+
+local function Enchant_OnUpdate(self, elapsed)
+	self.retryWait = self.retryWait - elapsed
+	if self.retryWait > 0 then return end
+	self.retryWait, self.retries = .3, self.retries - 1
+	if self.retries < 0 or not GameTooltip:IsOwned(self) then
+		self:SetScript("OnUpdate", nil)
+		return
+	end
+	Enchant_OnEnter(self, true)
+end
+
+function Enchant_OnEnter(self, retry)
+	GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+
+	local text = self.enchantText
+	if text and not find(text, "%d") then
+		local name = gsub(text, "^Зачарование:%s*", "")
+		local scrollID = FindEnchantScroll(name, self.slotName)
+		local stats = scrollID and GetScrollStats(scrollID)
+		if scrollID and not stats then
+			if not retry then
+				self.retryWait, self.retries = .3, 10
+				self:SetScript("OnUpdate", Enchant_OnUpdate)
+			end
+		elseif retry then
+			self:SetScript("OnUpdate", nil)
+		end
+		text = stats or GetRuneStats(name) or text
+	end
+
+	if self.illusionText then
+		GameTooltip:SetText(self.illusionText, 1, .5, 1, 1, true)
+		if text then
+			GameTooltip:AddLine(text, .1, 1, .1, true)
+		end
+	elseif text then
+		GameTooltip:SetText(text, .1, 1, .1, 1, true)
+	end
+
+	if not text then
+		GameTooltip:AddLine(L["Not enchanted"], 1, .2, .2)
+	end
+
+	GameTooltip:Show()
+end
+
+local function ScanEnchantLine(state, line, plain)
+	local low = utf8lower(plain)
+	if not state.illusion and find(low, "^иллюзия:") then
+		state.illusion = plain
+	elseif not state.enchant and find(low, "^зачарование:") then
+		state.enchant = plain
+	end
+end
+
+local ENCHANT_PROBE_LINK = "item:6948:"
+local enchantLines = {}
+local function GetEnchantLine(enchantID)
+	local cached = enchantLines[enchantID]
+	if cached ~= nil then return cached or nil end
+
+	local tooltip = E.ScanTooltip
+	local base = {}
+	tooltip:SetOwner(UIParent, "ANCHOR_NONE")
+	tooltip:SetHyperlink(ENCHANT_PROBE_LINK.."0")
+	for index = 1, tooltip:NumLines() do
+		local text = _G["ElvUI_ScanTooltipTextLeft"..index]:GetText()
+		if text then base[text] = true end
+	end
+
+	tooltip:SetOwner(UIParent, "ANCHOR_NONE")
+	tooltip:SetHyperlink(ENCHANT_PROBE_LINK..enchantID)
+	local numLines, line = tooltip:NumLines()
+	for index = 1, numLines do
+		local text = _G["ElvUI_ScanTooltipTextLeft"..index]:GetText()
+		if text and not base[text] then
+			line = StripColor(text)
+			break
+		end
+	end
+	tooltip:Hide()
+
+	if numLines > 0 then enchantLines[enchantID] = line or false end
+	return line
+end
+
 local function Socket_OnEnter(self)
 	GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
 
@@ -455,32 +626,83 @@ local function CreateSocket(info, index)
 	return socket
 end
 
+local function CreateEnchantButton(info)
+	local button = CreateFrame("Button", nil, info)
+	button:SetTemplate("Default", nil, nil, true)
+	button:SetScript("OnEnter", Enchant_OnEnter)
+	button:SetScript("OnLeave", GameTooltip_Hide)
+	button.slotName = info.slotName
+	button:Hide()
+
+	button.Icon = button:CreateTexture(nil, "ARTWORK")
+	button.Icon:SetTexture("Interface\\Icons\\INV_Scroll_03")
+	button.Icon:SetTexCoord(unpack(E.TexCoords))
+
+	return button
+end
+
+local INFO_ICONS = { { "enchantIcon", "enchant" } }
+local WEAPON_ROW_ALIGN = { MainHandSlot = "RIGHT", SecondaryHandSlot = "", RangedSlot = "LEFT" }
+
+local function CountInfoIcons(info)
+	local count = 0
+	for _, entry in ipairs(INFO_ICONS) do
+		if info[entry[1]]:IsShown() then count = count + 1 end
+	end
+	return count
+end
+
 local function PlaceSocketRow(info, numSockets)
 	local slotFrame, anchor, row = info:GetParent(), info.anchor, info.socketRow
 	local db = E.db.general.characterInfo
 	local position = db.socketPosition or "default"
+	local weaponAlign = position == "default" and WEAPON_ROW_ALIGN[info.slotName]
 	if position == "default" then position = "BOTTOMLEFT" end
 	local x, y = db.socketXOffset or 0, db.socketYOffset or 0
+	local numIcons = CountInfoIcons(info)
+	local lead = info.iconsInline and numIcons or 0
 
 	local size, step, pixel = GetSocketSize(row)
 
 	row:ClearAllPoints()
-	row:SetSize(math.max(numSockets, 1) * step - pixel, size)
+	row:SetSize(math.max(numSockets + lead, 1) * step - pixel, size)
+
+	local side, sign = "LEFT", 1
+	if anchor == "LEFT" then side, sign = "RIGHT", -1 end
 
 	for index, socket in ipairs(info.slots) do
-		local offset = (index - 1) * step
 		socket:SetSize(size, size)
 		socket.Icon:SetInside(socket, pixel, pixel, nil, true)
 		socket:ClearAllPoints()
-		if anchor == "LEFT" then
-			socket:SetPoint("RIGHT", row, "RIGHT", -offset, 0)
+		socket:SetPoint(side, row, side, sign * (index - 1 + lead) * step, 0)
+	end
+
+	local lineY, iconIndex = 0, 0
+	if not info.iconsInline then
+		if anchor == "TOP" then
+			iconIndex = info.slotName == "RangedSlot" and numSockets or -numIcons
 		else
-			socket:SetPoint("LEFT", row, "LEFT", offset, 0)
+			lineY = step
+		end
+	end
+	for _, entry in ipairs(INFO_ICONS) do
+		local icon, key = info[entry[1]], entry[2]
+		icon:SetSize(size, size)
+		icon.Icon:SetInside(icon, pixel, pixel, nil, true)
+		icon:ClearAllPoints()
+		if icon:IsShown() then
+			local iconPosition, iconX, iconY = db[key.."Position"] or "default", db[key.."XOffset"] or 0, db[key.."YOffset"] or 0
+			if iconPosition ~= "default" then
+				icon:SetPoint(iconPosition, slotFrame, iconX, iconY)
+			else
+				icon:SetPoint(side, row, side, iconX + sign * iconIndex * step, lineY + iconY)
+				iconIndex = iconIndex + 1
+			end
 		end
 	end
 
 	if anchor == "TOP" then
-		local h = string.find(position, "LEFT") and "LEFT" or string.find(position, "RIGHT") and "RIGHT" or ""
+		local h = weaponAlign or string.find(position, "LEFT") and "LEFT" or string.find(position, "RIGHT") and "RIGHT" or ""
 		SetSocketRowPoint(row, "TOP"..h, slotFrame, "BOTTOM"..h, x, -pixel + y)
 	else
 		local v = string.find(position, "TOP") and "TOP" or string.find(position, "BOTTOM") and "BOTTOM" or ""
@@ -562,6 +784,7 @@ local function CreateSocketInfo(slotFrame, anchor, slotName)
 	info.enchant:SetTextColor(0.1, 1, 0.1)
 	info.enchant:SetWordWrap(false)
 	info.enchant:SetWidth(220)
+	info.enchantIcon = CreateEnchantButton(info)
 
 	for index = 1, MAX_DISPLAYED_SOCKETS do
 		info.slots[index] = CreateSocket(info, index)
@@ -612,15 +835,16 @@ local function UpdateSocketInfoStyle(info, db)
 	local parent = info:GetParent()
 	local width, left, bottom = parent:GetWidth(), parent:GetLeft(), parent:GetBottom()
 	local pixel = E:PixelSize(1, info.socketRow)
+	local icons = CountInfoIcons(info) * 2 + (info.iconsInline and 1 or 0)
 	if info.layoutPixel ~= pixel or info.layoutLeft ~= left or info.layoutBottom ~= bottom or
-		info.layoutSockets ~= info.numSockets or info.layoutWidth ~= width or
+		info.layoutSockets ~= info.numSockets or info.layoutWidth ~= width or info.layoutIcons ~= icons or
 		info.layoutSize ~= db.socketSize or info.layoutPosition ~= db.socketPosition or
 		info.layoutX ~= db.socketXOffset or info.layoutY ~= db.socketYOffset or
 		info.layoutEnchantPosition ~= db.enchantPosition or
 		info.layoutEnchantX ~= db.enchantXOffset or info.layoutEnchantY ~= db.enchantYOffset then
 		ApplySocketInfoLayout(info)
 		info.layoutPixel, info.layoutLeft, info.layoutBottom = pixel, left, bottom
-		info.layoutSockets, info.layoutWidth = info.numSockets, width
+		info.layoutSockets, info.layoutWidth, info.layoutIcons = info.numSockets, width, icons
 		info.layoutSize, info.layoutPosition = db.socketSize, db.socketPosition
 		info.layoutX, info.layoutY = db.socketXOffset, db.socketYOffset
 		info.layoutEnchantPosition = db.enchantPosition
@@ -672,9 +896,11 @@ function S:ResetSocketRetry(key)
 	socketRetries[key] = nil
 end
 
-local function ScanSocketInfo(unit, inventorySlot, slotName, showGems, showEnchants)
+local function ScanSocketInfo(unit, inventorySlot, slotName, showGems, showEnchants, iconStyle)
 	local empty = {}
 	local enchantText
+	local icon = {}
+	local scanIcons = showEnchants and iconStyle
 
 	local tooltip = E.ScanTooltip
 	tooltip:SetOwner(UIParent, "ANCHOR_NONE")
@@ -690,16 +916,21 @@ local function ScanSocketInfo(unit, inventorySlot, slotName, showGems, showEncha
 			local socketColor = showGems and SOCKET_COLORS[normalized]
 			if socketColor then
 				empty[#empty + 1] = { name = plain, color = socketColor }
-			elseif showEnchants and not enchantText then
-				enchantText = MatchEnchant(line, plain, normalized, slotName)
+			else
+				if scanIcons then
+					ScanEnchantLine(icon, line, plain)
+				end
+				if showEnchants and not iconStyle and not enchantText then
+					enchantText = MatchEnchant(line, plain, normalized, slotName)
+				end
 			end
 		end
-		if not showGems and enchantText then break end
+		if not showGems and not scanIcons and enchantText then break end
 	end
 
 	tooltip:Hide()
 
-	return { empty = empty, enchant = enchantText }
+	return { empty = empty, enchant = enchantText, icon = icon }
 end
 
 function S:HandleSirusEquipmentSocketInfo(slotFrame, inventorySlot, anchor, slotName, unit)
@@ -707,7 +938,9 @@ function S:HandleSirusEquipmentSocketInfo(slotFrame, inventorySlot, anchor, slot
 	unit = unit or "player"
 
 	local db = E.db.general.characterInfo
-	local showGems, showEnchants = db.showGems, db.showEnchants and unit == "player"
+	local showForUnit = unit == "player" or db.showOnInspect
+	local showGems, showEnchants = db.showGems, db.showEnchants and showForUnit
+	local iconStyle = db.enchantStyle == "ICON"
 	local info = slotFrame.sirusSocketInfo
 	if not showGems and not showEnchants then
 		if info then info:Hide() end
@@ -719,11 +952,11 @@ function S:HandleSirusEquipmentSocketInfo(slotFrame, inventorySlot, anchor, slot
 	end
 
 	local link = GetInventoryItemLink(unit, inventorySlot)
-	local numSockets, enchantText = 0
+	local numSockets, enchantText, scan = 0
 	local hasUnknown = link and not GetItemInfo(link)
 
 	if link and (showGems or showEnchants) then
-		local scan = ScanSocketInfo(unit, inventorySlot, slotName, showGems, showEnchants)
+		scan = ScanSocketInfo(unit, inventorySlot, slotName, showGems, showEnchants, iconStyle)
 
 		if showGems then
 			local nextEmpty = 1
@@ -756,13 +989,37 @@ function S:HandleSirusEquipmentSocketInfo(slotFrame, inventorySlot, anchor, slot
 		info.slots[index]:Hide()
 	end
 
+	local enchantIcon = info.enchantIcon
+	local enchantID = link and tonumber(strmatch(link, "item:%d+:(%d+)")) or 0
+	local showEnchantIcon = showEnchants and iconStyle and link and (enchantID ~= 0 or CanEnchant(slotName, link, unit)) and true or false
+	if showEnchantIcon then
+		local iconScan = scan and scan.icon or {}
+		local line, illusion = enchantID ~= 0 and GetEnchantLine(enchantID) or nil, iconScan.illusion
+		if line and find(utf8lower(line), "^иллюзия:") then
+			illusion, line = illusion or line, iconScan.enchant
+		end
+		local enchanted = line ~= nil
+		enchantIcon.enchantText = line
+		enchantIcon.illusionText = illusion
+		enchantIcon.Icon:SetDesaturated(not enchanted)
+		enchantIcon.Icon:SetAlpha(enchanted and 1 or .6)
+		if enchanted then
+			enchantIcon:SetBackdropBorderColor(unpack(E.media.bordercolor))
+		else
+			enchantIcon:SetBackdropBorderColor(1, 0, 0)
+		end
+	end
+	enchantIcon:SetShown(showEnchantIcon)
+
+	local showIcons = CountInfoIcons(info) > 0
+	info.iconsInline = showIcons and (numSockets == 0 or (info.anchor == "TOP" and numSockets < MAX_DISPLAYED_SOCKETS))
 	info.numSockets = numSockets
 	UpdateSocketInfoStyle(info, db)
 
-	enchantText = enchantText and ShortenEnchantText(enchantText)
+	enchantText = not iconStyle and enchantText and ShortenEnchantText(enchantText) or nil
 	info.enchant:SetText(enchantText)
 	info.enchant:SetShown(enchantText ~= nil)
-	info:SetShown(numSockets > 0 or enchantText ~= nil)
+	info:SetShown(numSockets > 0 or enchantText ~= nil or showIcons)
 
 	return hasUnknown
 end

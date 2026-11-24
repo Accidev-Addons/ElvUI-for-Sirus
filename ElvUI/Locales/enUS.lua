@@ -105,6 +105,8 @@ L["Highlight items socketed with a black diamond without changing their quality 
 L["<Click to extract the gem>"] = true
 L["<Click to insert a black diamond>"] = true
 L["Gem data unavailable"] = true
+L["Not enchanted"] = true
+L["Show on Inspect"] = true
 L["Display Enchants"] = true
 L["Display Item Level"] = true
 L["Display Durability"] = true

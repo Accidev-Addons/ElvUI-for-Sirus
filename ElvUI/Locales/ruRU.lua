@@ -105,6 +105,8 @@ L["Highlight items socketed with a black diamond without changing their quality 
 L["<Click to extract the gem>"] = "<Щелкните, чтобы достать камень.>"
 L["<Click to insert a black diamond>"] = "<Щелкните, чтобы вставить черный бриллиант.>"
 L["Gem data unavailable"] = "Данные о камне не получены"
+L["Not enchanted"] = "Нет зачарования"
+L["Show on Inspect"] = "Показывать при осмотре"
 L["Display Enchants"] = "Отображать зачарования"
 L["Display Item Level"] = "Отображать уровень предметов"
 L["Display Durability"] = "Отображать прочность"
