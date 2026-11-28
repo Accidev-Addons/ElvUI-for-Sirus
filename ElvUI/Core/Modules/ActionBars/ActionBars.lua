@@ -367,7 +367,7 @@ function AB:CreateBar(id)
 		control:ChildUpdate('state', newstate)
 	]])
 
-	E:CreateMover(bar, 'ElvAB_'..id, L["Bar "]..id, nil, nil, nil, 'ALL,ACTIONBARS', nil, 'actionbar,playerBars,bar'..id)
+	E:CreateMover(bar, 'ElvAB_'..id, L["Bar "]..id, nil, nil, function() AB:UpdateButtonConfig(barKey) end, 'ALL,ACTIONBARS', nil, 'actionbar,playerBars,bar'..id)
 
 	return bar
 end
@@ -717,6 +717,8 @@ function AB:Bar_OnEnter(bar)
 end
 
 function AB:Bar_OnLeave(bar)
+	if bar == AB.flyoutBar then return end
+
 	if bar:GetParent() == AB.fadeParent and not AB.fadeParent.mouseLock then
 		local a = 1 - (AB.db.globalFadeAlpha or 0)
 		E:UIFrameFadeOut(AB.fadeParent, 0.2, AB.fadeParent:GetAlpha(), a)
@@ -733,6 +735,33 @@ end
 
 function AB:Button_OnLeave(button)
 	AB:Bar_OnLeave(button:GetParent())
+end
+
+function AB:GetFlyoutDirection(bar, direction)
+	if direction ~= 'AUTOMATIC' then return direction end
+
+	local point = E:GetScreenQuadrant(bar.mover or bar)
+	if point == 'LEFT' then return 'RIGHT' end
+	if point == 'RIGHT' then return 'LEFT' end
+	return strmatch(point, 'TOP') and 'DOWN' or 'UP'
+end
+
+function AB:SpellFlyout_Update()
+	local flyout = _G.SpellFlyout
+	local button = flyout:IsShown() and flyout:GetParent()
+	local bar = button and button.parentName and button:GetParent() or nil
+	if bar == AB.flyoutBar then return end
+
+	local old = AB.flyoutBar
+	AB.flyoutBar = bar
+
+	if old and not old:IsMouseOver() then
+		AB:Bar_OnLeave(old)
+	end
+
+	if bar then
+		AB:Bar_OnEnter(bar)
+	end
 end
 
 function AB:BlizzardOptionsPanel_OnEvent()
@@ -1030,6 +1059,7 @@ function AB:UpdateButtonConfig(barName, buttonName)
 	config.colors.usable = E:SetColorTable(config.colors.usable, AB.db.usableColor)
 	config.colors.notUsable = E:SetColorTable(config.colors.notUsable, AB.db.notUsableColor)
 	config.handleOverlay = AB.db.handleOverlay
+	config.flyoutDirection = AB:GetFlyoutDirection(bar, db.flyoutDirection)
 	SetModifiedClick('PICKUPACTION', AB.db.movementModifier)
 
 	if not buttonName then
@@ -1358,6 +1388,11 @@ function AB:Initialize()
 	AB:ToggleCooldownOptions()
 	AB.SetupSpellOverlay()
 	AB:LoadKeyBinder()
+
+	if _G.SpellFlyout then
+		AB:SecureHook(_G.SpellFlyout, 'Toggle', 'SpellFlyout_Update')
+		AB:HookScript(_G.SpellFlyout, 'OnHide', 'SpellFlyout_Update')
+	end
 
 	if not IsAddOnLoaded('Blizzard_MacroUI') then
 		AB:SecureHook('LoadAddOn', 'RegisterMacro')
